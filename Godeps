@@ -1,5 +1,5 @@
 {
-	"ImportPath": "github.com/ddollar/force",
+	"ImportPath": "github.com/heroku/force",
 	"GoVersion": "go version go1.1.2 darwin/amd64",
 	"Deps": [
 		{
@@ -9,7 +9,7 @@
 		},
 		{
 			"ImportPath": "github.com/ddollar/config",
-			"Rev": "8b98855799c36ad533f8058538a940043be8b868"
+			"Rev": "755ff49a9743f341bf9d48b17ec73e19f609f70c"
 		},
 		{
 			"ImportPath": "github.com/ddollar/dist",
