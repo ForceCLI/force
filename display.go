@@ -9,6 +9,12 @@ func DisplayForceObject(object map[string]interface{}) {
 	DisplayInterfaceMap(object, 0)
 }
 
+func DisplayStringSlice(slice []string) {
+	for _, item := range slice {
+		fmt.Println(item)
+	}
+}
+
 func DisplayInterfaceMap(object map[string]interface{}, indent int) {
 	keys := make([]string, len(object))
 	i := 0

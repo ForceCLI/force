@@ -10,6 +10,7 @@ var commands = []*Command{
 	cmdAccounts,
 	cmdActive,
 	cmdWhoami,
+	cmdObjects,
 	cmdGet,
 	cmdVersion,
 	cmdUpdate,

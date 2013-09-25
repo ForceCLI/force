@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/url"
 	"runtime"
+	"sort"
 	"strings"
 )
 
@@ -83,6 +84,39 @@ func ForceLogin() (creds ForceCredentials, err error) {
 	url := fmt.Sprintf("https://login.salesforce.com/services/oauth2/authorize?response_type=token&client_id=%s&redirect_uri=%s&state=%d&prompt=login", ClientId, RedirectUri, port)
 	err = Open(url)
 	creds = <-ch
+	return
+}
+
+func (f *Force) Objects() (objects []string, err error) {
+	url := fmt.Sprintf("%s/services/data/v20.0/sobjects", f.Credentials.InstanceUrl)
+	req, err := httpRequest("GET", url, nil)
+	if err != nil {
+		return
+	}
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", f.Credentials.AccessToken))
+	res, err := httpClient().Do(req)
+	defer res.Body.Close()
+	if err != nil {
+		return
+	}
+	if res.StatusCode == 401 {
+		err = errors.New("authorization expired, please run `force login`")
+		return
+	}
+	if res.StatusCode != 200 {
+		err = errors.New(fmt.Sprintf("http code %d", res.StatusCode))
+		return
+	}
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return
+	}
+	var parsed map[string]interface{}
+	json.Unmarshal(body, &parsed)
+	for _, object := range parsed["sobjects"].([]interface{}) {
+		objects = append(objects, object.(map[string]interface{})["name"].(string))
+	}
+	sort.Strings(objects)
 	return
 }
 
