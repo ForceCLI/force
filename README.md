@@ -19,5 +19,17 @@ A command-line interface to force.com
 
 ### Usage
 
-    $ force login
-    $ force help
+    Usage: force <command> [<args>]
+
+    Available commands:
+       login     Log in to force.com
+       logout    Log out from force.com
+       accounts  List force.com accounts
+       active    Show or set the active force.com account
+       whoami    Show information about the active account
+       get       Get a force.com object
+       version   Display current version
+       update    Update to the latest version
+       help      Show this help
+
+    Run 'force help [command]' for details.
