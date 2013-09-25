@@ -80,7 +80,7 @@ func NewForce(creds ForceCredentials) (force *Force) {
 func ForceLogin() (creds ForceCredentials, err error) {
 	ch := make(chan ForceCredentials)
 	port, err := startLocalHttpServer(ch)
-	url := fmt.Sprintf("https://login.salesforce.com/services/oauth2/authorize?response_type=token&client_id=%s&redirect_uri=%s&state=%d", ClientId, RedirectUri, port)
+	url := fmt.Sprintf("https://login.salesforce.com/services/oauth2/authorize?response_type=token&client_id=%s&redirect_uri=%s&state=%d&prompt=login", ClientId, RedirectUri, port)
 	err = Open(url)
 	creds = <-ch
 	return
