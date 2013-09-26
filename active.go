@@ -30,7 +30,7 @@ func runActive(cmd *Command, args []string) {
 		if i < len(accounts) && accounts[i] == account {
 			Config.Save("current", "account", account)
 		} else {
-			fmt.Printf("ERROR: no such account %s\n", account)
+			ErrorAndExit(fmt.Sprintf("no such account %s\n", account))
 		}
 	}
 }

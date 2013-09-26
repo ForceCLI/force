@@ -21,7 +21,7 @@ func runObjects(cmd *Command, args []string) {
 	force, _ := ActiveForce()
 	objects, err := force.Objects()
 	if err != nil {
-		fmt.Printf("ERROR: %s\n", err)
+		ErrorAndExit(fmt.Sprintf("ERROR: %s\n", err))
 	} else {
 		DisplayStringSlice(objects)
 	}

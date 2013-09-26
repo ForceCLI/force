@@ -1,8 +1,6 @@
 package main
 
-import (
-	"fmt"
-)
+import ()
 
 var cmdWhoami = &Command{
 	Run:   runWhoami,
@@ -21,7 +19,7 @@ func runWhoami(cmd *Command, args []string) {
 	force, _ := ActiveForce()
 	user, err := force.Get("User", force.Credentials.Id)
 	if err != nil {
-		fmt.Printf("ERROR: %s\n", err)
+		ErrorAndExit(err.Error())
 	} else {
 		DisplayForceObject(user)
 	}

@@ -1,16 +1,13 @@
 package main
 
-import (
-	"fmt"
-	"os"
-)
+import ()
 
 var cmdGet = &Command{
 	Run:   runGet,
 	Usage: "get <type> <id>",
-	Short: "Get a force.com object",
+	Short: "Display a record",
 	Long: `
-Get a force.com object
+Display a record
 
 Examples:
 
@@ -21,12 +18,11 @@ Examples:
 func runGet(cmd *Command, args []string) {
 	force, _ := ActiveForce()
 	if len(args) != 2 {
-		fmt.Println("ERROR: must specify type and id")
-		os.Exit(1)
+		ErrorAndExit("must specify type and id")
 	}
 	object, err := force.Get(args[0], args[1])
 	if err != nil {
-		fmt.Printf("ERROR: %s\n", err)
+		ErrorAndExit(err.Error())
 	} else {
 		DisplayForceObject(object)
 	}
