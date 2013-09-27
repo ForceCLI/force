@@ -72,6 +72,19 @@ type ForceCredentials struct {
 	Scope       string
 }
 
+type ForceError struct {
+	Message   string
+	ErrorCode string
+}
+
+type ForceRecord map[string]interface{}
+
+type ForceQueryResult struct {
+	Done bool
+	TotalSize int
+	Records []ForceRecord
+}
+
 func NewForce(creds ForceCredentials) (force *Force) {
 	force = new(Force)
 	force.Credentials = creds
@@ -87,7 +100,7 @@ func ForceLogin() (creds ForceCredentials, err error) {
 	return
 }
 
-func (f *Force) Objects() (objects []string, err error) {
+func (f *Force) ListObjects() (objects []string, err error) {
 	url := fmt.Sprintf("%s/services/data/v20.0/sobjects", f.Credentials.InstanceUrl)
 	req, err := httpRequest("GET", url, nil)
 	if err != nil {
@@ -111,17 +124,38 @@ func (f *Force) Objects() (objects []string, err error) {
 	if err != nil {
 		return
 	}
-	var parsed map[string]interface{}
+	var parsed ForceRecord
 	json.Unmarshal(body, &parsed)
 	for _, object := range parsed["sobjects"].([]interface{}) {
-		objects = append(objects, object.(map[string]interface{})["name"].(string))
+		objects = append(objects, object.(ForceRecord)["name"].(string))
 	}
 	sort.Strings(objects)
 	return
 }
 
-func (f *Force) Get(typ, id string) (object map[string]interface{}, err error) {
+func (f *Force) Query(query string) (records []ForceRecord, err error) {
+	url := fmt.Sprintf("%s/services/data/v20.0/query?q=%s", f.Credentials.InstanceUrl, url.QueryEscape(query))
+	body, err := f.httpGet(url)
+	if err != nil {
+		return
+	}
+	var result ForceQueryResult
+	json.Unmarshal(body, &result)
+	records = result.Records
+	return
+}
+
+func (f *Force) GetRecord(typ, id string) (object ForceRecord, err error) {
 	url := fmt.Sprintf("%s/services/data/v20.0/sobjects/%s/%s", f.Credentials.InstanceUrl, typ, id)
+	body, err := f.httpGet(url)
+	if err != nil {
+		return
+	}
+	err = json.Unmarshal(body, &object)
+	return
+}
+
+func (f *Force) httpGet(url string) (body []byte, err error) {
 	req, err := httpRequest("GET", url, nil)
 	if err != nil {
 		return
@@ -136,16 +170,11 @@ func (f *Force) Get(typ, id string) (object map[string]interface{}, err error) {
 		err = errors.New("authorization expired, please run `force login`")
 		return
 	}
+	body, err = ioutil.ReadAll(res.Body)
 	if res.StatusCode != 200 {
-		err = errors.New(fmt.Sprintf("http code %d", res.StatusCode))
-		return
-	}
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return
-	}
-	err = json.Unmarshal(body, &object)
-	if err != nil {
+		var messages []ForceError
+		json.Unmarshal(body, &messages)
+		err = errors.New(messages[0].Message)
 		return
 	}
 	return

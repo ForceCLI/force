@@ -3,10 +3,50 @@ package main
 import (
 	"fmt"
 	"sort"
+	"strings"
 )
 
-func DisplayForceObject(object map[string]interface{}) {
-	DisplayInterfaceMap(object, 0)
+func DisplayForceRecords(records []ForceRecord) {
+	var keys []string
+	if len(records) > 1 {
+		for key, _ := range records[0] {
+			if key != "attributes" {
+				keys = append(keys, key)
+			}
+		}
+		lengths := make([]int, len(keys))
+		separators := make([]string, len(keys))
+		for i, key := range keys {
+			lengths[i] = 0
+			for _, record := range records {
+				l := len(record[key].(string))
+				if l > lengths[i] {
+					lengths[i] = l
+				}
+			}
+			separators[i] = strings.Repeat("-", lengths[i]+2)
+		}
+		formatter_parts := make([]string, len(keys))
+		for i, length := range lengths {
+			formatter_parts[i] = fmt.Sprintf(" %%-%ds ", length)
+		}
+		formatter := strings.Join(formatter_parts, "|")
+		fmt.Printf(formatter + "\n", StringSliceToInterfaceSlice(keys)...)
+		fmt.Printf(strings.Join(separators, "+") + "\n")
+		for _, record := range records {
+			values := make([]string, len(keys))
+			for i, key := range keys {
+				values[i] = record[key].(string)
+			}
+			fmt.Printf(formatter + "\n", StringSliceToInterfaceSlice(values)...)
+		}
+		fmt.Printf(strings.Join(separators, "+") + "\n")
+	}
+	fmt.Printf("%d results returned\n", len(records))
+}
+
+func DisplayForceRecord(record ForceRecord) {
+	DisplayInterfaceMap(record, 0)
 }
 
 func DisplayStringSlice(slice []string) {
@@ -36,4 +76,11 @@ func DisplayInterfaceMap(object map[string]interface{}, indent int) {
 			fmt.Printf("%v\n", v)
 		}
 	}
+}
+
+func StringSliceToInterfaceSlice(s []string) (i []interface{}) {
+	for _, str := range s {
+		i = append(i, interface{}(str))
+	}
+	return
 }

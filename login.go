@@ -52,7 +52,7 @@ func ForceLoginAndSave() (username string, err error) {
 		return
 	}
 	force := NewForce(creds)
-	user, err := force.Get("User", creds.Id)
+	user, err := force.GetRecord("User", creds.Id)
 	if err != nil {
 		return
 	}

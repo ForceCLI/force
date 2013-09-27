@@ -17,10 +17,10 @@ Examples:
 
 func runWhoami(cmd *Command, args []string) {
 	force, _ := ActiveForce()
-	user, err := force.Get("User", force.Credentials.Id)
+	user, err := force.GetRecord("User", force.Credentials.Id)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	} else {
-		DisplayForceObject(user)
+		DisplayForceRecord(user)
 	}
 }
