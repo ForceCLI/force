@@ -1,6 +1,8 @@
 package main
 
-import ()
+import (
+	"fmt"
+)
 
 var cmdRecord = &Command{
 	Run:   runRecord,
@@ -17,6 +19,8 @@ Usage:
 
   force record update <object> <id> [<fields>]
 
+  force record delete <object> <id>
+
 Examples:
 
   force record get User 00Ei0000000000
@@ -24,6 +28,8 @@ Examples:
   force record create User Name:"David Dollar" Phone:0000000000
 
   force record update User 00Ei0000000000 State:GA
+
+  force record delete User 00Ei0000000000
 `,
 }
 
@@ -35,16 +41,18 @@ func runRecord(cmd *Command, args []string) {
 		runRecordCreate(args[1:])
 	case "update":
 		runRecordUpdate(args[1:])
+	case "delete":
+		runRecordDelete(args[1:])
 	default:
 		ErrorAndExit("so such subcommand for record: %s", args[0])
 	}
 }
 
 func runRecordGet(args []string) {
-	force, _ := ActiveForce()
 	if len(args) != 2 {
 		ErrorAndExit("must specify object and id")
 	}
+	force, _ := ActiveForce()
 	object, err := force.GetRecord(args[0], args[1])
 	if err != nil {
 		ErrorAndExit(err.Error())
@@ -57,9 +65,36 @@ func runRecordCreate(args []string) {
 	if len(args) < 1 {
 		ErrorAndExit("must specify object")
 	}
-	ErrorAndExit("not implemented yet")
+	force, _ := ActiveForce()
+	attrs := ParseArgumentAttrs(args[1:])
+	id, err := force.CreateRecord(args[0], attrs)
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
+	fmt.Printf("Record created: %s\n", id)
 }
 
 func runRecordUpdate(args []string) {
-	ErrorAndExit("not implemented yet")
+	if len(args) < 2 {
+		ErrorAndExit("must specify object and id")
+	}
+	force, _ := ActiveForce()
+	attrs := ParseArgumentAttrs(args[2:])
+	err := force.UpdateRecord(args[0], args[1], attrs)
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
+	fmt.Println("Record updated")
+}
+
+func runRecordDelete(args []string) {
+	if len(args) != 2 {
+		ErrorAndExit("must specify object and id")
+	}
+	force, _ := ActiveForce()
+	err := force.DeleteRecord(args[0], args[1])
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
+	fmt.Println("Record deleted")
 }

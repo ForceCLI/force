@@ -1,12 +1,14 @@
 package main
 
 import (
+	"bytes"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -80,6 +82,12 @@ type ForceRecord map[string]interface{}
 
 type ForceSobject map[string]interface{}
 
+type ForceCreateRecordResult struct {
+	Errors []string
+	Id string
+	Success bool
+}
+
 type ForceQueryResult struct {
 	Done      bool
 	Records   []ForceRecord
@@ -131,13 +139,32 @@ func (f *Force) Query(query string) (records []ForceRecord, err error) {
 	return
 }
 
-func (f *Force) GetRecord(typ, id string) (object ForceRecord, err error) {
-	url := fmt.Sprintf("%s/services/data/v20.0/sobjects/%s/%s", f.Credentials.InstanceUrl, typ, id)
+func (f *Force) GetRecord(sobject, id string) (object ForceRecord, err error) {
+	url := fmt.Sprintf("%s/services/data/v20.0/sobjects/%s/%s", f.Credentials.InstanceUrl, sobject, id)
 	body, err := f.httpGet(url)
 	if err != nil {
 		return
 	}
 	err = json.Unmarshal(body, &object)
+	return
+}
+
+func (f *Force) CreateRecord(sobject string, attrs map[string]string) (id string, err error) {
+	url := fmt.Sprintf("%s/services/data/v20.0/sobjects/%s", f.Credentials.InstanceUrl, sobject)
+	_, err = f.httpPost(url, attrs)
+	return
+}
+
+func (f *Force) UpdateRecord(sobject string, id string, attrs map[string]string) (err error) {
+	url := fmt.Sprintf("%s/services/data/v20.0/sobjects/%s/%s", f.Credentials.InstanceUrl, sobject, id)
+	body, err := f.httpPatch(url, attrs)
+	fmt.Println("body", string(body))
+	return
+}
+
+func (f *Force) DeleteRecord(sobject string, id string) (err error) {
+	url := fmt.Sprintf("%s/services/data/v20.0/sobjects/%s/%s", f.Credentials.InstanceUrl, sobject, id)
+	_, err = f.httpDelete(url)
 	return
 }
 
@@ -166,11 +193,87 @@ func (f *Force) httpGet(url string) (body []byte, err error) {
 	return
 }
 
-func (f *Force) IsAuthorizationError(err error) bool {
-	if err == nil {
-		return false
+func (f *Force) httpPost(url string, attrs map[string]string) (body []byte, err error) {
+	rbody, _ := json.Marshal(attrs)
+	req, err := httpRequest("POST", url, bytes.NewReader(rbody))
+	if err != nil {
+		return
 	}
-	return err.Error() == "invalid authorization"
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", f.Credentials.AccessToken))
+	req.Header.Add("Content-Type", "application/json")
+	res, err := httpClient().Do(req)
+	defer res.Body.Close()
+	if err != nil {
+		return
+	}
+	if res.StatusCode == 401 {
+		err = errors.New("authorization expired, please run `force login`")
+		return
+	}
+	body, err = ioutil.ReadAll(res.Body)
+	if res.StatusCode / 100 != 2 {
+		var messages []ForceError
+		fmt.Println("body", string(body))
+		json.Unmarshal(body, &messages)
+		fmt.Println("messages", messages)
+		err = errors.New(messages[0].Message)
+		return
+	}
+	return
+}
+
+func (f *Force) httpPatch(url string, attrs map[string]string) (body []byte, err error) {
+	rbody, _ := json.Marshal(attrs)
+	req, err := httpRequest("PATCH", url, bytes.NewReader(rbody))
+	if err != nil {
+		return
+	}
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", f.Credentials.AccessToken))
+	req.Header.Add("Content-Type", "application/json")
+	res, err := httpClient().Do(req)
+	defer res.Body.Close()
+	if err != nil {
+		return
+	}
+	if res.StatusCode == 401 {
+		err = errors.New("authorization expired, please run `force login`")
+		return
+	}
+	body, err = ioutil.ReadAll(res.Body)
+	if res.StatusCode / 100 != 2 {
+		var messages []ForceError
+		fmt.Println("body", string(body))
+		json.Unmarshal(body, &messages)
+		fmt.Println("messages", messages)
+		err = errors.New(messages[0].Message)
+		return
+	}
+	return
+}
+
+func (f *Force) httpDelete(url string) (body []byte, err error) {
+	req, err := httpRequest("DELETE", url, nil)
+	if err != nil {
+		return
+	}
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", f.Credentials.AccessToken))
+	res, err := httpClient().Do(req)
+	defer res.Body.Close()
+	if err != nil {
+		return
+	}
+	if res.StatusCode == 401 {
+		err = errors.New("authorization expired, please run `force login`")
+		return
+	}
+	body, err = ioutil.ReadAll(res.Body)
+	if res.StatusCode / 100 != 2 {
+		var messages []ForceError
+		json.Unmarshal(body, &messages)
+		err = errors.New(messages[0].Message)
+		return
+	}
+	return
 }
 
 func httpClient() (client *http.Client) {
@@ -190,15 +293,12 @@ func httpClient() (client *http.Client) {
 	return
 }
 
-func httpRequest(method, url string, body url.Values) (request *http.Request, err error) {
-	request, err = http.NewRequest(method, url, strings.NewReader(body.Encode()))
+func httpRequest(method, url string, body io.Reader) (request *http.Request, err error) {
+	request, err = http.NewRequest(method, url, body)
 	if err != nil {
 		return
 	}
 	request.Header.Add("User-Agent", fmt.Sprintf("force/%s (%s-%s)", Version, runtime.GOOS, runtime.GOARCH))
-	if body != nil {
-		request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	}
 	return
 }
 
