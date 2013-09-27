@@ -53,7 +53,7 @@ func DisplayForceRecords(records []ForceRecord) {
 		}
 		fmt.Printf(strings.Join(separators, "+") + "\n")
 	}
-	fmt.Printf("%d results returned\n", len(records))
+	fmt.Printf("(%d records)\n", len(records))
 }
 
 func DisplayForceRecord(record ForceRecord) {
