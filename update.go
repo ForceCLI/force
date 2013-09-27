@@ -22,14 +22,18 @@ func init() {
 }
 
 func runUpdate(cmd *Command, args []string) {
-	if Version == "dev" {
-		ErrorAndExit("can't update dev cersion")
-	}
 	d := dist.NewDist("heroku/force", Version)
-	to, err := d.Update()
-	if err != nil {
-		ErrorAndExit(err.Error())
+	if len(args) == 1 {
+		d.FullUpdate(args[0])
 	} else {
-		fmt.Printf("updated to %s\n", to)
+		if Version == "dev" {
+			ErrorAndExit("can't update dev version")
+		}
+		to, err := d.Update()
+		if err != nil {
+			ErrorAndExit(err.Error())
+		} else {
+			fmt.Printf("updated to %s\n", to)
+		}
 	}
 }

@@ -4,16 +4,16 @@
 	"Deps": [
 		{
 			"ImportPath": "bitbucket.org/kardianos/osext",
-			"Comment": "null-7",
-			"Rev": "84d8cbacbe13"
+			"Comment": "null-9",
+			"Rev": "364fb577de68fb646c4cb39cc0e09c887ee16376"
 		},
 		{
 			"ImportPath": "github.com/ddollar/config",
-			"Rev": "755ff49a9743f341bf9d48b17ec73e19f609f70c"
+			"Rev": "31d44125bc63bc58f672dfd7e3eb3cd199a3bcdf"
 		},
 		{
 			"ImportPath": "github.com/ddollar/dist",
-			"Rev": "95b3220dbc9bb70c4cbda93b4064655a1ff86a06"
+			"Rev": "0cddeb15146fa169ed001ff8740cf6e1094792bd"
 		},
 		{
 			"ImportPath": "github.com/inconshreveable/go-execpath",
@@ -21,7 +21,7 @@
 		},
 		{
 			"ImportPath": "github.com/inconshreveable/go-update",
-			"Rev": "d5c66a4ba82f241ca9a6e80164f92f8206efa919"
+			"Rev": "f2914e9f42e44ccb9e29200968a7097cbf1577eb"
 		},
 		{
 			"ImportPath": "github.com/kr/binarydist",
