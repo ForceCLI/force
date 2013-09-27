@@ -34,17 +34,21 @@ Examples:
 }
 
 func runRecord(cmd *Command, args []string) {
-	switch args[0] {
-	case "get":
-		runRecordGet(args[1:])
-	case "create":
-		runRecordCreate(args[1:])
-	case "update":
-		runRecordUpdate(args[1:])
-	case "delete":
-		runRecordDelete(args[1:])
-	default:
-		ErrorAndExit("so such subcommand for record: %s", args[0])
+	if len(args) == 0 {
+		cmd.printUsage()
+	} else {
+		switch args[0] {
+		case "get":
+			runRecordGet(args[1:])
+		case "create":
+			runRecordCreate(args[1:])
+		case "update":
+			runRecordUpdate(args[1:])
+		case "delete":
+			runRecordDelete(args[1:])
+		default:
+			ErrorAndExit("no such command: %s", args[0])
+		}
 	}
 }
 
