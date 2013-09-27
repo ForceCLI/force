@@ -28,7 +28,8 @@ A command-line interface to force.com
 	   active    Show or set the active force.com account
 	   whoami    Show information about the active account
 	   objects   List force.com objects
-	   get       Get a force.com object
+	   record    Create, modify, or view records
+	   query     Execute a SOQL query
 	   version   Display current version
 	   update    Update to the latest version
 	   help      Show this help
