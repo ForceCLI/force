@@ -1,9 +1,8 @@
 package main
 
-import (
-)
+import ()
 
-var cmdRecord  = &Command{
+var cmdRecord = &Command{
 	Run:   runRecord,
 	Usage: "record <command> [<args>]",
 	Short: "Create, modify, or view records",

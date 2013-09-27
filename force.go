@@ -81,15 +81,15 @@ type ForceRecord map[string]interface{}
 type ForceSobject map[string]interface{}
 
 type ForceQueryResult struct {
-	Done bool
-	Records []ForceRecord
+	Done      bool
+	Records   []ForceRecord
 	TotalSize int
 }
 
 type ForceSobjectsResult struct {
-	Encoding string
+	Encoding     string
 	MaxBatchSize int
-	Sobjects []ForceSobject
+	Sobjects     []ForceSobject
 }
 
 func NewForce(creds ForceCredentials) (force *Force) {

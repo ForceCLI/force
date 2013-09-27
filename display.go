@@ -42,14 +42,14 @@ func DisplayForceRecords(records []ForceRecord) {
 			formatter_parts[i] = fmt.Sprintf(" %%-%ds ", length)
 		}
 		formatter := strings.Join(formatter_parts, "|")
-		fmt.Printf(formatter + "\n", StringSliceToInterfaceSlice(keys)...)
+		fmt.Printf(formatter+"\n", StringSliceToInterfaceSlice(keys)...)
 		fmt.Printf(strings.Join(separators, "+") + "\n")
 		for _, record := range records {
 			values := make([]string, len(keys))
 			for i, key := range keys {
 				values[i] = record[key].(string)
 			}
-			fmt.Printf(formatter + "\n", StringSliceToInterfaceSlice(values)...)
+			fmt.Printf(formatter+"\n", StringSliceToInterfaceSlice(values)...)
 		}
 		fmt.Printf(strings.Join(separators, "+") + "\n")
 	}
@@ -58,12 +58,6 @@ func DisplayForceRecords(records []ForceRecord) {
 
 func DisplayForceRecord(record ForceRecord) {
 	DisplayInterfaceMap(record, 0)
-}
-
-func DisplayStringSlice(slice []string) {
-	for _, item := range slice {
-		fmt.Println(item)
-	}
 }
 
 func DisplayInterfaceMap(object map[string]interface{}, indent int) {
