@@ -151,14 +151,16 @@ func (f *Force) GetRecord(sobject, id string) (object ForceRecord, err error) {
 
 func (f *Force) CreateRecord(sobject string, attrs map[string]string) (id string, err error) {
 	url := fmt.Sprintf("%s/services/data/v20.0/sobjects/%s", f.Credentials.InstanceUrl, sobject)
-	_, err = f.httpPost(url, attrs)
+	body, err := f.httpPost(url, attrs)
+	var result ForceCreateRecordResult
+	json.Unmarshal(body, &result)
+	id = result.Id
 	return
 }
 
 func (f *Force) UpdateRecord(sobject string, id string, attrs map[string]string) (err error) {
 	url := fmt.Sprintf("%s/services/data/v20.0/sobjects/%s/%s", f.Credentials.InstanceUrl, sobject, id)
-	body, err := f.httpPatch(url, attrs)
-	fmt.Println("body", string(body))
+	_, err = f.httpPatch(url, attrs)
 	return
 }
 
