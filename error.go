@@ -5,7 +5,7 @@ import (
 	"os"
 )
 
-func ErrorAndExit(message string) {
-	fmt.Printf("ERROR: %s\n", message)
+func ErrorAndExit(format string, args ...interface{}) {
+	fmt.Printf(fmt.Sprintf("ERROR: %s\n", format), args...)
 	os.Exit(1)
 }
