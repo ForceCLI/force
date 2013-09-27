@@ -44,7 +44,7 @@ func runRecord(cmd *Command, args []string) {
 func runRecordGet(args []string) {
 	force, _ := ActiveForce()
 	if len(args) != 2 {
-		ErrorAndExit("must specify type and id")
+		ErrorAndExit("must specify object and id")
 	}
 	object, err := force.GetRecord(args[0], args[1])
 	if err != nil {
@@ -55,6 +55,9 @@ func runRecordGet(args []string) {
 }
 
 func runRecordCreate(args []string) {
+	if len(args) < 1 {
+		ErrorAndExit("must specify object")
+	}
 	ErrorAndExit("not implemented yet")
 }
 

@@ -12,7 +12,6 @@ import (
 	"net/http"
 	"net/url"
 	"runtime"
-	"sort"
 	"strings"
 )
 
@@ -79,10 +78,18 @@ type ForceError struct {
 
 type ForceRecord map[string]interface{}
 
+type ForceSobject map[string]interface{}
+
 type ForceQueryResult struct {
 	Done bool
-	TotalSize int
 	Records []ForceRecord
+	TotalSize int
+}
+
+type ForceSobjectsResult struct {
+	Encoding string
+	MaxBatchSize int
+	Sobjects []ForceSobject
 }
 
 func NewForce(creds ForceCredentials) (force *Force) {
@@ -100,36 +107,15 @@ func ForceLogin() (creds ForceCredentials, err error) {
 	return
 }
 
-func (f *Force) ListObjects() (objects []string, err error) {
+func (f *Force) ListSobjects() (sobjects []ForceSobject, err error) {
 	url := fmt.Sprintf("%s/services/data/v20.0/sobjects", f.Credentials.InstanceUrl)
-	req, err := httpRequest("GET", url, nil)
+	body, err := f.httpGet(url)
 	if err != nil {
 		return
 	}
-	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", f.Credentials.AccessToken))
-	res, err := httpClient().Do(req)
-	defer res.Body.Close()
-	if err != nil {
-		return
-	}
-	if res.StatusCode == 401 {
-		err = errors.New("authorization expired, please run `force login`")
-		return
-	}
-	if res.StatusCode != 200 {
-		err = errors.New(fmt.Sprintf("http code %d", res.StatusCode))
-		return
-	}
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return
-	}
-	var parsed ForceRecord
-	json.Unmarshal(body, &parsed)
-	for _, object := range parsed["sobjects"].([]interface{}) {
-		objects = append(objects, object.(ForceRecord)["name"].(string))
-	}
-	sort.Strings(objects)
+	var result ForceSobjectsResult
+	json.Unmarshal(body, &result)
+	sobjects = result.Sobjects
 	return
 }
 

@@ -6,6 +6,17 @@ import (
 	"strings"
 )
 
+func DisplayForceSobjects(sobjects []ForceSobject) {
+	names := make([]string, len(sobjects))
+	for i, sobject := range sobjects {
+		names[i] = sobject["name"].(string)
+	}
+	sort.Strings(names)
+	for _, name := range names {
+		fmt.Println(name)
+	}
+}
+
 func DisplayForceRecords(records []ForceRecord) {
 	var keys []string
 	if len(records) > 1 {
