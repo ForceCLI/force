@@ -11,7 +11,7 @@ var commands = []*Command{
 	cmdActive,
 	cmdWhoami,
 	cmdObjects,
-	cmdGet,
+	cmdRecord,
 	cmdVersion,
 	cmdUpdate,
 	cmdHelp,
