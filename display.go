@@ -19,7 +19,7 @@ func DisplayForceSobjects(sobjects []ForceSobject) {
 
 func DisplayForceRecords(records []ForceRecord) {
 	var keys []string
-	if len(records) > 1 {
+	if len(records) > 0 {
 		for key, _ := range records[0] {
 			if key != "attributes" {
 				keys = append(keys, key)
