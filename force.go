@@ -83,8 +83,8 @@ type ForceRecord map[string]interface{}
 type ForceSobject map[string]interface{}
 
 type ForceCreateRecordResult struct {
-	Errors []string
-	Id string
+	Errors  []string
+	Id      string
 	Success bool
 }
 
@@ -213,7 +213,7 @@ func (f *Force) httpPost(url string, attrs map[string]string) (body []byte, err 
 		return
 	}
 	body, err = ioutil.ReadAll(res.Body)
-	if res.StatusCode / 100 != 2 {
+	if res.StatusCode/100 != 2 {
 		var messages []ForceError
 		fmt.Println("body", string(body))
 		json.Unmarshal(body, &messages)
@@ -242,7 +242,7 @@ func (f *Force) httpPatch(url string, attrs map[string]string) (body []byte, err
 		return
 	}
 	body, err = ioutil.ReadAll(res.Body)
-	if res.StatusCode / 100 != 2 {
+	if res.StatusCode/100 != 2 {
 		var messages []ForceError
 		fmt.Println("body", string(body))
 		json.Unmarshal(body, &messages)
@@ -269,7 +269,7 @@ func (f *Force) httpDelete(url string) (body []byte, err error) {
 		return
 	}
 	body, err = ioutil.ReadAll(res.Body)
-	if res.StatusCode / 100 != 2 {
+	if res.StatusCode/100 != 2 {
 		var messages []ForceError
 		json.Unmarshal(body, &messages)
 		err = errors.New(messages[0].Message)
