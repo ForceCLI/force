@@ -216,7 +216,11 @@ func (f *Force) httpGet(url string) (body []byte, err error) {
 	if res.StatusCode/100 != 2 {
 		var messages []ForceError
 		json.Unmarshal(body, &messages)
-		err = errors.New(messages[0].Message)
+		if len(messages) > 0 {
+			err = errors.New(messages[0].Message)
+		} else {
+			err = errors.New(string(body))
+		}
 		return
 	}
 	return
