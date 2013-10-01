@@ -242,9 +242,7 @@ func (f *Force) httpPost(url string, attrs map[string]string) (body []byte, err 
 	body, err = ioutil.ReadAll(res.Body)
 	if res.StatusCode/100 != 2 {
 		var messages []ForceError
-		fmt.Println("body", string(body))
 		json.Unmarshal(body, &messages)
-		fmt.Println("messages", messages)
 		err = errors.New(messages[0].Message)
 		return
 	}
@@ -271,9 +269,7 @@ func (f *Force) httpPatch(url string, attrs map[string]string) (body []byte, err
 	body, err = ioutil.ReadAll(res.Body)
 	if res.StatusCode/100 != 2 {
 		var messages []ForceError
-		fmt.Println("body", string(body))
 		json.Unmarshal(body, &messages)
-		fmt.Println("messages", messages)
 		err = errors.New(messages[0].Message)
 		return
 	}
