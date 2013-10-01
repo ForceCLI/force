@@ -147,6 +147,16 @@ func (f *Force) ListSobjects() (sobjects []ForceSobject, err error) {
 	return
 }
 
+func (f *Force) GetSobject(name string) (sobject ForceSobject, err error) {
+	url := fmt.Sprintf("%s/services/data/v20.0/sobjects/%s/describe", f.Credentials.InstanceUrl, name)
+	body, err := f.httpGet(url)
+	if err != nil {
+		return
+	}
+	json.Unmarshal(body, &sobject)
+	return
+}
+
 func (f *Force) Query(query string) (records []ForceRecord, err error) {
 	url := fmt.Sprintf("%s/services/data/v20.0/query?q=%s", f.Credentials.InstanceUrl, url.QueryEscape(query))
 	body, err := f.httpGet(url)

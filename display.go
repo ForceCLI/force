@@ -89,3 +89,41 @@ func StringSliceToInterfaceSlice(s []string) (i []interface{}) {
 	}
 	return
 }
+
+func DisplayForceSobject(sobject ForceSobject) {
+	fields := ForceSobjectFields(sobject["fields"].([]interface{}))
+	sort.Sort(fields)
+	for _, f := range fields {
+		field := f.(map[string]interface{})
+		switch field["type"] {
+		case "picklist":
+			var values []string
+			for _, value := range field["picklistValues"].([]interface{}) {
+				values = append(values, value.(map[string]interface{})["value"].(string))
+			}
+			fmt.Printf("%s: %s (%s)\n", field["name"], field["type"], strings.Join(values, ", "))
+		case "reference":
+			var refs []string
+			for _, ref := range field["referenceTo"].([]interface{}) {
+				refs = append(refs, ref.(string))
+			}
+			fmt.Printf("%s: %s (%s)\n", field["name"], field["type"], strings.Join(refs, ", "))
+		default:
+			fmt.Printf("%s: %s\n", field["name"], field["type"])
+		}
+	}
+}
+
+type ForceSobjectFields []interface{}
+
+func (f ForceSobjectFields) Len() (int) {
+	return len(f)
+}
+
+func (f ForceSobjectFields) Less(i, j int) (bool) {
+	return f[i].(map[string]interface{})["name"].(string) < f[j].(map[string]interface{})["name"].(string)
+}
+
+func (f ForceSobjectFields) Swap(i, j int) {
+	f[i], f[j] = f[j], f[i]
+}

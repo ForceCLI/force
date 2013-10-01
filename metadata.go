@@ -358,3 +358,67 @@ func (apps ForceConnectedApps) Less(i, j int) (bool) {
 func (apps ForceConnectedApps) Swap(i, j int) {
 	apps[i], apps[j] = apps[j], apps[i]
 }
+
+
+func (fm *ForceMetadata) GetSobject(name string) (app ForceConnectedApp, err error) {
+	soap := `
+		<env:Envelope xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:tns="http://soap.sforce.com/2006/04/metadata" xmlns:env="http://schemas.xmlsoap.org/soap/envelope/" xmlns:cmd="http://soap.sforce.com/2006/04/metadata">
+			<env:Header>
+				<cmd:SessionHeader>
+					<cmd:sessionId>%s</cmd:sessionId>
+				</cmd:SessionHeader>
+			</env:Header>
+			<env:Body>
+				<retrieve xmlns="http://soap.sforce.com/2006/04/metadata">
+					<retrieveRequest>
+						<apiVersion>29.0</apiVersion>
+						<unpackaged>
+							<types>
+								<members>%s</members>
+								<name>CustomObject</name>
+							</types>
+						</unpackaged>
+					</retrieveRequest>
+				</retrieve>
+			</env:Body>
+		</env:Envelope>
+	`
+	login, err := fm.Force.Get(fm.Force.Credentials.Id)
+	if err != nil {
+		return
+	}
+	url := strings.Replace(login["urls"].(map[string]interface{})["metadata"].(string), "{version}", "29.0", 1)
+	rbody := fmt.Sprintf(soap, fm.Force.Credentials.AccessToken, name)
+	fmt.Println("rbody", rbody)
+	req, err := httpRequest("POST", url, strings.NewReader(rbody))
+	if err != nil {
+		return
+	}
+	req.Header.Add("Content-Type", "text/xml")
+	req.Header.Add("SOAPACtion", "retrieve")
+	res, err := httpClient().Do(req)
+	defer res.Body.Close()
+	if err != nil {
+		return
+	}
+	if res.StatusCode == 401 {
+		err = errors.New("authorization expired, please run `force login`")
+		return
+	}
+	body, err := ioutil.ReadAll(res.Body)
+	fmt.Println("body", string(body))
+	/* var retrieve SoapRetrieveResponse*/
+	/* xml.Unmarshal(body, &retrieve)*/
+	/* err = fm.CheckStatus(retrieve.Id)*/
+	/* if err != nil {*/
+	/*   return*/
+	/* }*/
+	/* err = fm.CheckRetrieveStatus(retrieve.Id)*/
+	/* fmt.Println("err", err)*/
+	/* var resp SoapListConnectedAppsResponse*/
+	/* xml.Unmarshal(body, &resp)*/
+	/* for _, app := range resp.ConnectedApps {*/
+	/*   apps = append(apps, ForceConnectedApp{Name:app.Name, Id:app.Id})*/
+	/* }*/
+	return
+}
