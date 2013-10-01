@@ -90,6 +90,8 @@ func StringSliceToInterfaceSlice(s []string) (i []interface{}) {
 	return
 }
 
+type ForceSobjectFields []interface{}
+
 func DisplayForceSobject(sobject ForceSobject) {
 	fields := ForceSobjectFields(sobject["fields"].([]interface{}))
 	sort.Sort(fields)
@@ -112,18 +114,4 @@ func DisplayForceSobject(sobject ForceSobject) {
 			fmt.Printf("%s: %s\n", field["name"], field["type"])
 		}
 	}
-}
-
-type ForceSobjectFields []interface{}
-
-func (f ForceSobjectFields) Len() (int) {
-	return len(f)
-}
-
-func (f ForceSobjectFields) Less(i, j int) (bool) {
-	return f[i].(map[string]interface{})["name"].(string) < f[j].(map[string]interface{})["name"].(string)
-}
-
-func (f ForceSobjectFields) Swap(i, j int) {
-	f[i], f[j] = f[j], f[i]
 }

@@ -54,24 +54,24 @@ func runOauth(cmd *Command, args []string) {
 }
 
 func runOauthGet(args []string) {
-	if len(args) != 1 {
-		ErrorAndExit("must specify name")
-	}
-	force, _ := ActiveForce()
-	app, err := force.Metadata.GetConnectedApp(args[0])
-	fmt.Println("app", app, "err", err)
+	/* if len(args) != 1 {*/
+	/*   ErrorAndExit("must specify name")*/
+	/* }*/
+	/* force, _ := ActiveForce()*/
+	/* app, err := force.Metadata.GetConnectedApp(args[0])*/
+	/* fmt.Println("app", app, "err", err)*/
 }
 
 func runOauthCreate(args []string) {
-	if len(args) != 2 {
-		ErrorAndExit("must specify name and callback")
-	}
-	force, _ := ActiveForce()
-	app, err := force.Metadata.CreateConnectedApp(args[0], args[1])
-	if err != nil {
-		ErrorAndExit(err.Error())
-	}
-	fmt.Println("app", app)
+	/* if len(args) != 2 {*/
+	/*   ErrorAndExit("must specify name and callback")*/
+	/* }*/
+	/* force, _ := ActiveForce()*/
+	/* app, err := force.Metadata.CreateConnectedApp(args[0], args[1])*/
+	/* if err != nil {*/
+	/*   ErrorAndExit(err.Error())*/
+	/* }*/
+	/* fmt.Println("app", app)*/
 }
 
 func runOauthList(args []string) {

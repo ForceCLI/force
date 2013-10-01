@@ -112,7 +112,7 @@ type ForceSobjectsResult struct {
 func NewForce(creds ForceCredentials) (force *Force) {
 	force = new(Force)
 	force.Credentials = creds
-	force.Metadata = ForceMetadata{Force:force}
+	force.Metadata = ForceMetadata{Force: force}
 	return
 }
 

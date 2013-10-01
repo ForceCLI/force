@@ -2,14 +2,15 @@ package main
 
 import (
 	"fmt"
+	"strings"
 )
 
-var cmdSobjects = &Command{
-	Run:   runSobjects,
+var cmdSobject = &Command{
+	Run:   runSobject,
 	Usage: "sobject",
-	Short: "Manage Force.com objects",
+	Short: "Manage custom objects",
 	Long: `
-Manage force.com objects
+Manage custom objects
 
 Usage:
 
@@ -21,10 +22,6 @@ Usage:
 
   force sobject delete <object>
 
-  force sobject add <object> <field>:<type>
-
-  force sobject remove <object> <field>
-
 Examples:
 
   force sobject list
@@ -34,37 +31,29 @@ Examples:
   force sobject create Todo Description:string
 
   force sobject delete Todo
-
-  force sobject add Todo Due:datetime
-
-  force sobject remove Todo Due
 `,
 }
 
-func runSobjects(cmd *Command, args []string) {
+func runSobject(cmd *Command, args []string) {
 	if len(args) == 0 {
 		cmd.printUsage()
 	} else {
 		switch args[0] {
 		case "list":
-			runSobjectsList(args[1:])
+			runSobjectList(args[1:])
 		case "get":
-			runSobjectsGet(args[1:])
+			runSobjectGet(args[1:])
 		case "create":
-			runSobjectsCreate(args[1:])
+			runSobjectCreate(args[1:])
 		case "delete":
-			runSobjectsDelete(args[1:])
-		case "add":
-			runSobjectsAdd(args[1:])
-		case "remove":
-			runSobjectsRemove(args[1:])
+			runSobjectDelete(args[1:])
 		default:
 			ErrorAndExit("no such command: %s", args[0])
 		}
 	}
 }
 
-func runSobjectsList(args []string) {
+func runSobjectList(args []string) {
 	force, _ := ActiveForce()
 	sobjects, err := force.ListSobjects()
 	if err != nil {
@@ -74,7 +63,7 @@ func runSobjectsList(args []string) {
 	}
 }
 
-func runSobjectsGet(args []string) {
+func runSobjectGet(args []string) {
 	if len(args) != 1 {
 		ErrorAndExit("must specify object")
 	}
@@ -86,18 +75,33 @@ func runSobjectsGet(args []string) {
 	DisplayForceSobject(sobject)
 }
 
-func runSobjectsCreate(args []string) {
-	ErrorAndExit("not implemented yet")
+func runSobjectCreate(args []string) {
+	if len(args) < 2 {
+		ErrorAndExit("must specify object and at least one field")
+	}
+	force, _ := ActiveForce()
+	if err := force.Metadata.CreateCustomObject(args[0]); err != nil {
+		ErrorAndExit(err.Error())
+	}
+	for _, field := range args[1:] {
+		parts := strings.Split(field, ":")
+		if len(parts) != 2 {
+			ErrorAndExit("must specify name:type for fields")
+		}
+		if err := force.Metadata.CreateCustomField(fmt.Sprintf("%s__c", args[0]), parts[0], parts[1]); err != nil {
+			ErrorAndExit(err.Error())
+		}
+	}
+	fmt.Println("Custom object created")
 }
 
-func runSobjectsDelete(args []string) {
-	ErrorAndExit("not implemented yet")
-}
-
-func runSobjectsAdd(args []string) {
-	ErrorAndExit("not implemented yet")
-}
-
-func runSobjectsRemove(args []string) {
-	ErrorAndExit("not implemented yet")
+func runSobjectDelete(args []string) {
+	if len(args) < 1 {
+		ErrorAndExit("must specify object")
+	}
+	force, _ := ActiveForce()
+	if err := force.Metadata.DeleteCustomObject(args[0]); err != nil {
+		ErrorAndExit(err.Error())
+	}
+	fmt.Println("Custom object deleted")
 }
