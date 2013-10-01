@@ -14,12 +14,18 @@ import (
 	"net/http"
 	"net/url"
 	"runtime"
-	"strings"
 )
 
 const (
-	ClientId    = "3MVG9A2kN3Bn17huXZp1OQhPe8y4_ozAQZZCKxsWbef9GjSnHGOunHSwhnY1BWz_5vHkTL9BeLMriIX5EUKaw"
-	RedirectUri = "https://force-cli.herokuapp.com/auth/callback"
+	ProductionClientId = "3MVG9A2kN3Bn17huXZp1OQhPe8y4_ozAQZZCKxsWbef9GjSnHGOunHSwhnY1BWz_5vHkTL9BeLMriIX5EUKaw"
+	PrereleaseClientId = "3MVG9lKcPoNINVBIRgC7lsz5tIhlg0mtoEqkA9ZjDAwEMbBy43gsnfkzzdTdhFLeNnWS8M4bnRnVv1Qj0k9MD"
+	RedirectUri        = "https://force-cli.herokuapp.com/auth/callback"
+)
+
+const (
+	EndpointProduction = iota
+	EndpointTest       = iota
+	EndpointPrerelease = iota
 )
 
 var RootCertificates = `
@@ -78,6 +84,8 @@ type ForceError struct {
 	ErrorCode string
 }
 
+type ForceEndpoint int
+
 type ForceRecord map[string]interface{}
 
 type ForceSobject map[string]interface{}
@@ -106,10 +114,20 @@ func NewForce(creds ForceCredentials) (force *Force) {
 	return
 }
 
-func ForceLogin() (creds ForceCredentials, err error) {
+func ForceLogin(endpoint ForceEndpoint) (creds ForceCredentials, err error) {
 	ch := make(chan ForceCredentials)
 	port, err := startLocalHttpServer(ch)
-	url := fmt.Sprintf("https://login.salesforce.com/services/oauth2/authorize?response_type=token&client_id=%s&redirect_uri=%s&state=%d&prompt=login", ClientId, RedirectUri, port)
+	var url string
+	switch endpoint {
+	case EndpointProduction:
+		url = fmt.Sprintf("https://login.salesforce.com/services/oauth2/authorize?response_type=token&client_id=%s&redirect_uri=%s&state=%d&prompt=login", ProductionClientId, RedirectUri, port)
+	case EndpointTest:
+		url = fmt.Sprintf("https://test.salesforce.com/services/oauth2/authorize?response_type=token&client_id=%s&redirect_uri=%s&state=%d&prompt=login", ProductionClientId, RedirectUri, port)
+	case EndpointPrerelease:
+		url = fmt.Sprintf("https://prerellogin.pre.salesforce.com/services/oauth2/authorize?response_type=token&client_id=%s&redirect_uri=%s&state=%d&prompt=login", PrereleaseClientId, RedirectUri, port)
+	default:
+		ErrorAndExit("no such endpoint type")
+	}
 	err = Open(url)
 	creds = <-ch
 	return
@@ -136,6 +154,15 @@ func (f *Force) Query(query string) (records []ForceRecord, err error) {
 	var result ForceQueryResult
 	json.Unmarshal(body, &result)
 	records = result.Records
+	return
+}
+
+func (f *Force) Get(url string) (object ForceRecord, err error) {
+	body, err := f.httpGet(url)
+	if err != nil {
+		return
+	}
+	err = json.Unmarshal(body, &object)
 	return
 }
 
@@ -329,13 +356,12 @@ func startLocalHttpServer(ch chan ForceCredentials) (port int, err error) {
 	h.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "https://force-cli.herokuapp.com")
 		query := r.URL.Query()
-		id_parts := strings.Split(query["id"][0], "/")
 		var creds ForceCredentials
-		creds.AccessToken = query["access_token"][0]
-		creds.Id = id_parts[len(id_parts)-1]
-		creds.InstanceUrl = query["instance_url"][0]
-		creds.IssuedAt = query["issued_at"][0]
-		creds.Scope = query["scope"][0]
+		creds.AccessToken = query.Get("access_token")
+		creds.Id = query.Get("id")
+		creds.InstanceUrl = query.Get("instance_url")
+		creds.IssuedAt = query.Get("issued_at")
+		creds.Scope = query.Get("scope")
 		ch <- creds
 		listener.Close()
 	})

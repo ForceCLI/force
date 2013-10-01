@@ -41,7 +41,7 @@ func ActiveAccount() (account string, err error) {
 		if len(accounts) > 0 {
 			SetActiveAccountDefault()
 		} else {
-			account, err = ForceLoginAndSave()
+			account, err = ForceLoginAndSave(EndpointProduction)
 			SetActiveAccount(account)
 		}
 	}

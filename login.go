@@ -18,7 +18,22 @@ Examples:
 }
 
 func runLogin(cmd *Command, args []string) {
-	ForceLoginAndSave()
+	var endpoint ForceEndpoint
+	endpoint = EndpointProduction
+	if len(args) > 0 {
+		switch args[0] {
+		case "test":
+			endpoint = EndpointTest
+		case "pre":
+			endpoint = EndpointPrerelease
+		default:
+			ErrorAndExit("no such endpoint: %s", args[0])
+		}
+	}
+	_, err := ForceLoginAndSave(endpoint)
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
 }
 
 var cmdLogout = &Command{
@@ -46,13 +61,13 @@ func runLogout(cmd *Command, args []string) {
 	}
 }
 
-func ForceLoginAndSave() (username string, err error) {
-	creds, err := ForceLogin()
+func ForceLoginAndSave(endpoint ForceEndpoint) (username string, err error) {
+	creds, err := ForceLogin(endpoint)
 	if err != nil {
 		return
 	}
 	force := NewForce(creds)
-	user, err := force.GetRecord("User", creds.Id)
+	login, err := force.Get(creds.Id)
 	if err != nil {
 		return
 	}
@@ -60,7 +75,7 @@ func ForceLoginAndSave() (username string, err error) {
 	if err != nil {
 		return
 	}
-	username = user["Username"].(string)
+	username = login["username"].(string)
 	Config.Save("accounts", username, string(body))
 	Config.Save("current", "account", username)
 	return
