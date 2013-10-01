@@ -204,10 +204,10 @@ func (f *Force) httpGet(url string) (body []byte, err error) {
 	}
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", f.Credentials.AccessToken))
 	res, err := httpClient().Do(req)
-	defer res.Body.Close()
 	if err != nil {
 		return
 	}
+	defer res.Body.Close()
 	if res.StatusCode == 401 {
 		err = errors.New("authorization expired, please run `force login`")
 		return
