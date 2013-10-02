@@ -80,7 +80,7 @@ func (fm *ForceMetadata) CreateCustomField(object, field, typ string) (err error
 func (fm *ForceMetadata) DeleteCustomField(object, field string) (err error) {
 	soap := `
 		<metadata xsi:type="CustomField" xmlns:cmd="http://soap.sforce.com/2006/04/metadata">
-			<fullName>%s.%s__c</fullName>
+			<fullName>%s.%s</fullName>
 		</metadata>
 	`
 	body, err := fm.soapExecute("delete", fmt.Sprintf(soap, object, field))
@@ -132,7 +132,7 @@ func (fm *ForceMetadata) CreateCustomObject(object string) (err error) {
 func (fm *ForceMetadata) DeleteCustomObject(object string) (err error) {
 	soap := `
 		<metadata xsi:type="CustomObject" xmlns:cmd="http://soap.sforce.com/2006/04/metadata">
-			<fullName>%s__c</fullName>
+			<fullName>%s</fullName>
 		</metadata>
 	`
 	body, err := fm.soapExecute("delete", fmt.Sprintf(soap, object))
