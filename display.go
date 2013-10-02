@@ -28,9 +28,9 @@ func DisplayForceRecords(records []ForceRecord) {
 		lengths := make([]int, len(keys))
 		separators := make([]string, len(keys))
 		for i, key := range keys {
-			lengths[i] = 0
+			lengths[i] = len(key)
 			for _, record := range records {
-				l := len(record[key].(string))
+				l := len(fmt.Sprintf("%v", record[key]))
 				if l > lengths[i] {
 					lengths[i] = l
 				}
@@ -47,7 +47,7 @@ func DisplayForceRecords(records []ForceRecord) {
 		for _, record := range records {
 			values := make([]string, len(keys))
 			for i, key := range keys {
-				values[i] = record[key].(string)
+				values[i] = fmt.Sprintf("%v", record[key])
 			}
 			fmt.Printf(formatter+"\n", StringSliceToInterfaceSlice(values)...)
 		}
