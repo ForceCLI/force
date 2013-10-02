@@ -13,7 +13,7 @@ var commands = []*Command{
 	cmdSobject,
 	cmdField,
 	cmdRecord,
-	cmdQuery,
+	cmdSelect,
 	/* cmdOauth,*/
 	cmdVersion,
 	cmdUpdate,

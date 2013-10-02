@@ -30,7 +30,7 @@ A command-line interface to force.com
 	   sobject   Manage custom objects
 	   field     Manage custom fields
 	   record    Create, modify, or view records
-	   query     Execute a SOQL query
+	   select    Execute a SOQL select
 	   version   Display current version
 	   update    Update to the latest version
 	   help      Show this help
