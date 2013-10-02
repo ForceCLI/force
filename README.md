@@ -31,7 +31,6 @@ A command-line interface to force.com
 	   field     Manage custom fields
 	   record    Create, modify, or view records
 	   query     Execute a SOQL query
-	   oauth     Manage ConnectedApp credentials
 	   version   Display current version
 	   update    Update to the latest version
 	   help      Show this help
