@@ -207,7 +207,7 @@ func (fm *ForceMetadata) soapExecute(action, query string) (response []byte, err
 	if err != nil {
 		return
 	}
-	url := strings.Replace(login["urls"].(map[string]interface{})["metadata"].(string), "{version}", "29.0", 1)
+	url := strings.Replace(login["urls"].(map[string]interface{})["metadata"].(string), "{version}", "28.0", 1)
 	rbody := fmt.Sprintf(soap, fm.Force.Credentials.AccessToken, action, query, action)
 	/* fmt.Println("rbody", rbody)*/
 	req, err := httpRequest("POST", url, strings.NewReader(rbody))
