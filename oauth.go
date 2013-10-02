@@ -39,13 +39,13 @@ func runOauth(cmd *Command, args []string) {
 		cmd.printUsage()
 	} else {
 		switch args[0] {
-		case "create":
+		case "create", "add":
 			runOauthCreate(args[1:])
 		case "get":
 			runOauthGet(args[1:])
 		case "list":
 			runOauthList(args[1:])
-		case "delete":
+		case "delete", "remove":
 			runOauthDelete(args[1:])
 		default:
 			ErrorAndExit("no such command: %s", args[0])

@@ -40,11 +40,11 @@ func runRecord(cmd *Command, args []string) {
 		switch args[0] {
 		case "get":
 			runRecordGet(args[1:])
-		case "create":
+		case "create", "add":
 			runRecordCreate(args[1:])
 		case "update":
 			runRecordUpdate(args[1:])
-		case "delete":
+		case "delete", "remove":
 			runRecordDelete(args[1:])
 		default:
 			ErrorAndExit("no such command: %s", args[0])

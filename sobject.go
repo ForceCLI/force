@@ -37,9 +37,9 @@ func runSobject(cmd *Command, args []string) {
 		switch args[0] {
 		case "list":
 			runSobjectList(args[1:])
-		case "create":
+		case "create", "add":
 			runSobjectCreate(args[1:])
-		case "delete":
+		case "delete", "remove":
 			runSobjectDelete(args[1:])
 		default:
 			ErrorAndExit("no such command: %s", args[0])

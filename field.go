@@ -35,11 +35,11 @@ func runField(cmd *Command, args []string) {
 		cmd.printUsage()
 	} else {
 		switch args[0] {
-		case "create":
 		case "list":
 			runFieldList(args[1:])
+		case "create", "add":
 			runFieldCreate(args[1:])
-		case "delete":
+		case "delete", "remove":
 			runFieldDelete(args[1:])
 		default:
 			ErrorAndExit("no such command: %s", args[0])
