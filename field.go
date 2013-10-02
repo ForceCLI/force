@@ -14,15 +14,19 @@ Manage custom fields
 
 Usage:
 
+  force field list <object>
+
   force field create <object> <field>:<type>
 
   force field delete <object> <field>
 
 Examples:
 
-  force field create Todo Due:datetime
+  force field list Todo__c
 
-  force field delete Todo Due
+  force field create Todo__c Due:DateTime
+
+  force field delete Todo__c Due
 `,
 }
 
@@ -32,6 +36,8 @@ func runField(cmd *Command, args []string) {
 	} else {
 		switch args[0] {
 		case "create":
+		case "list":
+			runFieldList(args[1:])
 			runFieldCreate(args[1:])
 		case "delete":
 			runFieldDelete(args[1:])
@@ -39,6 +45,18 @@ func runField(cmd *Command, args []string) {
 			ErrorAndExit("no such command: %s", args[0])
 		}
 	}
+}
+
+func runFieldList(args []string) {
+	if len(args) != 1 {
+		ErrorAndExit("must specify object")
+	}
+	force, _ := ActiveForce()
+	sobject, err := force.GetSobject(args[0])
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
+	DisplayForceSobject(sobject)
 }
 
 func runFieldCreate(args []string) {
