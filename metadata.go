@@ -57,11 +57,23 @@ func (fm *ForceMetadata) CreateCustomField(object, field, typ string) (err error
 		<metadata xsi:type="CustomField" xmlns:cmd="http://soap.sforce.com/2006/04/metadata">
 			<fullName>%s.%s__c</fullName>
 			<label>%s</label>
-			<type>%s</type>
-			<length>255</length>
+			%s
 		</metadata>
 	`
-	body, err := fm.soapExecute("create", fmt.Sprintf(soap, object, field, field, typ))
+	soapField := ""
+	switch strings.ToLower(typ) {
+	case "text":
+		soapField = "<type>Text</type><length>255</length>"
+	case "datetime":
+		soapField = "<type>DateTime</type>"
+	case "number", "int":
+		soapField = "<type>Number</type><precision>10</precision><scale>0</scale>"
+	case "float":
+		soapField = "<type>Number</type><precision>10</precision><scale>2</scale>"
+	default:
+		ErrorAndExit("unable to create field type: %s", typ)
+	}
+	body, err := fm.soapExecute("create", fmt.Sprintf(soap, object, field, field, soapField))
 	if err != nil {
 		return err
 	}
