@@ -16,27 +16,9 @@ type ForceConnectedApp struct {
 	Id   string `xml:"id"`
 }
 
-type SoapCreateResponse struct {
-	Done  bool   `xml:"Body>createResponse>result>done"`
-	Id    string `xml:"Body>createResponse>result>id"`
-	State string `xml:"Body>createResponse>result>state"`
-}
-
-type SoapCheckStatusResponse struct {
-	Done    bool   `xml:"Body>checkStatusResponse>result>done"`
-	Id      string `xml:"Body>checkStatusResponse>result>id"`
-	State   string `xml:"Body>checkStatusResponse>result>state"`
-	Message string `xml:"Body>checkStatusResponse>result>message"`
-}
-
-type SoapRetrieveResponse struct {
-	Done  bool   `xml:"Body>retrieveResponse>result>done"`
-	Id    string `xml:"Body>retrieveResponse>result>id"`
-	State string `xml:"Body>retrieveResponse>result>state"`
-}
-
-type SoapCheckRetrieveStatusResponse struct {
-	ZipFile string `xml:"Body>checkRetrieveStatusResponse>result>zipFile"`
+type SoapError struct {
+	FaultCode   string `xml:"Body>Fault>faultcode"`
+	FaultString string `xml:"Body>Fault>faultstring"`
 }
 
 type ForceMetadata struct {
@@ -231,11 +213,6 @@ func (fm *ForceMetadata) soapExecute(action, query string) (response []byte, err
 	}
 	err = fm.soapError(response)
 	return
-}
-
-type SoapError struct {
-	FaultCode   string `xml:"Body>Fault>faultcode"`
-	FaultString string `xml:"Body>Fault>faultstring"`
 }
 
 func (fm *ForceMetadata) soapError(body []byte) (err error) {
