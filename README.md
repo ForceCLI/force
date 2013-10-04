@@ -31,6 +31,7 @@ A command-line interface to force.com
 	   field     Manage custom fields
 	   record    Create, modify, or view records
 	   select    Execute a SOQL select
+	   apex      Execute anonymous Apex code
 	   version   Display current version
 	   update    Update to the latest version
 	   help      Show this help

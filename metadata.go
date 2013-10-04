@@ -5,7 +5,6 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"strings"
 )
 
@@ -14,11 +13,6 @@ type ForceConnectedApps []ForceConnectedApp
 type ForceConnectedApp struct {
 	Name string `xml:"fullName"`
 	Id   string `xml:"id"`
-}
-
-type SoapError struct {
-	FaultCode   string `xml:"Body>Fault>faultcode"`
-	FaultString string `xml:"Body>Fault>faultstring"`
 }
 
 type ForceMetadata struct {
@@ -183,56 +177,14 @@ func (fm *ForceMetadata) ListConnectedApps() (apps ForceConnectedApps, err error
 }
 
 func (fm *ForceMetadata) soapExecute(action, query string) (response []byte, err error) {
-	soap := `
-		<env:Envelope xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:tns="http://soap.sforce.com/2006/04/metadata" xmlns:env="http://schemas.xmlsoap.org/soap/envelope/" xmlns:cmd="http://soap.sforce.com/2006/04/metadata">
-			<env:Header>
-				<cmd:SessionHeader>
-					<cmd:sessionId>%s</cmd:sessionId>
-				</cmd:SessionHeader>
-			</env:Header>
-			<env:Body>
-				<%s xmlns="http://soap.sforce.com/2006/04/metadata">
-					%s
-				</%s>
-			</env:Body>
-		</env:Envelope>
-	`
 	login, err := fm.Force.Get(fm.Force.Credentials.Id)
 	if err != nil {
 		return
 	}
+	fmt.Println(login)
 	url := strings.Replace(login["urls"].(map[string]interface{})["metadata"].(string), "{version}", "28.0", 1)
-	rbody := fmt.Sprintf(soap, fm.Force.Credentials.AccessToken, action, query, action)
-	/* fmt.Println("rbody", rbody)*/
-	req, err := httpRequest("POST", url, strings.NewReader(rbody))
-	if err != nil {
-		return
-	}
-	req.Header.Add("Content-Type", "text/xml")
-	req.Header.Add("SOAPACtion", action)
-	res, err := httpClient().Do(req)
-	defer res.Body.Close()
-	if err != nil {
-		return
-	}
-	if res.StatusCode == 401 {
-		err = errors.New("authorization expired, please run `force login`")
-		return
-	}
-	response, err = ioutil.ReadAll(res.Body)
-	if err != nil {
-		return
-	}
-	err = fm.soapError(response)
-	return
-}
-
-func (fm *ForceMetadata) soapError(body []byte) (err error) {
-	var soapError SoapError
-	xml.Unmarshal(body, &soapError)
-	if soapError.FaultCode != "" {
-		return errors.New(soapError.FaultString)
-	}
+	soap := NewSoap(url, "http://soap.sforce.com/2006/04/metadata", fm.Force.Credentials.AccessToken)
+	response, err = soap.Execute(action, query)
 	return
 }
 
