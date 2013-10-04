@@ -17,7 +17,7 @@ Display current version
 
 Examples:
 
-	force version
+  force version
 `,
 }
 
