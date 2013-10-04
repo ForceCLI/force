@@ -56,7 +56,7 @@ func (fm *ForceMetadata) CreateCustomField(object, field, typ string) (err error
 	`
 	soapField := ""
 	switch strings.ToLower(typ) {
-	case "text":
+	case "text", "string":
 		soapField = "<type>Text</type><length>255</length>"
 	case "datetime":
 		soapField = "<type>DateTime</type>"
