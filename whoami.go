@@ -1,8 +1,6 @@
 package main
 
-import (
-	"strings"
-)
+import ()
 
 var cmdWhoami = &Command{
 	Run:   runWhoami,
@@ -19,11 +17,10 @@ Examples:
 
 func runWhoami(cmd *Command, args []string) {
 	force, _ := ActiveForce()
-	parts := strings.Split(force.Credentials.Id, "/")
-	user, err := force.GetRecord("User", parts[len(parts)-1])
+	me, err := force.Whoami()
 	if err != nil {
 		ErrorAndExit(err.Error())
 	} else {
-		DisplayForceRecord(user)
+		DisplayForceRecord(me)
 	}
 }

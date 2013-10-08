@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"net/url"
 	"runtime"
+	"strings"
 )
 
 const (
@@ -208,6 +209,12 @@ func (f *Force) UpdateRecord(sobject string, id string, attrs map[string]string)
 func (f *Force) DeleteRecord(sobject string, id string) (err error) {
 	url := fmt.Sprintf("%s/services/data/v20.0/sobjects/%s/%s", f.Credentials.InstanceUrl, sobject, id)
 	_, err = f.httpDelete(url)
+	return
+}
+
+func (f *Force) Whoami() (me ForceRecord, err error) {
+	parts := strings.Split(f.Credentials.Id, "/")
+	me, err = f.GetRecord("User", parts[len(parts)-1])
 	return
 }
 
