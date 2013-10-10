@@ -70,8 +70,8 @@ vEsXCS+0yx5DaMkHJ8HSXPfqIbloEpw8nL+e/IBcm2PN7EeqJSdnoDfzAIJ9VNep
 
 type Force struct {
 	Credentials ForceCredentials
-	Metadata    ForceMetadata
-	Partner     ForcePartner
+	Metadata    *ForceMetadata
+	Partner     *ForcePartner
 }
 
 type ForceCredentials struct {
@@ -114,8 +114,8 @@ type ForceSobjectsResult struct {
 func NewForce(creds ForceCredentials) (force *Force) {
 	force = new(Force)
 	force.Credentials = creds
-	force.Metadata = ForceMetadata{Force: force}
-	force.Partner = ForcePartner{Force: force}
+	force.Metadata = NewForceMetadata(force)
+	force.Partner = NewForcePartner(force)
 	return
 }
 

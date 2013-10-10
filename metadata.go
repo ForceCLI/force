@@ -1,14 +1,10 @@
 package main
 
 import (
-	"archive/zip"
 	"bitbucket.org/pkg/inflect"
-	"bytes"
-	"encoding/base64"
 	"encoding/xml"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"strings"
 )
 
@@ -20,11 +16,12 @@ type ForceConnectedApp struct {
 }
 
 type ForceMetadata struct {
+	ApiVersion string
 	Force *Force
 }
 
 func NewForceMetadata(force *Force) (fm *ForceMetadata) {
-	fm = &ForceMetadata{Force: force}
+	fm = &ForceMetadata{ApiVersion:"28.0", Force: force}
 	return
 }
 
@@ -46,35 +43,6 @@ func (fm *ForceMetadata) CheckStatus(id string) (err error) {
 		return fm.CheckStatus(id)
 	case status.State == "Error":
 		return errors.New(status.Message)
-	}
-	return
-}
-
-func (fm *ForceMetadata) CheckRetrieveStatus(id string) (files map[string][]byte, err error) {
-	body, err := fm.soapExecute("checkRetrieveStatus", fmt.Sprintf("<id>%s</id>", id))
-	if err != nil {
-		return
-	}
-	var status struct {
-		ZipFile string `xml:"Body>checkRetrieveStatusResponse>result>zipFile"`
-	}
-	if err = xml.Unmarshal(body, &status); err != nil {
-		return
-	}
-	data, err := base64.StdEncoding.DecodeString(status.ZipFile)
-	if err != nil {
-		return
-	}
-	zipfiles, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
-	if err != nil {
-		return
-	}
-	files = make(map[string][]byte)
-	for _, file := range zipfiles.File {
-		fd, _ := file.Open()
-		defer fd.Close()
-		data, _ := ioutil.ReadAll(fd)
-		files[file.Name] = data
 	}
 	return
 }
@@ -111,38 +79,6 @@ func (fm *ForceMetadata) CreateConnectedApp(name, callback string) (err error) {
 	if err = fm.CheckStatus(status.Id); err != nil {
 		return
 	}
-	return
-}
-
-func (fm *ForceMetadata) RetrieveConnectedApp(name string) (err error) {
-	soap := `
-		<retrieveRequest>
-			<apiVersion>29.0</apiVersion>
-			<unpackaged>
-				<types>
-					<name>ConnectedApp</name>
-					<members>%s</members>
-				</types>
-			</unpackaged>
-		</retrieveRequest>
-	`
-	body, err := fm.soapExecute("retrieve", fmt.Sprintf(soap, name))
-	if err != nil {
-		return err
-	}
-	var status struct {
-		Id string `xml:"Body>retrieveResponse>result>id"`
-	}
-	if err = xml.Unmarshal(body, &status); err != nil {
-		return
-	}
-	if err = fm.CheckStatus(status.Id); err != nil {
-		return
-	}
-	/* err = fm.CheckRetrieveStatus(status.Id)*/
-	/* if err != nil {*/
-	/*   return*/
-	/* }*/
 	return
 }
 
@@ -262,7 +198,10 @@ func (fm *ForceMetadata) ListMetadata(query string) (res []byte, err error) {
 }
 
 func (fm *ForceMetadata) ListConnectedApps() (apps ForceConnectedApps, err error) {
+	originalVersion := fm.ApiVersion
+	fm.ApiVersion = "29.0"
 	body, err := fm.ListMetadata("ConnectedApp")
+	fm.ApiVersion = originalVersion
 	if err != nil {
 		return
 	}
@@ -281,7 +220,7 @@ func (fm *ForceMetadata) soapExecute(action, query string) (response []byte, err
 	if err != nil {
 		return
 	}
-	url := strings.Replace(login["urls"].(map[string]interface{})["metadata"].(string), "{version}", "28.0", 1)
+	url := strings.Replace(login["urls"].(map[string]interface{})["metadata"].(string), "{version}", fm.ApiVersion, 1)
 	soap := NewSoap(url, "http://soap.sforce.com/2006/04/metadata", fm.Force.Credentials.AccessToken)
 	response, err = soap.Execute(action, query)
 	return

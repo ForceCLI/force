@@ -43,5 +43,15 @@ func runOauthCreate(args []string) {
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
+	apps, err := force.Metadata.ListConnectedApps()
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
+	for _, app := range apps {
+		if app.Name == args[0] {
+			url := fmt.Sprintf("%s/%s", force.Credentials.InstanceUrl, app.Id)
+			Open(url)
+		}
+	}
 	fmt.Println("OAuth credentials created")
 }
