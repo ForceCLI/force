@@ -111,6 +111,12 @@ type ForceSobjectsResult struct {
 	Sobjects     []ForceSobject
 }
 
+type ForceVersion struct {
+	Version string
+	Label		string
+	URL 		string
+}
+
 func NewForce(creds ForceCredentials) (force *Force) {
 	force = new(Force)
 	force.Credentials = creds
@@ -135,6 +141,16 @@ func ForceLogin(endpoint ForceEndpoint) (creds ForceCredentials, err error) {
 	}
 	err = Open(url)
 	creds = <-ch
+	return
+}
+
+func (f *Force) ListAPIVersions() (versions []ForceVersion, err error) {
+	url := fmt.Sprintf("%s/services/data/", f.Credentials.InstanceUrl)
+	body, err := f.httpGet(url)
+	if err != nil {
+		return
+	}
+	json.Unmarshal(body, &versions)
 	return
 }
 

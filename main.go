@@ -7,6 +7,7 @@ import (
 var commands = []*Command{
 	cmdLogin,
 	cmdLogout,
+	cmdAPIVersion,
 	cmdAccounts,
 	cmdActive,
 	cmdWhoami,
