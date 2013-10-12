@@ -41,7 +41,7 @@ var usageTemplate = template.Must(template.New("usage").Parse(`
 Usage: force <command> [<args>]
 
 Available commands:{{range .Commands}}{{if .Runnable}}{{if .List}}
-   {{.Name | printf "%-8s"}}  {{.Short}}{{end}}{{end}}{{end}}
+   {{.Name | printf "%-12s"}}  {{.Short}}{{end}}{{end}}{{end}}
 
 Run 'force help [command]' for details.
 `[1:]))

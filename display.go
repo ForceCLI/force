@@ -60,6 +60,12 @@ func DisplayForceRecord(record ForceRecord) {
 	DisplayInterfaceMap(record, 0)
 }
 
+func DisplayVersionRecords(versions []ForceVersion) {
+	for _, version := range versions {
+		fmt.Printf("%s - %s\n", version.Version, version.Label)
+	}
+}
+
 func DisplayInterfaceMap(object map[string]interface{}, indent int) {
 	keys := make([]string, len(object))
 	i := 0
