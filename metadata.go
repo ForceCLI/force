@@ -7,8 +7,8 @@ import (
 	"encoding/base64"
 	"encoding/xml"
 	"errors"
-	"io/ioutil"
 	"fmt"
+	"io/ioutil"
 	"strings"
 )
 
@@ -20,18 +20,18 @@ type ForceConnectedApp struct {
 }
 
 type ForceMetadataDeployProblem struct {
-	Changed bool `xml:"changed"`
-	Created bool `xml:"created"`
-	Deleted bool `xml:"deleted"`
-	Filename string `xml:"fileName"`
-	Name string `xml:"fullName"`
-	Problem string `xml:"problem"`
+	Changed     bool   `xml:"changed"`
+	Created     bool   `xml:"created"`
+	Deleted     bool   `xml:"deleted"`
+	Filename    string `xml:"fileName"`
+	Name        string `xml:"fullName"`
+	Problem     string `xml:"problem"`
 	ProblemType string `xml:"problemType"`
-	Success bool `xml:"success"`
+	Success     bool   `xml:"success"`
 }
 
 type ForceMetadataQueryElement struct {
-	Name string
+	Name    string
 	Members string
 }
 
@@ -41,11 +41,11 @@ type ForceMetadataFiles map[string][]byte
 
 type ForceMetadata struct {
 	ApiVersion string
-	Force *Force
+	Force      *Force
 }
 
 func NewForceMetadata(force *Force) (fm *ForceMetadata) {
-	fm = &ForceMetadata{ApiVersion:"28.0", Force: force}
+	fm = &ForceMetadata{ApiVersion: "28.0", Force: force}
 	return
 }
 
