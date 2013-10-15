@@ -30,6 +30,8 @@ A command-line interface to force.com
 	   sobject   Manage custom objects
 	   field     Manage custom fields
 	   record    Create, modify, or view records
+	   export    Export metadata to a local directory
+	   import    Import metadata from a local directory
 	   select    Execute a SOQL select
 	   apex      Execute anonymous Apex code
 	   version   Display current version
