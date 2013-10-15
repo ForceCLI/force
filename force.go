@@ -21,6 +21,7 @@ const (
 	ProductionClientId = "3MVG9A2kN3Bn17huXZp1OQhPe8y4_ozAQZZCKxsWbef9GjSnHGOunHSwhnY1BWz_5vHkTL9BeLMriIX5EUKaw"
 	PrereleaseClientId = "3MVG9lKcPoNINVBIRgC7lsz5tIhlg0mtoEqkA9ZjDAwEMbBy43gsnfkzzdTdhFLeNnWS8M4bnRnVv1Qj0k9MD"
 	RedirectUri        = "https://force-cli.herokuapp.com/auth/callback"
+	
 )
 
 const (
@@ -139,7 +140,7 @@ func ForceLogin(endpoint ForceEndpoint) (creds ForceCredentials, err error) {
 }
 
 func (f *Force) ListSobjects() (sobjects []ForceSobject, err error) {
-	url := fmt.Sprintf("%s/services/data/v20.0/sobjects", f.Credentials.InstanceUrl)
+	url := fmt.Sprintf("%s/services/data/v28.0/sobjects", f.Credentials.InstanceUrl)
 	body, err := f.httpGet(url)
 	if err != nil {
 		return
@@ -151,7 +152,7 @@ func (f *Force) ListSobjects() (sobjects []ForceSobject, err error) {
 }
 
 func (f *Force) GetSobject(name string) (sobject ForceSobject, err error) {
-	url := fmt.Sprintf("%s/services/data/v20.0/sobjects/%s/describe", f.Credentials.InstanceUrl, name)
+	url := fmt.Sprintf("%s/services/data/v28.0/sobjects/%s/describe", f.Credentials.InstanceUrl, name)
 	body, err := f.httpGet(url)
 	if err != nil {
 		return
@@ -161,7 +162,7 @@ func (f *Force) GetSobject(name string) (sobject ForceSobject, err error) {
 }
 
 func (f *Force) Query(query string) (records []ForceRecord, err error) {
-	url := fmt.Sprintf("%s/services/data/v20.0/query?q=%s", f.Credentials.InstanceUrl, url.QueryEscape(query))
+	url := fmt.Sprintf("%s/services/data/v28.0/query?q=%s", f.Credentials.InstanceUrl, url.QueryEscape(query))
 	body, err := f.httpGet(url)
 	if err != nil {
 		return
@@ -182,7 +183,7 @@ func (f *Force) Get(url string) (object ForceRecord, err error) {
 }
 
 func (f *Force) GetRecord(sobject, id string) (object ForceRecord, err error) {
-	url := fmt.Sprintf("%s/services/data/v20.0/sobjects/%s/%s", f.Credentials.InstanceUrl, sobject, id)
+	url := fmt.Sprintf("%s/services/data/v28.0/sobjects/%s/%s", f.Credentials.InstanceUrl, sobject, id)
 	body, err := f.httpGet(url)
 	if err != nil {
 		return
@@ -192,7 +193,7 @@ func (f *Force) GetRecord(sobject, id string) (object ForceRecord, err error) {
 }
 
 func (f *Force) CreateRecord(sobject string, attrs map[string]string) (id string, err error) {
-	url := fmt.Sprintf("%s/services/data/v20.0/sobjects/%s", f.Credentials.InstanceUrl, sobject)
+	url := fmt.Sprintf("%s/services/data/v28.0/sobjects/%s", f.Credentials.InstanceUrl, sobject)
 	body, err := f.httpPost(url, attrs)
 	var result ForceCreateRecordResult
 	json.Unmarshal(body, &result)
@@ -201,13 +202,13 @@ func (f *Force) CreateRecord(sobject string, attrs map[string]string) (id string
 }
 
 func (f *Force) UpdateRecord(sobject string, id string, attrs map[string]string) (err error) {
-	url := fmt.Sprintf("%s/services/data/v20.0/sobjects/%s/%s", f.Credentials.InstanceUrl, sobject, id)
+	url := fmt.Sprintf("%s/services/data/v28.0/sobjects/%s/%s", f.Credentials.InstanceUrl, sobject, id)
 	_, err = f.httpPatch(url, attrs)
 	return
 }
 
 func (f *Force) DeleteRecord(sobject string, id string) (err error) {
-	url := fmt.Sprintf("%s/services/data/v20.0/sobjects/%s/%s", f.Credentials.InstanceUrl, sobject, id)
+	url := fmt.Sprintf("%s/services/data/v28.0/sobjects/%s/%s", f.Credentials.InstanceUrl, sobject, id)
 	_, err = f.httpDelete(url)
 	return
 }

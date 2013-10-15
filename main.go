@@ -14,10 +14,11 @@ var commands = []*Command{
 	cmdField,
 	cmdRecord,
 	cmdExport,
+	cmdFetch,
 	cmdImport,
 	cmdSelect,
 	cmdApex,
-	/* cmdOauth,*/
+	cmdOauth,
 	cmdVersion,
 	cmdUpdate,
 	cmdHelp,

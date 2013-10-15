@@ -17,6 +17,7 @@ type ForceConnectedApps []ForceConnectedApp
 type ForceConnectedApp struct {
 	Name string `xml:"fullName"`
 	Id   string `xml:"id"`
+	Type string `xml:"type"`
 }
 
 type ForceMetadataDeployProblem struct {
@@ -44,10 +45,13 @@ type ForceMetadata struct {
 	Force      *Force
 }
 
+
 func NewForceMetadata(force *Force) (fm *ForceMetadata) {
-	fm = &ForceMetadata{ApiVersion: "28.0", Force: force}
+	fm = &ForceMetadata{ApiVersion:"29.0", Force: force}
 	return
 }
+
+
 
 func (fm *ForceMetadata) CheckStatus(id string) (err error) {
 	body, err := fm.soapExecute("checkStatus", fmt.Sprintf("<id>%s</id>", id))
@@ -115,6 +119,7 @@ func (fm *ForceMetadata) CheckRetrieveStatus(id string) (files ForceMetadataFile
 	return
 }
 
+
 func (fm *ForceMetadata) CreateConnectedApp(name, callback string) (err error) {
 	soap := `
 		<metadata xsi:type="ConnectedApp">
@@ -159,6 +164,7 @@ func (fm *ForceMetadata) CreateCustomField(object, field, typ string) (err error
 		</metadata>
 	`
 	soapField := ""
+	fld := ""
 	switch strings.ToLower(typ) {
 	case "text", "string":
 		soapField = "<type>Text</type><length>255</length>"
@@ -166,6 +172,9 @@ func (fm *ForceMetadata) CreateCustomField(object, field, typ string) (err error
 		soapField = "<type>DateTime</type>"
 	case "number", "int":
 		soapField = "<type>Number</type><precision>10</precision><scale>0</scale>"
+	case "autonumber":
+		fld = strings.ToUpper(field)
+		soapField = fmt.Sprintf("<type>AutoNumber</type><startingNumber>0</startingNumber><displayFormat>%s-{00000}</displayFormat><externalId>false</externalId>", fld[0:1])
 	case "float":
 		soapField = "<type>Number</type><precision>10</precision><scale>2</scale>"
 	default:
@@ -210,6 +219,9 @@ func (fm *ForceMetadata) DeleteCustomField(object, field string) (err error) {
 }
 
 func (fm *ForceMetadata) CreateCustomObject(object string) (err error) {
+	fld := ""
+	fld = strings.ToUpper(object)
+	fld = fld[0:1]
 	soap := `
 		<metadata xsi:type="CustomObject" xmlns:cmd="http://soap.sforce.com/2006/04/metadata">
 			<fullName>%s__c</fullName>
@@ -218,12 +230,14 @@ func (fm *ForceMetadata) CreateCustomObject(object string) (err error) {
 			<deploymentStatus>Deployed</deploymentStatus>
 			<sharingModel>ReadWrite</sharingModel>
 			<nameField>
-				<label>ID</label>
+				<label>%s Name</label>
 				<type>AutoNumber</type>
+				<displayFormat>%s-{00000}</displayFormat>
+				<startingNumber>1</startingNumber>
 			</nameField>
 		</metadata>
 	`
-	body, err := fm.soapExecute("create", fmt.Sprintf(soap, object, object, inflect.Pluralize(object)))
+	body, err := fm.soapExecute("create", fmt.Sprintf(soap, object, object, inflect.Pluralize(object), object, fld))
 	if err != nil {
 		return err
 	}

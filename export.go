@@ -5,6 +5,8 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"bitbucket.org/pkg/inflect"
+	"strings"
 )
 
 var cmdExport = &Command{
@@ -20,6 +22,62 @@ Examples:
 
   force export org/schema
 `,
+}
+
+var cmdFetch = &Command{
+	Run: runExportArtifact,
+	Usage: "fetch <type> <name>",
+	Short: "Export a single artifact to a local directory",
+	Long: `
+Export a single artifact to a local directory
+
+Examples
+
+  force fetch ConnectedApp Node_App
+`,
+}
+
+func runExportArtifact(cmd *Command, args []string) {
+	wd, _ := os.Getwd()
+	root := filepath.Join(wd, "metadata")
+	artifactType := ""
+	artifactName := "*"
+	if len(args) < 2 {
+		ErrorAndExit("must specify object type and object name")
+	}
+	//root, _ = filepath.Abs(args[0])
+	artifactType = args[0]
+	fmt.Println("artifact type: " + artifactType)
+	if len(args) == 2 {
+		artifactName = args[1]
+		fmt.Println("artifact name: " + artifactName)
+		ccase := inflect.CamelizeDownFirst(artifactType)
+		fmt.Println("camel case: " + ccase)
+		if !strings.HasSuffix(artifactName, ccase) {
+			//artifactName = strings.Join([]string{artifactName, ccase}, ".")
+			fmt.Println("new artifact name: " + artifactName);
+		}
+	}
+
+	force, _ := ActiveForce()
+	query := ForceMetadataQuery{
+		{Name: artifactType, Members: artifactName},
+	}
+	files, err := force.Metadata.Retrieve(query)
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
+	for name, data := range files {
+		file := filepath.Join(root, name)
+		dir := filepath.Dir(file)
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			ErrorAndExit(err.Error())
+		}
+		if err := ioutil.WriteFile(filepath.Join(root, name), data, 0644); err != nil {
+			ErrorAndExit(err.Error())
+		}
+	}
+	fmt.Printf("Exported to %s\n", root)
 }
 
 func runExport(cmd *Command, args []string) {
