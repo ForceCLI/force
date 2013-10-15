@@ -52,7 +52,11 @@ func runImport(cmd *Command, args []string) {
 		ErrorAndExit(err.Error())
 	}
 	for _, problem := range problems {
-		fmt.Printf("%s: %s: %s\n", problem.Name, problem.Filename, problem.Problem)
+		if problem.Name == "" {
+			fmt.Println(problem.Problem)
+		} else {
+			fmt.Printf("%s: %s\n", problem.Name, problem.Problem)
+		}
 	}
 	fmt.Printf("Imported from %s\n", root)
 }
