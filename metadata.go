@@ -1,9 +1,13 @@
 package main
 
 import (
+	"archive/zip"
 	"bitbucket.org/pkg/inflect"
+	"bytes"
+	"encoding/base64"
 	"encoding/xml"
 	"errors"
+	"io/ioutil"
 	"fmt"
 	"strings"
 )
@@ -14,6 +18,26 @@ type ForceConnectedApp struct {
 	Name string `xml:"fullName"`
 	Id   string `xml:"id"`
 }
+
+type ForceMetadataDeployProblem struct {
+	Changed bool `xml:"changed"`
+	Created bool `xml:"created"`
+	Deleted bool `xml:"deleted"`
+	Filename string `xml:"fileName"`
+	Name string `xml:"fullName"`
+	Problem string `xml:"problem"`
+	ProblemType string `xml:"problemType"`
+	Success bool `xml:"success"`
+}
+
+type ForceMetadataQueryElement struct {
+	Name string
+	Members string
+}
+
+type ForceMetadataQuery []ForceMetadataQueryElement
+
+type ForceMetadataFiles map[string][]byte
 
 type ForceMetadata struct {
 	ApiVersion string
@@ -43,6 +67,50 @@ func (fm *ForceMetadata) CheckStatus(id string) (err error) {
 		return fm.CheckStatus(id)
 	case status.State == "Error":
 		return errors.New(status.Message)
+	}
+	return
+}
+
+func (fm *ForceMetadata) CheckDeployStatus(id string) (problems []ForceMetadataDeployProblem, err error) {
+	body, err := fm.soapExecute("checkDeployStatus", fmt.Sprintf("<id>%s</id>", id))
+	if err != nil {
+		return
+	}
+	var result struct {
+		Problems []ForceMetadataDeployProblem `xml:"Body>checkDeployStatusResponse>result>messages"`
+	}
+	if err = xml.Unmarshal(body, &result); err != nil {
+		return
+	}
+	problems = result.Problems
+	return
+}
+
+func (fm *ForceMetadata) CheckRetrieveStatus(id string) (files ForceMetadataFiles, err error) {
+	body, err := fm.soapExecute("checkRetrieveStatus", fmt.Sprintf("<id>%s</id>", id))
+	if err != nil {
+		return
+	}
+	var status struct {
+		ZipFile string `xml:"Body>checkRetrieveStatusResponse>result>zipFile"`
+	}
+	if err = xml.Unmarshal(body, &status); err != nil {
+		return
+	}
+	data, err := base64.StdEncoding.DecodeString(status.ZipFile)
+	if err != nil {
+		return
+	}
+	zipfiles, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
+	if err != nil {
+		return
+	}
+	files = make(map[string][]byte)
+	for _, file := range zipfiles.File {
+		fd, _ := file.Open()
+		defer fd.Close()
+		data, _ := ioutil.ReadAll(fd)
+		files[file.Name] = data
 	}
 	return
 }
@@ -189,6 +257,87 @@ func (fm *ForceMetadata) DeleteCustomObject(object string) (err error) {
 	}
 	if err = fm.CheckStatus(status.Id); err != nil {
 		return
+	}
+	return
+}
+
+func (fm *ForceMetadata) Deploy(files ForceMetadataFiles) (problems []ForceMetadataDeployProblem, err error) {
+	soap := `
+		<zipFile>%s</zipFile>
+	`
+	zipfile := new(bytes.Buffer)
+	zipper := zip.NewWriter(zipfile)
+	for name, data := range files {
+		wr, err := zipper.Create(fmt.Sprintf("unpackaged/%s", name))
+		if err != nil {
+			return nil, err
+		}
+		wr.Write(data)
+	}
+	zipper.Close()
+	encoded := base64.StdEncoding.EncodeToString(zipfile.Bytes())
+	body, err := fm.soapExecute("deploy", fmt.Sprintf(soap, encoded))
+	if err != nil {
+		return
+	}
+	var status struct {
+		Id string `xml:"Body>deployResponse>result>id"`
+	}
+	if err = xml.Unmarshal(body, &status); err != nil {
+		return
+	}
+	if err = fm.CheckStatus(status.Id); err != nil {
+		return
+	}
+	messages, err := fm.CheckDeployStatus(status.Id)
+	for _, problem := range messages {
+		if !problem.Success {
+			problems = append(problems, problem)
+		}
+	}
+	return
+}
+
+func (fm *ForceMetadata) Retrieve(query ForceMetadataQuery) (files ForceMetadataFiles, err error) {
+	soap := `
+		<retrieveRequest>
+			<apiVersion>29.0</apiVersion>
+			<unpackaged>
+				%s
+			</unpackaged>
+		</retrieveRequest>
+	`
+	soapType := `
+		<types>
+			<name>%s</name>
+			<members>%s</members>
+		</types>
+	`
+	types := ""
+	for _, element := range query {
+		types += fmt.Sprintf(soapType, element.Name, element.Members)
+	}
+	body, err := fm.soapExecute("retrieve", fmt.Sprintf(soap, types))
+	if err != nil {
+		return
+	}
+	var status struct {
+		Id string `xml:"Body>retrieveResponse>result>id"`
+	}
+	if err = xml.Unmarshal(body, &status); err != nil {
+		return
+	}
+	if err = fm.CheckStatus(status.Id); err != nil {
+		return
+	}
+	raw_files, err := fm.CheckRetrieveStatus(status.Id)
+	if err != nil {
+		return
+	}
+	files = make(ForceMetadataFiles)
+	for raw_name, data := range raw_files {
+		name := strings.Replace(raw_name, "unpackaged/", "", -1)
+		files[name] = data
 	}
 	return
 }
