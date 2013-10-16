@@ -28,6 +28,10 @@ const (
 	EndpointPrerelease = iota
 )
 
+const (
+	apiVersion = "v28.0"
+)
+
 var RootCertificates = `
 -----BEGIN CERTIFICATE-----
 MIICPDCCAaUCEHC65B0Q2Sk0tjjKewPMur8wDQYJKoZIhvcNAQECBQAwXzELMAkG
@@ -138,7 +142,7 @@ func ForceLogin(endpoint ForceEndpoint) (creds ForceCredentials, err error) {
 }
 
 func (f *Force) ListSobjects() (sobjects []ForceSobject, err error) {
-	url := fmt.Sprintf("%s/services/data/v20.0/sobjects", f.Credentials.InstanceUrl)
+	url := fmt.Sprintf("%s/services/data/%s/sobjects", f.Credentials.InstanceUrl, apiVersion)
 	body, err := f.httpGet(url)
 	if err != nil {
 		return
@@ -150,7 +154,7 @@ func (f *Force) ListSobjects() (sobjects []ForceSobject, err error) {
 }
 
 func (f *Force) GetSobject(name string) (sobject ForceSobject, err error) {
-	url := fmt.Sprintf("%s/services/data/v20.0/sobjects/%s/describe", f.Credentials.InstanceUrl, name)
+	url := fmt.Sprintf("%s/services/data/%s/sobjects/%s/describe", f.Credentials.InstanceUrl, apiVersion, name)
 	body, err := f.httpGet(url)
 	if err != nil {
 		return
@@ -160,7 +164,7 @@ func (f *Force) GetSobject(name string) (sobject ForceSobject, err error) {
 }
 
 func (f *Force) Query(query string) (records []ForceRecord, err error) {
-	url := fmt.Sprintf("%s/services/data/v20.0/query?q=%s", f.Credentials.InstanceUrl, url.QueryEscape(query))
+	url := fmt.Sprintf("%s/services/data/%s/query?q=%s", f.Credentials.InstanceUrl, apiVersion, url.QueryEscape(query))
 	body, err := f.httpGet(url)
 	if err != nil {
 		return
@@ -181,7 +185,7 @@ func (f *Force) Get(url string) (object ForceRecord, err error) {
 }
 
 func (f *Force) GetRecord(sobject, id string) (object ForceRecord, err error) {
-	url := fmt.Sprintf("%s/services/data/v20.0/sobjects/%s/%s", f.Credentials.InstanceUrl, sobject, id)
+	url := fmt.Sprintf("%s/services/data/%s/sobjects/%s/%s", f.Credentials.InstanceUrl, apiVersion, sobject, id)
 	body, err := f.httpGet(url)
 	if err != nil {
 		return
@@ -191,7 +195,7 @@ func (f *Force) GetRecord(sobject, id string) (object ForceRecord, err error) {
 }
 
 func (f *Force) CreateRecord(sobject string, attrs map[string]string) (id string, err error) {
-	url := fmt.Sprintf("%s/services/data/v20.0/sobjects/%s", f.Credentials.InstanceUrl, sobject)
+	url := fmt.Sprintf("%s/services/data/%s/sobjects/%s", f.Credentials.InstanceUrl, apiVersion, sobject)
 	body, err := f.httpPost(url, attrs)
 	var result ForceCreateRecordResult
 	json.Unmarshal(body, &result)
@@ -200,13 +204,13 @@ func (f *Force) CreateRecord(sobject string, attrs map[string]string) (id string
 }
 
 func (f *Force) UpdateRecord(sobject string, id string, attrs map[string]string) (err error) {
-	url := fmt.Sprintf("%s/services/data/v20.0/sobjects/%s/%s", f.Credentials.InstanceUrl, sobject, id)
+	url := fmt.Sprintf("%s/services/data/%s/sobjects/%s/%s", f.Credentials.InstanceUrl, apiVersion, sobject, id)
 	_, err = f.httpPatch(url, attrs)
 	return
 }
 
 func (f *Force) DeleteRecord(sobject string, id string) (err error) {
-	url := fmt.Sprintf("%s/services/data/v20.0/sobjects/%s/%s", f.Credentials.InstanceUrl, sobject, id)
+	url := fmt.Sprintf("%s/services/data/%s/sobjects/%s/%s", f.Credentials.InstanceUrl, apiVersion, sobject, id)
 	_, err = f.httpDelete(url)
 	return
 }
