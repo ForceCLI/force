@@ -14,6 +14,7 @@ var commands = []*Command{
 	cmdField,
 	cmdRecord,
 	cmdSelect,
+	cmdSoql,
 	cmdApex,
 	/* cmdOauth,*/
 	cmdVersion,
