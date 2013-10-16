@@ -42,8 +42,8 @@ func runExportArtifact(cmd *Command, args []string) {
 	root := filepath.Join(wd, "metadata")
 	artifactType := ""
 	artifactName := "*"
-	if len(args) < 2 {
-		ErrorAndExit("must specify object type and object name")
+	if len(args) < 1 {
+		ErrorAndExit("must specify object type and/or object name")
 	}
 	//root, _ = filepath.Abs(args[0])
 	artifactType = args[0]
