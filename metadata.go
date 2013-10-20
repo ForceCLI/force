@@ -20,6 +20,38 @@ type ForceConnectedApp struct {
 	Type string `xml:"type"`
 }
 
+type ComponentFailure struct {
+	Changed 		bool 	`xml:"changed"`
+	Created 		bool 	`xml:"created"`
+	Deleted 		bool 	`xml:"deleted"`
+	FileName 		string 	`xml:"fileName"`
+	FullName 		string 	`xml:"fullName"`
+	Problem 		string 	`xml:"problem"`
+	ProblemType 	string 	`xml:"problemType"`
+	Success 		bool 	`xml:"success"`
+}
+
+type RunTestResult struct {
+	NumberOfFailures	int `xml:"numFailures"`
+	NumberOfTestsRun	int `xml:"numTestsRun"`
+	TotalTime			int `xml:"totalTime"`
+}
+
+type ForceCheckDeploymentStatusResult struct {
+	CheckOnly 					bool 	`xml:"checkOnly"`
+	Done 						bool 	`xml:"done"`
+	Id							string 	`xml:"id"`
+	NumberComponentErrors 		int 	`xml:"numberComponentErrors"`
+	NumberComponentsDeployed 	int 	`xml:"numberComponentsDeployed"`
+	NumberComponentsTotal 		int 	`xml:"numberComponentsTotal"`
+	NumberTestErrors 			int 	`xml:"numberTestErrors"`
+	NumberTestsCompleted 		int 	`xml:"numberTestsCompleted"`
+	NumberTestsTotal 			int 	`xml:"numberTestsTotal"`
+	RollbackOnError 			bool 	`xml:"rollbackOnError"`
+	Status 						string 	`xml:"status"`
+	Success 					bool 	`xml:"success"`
+}
+
 type ForceMetadataDeployProblem struct {
 	Changed     bool   `xml:"changed"`
 	Created     bool   `xml:"created"`
@@ -76,9 +108,24 @@ func (fm *ForceMetadata) CheckStatus(id string) (err error) {
 }
 
 func (fm *ForceMetadata) CheckDeployStatus(id string) (problems []ForceMetadataDeployProblem, err error) {
-	body, err := fm.soapExecute("checkDeployStatus", fmt.Sprintf("<id>%s</id>", id))
+	body, err := fm.soapExecute("checkDeployStatus", fmt.Sprintf("<id>%s</id><includeDetails>true</includeDetails>", id))
 	if err != nil {
 		return
+	}
+	
+	//fmt.Println("CDS: \n" + string(body))
+
+	var deployResult struct {
+		Results ForceCheckDeploymentStatusResult `xml:"Body>checkDeployStatusResponse>result"`
+	}
+	if err = xml.Unmarshal(body, &deployResult); err != nil {
+		ErrorAndExit(err.Error())
+	}
+	
+	//fmt.Printf("success: %v", deployResult.Results.Success)
+	
+	if !deployResult.Results.Success {
+		ErrorAndExit("Push failed, there were %v components with errors\nID: %v", deployResult.Results.NumberComponentErrors, deployResult.Results.Id)
 	}
 	var result struct {
 		Problems []ForceMetadataDeployProblem `xml:"Body>checkDeployStatusResponse>result>messages"`
@@ -282,6 +329,7 @@ func (fm *ForceMetadata) Deploy(files ForceMetadataFiles) (problems []ForceMetad
 	zipfile := new(bytes.Buffer)
 	zipper := zip.NewWriter(zipfile)
 	for name, data := range files {
+		//fmt.Println("Adding file " + name)
 		wr, err := zipper.Create(fmt.Sprintf("unpackaged/%s", name))
 		if err != nil {
 			return nil, err
@@ -292,8 +340,12 @@ func (fm *ForceMetadata) Deploy(files ForceMetadataFiles) (problems []ForceMetad
 	encoded := base64.StdEncoding.EncodeToString(zipfile.Bytes())
 	body, err := fm.soapExecute("deploy", fmt.Sprintf(soap, encoded))
 	if err != nil {
+		fmt.Println(err.Error())
 		return
 	}
+
+	//fmt.Println(string(body))
+
 	var status struct {
 		Id string `xml:"Body>deployResponse>result>id"`
 	}

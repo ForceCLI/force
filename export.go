@@ -47,15 +47,13 @@ func runExportArtifact(cmd *Command, args []string) {
 	}
 	//root, _ = filepath.Abs(args[0])
 	artifactType = args[0]
-	fmt.Println("artifact type: " + artifactType)
+
 	if len(args) == 2 {
 		artifactName = args[1]
-		fmt.Println("artifact name: " + artifactName)
 		ccase := inflect.CamelizeDownFirst(artifactType)
-		fmt.Println("camel case: " + ccase)
 		if !strings.HasSuffix(artifactName, ccase) {
 			//artifactName = strings.Join([]string{artifactName, ccase}, ".")
-			fmt.Println("new artifact name: " + artifactName);
+			//fmt.Println("new artifact name: " + artifactName);
 		}
 	}
 
@@ -77,7 +75,7 @@ func runExportArtifact(cmd *Command, args []string) {
 			ErrorAndExit(err.Error())
 		}
 	}
-	fmt.Printf("Exported to %s\n", root)
+	fmt.Printf("Exported %s to %s\n", artifactName, root)
 }
 
 func runExport(cmd *Command, args []string) {

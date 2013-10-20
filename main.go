@@ -22,6 +22,7 @@ var commands = []*Command{
 	cmdVersion,
 	cmdUpdate,
 	cmdHelp,
+	cmdPush,
 }
 
 func main() {
