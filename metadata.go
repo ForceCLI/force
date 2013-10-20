@@ -1,10 +1,14 @@
 package main
 
 import (
+	"archive/zip"
 	"bitbucket.org/pkg/inflect"
+	"bytes"
+	"encoding/base64"
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"strings"
 )
 
@@ -15,12 +19,33 @@ type ForceConnectedApp struct {
 	Id   string `xml:"id"`
 }
 
+type ForceMetadataDeployProblem struct {
+	Changed     bool   `xml:"changed"`
+	Created     bool   `xml:"created"`
+	Deleted     bool   `xml:"deleted"`
+	Filename    string `xml:"fileName"`
+	Name        string `xml:"fullName"`
+	Problem     string `xml:"problem"`
+	ProblemType string `xml:"problemType"`
+	Success     bool   `xml:"success"`
+}
+
+type ForceMetadataQueryElement struct {
+	Name    string
+	Members string
+}
+
+type ForceMetadataQuery []ForceMetadataQueryElement
+
+type ForceMetadataFiles map[string][]byte
+
 type ForceMetadata struct {
-	Force *Force
+	ApiVersion string
+	Force      *Force
 }
 
 func NewForceMetadata(force *Force) (fm *ForceMetadata) {
-	fm = &ForceMetadata{Force: force}
+	fm = &ForceMetadata{ApiVersion: "28.0", Force: force}
 	return
 }
 
@@ -42,6 +67,85 @@ func (fm *ForceMetadata) CheckStatus(id string) (err error) {
 		return fm.CheckStatus(id)
 	case status.State == "Error":
 		return errors.New(status.Message)
+	}
+	return
+}
+
+func (fm *ForceMetadata) CheckDeployStatus(id string) (problems []ForceMetadataDeployProblem, err error) {
+	body, err := fm.soapExecute("checkDeployStatus", fmt.Sprintf("<id>%s</id>", id))
+	if err != nil {
+		return
+	}
+	var result struct {
+		Problems []ForceMetadataDeployProblem `xml:"Body>checkDeployStatusResponse>result>messages"`
+	}
+	if err = xml.Unmarshal(body, &result); err != nil {
+		return
+	}
+	problems = result.Problems
+	return
+}
+
+func (fm *ForceMetadata) CheckRetrieveStatus(id string) (files ForceMetadataFiles, err error) {
+	body, err := fm.soapExecute("checkRetrieveStatus", fmt.Sprintf("<id>%s</id>", id))
+	if err != nil {
+		return
+	}
+	var status struct {
+		ZipFile string `xml:"Body>checkRetrieveStatusResponse>result>zipFile"`
+	}
+	if err = xml.Unmarshal(body, &status); err != nil {
+		return
+	}
+	data, err := base64.StdEncoding.DecodeString(status.ZipFile)
+	if err != nil {
+		return
+	}
+	zipfiles, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
+	if err != nil {
+		return
+	}
+	files = make(map[string][]byte)
+	for _, file := range zipfiles.File {
+		fd, _ := file.Open()
+		defer fd.Close()
+		data, _ := ioutil.ReadAll(fd)
+		files[file.Name] = data
+	}
+	return
+}
+
+func (fm *ForceMetadata) CreateConnectedApp(name, callback string) (err error) {
+	soap := `
+		<metadata xsi:type="ConnectedApp">
+			<fullName>%s</fullName>
+			<version>29.0</version>
+			<label>%s</label>
+			<contactEmail>%s</contactEmail>
+			<oauthConfig>
+				<callbackUrl>%s</callbackUrl>
+				<scopes>Full</scopes>
+				<scopes>RefreshToken</scopes>
+			</oauthConfig>
+		</metadata>
+	`
+	me, err := fm.Force.Whoami()
+	if err != nil {
+		return err
+	}
+	email := me["Email"]
+	body, err := fm.soapExecute("create", fmt.Sprintf(soap, name, name, email, callback))
+	if err != nil {
+		return err
+	}
+	var status struct {
+		Id string `xml:"Body>createResponse>result>id"`
+	}
+	if err = xml.Unmarshal(body, &status); err != nil {
+		return
+	}
+	if err = fm.CheckStatus(status.Id); err != nil {
+		return
 	}
 	return
 }
@@ -157,12 +261,96 @@ func (fm *ForceMetadata) DeleteCustomObject(object string) (err error) {
 	return
 }
 
+func (fm *ForceMetadata) Deploy(files ForceMetadataFiles) (problems []ForceMetadataDeployProblem, err error) {
+	soap := `
+		<zipFile>%s</zipFile>
+	`
+	zipfile := new(bytes.Buffer)
+	zipper := zip.NewWriter(zipfile)
+	for name, data := range files {
+		wr, err := zipper.Create(fmt.Sprintf("unpackaged/%s", name))
+		if err != nil {
+			return nil, err
+		}
+		wr.Write(data)
+	}
+	zipper.Close()
+	encoded := base64.StdEncoding.EncodeToString(zipfile.Bytes())
+	body, err := fm.soapExecute("deploy", fmt.Sprintf(soap, encoded))
+	if err != nil {
+		return
+	}
+	var status struct {
+		Id string `xml:"Body>deployResponse>result>id"`
+	}
+	if err = xml.Unmarshal(body, &status); err != nil {
+		return
+	}
+	if err = fm.CheckStatus(status.Id); err != nil {
+		return
+	}
+	messages, err := fm.CheckDeployStatus(status.Id)
+	for _, problem := range messages {
+		if !problem.Success {
+			problems = append(problems, problem)
+		}
+	}
+	return
+}
+
+func (fm *ForceMetadata) Retrieve(query ForceMetadataQuery) (files ForceMetadataFiles, err error) {
+	soap := `
+		<retrieveRequest>
+			<apiVersion>29.0</apiVersion>
+			<unpackaged>
+				%s
+			</unpackaged>
+		</retrieveRequest>
+	`
+	soapType := `
+		<types>
+			<name>%s</name>
+			<members>%s</members>
+		</types>
+	`
+	types := ""
+	for _, element := range query {
+		types += fmt.Sprintf(soapType, element.Name, element.Members)
+	}
+	body, err := fm.soapExecute("retrieve", fmt.Sprintf(soap, types))
+	if err != nil {
+		return
+	}
+	var status struct {
+		Id string `xml:"Body>retrieveResponse>result>id"`
+	}
+	if err = xml.Unmarshal(body, &status); err != nil {
+		return
+	}
+	if err = fm.CheckStatus(status.Id); err != nil {
+		return
+	}
+	raw_files, err := fm.CheckRetrieveStatus(status.Id)
+	if err != nil {
+		return
+	}
+	files = make(ForceMetadataFiles)
+	for raw_name, data := range raw_files {
+		name := strings.Replace(raw_name, "unpackaged/", "", -1)
+		files[name] = data
+	}
+	return
+}
+
 func (fm *ForceMetadata) ListMetadata(query string) (res []byte, err error) {
 	return fm.soapExecute("listMetadata", fmt.Sprintf("<queries><type>%s</type></queries>", query))
 }
 
 func (fm *ForceMetadata) ListConnectedApps() (apps ForceConnectedApps, err error) {
+	originalVersion := fm.ApiVersion
+	fm.ApiVersion = "29.0"
 	body, err := fm.ListMetadata("ConnectedApp")
+	fm.ApiVersion = originalVersion
 	if err != nil {
 		return
 	}
@@ -181,184 +369,8 @@ func (fm *ForceMetadata) soapExecute(action, query string) (response []byte, err
 	if err != nil {
 		return
 	}
-	fmt.Println(login)
-	url := strings.Replace(login["urls"].(map[string]interface{})["metadata"].(string), "{version}", "28.0", 1)
+	url := strings.Replace(login["urls"].(map[string]interface{})["metadata"].(string), "{version}", fm.ApiVersion, 1)
 	soap := NewSoap(url, "http://soap.sforce.com/2006/04/metadata", fm.Force.Credentials.AccessToken)
 	response, err = soap.Execute(action, query)
 	return
 }
-
-/* func (fm *ForceMetadata) CreateConnectedApp(name, callback string) (app string, err error) {*/
-/*   soap := `*/
-/*     <env:Envelope xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:tns="http://soap.sforce.com/2006/04/metadata" xmlns:env="http://schemas.xmlsoap.org/soap/envelope/" xmlns:cmd="http://soap.sforce.com/2006/04/metadata">*/
-/*       <env:Header>*/
-/*         <cmd:SessionHeader>*/
-/*           <cmd:sessionId>%s</cmd:sessionId>*/
-/*         </cmd:SessionHeader>*/
-/*       </env:Header>*/
-/*       <env:Body>*/
-/*         <create xmlns="http://soap.sforce.com/2006/04/metadata">*/
-/*           <metadata xsi:type="cmd:ConnectedApp" xmlns:cmd="http://soap.sforce.com/2006/04/metadata">*/
-/*             <fullName>%s</fullName>*/
-/*             <version>29.0</version>*/
-/*             <label>%s</label>*/
-/*             <contactEmail>%s</contactEmail>*/
-/*             <oauthConfig>*/
-/*               <callbackUrl>%s</callbackUrl>*/
-/*               <scopes>Full</scopes>*/
-/*               <scopes>RefreshToken</scopes>*/
-/*               <consumerSecrett>Zm9sdfjsdkfjsdfkjv</consumerSecrett>*/
-/*             </oauthConfig>*/
-/*           </metadata>*/
-/*         </create>*/
-/*       </env:Body>*/
-/*     </env:Envelope>*/
-/*   `*/
-/*   login, err := fm.Force.Get(fm.Force.Credentials.Id)*/
-/*   if err != nil {*/
-/*     return*/
-/*   }*/
-/*   url := strings.Replace(login["urls"].(map[string]interface{})["metadata"].(string), "{version}", "29.0", 1)*/
-/*   rbody := fmt.Sprintf(soap, fm.Force.Credentials.AccessToken, name, name, "foo@bar.org", callback)*/
-/*   fmt.Println("rbody", rbody)*/
-/*   req, err := httpRequest("POST", url, strings.NewReader(rbody))*/
-/*   if err != nil {*/
-/*     return*/
-/*   }*/
-/*   req.Header.Add("Content-Type", "text/xml")*/
-/*   req.Header.Add("SOAPACtion", "create")*/
-/*   res, err := httpClient().Do(req)*/
-/*   defer res.Body.Close()*/
-/*   if err != nil {*/
-/*     return*/
-/*   }*/
-/*   if res.StatusCode == 401 {*/
-/*     err = errors.New("authorization expired, please run `force login`")*/
-/*     return*/
-/*   }*/
-/*   body, err := ioutil.ReadAll(res.Body)*/
-/*   var create SoapCreateResponse*/
-/*   err = xml.Unmarshal(body, &create)*/
-/*   if err != nil {*/
-/*     return*/
-/*   }*/
-/*   err = fm.CheckStatus(create.Id)*/
-/*   if err != nil {*/
-/*     return*/
-/*   }*/
-/*   return*/
-/* }*/
-
-/* func (fm *ForceMetadata) GetConnectedApp(name string) (app ForceConnectedApp, err error) {*/
-/*   soap := `*/
-/*     <env:Envelope xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:tns="http://soap.sforce.com/2006/04/metadata" xmlns:env="http://schemas.xmlsoap.org/soap/envelope/" xmlns:cmd="http://soap.sforce.com/2006/04/metadata">*/
-/*       <env:Header>*/
-/*         <cmd:SessionHeader>*/
-/*           <cmd:sessionId>%s</cmd:sessionId>*/
-/*         </cmd:SessionHeader>*/
-/*       </env:Header>*/
-/*       <env:Body>*/
-/*         <retrieve xmlns="http://soap.sforce.com/2006/04/metadata">*/
-/*         </retrieve>*/
-/*       </env:Body>*/
-/*     </env:Envelope>*/
-/*   `*/
-/*   login, err := fm.Force.Get(fm.Force.Credentials.Id)*/
-/*   if err != nil {*/
-/*     return*/
-/*   }*/
-/*   url := strings.Replace(login["urls"].(map[string]interface{})["metadata"].(string), "{version}", "29.0", 1)*/
-/*   rbody := fmt.Sprintf(soap, fm.Force.Credentials.AccessToken, name)*/
-/*   fmt.Println("rbody", rbody)*/
-/*   req, err := httpRequest("POST", url, strings.NewReader(rbody))*/
-/*   if err != nil {*/
-/*     return*/
-/*   }*/
-/*   req.Header.Add("Content-Type", "text/xml")*/
-/*   req.Header.Add("SOAPACtion", "retrieve")*/
-/*   res, err := httpClient().Do(req)*/
-/*   defer res.Body.Close()*/
-/*   if err != nil {*/
-/*     return*/
-/*   }*/
-/*   if res.StatusCode == 401 {*/
-/*     err = errors.New("authorization expired, please run `force login`")*/
-/*     return*/
-/*   }*/
-/*   body, err := ioutil.ReadAll(res.Body)*/
-/*   var retrieve SoapRetrieveResponse*/
-/*   xml.Unmarshal(body, &retrieve)*/
-/*   err = fm.CheckStatus(retrieve.Id)*/
-/*   if err != nil {*/
-/*     return*/
-/*   }*/
-/*   err = fm.CheckRetrieveStatus(retrieve.Id)*/
-/*   fmt.Println("err", err)*/
-/*   [> var resp SoapListConnectedAppsResponse<]*/
-/*   [> xml.Unmarshal(body, &resp)<]*/
-/*   [> for _, app := range resp.ConnectedApps {<]*/
-/*   [>   apps = append(apps, ForceConnectedApp{Name:app.Name, Id:app.Id})<]*/
-/*   [> }<]*/
-/*   return*/
-/* }*/
-
-/* func (fm *ForceMetadata) CheckRetrieveStatus(id string) (err error) {*/
-/*   soap := `*/
-/*     <env:Envelope xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:tns="http://soap.sforce.com/2006/04/metadata" xmlns:env="http://schemas.xmlsoap.org/soap/envelope/" xmlns:cmd="http://soap.sforce.com/2006/04/metadata">*/
-/*       <env:Header>*/
-/*         <cmd:SessionHeader>*/
-/*           <cmd:sessionId>%s</cmd:sessionId>*/
-/*         </cmd:SessionHeader>*/
-/*       </env:Header>*/
-/*       <env:Body>*/
-/*         <checkRetrieveStatus xmlns="http://soap.sforce.com/2006/04/metadata">*/
-/*           <id>%s</id>*/
-/*         </checkRetrieveStatus>*/
-/*       </env:Body>*/
-/*     </env:Envelope>*/
-/*   `*/
-/*   login, err := fm.Force.Get(fm.Force.Credentials.Id)*/
-/*   if err != nil {*/
-/*     return*/
-/*   }*/
-/*   url := strings.Replace(login["urls"].(map[string]interface{})["metadata"].(string), "{version}", "29.0", 1)*/
-/*   rbody := fmt.Sprintf(soap, fm.Force.Credentials.AccessToken, id)*/
-/*   req, err := httpRequest("POST", url, strings.NewReader(rbody))*/
-/*   if err != nil {*/
-/*     return*/
-/*   }*/
-/*   req.Header.Add("Content-Type", "text/xml")*/
-/*   req.Header.Add("SOAPACtion", "checkRetrieveStatus")*/
-/*   res, err := httpClient().Do(req)*/
-/*   defer res.Body.Close()*/
-/*   if err != nil {*/
-/*     return*/
-/*   }*/
-/*   if res.StatusCode == 401 {*/
-/*     err = errors.New("authorization expired, please run `force login`")*/
-/*     return*/
-/*   }*/
-/*   body, err := ioutil.ReadAll(res.Body)*/
-/*   var status SoapCheckRetrieveStatusResponse*/
-/*   err = xml.Unmarshal(body, &status)*/
-/*   if err != nil {*/
-/*     return*/
-/*   }*/
-/*   zipfile, err := base64.StdEncoding.DecodeString(status.ZipFile)*/
-/*   if err != nil {*/
-/*     return*/
-/*   }*/
-/*   files, err := zip.NewReader(bytes.NewReader(zipfile), int64(len(zipfile)))*/
-/*   if err != nil {*/
-/*     return*/
-/*   }*/
-/*   for _, file := range files.File {*/
-/*     if strings.Contains(file.Name, "connectedApp") {*/
-/*       rc, _ := file.Open()*/
-/*       defer rc.Close()*/
-/*       bytes, _ := ioutil.ReadAll(rc)*/
-/*       fmt.Println("bytes", string(bytes))*/
-/*     }*/
-/*   }*/
-/*   return*/
-/* }*/

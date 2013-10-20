@@ -8,20 +8,21 @@
 			"Rev": "364fb577de68fb646c4cb39cc0e09c887ee16376"
 		},
 		{
+			"ImportPath": "bitbucket.org/pkg/inflect",
+			"Comment": "go.r60-12",
+			"Rev": "8961c3750a47b8c0b3e118d52513b97adf85a7e8"
+		},
+		{
 			"ImportPath": "github.com/ddollar/config",
 			"Rev": "31d44125bc63bc58f672dfd7e3eb3cd199a3bcdf"
 		},
 		{
 			"ImportPath": "github.com/ddollar/dist",
-			"Rev": "0cddeb15146fa169ed001ff8740cf6e1094792bd"
+			"Rev": "f559761fd36c52dc90d7d2c0bc537e6d96b0edc5"
 		},
 		{
-			"ImportPath": "github.com/inconshreveable/go-execpath",
-			"Rev": "c77cb29fdea163c01cc1470db0a378527d7ae618"
-		},
-		{
-			"ImportPath": "github.com/inconshreveable/go-update",
-			"Rev": "f2914e9f42e44ccb9e29200968a7097cbf1577eb"
+			"ImportPath": "github.com/ddollar/go-update",
+			"Rev": "4733469d35539f410e0e84552944fa0df7e72c98"
 		},
 		{
 			"ImportPath": "github.com/kr/binarydist",

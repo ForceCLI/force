@@ -15,7 +15,11 @@ Execute anonymous Apex code
 
 Examples:
 
-  cat ~/my.apex | force apex
+  force apex ~/test.apex
+
+  force apex
+  >> Start typing Apex code; press CTRL-D when finished
+
 `,
 }
 
