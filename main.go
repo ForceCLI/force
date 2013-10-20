@@ -13,6 +13,8 @@ var commands = []*Command{
 	cmdSobject,
 	cmdField,
 	cmdRecord,
+	cmdExport,
+	cmdImport,
 	cmdSelect,
 	cmdSoql,
 	cmdApex,
