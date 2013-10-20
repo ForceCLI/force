@@ -29,7 +29,7 @@ const (
 )
 
 const (
-	apiVersion = "v28.0"
+	apiVersion = "v29.0"
 )
 
 var RootCertificates = `
