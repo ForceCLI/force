@@ -25,7 +25,7 @@ Examples:
 }
 
 var cmdFetch = &Command{
-	Run: runExportArtifact,
+	Run: runFetch,
 	Usage: "fetch <type> <name>",
 	Short: "Export a single artifact to a local directory",
 	Long: `
@@ -37,7 +37,7 @@ Examples
 `,
 }
 
-func runExportArtifact(cmd *Command, args []string) {
+func runFetch(cmd *Command, args []string) {
 	wd, _ := os.Getwd()
 	root := filepath.Join(wd, "metadata")
 	artifactType := ""
