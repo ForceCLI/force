@@ -227,47 +227,49 @@ func (fm *ForceMetadata) CreateCustomField(object, field, typ string) (err error
 	case "float":
 		soapField = "<type>Number</type><precision>10</precision><scale>2</scale>"
 	case "lookup":
-		soapField = "<type>Lookup</type>";
+		soapField = `<type>Lookup</type>
+					<referenceTo>%s</referenceTo>
+					<relationshipLabel>%ss</relationshipLabel>
+					<relationshipName>%s_del</relationshipName>
+					`
 		scanner := bufio.NewScanner(os.Stdin)
 
-		var inp string
+		var inp, inp2 string
 		fmt.Print("Enter object to lookup: ");
-		for scanner.Scan() {
-			inp = scanner.Text();
-			break 
-		}
-		soapField += fmt.Sprintf("<referenceTo>%s</referenceTo>", inp)
+
+		scanner.Scan()
+		inp = scanner.Text();
+
 		fmt.Print("What is the label for the loookup? ")
-		for scanner.Scan() {
-			inp = scanner.Text();
-			break 
-		}
-		soapField += fmt.Sprintf("<relationshipLabel>%ss</relationshipLabel>", inp)
-		inp = strings.Replace(inp, " ", "_", -1)
-		soapField += fmt.Sprintf("<relationshipName>%s_del</relationshipName>", inp)
+		scanner.Scan()
+		inp2 = scanner.Text()
+
+		soapField = fmt.Sprintf(soapField, inp, inp2, strings.Replace(inp2, " ", "_", -1))
+
 	case "masterdetail":
-		soapField = "<type>MasterDetail</type>";
+		soapField = `<type>MasterDetail</type>
+					 <externalId>false</externalId>
+					 <referenceTo>%s</referenceTo>
+					 <relationshipLabel>%ss</relationshipLabel>
+					 <relationshipName>%s_del</relationshipName>
+					 <relationshipOrder>0</relationshipOrder>
+					 <reparentableMasterDetail>false</reparentableMasterDetail>
+					 <trackTrending>false</trackTrending>
+					 <writeRequiresMasterRead>false</writeRequiresMasterRead>
+					`
+
 		scanner := bufio.NewScanner(os.Stdin)
-		soapField += "<externalId>false</externalId>"
-		var inp string
+		var inp, inp2 string
 		fmt.Print("Enter object to lookup: ");
-		for scanner.Scan() {
-			inp = scanner.Text();
-			break 
-		}
-		soapField += fmt.Sprintf("<referenceTo>%s</referenceTo>", inp)
+		
+		scanner.Scan()
+		inp = scanner.Text()
+
 		fmt.Print("What is the label for the loookup? ")
-		for scanner.Scan() {
-			inp = scanner.Text();
-			break 
-		}
-		soapField += fmt.Sprintf("<relationshipLabel>%ss</relationshipLabel>", inp)
-		inp = strings.Replace(inp, " ", "_", -1)
-		soapField += fmt.Sprintf("<relationshipName>%s_del</relationshipName>", inp)
-		soapField += "<relationshipOrder>0</relationshipOrder>"
-		soapField += "<reparentableMasterDetail>false</reparentableMasterDetail>"
-		soapField += "<trackTrending>false</trackTrending>"
-		soapField += "<writeRequiresMasterRead>false</writeRequiresMasterRead>"
+		scanner.Scan()
+		inp2 = scanner.Text()
+
+		soapField = fmt.Sprintf(soapField, inp, inp2, strings.Replace(inp2, " ", "_", -1))
 	default:
 		ErrorAndExit("unable to create field type: %s", typ)
 	}
