@@ -242,9 +242,9 @@ func (fm *ForceMetadata) CreateCustomField(object, field, typ string) (err error
 			inp = scanner.Text();
 			break 
 		}
-        soapField += fmt.Sprintf("<relationshipLabel>%ss</relationshipLabel>", inp)
-        inp = strings.Replace(inp, " ", "_", -1)
-        soapField += fmt.Sprintf("<relationshipName>%s_del</relationshipName>", inp)
+		soapField += fmt.Sprintf("<relationshipLabel>%ss</relationshipLabel>", inp)
+		inp = strings.Replace(inp, " ", "_", -1)
+		soapField += fmt.Sprintf("<relationshipName>%s_del</relationshipName>", inp)
 	case "masterdetail":
 		soapField = "<type>MasterDetail</type>";
 		scanner := bufio.NewScanner(os.Stdin)
@@ -261,13 +261,13 @@ func (fm *ForceMetadata) CreateCustomField(object, field, typ string) (err error
 			inp = scanner.Text();
 			break 
 		}
-        soapField += fmt.Sprintf("<relationshipLabel>%ss</relationshipLabel>", inp)
-        inp = strings.Replace(inp, " ", "_", -1)
-        soapField += fmt.Sprintf("<relationshipName>%s_del</relationshipName>", inp)
-        soapField += "<relationshipOrder>0</relationshipOrder>"
-        soapField += "<reparentableMasterDetail>false</reparentableMasterDetail>"
-        soapField += "<trackTrending>false</trackTrending>"
-        soapField += "<writeRequiresMasterRead>false</writeRequiresMasterRead>"
+		soapField += fmt.Sprintf("<relationshipLabel>%ss</relationshipLabel>", inp)
+		inp = strings.Replace(inp, " ", "_", -1)
+		soapField += fmt.Sprintf("<relationshipName>%s_del</relationshipName>", inp)
+		soapField += "<relationshipOrder>0</relationshipOrder>"
+		soapField += "<reparentableMasterDetail>false</reparentableMasterDetail>"
+		soapField += "<trackTrending>false</trackTrending>"
+		soapField += "<writeRequiresMasterRead>false</writeRequiresMasterRead>"
 	default:
 		ErrorAndExit("unable to create field type: %s", typ)
 	}
