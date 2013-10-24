@@ -10,6 +10,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"strings"
+	"bufio"
+	"os"
 )
 
 type ForceConnectedApps []ForceConnectedApp
@@ -58,7 +60,7 @@ type ForceMetadataDeployProblem struct {
 	Deleted     bool   `xml:"deleted"`
 	Filename    string `xml:"fileName"`
 	Name        string `xml:"fullName"`
-	Problem     string `xml:"problem"`
+	Problem     string `xml:"problem"` 
 	ProblemType string `xml:"problemType"`
 	Success     bool   `xml:"success"`
 }
@@ -224,6 +226,48 @@ func (fm *ForceMetadata) CreateCustomField(object, field, typ string) (err error
 		soapField = fmt.Sprintf("<type>AutoNumber</type><startingNumber>0</startingNumber><displayFormat>%s-{00000}</displayFormat><externalId>false</externalId>", fld[0:1])
 	case "float":
 		soapField = "<type>Number</type><precision>10</precision><scale>2</scale>"
+	case "lookup":
+		soapField = "<type>Lookup</type>";
+		scanner := bufio.NewScanner(os.Stdin)
+
+		var inp string
+		fmt.Print("Enter object to lookup: ");
+		for scanner.Scan() {
+			inp = scanner.Text();
+			break 
+		}
+		soapField += fmt.Sprintf("<referenceTo>%s</referenceTo>", inp)
+		fmt.Print("What is the label for the loookup? ")
+		for scanner.Scan() {
+			inp = scanner.Text();
+			break 
+		}
+        soapField += fmt.Sprintf("<relationshipLabel>%ss</relationshipLabel>", inp)
+        inp = strings.Replace(inp, " ", "_", -1)
+        soapField += fmt.Sprintf("<relationshipName>%s_del</relationshipName>", inp)
+	case "masterdetail":
+		soapField = "<type>MasterDetail</type>";
+		scanner := bufio.NewScanner(os.Stdin)
+		soapField += "<externalId>false</externalId>"
+		var inp string
+		fmt.Print("Enter object to lookup: ");
+		for scanner.Scan() {
+			inp = scanner.Text();
+			break 
+		}
+		soapField += fmt.Sprintf("<referenceTo>%s</referenceTo>", inp)
+		fmt.Print("What is the label for the loookup? ")
+		for scanner.Scan() {
+			inp = scanner.Text();
+			break 
+		}
+        soapField += fmt.Sprintf("<relationshipLabel>%ss</relationshipLabel>", inp)
+        inp = strings.Replace(inp, " ", "_", -1)
+        soapField += fmt.Sprintf("<relationshipName>%s_del</relationshipName>", inp)
+        soapField += "<relationshipOrder>0</relationshipOrder>"
+        soapField += "<reparentableMasterDetail>false</reparentableMasterDetail>"
+        soapField += "<trackTrending>false</trackTrending>"
+        soapField += "<writeRequiresMasterRead>false</writeRequiresMasterRead>"
 	default:
 		ErrorAndExit("unable to create field type: %s", typ)
 	}

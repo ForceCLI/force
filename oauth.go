@@ -47,7 +47,7 @@ func runOauthCreate(cmd *Command, args []string) {
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
-	runExportArtifact(cmd, []string{"ConnectedApp", args[0]})
+	runFetch(cmd, []string{"ConnectedApp", args[0]})
 	for _, app := range apps {
 		if app.Name == args[0] {
 			//url := fmt.Sprintf("%s/%s", force.Credentials.InstanceUrl, app.Id)
