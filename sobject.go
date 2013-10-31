@@ -50,16 +50,28 @@ func runSobject(cmd *Command, args []string) {
 func runSobjectList(args []string) {
 	force, _ := ActiveForce()
 	sobjects, err := force.ListSobjects()
+
+	l := make ([]ForceSobject, 0)
+	for _, sobject := range sobjects {
+		if len(args) == 1 {
+			if strings.Contains(sobject["name"].(string), args[0]) {
+				l = append(l, sobject)
+			}
+		} else {
+			l = append(l, sobject)
+		}
+	}
+
 	if err != nil {
 		ErrorAndExit(fmt.Sprintf("ERROR: %s\n", err))
 	} else {
-		DisplayForceSobjects(sobjects)
+		DisplayForceSobjects(l)
 	}
 }
 
 func runSobjectCreate(args []string) {
-	if len(args) < 2 {
-		ErrorAndExit("must specify object and at least one field")
+	if len(args) < 1 {
+		ErrorAndExit("must specify object name")
 	}
 	force, _ := ActiveForce()
 	if err := force.Metadata.CreateCustomObject(args[0]); err != nil {
@@ -69,9 +81,10 @@ func runSobjectCreate(args []string) {
 		parts := strings.Split(field, ":")
 		if len(parts) != 2 {
 			ErrorAndExit("must specify name:type for fields")
-		}
-		if err := force.Metadata.CreateCustomField(fmt.Sprintf("%s__c", args[0]), parts[0], parts[1]); err != nil {
-			ErrorAndExit(err.Error())
+		} else {
+			if err := force.Metadata.CreateCustomField(fmt.Sprintf("%s__c", args[0]), parts[0], parts[1]); err != nil {
+				ErrorAndExit(err.Error())
+			}
 		}
 	}
 	fmt.Println("Custom object created")

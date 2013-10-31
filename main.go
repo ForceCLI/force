@@ -24,6 +24,7 @@ var commands = []*Command{
 	cmdUpdate,
 	cmdHelp,
 	cmdPush,
+	cmdPassword,
 }
 
 func main() {

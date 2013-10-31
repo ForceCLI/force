@@ -51,6 +51,8 @@ func runPush(cmd *Command, args []string) {
 			objType = "CustomObject"
 		case "flexipages":
 			objType = "FlexiPage" 
+		case "tabs":
+			objType = "CustomTab"
 		default:
 			ErrorAndExit("That folder type is not supported")
 	}

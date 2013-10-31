@@ -26,6 +26,8 @@ func runLogin(cmd *Command, args []string) {
 			endpoint = EndpointTest
 		case "pre":
 			endpoint = EndpointPrerelease
+		case "mobile1":
+			endpoint = EndpointMobile1
 		default:
 			ErrorAndExit("no such endpoint: %s", args[0])
 		}
