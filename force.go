@@ -20,6 +20,7 @@ import (
 const (
 	ProductionClientId = "3MVG9A2kN3Bn17huXZp1OQhPe8y4_ozAQZZCKxsWbef9GjSnHGOunHSwhnY1BWz_5vHkTL9BeLMriIX5EUKaw"
 	PrereleaseClientId = "3MVG9lKcPoNINVBIRgC7lsz5tIhlg0mtoEqkA9ZjDAwEMbBy43gsnfkzzdTdhFLeNnWS8M4bnRnVv1Qj0k9MD"
+	Mobile1ClientId    = "3MVG9Iu66FKeHhIPqCB9VWfYPxjfcb5Ube.v5L81BLhnJtDYVP2nkA.mDPwfm5FTLbvL6aMftfi8w0rL7Dv7f"
 	RedirectUri        = "https://force-cli.herokuapp.com/auth/callback"
 	
 )
@@ -28,6 +29,7 @@ const (
 	EndpointProduction = iota
 	EndpointTest       = iota
 	EndpointPrerelease = iota
+	EndpointMobile1	   = iota	
 )
 
 const (
@@ -104,6 +106,14 @@ type ForceCreateRecordResult struct {
 	Success bool
 }
 
+type ForcePasswordStatusResult struct {
+	IsExpired	bool
+}
+
+type ForcePasswordResetResult struct {
+	NewPassword	string
+}
+
 type ForceQueryResult struct {
 	Done      bool
 	Records   []ForceRecord
@@ -135,6 +145,8 @@ func ForceLogin(endpoint ForceEndpoint) (creds ForceCredentials, err error) {
 		url = fmt.Sprintf("https://test.salesforce.com/services/oauth2/authorize?response_type=token&client_id=%s&redirect_uri=%s&state=%d&prompt=login", ProductionClientId, RedirectUri, port)
 	case EndpointPrerelease:
 		url = fmt.Sprintf("https://prerellogin.pre.salesforce.com/services/oauth2/authorize?response_type=token&client_id=%s&redirect_uri=%s&state=%d&prompt=login", PrereleaseClientId, RedirectUri, port)
+	case EndpointMobile1:
+		url = fmt.Sprintf("https://EndpointMobile1.t.salesforce.com/services/oauth2/authorize?response_type=token&client_id=%s&redirect_uri=%s&state=%d&prompt=login", Mobile1ClientId, RedirectUri, port)
 	default:
 		ErrorAndExit("no such endpoint type")
 	}
@@ -183,6 +195,26 @@ func (f *Force) Get(url string) (object ForceRecord, err error) {
 		return
 	}
 	err = json.Unmarshal(body, &object)
+	return
+}
+
+func (f *Force) GetPasswordStatus(id string) (result ForcePasswordStatusResult, err error) {
+	url := fmt.Sprintf("%s/services/data/%s/sobjects/User/%s/password", f.Credentials.InstanceUrl, apiVersion, id)
+	body, err := f.httpGet(url)
+	if err != nil {
+		return
+	}
+	err = json.Unmarshal(body, &result)
+	return
+}
+
+func (f *Force) ResetPassword(id string) (result ForcePasswordResetResult, err error) {
+	url := fmt.Sprintf("%s/services/data/%s/sobjects/User/%s/password", f.Credentials.InstanceUrl, apiVersion, id)
+	body, err := f.httpDelete(url)
+	if err != nil {
+		return
+	}
+	err = json.Unmarshal(body, &result)
 	return
 }
 
