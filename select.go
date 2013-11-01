@@ -14,7 +14,8 @@ Execute a SOQL select
 
 Examples:
 
-  force select id, name from user
+  force sql select id, Name, Account.Name From Contact
+
 `,
 }
 

@@ -7,14 +7,17 @@ import (
 
 var cmdSoql = &Command{
 	Run:   runSoql,
-	Usage: "soql",
+	Usage: "soql <soql statement> [output format]",
 	Short: "Execute a SOQL statement",
 	Long: `
 Execute a SOQL statement
 
 Examples:
 
-  force soql select id, name from user
+  force soql select Id, Name, Account.Name From Contact
+
+  force soql select Id, Name, Account.Name From Contact --format:csv
+  
 `,
 }
 
