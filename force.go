@@ -218,6 +218,12 @@ func (f *Force) ResetPassword(id string) (result ForcePasswordResetResult, err e
 	return
 }
 
+func (f *Force) ChangePassword(id string, attrs map[string]string) (result string, err error) {
+	url := fmt.Sprintf("%s/services/data/%s/sobjects/User/%s/password", f.Credentials.InstanceUrl, apiVersion, id)
+	_, err = f.httpPost(url, attrs)
+	return
+}
+
 func (f *Force) GetRecord(sobject, id string) (object ForceRecord, err error) {
 	url := fmt.Sprintf("%s/services/data/%s/sobjects/%s/%s", f.Credentials.InstanceUrl, apiVersion, sobject, id)
 	body, err := f.httpGet(url)
