@@ -18,6 +18,15 @@ func DisplayForceSobjects(sobjects []ForceSobject) {
 	}
 }
 
+func DisplayForceRecordsf(records []ForceRecord, format string) {
+	switch format {
+	case "csv":
+		fmt.Println(RenderForceRecordsCSV(records, format))
+	default:
+		fmt.Printf("Format %s not supported\n\n", format)
+	}
+}
+
 func DisplayForceRecords(records []ForceRecord) {
 	fmt.Println(RenderForceRecords(records))
 }
@@ -89,6 +98,63 @@ func RenderForceRecords(records []ForceRecord) string {
 		out.WriteString(fmt.Sprintf(strings.Join(separators, "+") + "\n"))
 	}
 	out.WriteString(fmt.Sprintf(" (%d records)\n", len(records)))
+	return out.String()
+}
+
+func RenderForceRecordsCSV(records []ForceRecord, format string) string {
+	var out bytes.Buffer
+
+	var keys []string
+	var flattenedRecords []map[string]interface{}
+	for _, record := range records {
+		flattenedRecord := FlattenForceRecord(record)
+		flattenedRecords = append(flattenedRecords, flattenedRecord)
+		for key, _ := range flattenedRecord {
+			if !StringSliceContains(keys, key) {
+				keys = append(keys, key)
+			}
+		}
+	}
+	keys = RemoveTransientRelationships(keys)
+
+	if len(records) > 0 {
+		lengths := make([]int, len(keys))
+		for i, key := range keys {
+			lengths[i] = len(key)
+		}
+
+		formatter_parts := make([]string, len(keys))
+		for i, length := range lengths {
+			formatter_parts[i] = fmt.Sprintf(`"%%-%ds"`, length)
+		}
+
+		formatter := strings.Join(formatter_parts,`,`)
+		out.WriteString(fmt.Sprintf(formatter+"\n", StringSliceToInterfaceSlice(keys)...))
+		for _, record := range flattenedRecords {
+			values := make([][]string, len(keys))
+			for i, key := range keys {
+				values[i] = strings.Split(fmt.Sprintf(`%v`, record[key]), `\n`)
+			}
+
+			maxLines := 0
+			for _, value := range values {
+				lines := len(value)
+				if lines > maxLines {
+					maxLines = lines
+				}
+			}
+
+			for li := 0; li < maxLines; li++ {
+				line := make([]string, len(values))
+				for i, value := range values {
+					if len(value) > li {
+						line[i] = value[li]
+					}
+				}
+				out.WriteString(fmt.Sprintf(formatter+"\n", StringSliceToInterfaceSlice(line)...))
+			}
+		}
+	}
 	return out.String()
 }
 
