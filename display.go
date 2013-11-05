@@ -22,15 +22,6 @@ func DisplayForceRecords(records []ForceRecord) {
 	fmt.Println(RenderForceRecords(records))
 }
 
-func hasColumn(haystack []string, needle string) bool {
-	for _, column := range haystack {
-		if column == needle {
-			return true
-		}
-	}
-	return false
-}
-
 func recordColumns(records []ForceRecord) (columns []string) {
 	for _, record := range records {
 		for key, _ := range record {
