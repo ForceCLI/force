@@ -22,133 +22,150 @@ func DisplayForceRecords(records []ForceRecord) {
 	fmt.Println(RenderForceRecords(records))
 }
 
-func RenderForceRecords(records []ForceRecord) string {
-	var out bytes.Buffer
-
-	var keys []string
-	var flattenedRecords []map[string]interface{}
-	for _, record := range records {
-		flattenedRecord := FlattenForceRecord(record)
-		flattenedRecords = append(flattenedRecords, flattenedRecord)
-		for key, _ := range flattenedRecord {
-			if !StringSliceContains(keys, key) {
-				keys = append(keys, key)
-			}
-		}
-	}
-	keys = RemoveTransientRelationships(keys)
-
-	if len(records) > 0 {
-		lengths := make([]int, len(keys))
-		separators := make([]string, len(keys))
-		for i, key := range keys {
-			lengths[i] = len(key)
-			for _, record := range flattenedRecords {
-				v := fmt.Sprintf("%v", record[key])
-				l := len(v)
-				if index := strings.Index(v, "\n"); index > -1 {
-					l = index + 1
-				}
-				if l > lengths[i] {
-					lengths[i] = l
-				}
-			}
-			separators[i] = strings.Repeat("-", lengths[i]+2)
-		}
-		formatter_parts := make([]string, len(keys))
-		for i, length := range lengths {
-			formatter_parts[i] = fmt.Sprintf(" %%-%ds ", length)
-		}
-		formatter := strings.Join(formatter_parts, "|")
-		out.WriteString(fmt.Sprintf(formatter+"\n", StringSliceToInterfaceSlice(keys)...))
-		out.WriteString(fmt.Sprintf(strings.Join(separators, "+") + "\n"))
-		for _, record := range flattenedRecords {
-			values := make([][]string, len(keys))
-			for i, key := range keys {
-				values[i] = strings.Split(fmt.Sprintf("%v", record[key]), "\n")
-			}
-
-			maxLines := 0
-			for _, value := range values {
-				lines := len(value)
-				if lines > maxLines {
-					maxLines = lines
-				}
-			}
-
-			for li := 0; li < maxLines; li++ {
-				line := make([]string, len(values))
-				for i, value := range values {
-					if len(value) > li {
-						line[i] = value[li]
-					}
-				}
-				out.WriteString(fmt.Sprintf(formatter+"\n", StringSliceToInterfaceSlice(line)...))
-			}
-		}
-		out.WriteString(fmt.Sprintf(strings.Join(separators, "+") + "\n"))
-	}
-	out.WriteString(fmt.Sprintf(" (%d records)\n", len(records)))
-	return out.String()
-}
-
-func FlattenForceRecord(record ForceRecord) map[string]interface{} {
-	fieldValues := make(map[string]interface{})
-	for key, _ := range record {
-		value := record[key]
-		if key == "attributes" {
-			continue
-		} else if relationship, isRelationship := value.(map[string]interface{}); isRelationship {
-			if _, ok := relationship["records"]; ok {
-				fieldValues[key] = RenderForceRecords(ChildRelationshipToQueryResult(relationship).Records)
-			} else {
-				for parentKey, parentValue := range FlattenForceRecord(relationship) {
-					fieldValues[key+"."+parentKey] = parentValue
-				}
-			}
-		} else {
-			fieldValues[key] = value
-		}
-	}
-	return fieldValues
-}
-
-func ChildRelationshipToQueryResult(relationship map[string]interface{}) ForceQueryResult {
-	done := relationship["done"].(bool)
-	var records []ForceRecord
-	for _, cr := range relationship["records"].([]interface{}) {
-		records = append(records, ForceRecord(cr.(map[string]interface{})))
-	}
-	totalSize := int(relationship["totalSize"].(float64))
-	return ForceQueryResult{done, records, totalSize}
-}
-
-func StringSliceContains(slice []string, e string) bool {
-	for _, s := range slice {
-		if s == e {
+func hasColumn(haystack []string, needle string) bool {
+	for _, column := range haystack {
+		if column == needle {
 			return true
 		}
 	}
 	return false
 }
 
-func RemoveTransientRelationships(slice []string) []string {
-	var transientRelationships []string
-	for _, s1 := range slice {
-		for _, s2 := range slice {
-			if strings.HasPrefix(s1, s2+".") {
-				transientRelationships = append(transientRelationships, s2)
+func recordColumns(records []ForceRecord) (columns []string) {
+	for _, record := range records {
+		for key, _ := range record {
+			if key == "attributes" {
+				continue
+			}
+			found := false
+			for _, column := range columns {
+				if column == key {
+					found = true
+					break
+				}
+			}
+			if !found {
+				columns = append(columns, key)
 			}
 		}
 	}
+	return
+}
 
-	var flattened []string
-	for _, s := range slice {
-		if !StringSliceContains(transientRelationships, s) {
-			flattened = append(flattened, s)
+func coerceForceRecords(value map[string]interface{}) (records []ForceRecord) {
+	if value["records"] == nil {
+		records = make([]ForceRecord, 1)
+		records[0] = ForceRecord(value)
+	} else {
+		records = make([]ForceRecord, len(value["records"].([]interface{})))
+		for i, record := range value["records"].([]interface{}) {
+			records[i] = ForceRecord(record.(map[string]interface{}))
 		}
 	}
-	return flattened
+	return
+}
+
+func columnLengths(records []ForceRecord) (lengths map[string]int) {
+	lengths = make(map[string]int)
+
+	columns := recordColumns(records)
+	for _, column := range columns {
+		lengths[column] = len(column) + 2
+	}
+
+	for _, record := range records {
+		for key, value := range record {
+			if key == "attributes" {
+				continue
+			}
+			length := 0
+			switch value := value.(type) {
+			case map[string]interface{}:
+				records := coerceForceRecords(value)
+				lengths := columnLengths(records)
+				for _, l := range lengths {
+					length += l
+				}
+				length += len(lengths) - 1
+			default:
+				length = len(fmt.Sprintf(" %v ", value))
+			}
+			if length > lengths[key] {
+				lengths[key] = length
+			}
+		}
+	}
+	return
+}
+
+func recordHeader(columns []string, lengths map[string]int) (out string) {
+	headers := make([]string, len(columns))
+	for i, column := range columns {
+		headers[i] = fmt.Sprintf(fmt.Sprintf(" %%-%ds ", lengths[column]-2), column)
+	}
+	out = strings.Join(headers, "|")
+	return
+}
+
+func recordSeparator(columns []string, lengths map[string]int) (out string) {
+	separators := make([]string, len(columns))
+	for i, column := range columns {
+		separators[i] = strings.Repeat("-", lengths[column])
+	}
+	out = strings.Join(separators, "+")
+	return
+}
+
+func recordRow(record ForceRecord, columns []string, lengths map[string]int) (out string) {
+	values := make([]string, len(columns))
+	for i, column := range columns {
+		value := record[column]
+		switch value := value.(type) {
+		case map[string]interface{}:
+			records := coerceForceRecords(value)
+			values[i] = RenderForceRecords(records)
+		default:
+			values[i] = fmt.Sprintf(fmt.Sprintf(" %%-%ds ", lengths[column]-2), value)
+		}
+	}
+	maxrows := 1
+	for _, value := range values {
+		rows := len(strings.Split(value, "\n"))
+		if rows > maxrows {
+			maxrows = rows
+		}
+	}
+	rows := make([]string, maxrows)
+	for i := 0; i < maxrows; i++ {
+		rowvalues := make([]string, len(columns))
+		for j, column := range columns {
+			parts := strings.Split(values[j], "\n")
+			if i < len(parts) {
+				rowvalues[j] = fmt.Sprintf(fmt.Sprintf("%%-%ds", lengths[column]), parts[i])
+			} else {
+				rowvalues[j] = strings.Repeat(" ", lengths[column])
+			}
+		}
+		rows[i] = strings.Join(rowvalues, "|")
+	}
+	out = strings.Join(rows, "\n")
+	return
+}
+
+func RenderForceRecords(records []ForceRecord) string {
+	var out bytes.Buffer
+
+	columns := recordColumns(records)
+	lengths := columnLengths(records)
+
+	out.WriteString(recordHeader(columns, lengths) + "\n")
+	out.WriteString(recordSeparator(columns, lengths) + "\n")
+
+	for _, record := range records {
+		out.WriteString(recordRow(record, columns, lengths) + "\n")
+	}
+
+	return out.String()
 }
 
 func DisplayForceRecord(record ForceRecord) {
