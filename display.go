@@ -71,7 +71,11 @@ func columnLengths(records []ForceRecord, prefix string) (lengths map[string]int
 				}
 				length += len(lens) - 1
 			default:
-				length = len(fmt.Sprintf(" %v ", value))
+				if value == nil {
+					length = len(" (null) ")
+				} else {
+					length = len(fmt.Sprintf(" %v ", value))
+				}
 			}
 			if length > lengths[key] {
 				lengths[key] = length
@@ -110,7 +114,7 @@ func recordRow(record ForceRecord, columns []string, lengths map[string]int, pre
 			values[i] = strings.TrimSuffix(renderForceRecords(value, fmt.Sprintf("%s.%s", prefix, column), lengths), "\n")
 		default:
 			if value == nil {
-				values[i] = strings.Repeat(" ", lengths[column])
+				values[i] = fmt.Sprintf(fmt.Sprintf(" %%-%ds ", lengths[column]-2), "(null)")
 			} else {
 				values[i] = fmt.Sprintf(fmt.Sprintf(" %%-%ds ", lengths[column]-2), value)
 			}
@@ -168,10 +172,11 @@ func flattenForceRecord(record ForceRecord) (flattened ForceRecord) {
 	return
 }
 
-func prefixHasSubRows(columns []string, lengths map[string]int, prefix string) bool {
-	for key, _ := range lengths {
-		for _, column := range columns {
-			if strings.HasPrefix(key, fmt.Sprintf("%s.%s.", prefix, column)) {
+func recordsHaveSubRows(records []ForceRecord) bool {
+	for _, record := range records {
+		for _, value := range record {
+			switch value.(type) {
+			case []ForceRecord:
 				return true
 			}
 		}
@@ -189,7 +194,7 @@ func renderForceRecords(records []ForceRecord, prefix string, lengths map[string
 
 	for _, record := range records {
 		out.WriteString(recordRow(record, columns, lengths, prefix) + "\n")
-		if prefixHasSubRows(columns, lengths, prefix) {
+		if recordsHaveSubRows(records) {
 			out.WriteString(recordSeparator(columns, lengths, prefix) + "\n")
 		}
 	}
