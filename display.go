@@ -109,7 +109,11 @@ func recordRow(record ForceRecord, columns []string, lengths map[string]int, pre
 		case []ForceRecord:
 			values[i] = strings.TrimSuffix(renderForceRecords(value, fmt.Sprintf("%s.%s", prefix, column), lengths), "\n")
 		default:
-			values[i] = fmt.Sprintf(fmt.Sprintf(" %%-%ds ", lengths[column]-2), value)
+			if value == nil {
+				values[i] = strings.Repeat(" ", lengths[column])
+			} else {
+				values[i] = fmt.Sprintf(fmt.Sprintf(" %%-%ds ", lengths[column]-2), value)
+			}
 		}
 	}
 	maxrows := 1
