@@ -8,9 +8,9 @@ import (
 var cmdField = &Command{
 	Run:   runField,
 	Usage: "field",
-	Short: "Manage custom fields",
+	Short: "Manage sobject fields",
 	Long: `
-Manage custom fields
+Manage sobject fields
 
 Usage:
 

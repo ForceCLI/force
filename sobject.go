@@ -8,9 +8,9 @@ import (
 var cmdSobject = &Command{
 	Run:   runSobject,
 	Usage: "sobject",
-	Short: "Manage standard & custom objects",
+	Short: "Manage sobjects",
 	Long: `
-Manage standard & custom objects
+Manage sobjects
 
 Usage:
 
