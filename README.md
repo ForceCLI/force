@@ -24,15 +24,14 @@ A command-line interface to force.com
 	Available commands:
 	   login     Log in to force.com
 	   logout    Log out from force.com
-	   accounts  List force.com accounts
 	   active    Show or set the active force.com account
 	   whoami    Show information about the active account
-	   sobject   Manage custom objects
-	   field     Manage custom fields
+	   sobject   Manage sobjects
+	   field     Manage sobject fields
 	   record    Create, modify, or view records
 	   export    Export metadata to a local directory
 	   import    Import metadata from a local directory
-	   select    Execute a SOQL select
+	   query     Execute a SOQL query
 	   apex      Execute anonymous Apex code
 	   version   Display current version
 	   update    Update to the latest version

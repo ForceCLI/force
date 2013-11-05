@@ -175,9 +175,11 @@ func flattenForceRecord(record ForceRecord) (flattened ForceRecord) {
 func recordsHaveSubRows(records []ForceRecord) bool {
 	for _, record := range records {
 		for _, value := range record {
-			switch value.(type) {
+			switch value := value.(type) {
 			case []ForceRecord:
-				return true
+				if len(value) > 0 {
+					return true
+				}
 			}
 		}
 	}
