@@ -64,7 +64,7 @@ func cmdExportReports(args []string) {
 	}
 
 	// Get reports in each folder
-	report_query := fmt.Sprintf("SELECT Id,DeveloperName,OwnerId FROM Report WHERE OwnerID IN (%s) LIMIT 1", folder_ids)
+	report_query := fmt.Sprintf("SELECT Id,DeveloperName,OwnerId FROM Report WHERE OwnerID IN (%s)", folder_ids)
 	report_records, err := force.Query(report_query)
 	if err != nil {
 		ErrorAndExit(err.Error())
