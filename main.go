@@ -14,6 +14,7 @@ var commands = []*Command{
 	cmdField,
 	cmdRecord,
 	cmdExport,
+	cmdExportReports,
 	cmdImport,
 	cmdQuery,
 	cmdApex,
