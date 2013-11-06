@@ -8,10 +8,10 @@ import (
 )
 
 var cmdReport = &Command{
-    Run:   runReport,
-    Usage: "report <command> [<args>]",
-    Short: "Export reports",
-    Long: `
+	Run:   runReport,
+	Usage: "report <command> [<args>]",
+	Short: "Export reports",
+	Long: `
 Export reports
 
 Usage:
@@ -25,16 +25,16 @@ Examples:
 }
 
 func runReport(cmd *Command, args []string) {
-    if len(args) == 0 {
-        cmd.printUsage()
-    } else {
-        switch args[0] {
-        case "export":
-            cmdExportReports(args[1:])
-        default:
-            ErrorAndExit("no such command: %s", args[0])
-        }
-    }
+	if len(args) == 0 {
+		cmd.printUsage()
+	} else {
+		switch args[0] {
+		case "export":
+			cmdExportReports(args[1:])
+		default:
+			ErrorAndExit("no such command: %s", args[0])
+		}
+	}
 }
 
 func cmdExportReports(args []string) {
@@ -98,5 +98,5 @@ func cmdExportReports(args []string) {
 			ErrorAndExit(err.Error())
 		}
 	}
-	fmt.Printf("Exported %v reports to %s\n", len(files) - 1, root)
+	fmt.Printf("Exported %v reports to %s\n", len(files)-1, root)
 }
