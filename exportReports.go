@@ -9,28 +9,28 @@ import (
 
 var cmdExportReports = &Command{
     Run:   runExportReports,
-    Usage: "exportReports [dir]",
+    Usage: "report_export [dir]",
     Short: "Export report metadata to a local directory",
     Long: `
-Export report metadata tso a local directory
+Export report metadata to a local directory
 
 Examples:
 
-  force exportReports
-
-  force exportReports org/schema
+  force report_export org/schema
 `,
 }
 
 func runExportReports(cmd *Command, args []string) {
     wd, _ := os.Getwd()
-    root := filepath.Join(wd, "metadata")
-    if len(args) == 1 {
-        root, _ = filepath.Abs(args[0])
+
+    if len(args) != 1 {
+        ErrorAndExit("Path is required")
     }
+            root, _ = filepath.Abs(args[0])
+
     force, _ := ActiveForce()
 
-    // Get Folders
+    // Get List of Folders
     folders := map[string]string{} // Map ID to DeveloperName
     folder_query := "SELECT Id,DeveloperName FROM Folder WHERE Type = 'Report' and DeveloperName != ''"
     folder_ids := ""
@@ -47,7 +47,6 @@ func runExportReports(cmd *Command, args []string) {
             folder_ids = folder_ids + "'" + record["Id"].(string) + "'"
         }
     }
-    fmt.Printf("Folders %s\n", folder_ids)
 
     // Get reports in each folder
     report_query := fmt.Sprintf("SELECT Id,DeveloperName,OwnerId FROM Report WHERE OwnerID IN (%s)", folder_ids)
