@@ -7,26 +7,41 @@ import (
 	"path/filepath"
 )
 
-var cmdExportReports = &Command{
-	Run:   runExportReports,
-	Usage: "report_export [dir]",
-	Short: "Export report metadata to a local directory",
-	Long: `
-Export report metadata to a local directory
+var cmdReport = &Command{
+    Run:   runReport,
+    Usage: "report <command> [<args>]",
+    Short: "Export reports",
+    Long: `
+Export reports
+
+Usage:
+
+  force report export <path>
 
 Examples:
 
-  force report_export org/schema
+  force record export org/reports
 `,
 }
 
-func runExportReports(cmd *Command, args []string) {
-	wd, _ := os.Getwd()
+func runReport(cmd *Command, args []string) {
+    if len(args) == 0 {
+        cmd.printUsage()
+    } else {
+        switch args[0] {
+        case "export":
+            cmdExportReports(args[1:])
+        default:
+            ErrorAndExit("no such command: %s", args[0])
+        }
+    }
+}
 
+func cmdExportReports(args []string) {
 	if len(args) != 1 {
 		ErrorAndExit("Path is required")
 	}
-	root, _ = filepath.Abs(args[0])
+	root, _ := filepath.Abs(args[0])
 
 	force, _ := ActiveForce()
 
@@ -49,7 +64,7 @@ func runExportReports(cmd *Command, args []string) {
 	}
 
 	// Get reports in each folder
-	report_query := fmt.Sprintf("SELECT Id,DeveloperName,OwnerId FROM Report WHERE OwnerID IN (%s)", folder_ids)
+	report_query := fmt.Sprintf("SELECT Id,DeveloperName,OwnerId FROM Report WHERE OwnerID IN (%s) LIMIT 1", folder_ids)
 	report_records, err := force.Query(report_query)
 	if err != nil {
 		ErrorAndExit(err.Error())
@@ -66,7 +81,6 @@ func runExportReports(cmd *Command, args []string) {
 				record["DeveloperName"].(string),    /* report dev name */
 			),
 		}
-		fmt.Println(tmpForceMetadataQueryElement)
 		forceObjectsToRetrieve = append(forceObjectsToRetrieve, tmpForceMetadataQueryElement)
 	}
 
@@ -84,5 +98,5 @@ func runExportReports(cmd *Command, args []string) {
 			ErrorAndExit(err.Error())
 		}
 	}
-	fmt.Printf("Exported to %s\n", root)
+	fmt.Printf("Exported %v reports to %s\n", len(files) - 1, root)
 }
