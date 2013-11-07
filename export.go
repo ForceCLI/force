@@ -29,6 +29,57 @@ func runExport(cmd *Command, args []string) {
 		root, _ = filepath.Abs(args[0])
 	}
 	runReportExport(root)
+	runMetadataExport(root)
+}
+
+func runReportExport(root string) {
+	force, _ := ActiveForce()
+	// Get List of Folders
+	folders := map[string]string{} // Map ID to DeveloperName
+	folder_query := "SELECT Id,DeveloperName FROM Folder WHERE Type = 'Report' and DeveloperName != ''"
+	folder_ids := ""
+	folder_records, err := force.Query(folder_query)
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
+	for _, record := range folder_records {
+		if record != nil {
+			folders[record["Id"].(string)] = record["DeveloperName"].(string)
+			if len(folder_ids) != 0 {
+				folder_ids = folder_ids + ","
+			}
+			folder_ids = folder_ids + "'" + record["Id"].(string) + "'"
+		}
+	}
+
+	// Get reports in each folder
+	report_query := fmt.Sprintf("SELECT Id,DeveloperName,OwnerId FROM Report WHERE OwnerID IN (%s)", folder_ids)
+	report_records, err := force.Query(report_query)
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
+
+	// Create ForceMetadataQuery Object with every folder / report
+	forceObjectsToRetrieve := ForceMetadataQuery{}
+	for _, record := range report_records {
+		tmpForceMetadataQueryElement := ForceMetadataQueryElement{
+			Name: "Report",
+			Members: fmt.Sprintf(
+				"%s/%s",
+				folders[record["OwnerId"].(string)], /* folder dev name */
+				record["DeveloperName"].(string),    /* report dev name */
+			),
+		}
+		forceObjectsToRetrieve = append(forceObjectsToRetrieve, tmpForceMetadataQueryElement)
+	}
+	files, err := force.Metadata.Retrieve(forceObjectsToRetrieve)
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
+	saveFiles(files, root)
+}
+
+func runMetadataExport(root string) {
 	force, _ := ActiveForce()
 	defaultObjects := ForceMetadataQuery{
 		{Name: "AccountSettings", Members: "*"},
@@ -114,53 +165,6 @@ func runExport(cmd *Command, args []string) {
 	}
 
 	files, err := force.Metadata.Retrieve(defaultObjects)
-	if err != nil {
-		ErrorAndExit(err.Error())
-	}
-	saveFiles(files, root)
-}
-
-func runReportExport(root string) {
-	force, _ := ActiveForce()
-	// Get List of Folders
-	folders := map[string]string{} // Map ID to DeveloperName
-	folder_query := "SELECT Id,DeveloperName FROM Folder WHERE Type = 'Report' and DeveloperName != ''"
-	folder_ids := ""
-	folder_records, err := force.Query(folder_query)
-	if err != nil {
-		ErrorAndExit(err.Error())
-	}
-	for _, record := range folder_records {
-		if record != nil {
-			folders[record["Id"].(string)] = record["DeveloperName"].(string)
-			if len(folder_ids) != 0 {
-				folder_ids = folder_ids + ","
-			}
-			folder_ids = folder_ids + "'" + record["Id"].(string) + "'"
-		}
-	}
-
-	// Get reports in each folder
-	report_query := fmt.Sprintf("SELECT Id,DeveloperName,OwnerId FROM Report WHERE OwnerID IN (%s)", folder_ids)
-	report_records, err := force.Query(report_query)
-	if err != nil {
-		ErrorAndExit(err.Error())
-	}
-
-	// Create ForceMetadataQuery Object with every folder / report
-	forceObjectsToRetrieve := ForceMetadataQuery{}
-	for _, record := range report_records {
-		tmpForceMetadataQueryElement := ForceMetadataQueryElement{
-			Name: "Report",
-			Members: fmt.Sprintf(
-				"%s/%s",
-				folders[record["OwnerId"].(string)], /* folder dev name */
-				record["DeveloperName"].(string),    /* report dev name */
-			),
-		}
-		forceObjectsToRetrieve = append(forceObjectsToRetrieve, tmpForceMetadataQueryElement)
-	}
-	files, err := force.Metadata.Retrieve(forceObjectsToRetrieve)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
