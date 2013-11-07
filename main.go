@@ -8,7 +8,7 @@ var commands = []*Command{
 	cmdLogin,
 	cmdLogout,
 	/* cmdAccounts,*/
-	cmdActive,
+	/* cmdActive,*/
 	cmdWhoami,
 	cmdSobject,
 	cmdField,
