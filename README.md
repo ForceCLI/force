@@ -24,7 +24,6 @@ A command-line interface to force.com
 	Available commands:
 	   login     Log in to force.com
 	   logout    Log out from force.com
-	   active    Show or set the active force.com account
 	   whoami    Show information about the active account
 	   sobject   Manage sobjects
 	   field     Manage sobject fields

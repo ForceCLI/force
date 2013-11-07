@@ -116,7 +116,7 @@ func recordRow(record ForceRecord, columns []string, lengths map[string]int, pre
 			if value == nil {
 				values[i] = fmt.Sprintf(fmt.Sprintf(" %%-%ds ", lengths[column]-2), "(null)")
 			} else {
-				values[i] = fmt.Sprintf(fmt.Sprintf(" %%-%ds ", lengths[column]-2), value)
+				values[i] = fmt.Sprintf(fmt.Sprintf(" %%-%dv ", lengths[column]-2), value)
 			}
 		}
 	}
