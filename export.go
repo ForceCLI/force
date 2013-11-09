@@ -5,8 +5,8 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"bitbucket.org/pkg/inflect"
-	"strings"
+	//"bitbucket.org/pkg/inflect"
+	//"strings"
 )
 
 var cmdExport = &Command{
@@ -45,22 +45,21 @@ func runFetch(cmd *Command, args []string) {
 	if len(args) < 1 {
 		ErrorAndExit("must specify object type and/or object name")
 	}
-	//root, _ = filepath.Abs(args[0])
-	artifactType = args[0]
 
-	if len(args) == 2 {
-		artifactName = args[1]
-		ccase := inflect.CamelizeDownFirst(artifactType)
-		if !strings.HasSuffix(artifactName, ccase) {
-			//artifactName = strings.Join([]string{artifactName, ccase}, ".")
-			//fmt.Println("new artifact name: " + artifactName);
+	artifactType = args[0]
+	query := ForceMetadataQuery{}
+	if len(args) >= 2 {
+		newargs := args[1:]
+		for artifactNames := range newargs {
+			mq := ForceMetadataQueryElement{artifactType, newargs[artifactNames]}
+			query = append(query, mq)
 		}
+	} else {
+		mq := ForceMetadataQueryElement{artifactType, artifactName}
+		query = append(query, mq)
 	}
 
 	force, _ := ActiveForce()
-	query := ForceMetadataQuery{
-		{Name: artifactType, Members: artifactName},
-	}
 	files, err := force.Metadata.Retrieve(query)
 	if err != nil {
 		ErrorAndExit(err.Error())
