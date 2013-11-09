@@ -120,14 +120,14 @@ func (fm *ForceMetadata) CheckDeployStatus(id string) (problems []ForceMetadataD
 	var deployResult struct {
 		Results ForceCheckDeploymentStatusResult `xml:"Body>checkDeployStatusResponse>result"`
 	}
+	fmt.Printf("success: %v", string(body))
 	if err = xml.Unmarshal(body, &deployResult); err != nil {
 		ErrorAndExit(err.Error())
 	}
 	
-	//fmt.Printf("success: %v", deployResult.Results.Success)
 	
 	if !deployResult.Results.Success {
-		ErrorAndExit("Push failed, there were %v components with errors\nID: %v", deployResult.Results.NumberComponentErrors, deployResult.Results.Id)
+		//ErrorAndExit("Push failed, there were %v components with errors\nID: %v", deployResult.Results.NumberComponentErrors, deployResult.Results.Id)
 	}
 	var result struct {
 		Problems []ForceMetadataDeployProblem `xml:"Body>checkDeployStatusResponse>result>messages"`
@@ -226,6 +226,13 @@ func (fm *ForceMetadata) CreateCustomField(object, field, typ string) (err error
 		soapField = fmt.Sprintf("<type>AutoNumber</type><startingNumber>0</startingNumber><displayFormat>%s-{00000}</displayFormat><externalId>false</externalId>", fld[0:1])
 	case "float":
 		soapField = "<type>Number</type><precision>10</precision><scale>2</scale>"
+	case "geolocation":
+		soapField = `<displayLocationInDecimal>true</displayLocationInDecimal>
+        			 <externalId>false</externalId>
+        			 <required>false</required>
+        			 <scale>5</scale>
+        			 <trackTrending>false</trackTrending>
+        			 <type>Location</type>`
 	case "lookup":
 		soapField = `<type>Lookup</type>
 					<referenceTo>%s</referenceTo>
@@ -375,7 +382,6 @@ func (fm *ForceMetadata) Deploy(files ForceMetadataFiles) (problems []ForceMetad
 	zipfile := new(bytes.Buffer)
 	zipper := zip.NewWriter(zipfile)
 	for name, data := range files {
-		//fmt.Println("Adding file " + name)
 		wr, err := zipper.Create(fmt.Sprintf("unpackaged/%s", name))
 		if err != nil {
 			return nil, err
@@ -389,8 +395,6 @@ func (fm *ForceMetadata) Deploy(files ForceMetadataFiles) (problems []ForceMetad
 		fmt.Println(err.Error())
 		return
 	}
-
-	//fmt.Println(string(body))
 
 	var status struct {
 		Id string `xml:"Body>deployResponse>result>id"`
