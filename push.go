@@ -103,16 +103,33 @@ func runPush(cmd *Command, args []string) {
 		ErrorAndExit(err.Error())
 	}
 
-	problems, err := force.Metadata.Deploy(files)
+	successes, problems, err := force.Metadata.Deploy(files)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
+	fmt.Printf("\nFailures - %d\n", len(problems))
 	for _, problem := range problems {
-		if problem.Name == "" {
+		if problem.FullName == "" {
 			fmt.Println(problem.Problem)
 		} else {
-			fmt.Printf("%s: %s\n", problem.Name, problem.Problem)
+			fmt.Printf("ERROR with %s:\n %s\n", problem.FullName, problem.Problem)
 		}
 	}
+
+	fmt.Printf("\nSuccesses - %d\n", len(successes))
+	for _, success := range successes {
+		if success.FullName != "package.xml" {
+			verb := "unchanged"
+			if success.Changed {
+				verb = "changed"
+			} else if success.Deleted {
+				verb = "deleted"
+			} else if success.Created {
+				verb = "created"
+			}
+			fmt.Printf("%s\n\tstatus: %s\n\tid=%s\n", success.FullName, verb, success.Id)
+		}
+	}
+
 	fmt.Printf("Pushed %s to Force.com\n", args[2])
 }
