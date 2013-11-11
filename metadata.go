@@ -414,6 +414,8 @@ func (fm *ForceMetadata) Deploy(files ForceMetadataFiles) (successes []Component
 		return
 	}
 
+	//fmt.Println(string(body))
+
 	var status struct {
 		Id string `xml:"Body>deployResponse>result>id"`
 	}
