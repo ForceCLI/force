@@ -12,6 +12,7 @@ import (
 	"strings"
 	"bufio"
 	"os"
+	"time"
 )
 
 type ForceConnectedApps []ForceConnectedApp
@@ -33,14 +34,32 @@ type ComponentFailure struct {
 	Success 		bool 	`xml:"success"`
 }
 
+type ComponentSuccess struct {
+	Changed 		bool 	`xml:"changed"`
+	Created 		bool 	`xml:"created"`
+	Deleted 		bool 	`xml:"deleted"`
+	FileName 		string 	`xml:"fileName"`
+	FullName 		string 	`xml:"fullName"`
+	Id 				string 	`xml:"id"`
+	Success 		bool 	`xml:"success"`
+}
+
 type RunTestResult struct {
 	NumberOfFailures	int `xml:"numFailures"`
 	NumberOfTestsRun	int `xml:"numTestsRun"`
 	TotalTime			int `xml:"totalTime"`
 }
 
+type ComponentDetails struct {
+	ComponentSuccesses	[]ComponentSuccess `xml:"componentSuccesses"`
+	ComponentFailures	[]ComponentFailure `xml:"componentFailures"`
+}
+
 type ForceCheckDeploymentStatusResult struct {
 	CheckOnly 					bool 	`xml:"checkOnly"`
+	CompletedDate				time.Time `xml:"completedDate"`
+	CreatedDate					time.Time `xml:"createdDate"`
+	Details 					ComponentDetails `xml:"details"`
 	Done 						bool 	`xml:"done"`
 	Id							string 	`xml:"id"`
 	NumberComponentErrors 		int 	`xml:"numberComponentErrors"`
@@ -109,7 +128,7 @@ func (fm *ForceMetadata) CheckStatus(id string) (err error) {
 	return
 }
 
-func (fm *ForceMetadata) CheckDeployStatus(id string) (problems []ForceMetadataDeployProblem, err error) {
+func (fm *ForceMetadata) CheckDeployStatus(id string) (results ForceCheckDeploymentStatusResult, err error) {
 	body, err := fm.soapExecute("checkDeployStatus", fmt.Sprintf("<id>%s</id><includeDetails>true</includeDetails>", id))
 	if err != nil {
 		return
@@ -120,13 +139,12 @@ func (fm *ForceMetadata) CheckDeployStatus(id string) (problems []ForceMetadataD
 	var deployResult struct {
 		Results ForceCheckDeploymentStatusResult `xml:"Body>checkDeployStatusResponse>result"`
 	}
-	fmt.Printf("success: %v", string(body))
+
 	if err = xml.Unmarshal(body, &deployResult); err != nil {
 		ErrorAndExit(err.Error())
 	}
 	
-	
-	if !deployResult.Results.Success {
+	/*if !deployResult.Results.Success {
 		//ErrorAndExit("Push failed, there were %v components with errors\nID: %v", deployResult.Results.NumberComponentErrors, deployResult.Results.Id)
 	}
 	var result struct {
@@ -134,8 +152,8 @@ func (fm *ForceMetadata) CheckDeployStatus(id string) (problems []ForceMetadataD
 	}
 	if err = xml.Unmarshal(body, &result); err != nil {
 		return
-	}
-	problems = result.Problems
+	}*/
+	results = deployResult.Results
 	return
 }
 
@@ -375,7 +393,7 @@ func (fm *ForceMetadata) DeleteCustomObject(object string) (err error) {
 	return
 }
 
-func (fm *ForceMetadata) Deploy(files ForceMetadataFiles) (problems []ForceMetadataDeployProblem, err error) {
+func (fm *ForceMetadata) Deploy(files ForceMetadataFiles) (successes []ComponentSuccess, problems []ComponentFailure, err error) {
 	soap := `
 		<zipFile>%s</zipFile>
 	`
@@ -384,7 +402,7 @@ func (fm *ForceMetadata) Deploy(files ForceMetadataFiles) (problems []ForceMetad
 	for name, data := range files {
 		wr, err := zipper.Create(fmt.Sprintf("unpackaged/%s", name))
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		wr.Write(data)
 	}
@@ -405,11 +423,13 @@ func (fm *ForceMetadata) Deploy(files ForceMetadataFiles) (problems []ForceMetad
 	if err = fm.CheckStatus(status.Id); err != nil {
 		return
 	}
-	messages, err := fm.CheckDeployStatus(status.Id)
-	for _, problem := range messages {
-		if !problem.Success {
-			problems = append(problems, problem)
-		}
+	results, err := fm.CheckDeployStatus(status.Id)
+	
+	for _, problem := range results.Details.ComponentFailures {
+		problems = append(problems, problem)
+	}
+	for _, success := range results.Details.ComponentSuccesses {
+		successes = append(successes, success)
 	}
 	return
 }
