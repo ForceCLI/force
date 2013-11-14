@@ -233,6 +233,11 @@ func (fm *ForceMetadata) CreateCustomField(object, field, typ string) (err error
 	soapField := ""
 	fld := ""
 	switch strings.ToLower(typ) {
+	case "bool", "boolean", "checkbox":
+		soapField = `<type>Checkbox</type>
+					<defaultValue>false</defaultValue>
+					<externalId>false</externalId>
+					<trackTrending>false</trackTrending>`
 	case "text", "string":
 		soapField = "<type>Text</type><length>255</length>"
 	case "datetime":
