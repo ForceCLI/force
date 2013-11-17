@@ -29,7 +29,7 @@ func runSoql(cmd *Command, args []string) {
 		format := "console"
 		formatArg := args[len(args)-1]
 
-		if strings.Contains(formatArg, "--format:") {
+		if strings.Contains(formatArg, "format:") {
 			args = args[:len(args) - 1]
 			format = strings.SplitN(formatArg, ":", 2)[1]
 		}
