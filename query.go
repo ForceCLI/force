@@ -6,27 +6,43 @@ import (
 
 var cmdQuery = &Command{
 	Run:   runQuery,
-	Usage: "query <soql>",
-	Short: "Execute a SOQL query",
+	Usage: "query <soql statement> [output format]",
+	Short: "Execute a SOQL statement",
 	Long: `
-Execute a SOQL query
+Execute a SOQL statement
 
 Examples:
 
-  force query select id, name from user
+  force soql select Id, Name, Account.Name From Contact
+
+  force soql select Id, Name, Account.Name From Contact --format:csv
+  
 `,
 }
 
-func runQuery(cmd *Command, args []string) {
+func runSoql(cmd *Command, args []string) {
 	force, _ := ActiveForce()
 	if len(args) < 1 {
-		ErrorAndExit("must specify a query")
-	}
-	query := strings.Join(args, " ")
-	records, err := force.Query(query)
-	if err != nil {
-		ErrorAndExit(err.Error())
+		cmd.printUsage()
 	} else {
-		DisplayForceRecords(records)
+		format := "console"
+		formatArg := args[len(args)-1]
+
+		if strings.Contains(formatArg, "--format:") {
+			args = args[:len(args) - 1]
+			format = strings.SplitN(formatArg, ":", 2)[1]
+		}
+
+		soql := strings.Join(args, " ")
+		records, err := force.Query(fmt.Sprintf("%s", soql))
+		if err != nil {
+			ErrorAndExit(err.Error())
+		} else {
+			if format == "console" {
+				DisplayForceRecords(records)
+			} else  {
+				DisplayForceRecordsf(records, format)
+			}
+		}
 	}
 }
