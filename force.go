@@ -33,10 +33,6 @@ const (
 )
 
 const (
-	apiVersion = "v29.0"
-)
-
-const (
 	apiVersion = "v29.0" //winter 14
 )
 

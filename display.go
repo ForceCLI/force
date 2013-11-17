@@ -154,14 +154,28 @@ func recordRow(record ForceRecord, columns []string, lengths map[string]int, pre
 	return
 }
 
-<<<<<<< HEAD
+// returns first index of a given string
+func StringSlicePos(slice []string, value string) int {
+        for p, v := range slice {
+                if v == value {
+                        return p
+                }
+        }
+        return -1
+}
+
+// returns true if a slice contains given string
+func StringSliceContains(slice []string, value string) bool {
+        return StringSlicePos(slice, value) > -1
+}
+
 func RenderForceRecordsCSV(records []ForceRecord, format string) string {
 	var out bytes.Buffer
 
 	var keys []string
 	var flattenedRecords []map[string]interface{}
 	for _, record := range records {
-		flattenedRecord := FlattenForceRecord(record)
+		flattenedRecord := flattenForceRecord(record)
 		flattenedRecords = append(flattenedRecords, flattenedRecord)
 		for key, _ := range flattenedRecord {
 			if !StringSliceContains(keys, key) {
@@ -169,7 +183,7 @@ func RenderForceRecordsCSV(records []ForceRecord, format string) string {
 			}
 		}
 	}
-	keys = RemoveTransientRelationships(keys)
+	//keys = RemoveTransientRelationships(keys)
 
 	if len(records) > 0 {
 		lengths := make([]int, len(keys))
@@ -210,17 +224,12 @@ func RenderForceRecordsCSV(records []ForceRecord, format string) string {
 		}
 	}
 	return out.String()
+	return ""
 }
 
-func FlattenForceRecord(record ForceRecord) map[string]interface{} {
-	fieldValues := make(map[string]interface{})
-	for key, _ := range record {
-		value := record[key]
-=======
 func flattenForceRecord(record ForceRecord) (flattened ForceRecord) {
 	flattened = make(ForceRecord)
 	for key, value := range record {
->>>>>>> 7b71603a08103adea72f0164428f695558f9a787
 		if key == "attributes" {
 			continue
 		}

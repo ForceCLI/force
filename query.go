@@ -2,6 +2,7 @@ package main
 
 import (
 	"strings"
+	"fmt"
 )
 
 var cmdQuery = &Command{
@@ -20,7 +21,7 @@ Examples:
 `,
 }
 
-func runSoql(cmd *Command, args []string) {
+func runQuery(cmd *Command, args []string) {
 	force, _ := ActiveForce()
 	if len(args) < 1 {
 		cmd.printUsage()
@@ -28,7 +29,7 @@ func runSoql(cmd *Command, args []string) {
 		format := "console"
 		formatArg := args[len(args)-1]
 
-		if strings.Contains(formatArg, "--format:") {
+		if strings.Contains(formatArg, "format:") {
 			args = args[:len(args) - 1]
 			format = strings.SplitN(formatArg, ":", 2)[1]
 		}
