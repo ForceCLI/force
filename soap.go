@@ -53,10 +53,10 @@ func (s *Soap) Execute(action, query string) (response []byte, err error) {
 	req.Header.Add("Content-Type", "text/xml")
 	req.Header.Add("SOAPACtion", action)
 	res, err := httpClient().Do(req)
-	defer res.Body.Close()
 	if err != nil {
 		return
 	}
+	defer res.Body.Close()
 	if res.StatusCode == 401 {
 		err = errors.New("authorization expired, please run `force login`")
 		return

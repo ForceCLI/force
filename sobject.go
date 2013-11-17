@@ -10,7 +10,7 @@ var cmdSobject = &Command{
 	Usage: "sobject",
 	Short: "Manage standard & custom objects",
 	Long: `
-Manage custom objects
+Manage sobjects
 
 Usage:
 

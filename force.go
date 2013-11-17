@@ -36,6 +36,10 @@ const (
 	apiVersion = "v29.0"
 )
 
+const (
+	apiVersion = "v29.0" //winter 14
+)
+
 var RootCertificates = `
 -----BEGIN CERTIFICATE-----
 MIICPDCCAaUCEHC65B0Q2Sk0tjjKewPMur8wDQYJKoZIhvcNAQECBQAwXzELMAkG
@@ -299,10 +303,10 @@ func (f *Force) httpPost(url string, attrs map[string]string) (body []byte, err 
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", f.Credentials.AccessToken))
 	req.Header.Add("Content-Type", "application/json")
 	res, err := httpClient().Do(req)
-	defer res.Body.Close()
 	if err != nil {
 		return
 	}
+	defer res.Body.Close()
 	if res.StatusCode == 401 {
 		err = errors.New("authorization expired, please run `force login`")
 		return
@@ -326,10 +330,10 @@ func (f *Force) httpPatch(url string, attrs map[string]string) (body []byte, err
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", f.Credentials.AccessToken))
 	req.Header.Add("Content-Type", "application/json")
 	res, err := httpClient().Do(req)
-	defer res.Body.Close()
 	if err != nil {
 		return
 	}
+	defer res.Body.Close()
 	if res.StatusCode == 401 {
 		err = errors.New("authorization expired, please run `force login`")
 		return
@@ -351,10 +355,10 @@ func (f *Force) httpDelete(url string) (body []byte, err error) {
 	}
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", f.Credentials.AccessToken))
 	res, err := httpClient().Do(req)
-	defer res.Body.Close()
 	if err != nil {
 		return
 	}
+	defer res.Body.Close()
 	if res.StatusCode == 401 {
 		err = errors.New("authorization expired, please run `force login`")
 		return
@@ -419,15 +423,22 @@ func startLocalHttpServer(ch chan ForceCredentials) (port int, err error) {
 	h := http.NewServeMux()
 	h.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "https://force-cli.herokuapp.com")
-		query := r.URL.Query()
-		var creds ForceCredentials
-		creds.AccessToken = query.Get("access_token")
-		creds.Id = query.Get("id")
-		creds.InstanceUrl = query.Get("instance_url")
-		creds.IssuedAt = query.Get("issued_at")
-		creds.Scope = query.Get("scope")
-		ch <- creds
-		listener.Close()
+		if r.Method == "OPTIONS" {
+			w.Header().Set("Access-Control-Allow-Headers", "X-Requested-With")
+		} else {
+			query := r.URL.Query()
+			var creds ForceCredentials
+			creds.AccessToken = query.Get("access_token")
+			creds.Id = query.Get("id")
+			creds.InstanceUrl = query.Get("instance_url")
+			creds.IssuedAt = query.Get("issued_at")
+			creds.Scope = query.Get("scope")
+			ch <- creds
+			if _, ok := r.Header["X-Requested-With"]; ok == false {
+				http.Redirect(w, r, "https://force-cli.herokuapp.com/auth/complete", http.StatusSeeOther)
+			}
+			listener.Close()
+		}
 	})
 	go http.Serve(listener, h)
 	return

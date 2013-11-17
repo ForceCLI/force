@@ -7,8 +7,8 @@ import (
 var commands = []*Command{
 	cmdLogin,
 	cmdLogout,
-	cmdAccounts,
-	cmdActive,
+	/* cmdAccounts,*/
+	/* cmdActive,*/
 	cmdWhoami,
 	cmdSobject,
 	cmdField,
@@ -18,6 +18,7 @@ var commands = []*Command{
 	cmdImport,
 	cmdSelect,
 	cmdSoql,
+	cmdQuery,
 	cmdApex,
 	cmdOauth,
 	cmdVersion,
