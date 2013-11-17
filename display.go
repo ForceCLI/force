@@ -31,76 +31,130 @@ func DisplayForceRecords(records []ForceRecord) {
 	fmt.Println(RenderForceRecords(records))
 }
 
-func RenderForceRecords(records []ForceRecord) string {
-	var out bytes.Buffer
-
-	var keys []string
-	var flattenedRecords []map[string]interface{}
+func recordColumns(records []ForceRecord) (columns []string) {
 	for _, record := range records {
-		flattenedRecord := FlattenForceRecord(record)
-		flattenedRecords = append(flattenedRecords, flattenedRecord)
-		for key, _ := range flattenedRecord {
-			if !StringSliceContains(keys, key) {
-				keys = append(keys, key)
+		for key, _ := range record {
+			found := false
+			for _, column := range columns {
+				if column == key {
+					found = true
+					break
+				}
+			}
+			if !found {
+				columns = append(columns, key)
 			}
 		}
 	}
-	keys = RemoveTransientRelationships(keys)
-
-	if len(records) > 0 {
-		lengths := make([]int, len(keys))
-		separators := make([]string, len(keys))
-		for i, key := range keys {
-			lengths[i] = len(key)
-			for _, record := range flattenedRecords {
-				v := fmt.Sprintf("%v", record[key])
-				l := len(v)
-				if index := strings.Index(v, "\n"); index > -1 {
-					l = index + 1
-				}
-				if l > lengths[i] {
-					lengths[i] = l
-				}
-			}
-			separators[i] = strings.Repeat("-", lengths[i]+2)
-		}
-		formatter_parts := make([]string, len(keys))
-		for i, length := range lengths {
-			formatter_parts[i] = fmt.Sprintf(" %%-%ds ", length)
-		}
-		formatter := strings.Join(formatter_parts, "|")
-		out.WriteString(fmt.Sprintf(formatter+"\n", StringSliceToInterfaceSlice(keys)...))
-		out.WriteString(fmt.Sprintf(strings.Join(separators, "+") + "\n"))
-		for _, record := range flattenedRecords {
-			values := make([][]string, len(keys))
-			for i, key := range keys {
-				values[i] = strings.Split(fmt.Sprintf("%v", record[key]), "\n")
-			}
-
-			maxLines := 0
-			for _, value := range values {
-				lines := len(value)
-				if lines > maxLines {
-					maxLines = lines
-				}
-			}
-
-			for li := 0; li < maxLines; li++ {
-				line := make([]string, len(values))
-				for i, value := range values {
-					if len(value) > li {
-						line[i] = value[li]
-					}
-				}
-				out.WriteString(fmt.Sprintf(formatter+"\n", StringSliceToInterfaceSlice(line)...))
-			}
-		}
-		out.WriteString(fmt.Sprintf(strings.Join(separators, "+") + "\n"))
-	}
-	out.WriteString(fmt.Sprintf(" (%d records)\n", len(records)))
-	return out.String()
+	return
 }
 
+func coerceForceRecords(uncoerced []map[string]interface{}) (records []ForceRecord) {
+	records = make([]ForceRecord, len(uncoerced))
+	for i, record := range uncoerced {
+		records[i] = ForceRecord(record)
+	}
+	return
+}
+
+func columnLengths(records []ForceRecord, prefix string) (lengths map[string]int) {
+	lengths = make(map[string]int)
+
+	columns := recordColumns(records)
+	for _, column := range columns {
+		lengths[fmt.Sprintf("%s.%s", prefix, column)] = len(column) + 2
+	}
+
+	for _, record := range records {
+		for column, value := range record {
+			key := fmt.Sprintf("%s.%s", prefix, column)
+			length := 0
+			switch value := value.(type) {
+			case []ForceRecord:
+				lens := columnLengths(value, key)
+				for k, l := range lens {
+					length += l
+					if l > lengths[k] {
+						lengths[k] = l
+					}
+				}
+				length += len(lens) - 1
+			default:
+				if value == nil {
+					length = len(" (null) ")
+				} else {
+					length = len(fmt.Sprintf(" %v ", value))
+				}
+			}
+			if length > lengths[key] {
+				lengths[key] = length
+			}
+		}
+	}
+	return
+}
+
+func recordHeader(columns []string, lengths map[string]int, prefix string) (out string) {
+	headers := make([]string, len(columns))
+	for i, column := range columns {
+		key := fmt.Sprintf("%s.%s", prefix, column)
+		headers[i] = fmt.Sprintf(fmt.Sprintf(" %%-%ds ", lengths[key]-2), column)
+	}
+	out = strings.Join(headers, "|")
+	return
+}
+
+func recordSeparator(columns []string, lengths map[string]int, prefix string) (out string) {
+	separators := make([]string, len(columns))
+	for i, column := range columns {
+		key := fmt.Sprintf("%s.%s", prefix, column)
+		separators[i] = strings.Repeat("-", lengths[key])
+	}
+	out = strings.Join(separators, "+")
+	return
+}
+
+func recordRow(record ForceRecord, columns []string, lengths map[string]int, prefix string) (out string) {
+	values := make([]string, len(columns))
+	for i, column := range columns {
+		value := record[column]
+		switch value := value.(type) {
+		case []ForceRecord:
+			values[i] = strings.TrimSuffix(renderForceRecords(value, fmt.Sprintf("%s.%s", prefix, column), lengths), "\n")
+		default:
+			if value == nil {
+				values[i] = fmt.Sprintf(fmt.Sprintf(" %%-%ds ", lengths[column]-2), "(null)")
+			} else {
+				values[i] = fmt.Sprintf(fmt.Sprintf(" %%-%dv ", lengths[column]-2), value)
+			}
+		}
+	}
+	maxrows := 1
+	for _, value := range values {
+		rows := len(strings.Split(value, "\n"))
+		if rows > maxrows {
+			maxrows = rows
+		}
+	}
+	rows := make([]string, maxrows)
+	for i := 0; i < maxrows; i++ {
+		rowvalues := make([]string, len(columns))
+		for j, column := range columns {
+			key := fmt.Sprintf("%s.%s", prefix, column)
+			parts := strings.Split(values[j], "\n")
+			if i < len(parts) {
+				rowvalues[j] = fmt.Sprintf(fmt.Sprintf("%%-%ds", lengths[key]), parts[i])
+			} else {
+				rowvalues[j] = strings.Repeat(" ", lengths[key])
+			}
+		}
+		rows[i] = strings.Join(rowvalues, "|")
+	}
+	out = strings.Join(rows, "\n")
+	return
+}
+
+<<<<<<< HEAD
 func RenderForceRecordsCSV(records []ForceRecord, format string) string {
 	var out bytes.Buffer
 
@@ -162,59 +216,74 @@ func FlattenForceRecord(record ForceRecord) map[string]interface{} {
 	fieldValues := make(map[string]interface{})
 	for key, _ := range record {
 		value := record[key]
+=======
+func flattenForceRecord(record ForceRecord) (flattened ForceRecord) {
+	flattened = make(ForceRecord)
+	for key, value := range record {
+>>>>>>> 7b71603a08103adea72f0164428f695558f9a787
 		if key == "attributes" {
 			continue
-		} else if relationship, isRelationship := value.(map[string]interface{}); isRelationship {
-			if _, ok := relationship["records"]; ok {
-				fieldValues[key] = RenderForceRecords(ChildRelationshipToQueryResult(relationship).Records)
+		}
+		switch value := value.(type) {
+		case map[string]interface{}:
+			if value["records"] != nil {
+				unflattened := value["records"].([]interface{})
+				subflattened := make([]ForceRecord, len(unflattened))
+				for i, record := range unflattened {
+					subflattened[i] = (map[string]interface{})(flattenForceRecord(ForceRecord(record.(map[string]interface{}))))
+				}
+				flattened[key] = subflattened
 			} else {
-				for parentKey, parentValue := range FlattenForceRecord(relationship) {
-					fieldValues[key+"."+parentKey] = parentValue
+				for k, v := range flattenForceRecord(value) {
+					flattened[fmt.Sprintf("%s.%s", key, k)] = v
 				}
 			}
-		} else {
-			fieldValues[key] = value
+		default:
+			flattened[key] = value
 		}
 	}
-	return fieldValues
+	return
 }
 
-func ChildRelationshipToQueryResult(relationship map[string]interface{}) ForceQueryResult {
-	done := relationship["done"].(bool)
-	var records []ForceRecord
-	for _, cr := range relationship["records"].([]interface{}) {
-		records = append(records, ForceRecord(cr.(map[string]interface{})))
-	}
-	totalSize := int(relationship["totalSize"].(float64))
-	return ForceQueryResult{done, records, totalSize}
-}
-
-func StringSliceContains(slice []string, e string) bool {
-	for _, s := range slice {
-		if s == e {
-			return true
+func recordsHaveSubRows(records []ForceRecord) bool {
+	for _, record := range records {
+		for _, value := range record {
+			switch value := value.(type) {
+			case []ForceRecord:
+				if len(value) > 0 {
+					return true
+				}
+			}
 		}
 	}
 	return false
 }
 
-func RemoveTransientRelationships(slice []string) []string {
-	var transientRelationships []string
-	for _, s1 := range slice {
-		for _, s2 := range slice {
-			if strings.HasPrefix(s1, s2+".") {
-				transientRelationships = append(transientRelationships, s2)
-			}
+func renderForceRecords(records []ForceRecord, prefix string, lengths map[string]int) string {
+	var out bytes.Buffer
+
+	columns := recordColumns(records)
+
+	out.WriteString(recordHeader(columns, lengths, prefix) + "\n")
+	out.WriteString(recordSeparator(columns, lengths, prefix) + "\n")
+
+	for _, record := range records {
+		out.WriteString(recordRow(record, columns, lengths, prefix) + "\n")
+		if recordsHaveSubRows(records) {
+			out.WriteString(recordSeparator(columns, lengths, prefix) + "\n")
 		}
 	}
 
-	var flattened []string
-	for _, s := range slice {
-		if !StringSliceContains(transientRelationships, s) {
-			flattened = append(flattened, s)
-		}
+	return out.String()
+}
+
+func RenderForceRecords(records []ForceRecord) string {
+	flattened := make([]ForceRecord, len(records))
+	for i, record := range records {
+		flattened[i] = flattenForceRecord(record)
 	}
-	return flattened
+	lengths := columnLengths(flattened, "")
+	return renderForceRecords(flattened, "", lengths)
 }
 
 func DisplayForceRecord(record ForceRecord) {

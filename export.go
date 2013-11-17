@@ -85,7 +85,7 @@ func runExport(cmd *Command, args []string) {
 	}
 	force, _ := ActiveForce()
 	query := ForceMetadataQuery{
-		{Name: "AccountSettings", Members: "*"},
+		/*{Name: "AccountSettings", Members: "*"},
 		{Name: "ActivitiesSettings", Members: "*"},
 		{Name: "AddressSettings", Members: "*"},
 		{Name: "AnalyticSnapshot", Members: "*"},
@@ -111,9 +111,9 @@ func runExport(cmd *Command, args []string) {
 		{Name: "CustomApplicationComponent", Members: "*"},
 		{Name: "CustomApplication", Members: "*"},
 		{Name: "CustomField", Members: "*"},
-		{Name: "CustomLabels", Members: "*"},
+		{Name: "CustomLabels", Members: "*"},*/
 		{Name: "CustomObject", Members: "*"},
-		{Name: "CustomObjectTranslation", Members: "*"},
+		/*{Name: "CustomObjectTranslation", Members: "*"},
 		{Name: "CustomPageWebLink", Members: "*"},
 		{Name: "CustomSite", Members: "*"},
 		{Name: "CustomTab", Members: "*"},
@@ -133,8 +133,9 @@ func runExport(cmd *Command, args []string) {
 		{Name: "HomePageComponent", Members: "*"},
 		{Name: "HomePageLayout", Members: "*"},
 		{Name: "IdeasSettings", Members: "*"},
-		{Name: "KnowledgeSettings", Members: "*"},
-		{Name: "Letterhead", Members: "*"},
+		{Name: "KnowledgeSettings", Members: "*"},*/
+		{Name: "Layout", Members: "*"},
+		/*{Name: "Letterhead", Members: "*"},
 		{Name: "ListView", Members: "*"},
 		{Name: "LiveAgentSettings", Members: "*"},
 		{Name: "LiveChatAgentConfig", Members: "*"},
@@ -149,6 +150,7 @@ func runExport(cmd *Command, args []string) {
 		{Name: "Portal", Members: "*"},
 		{Name: "PostTemplate", Members: "*"},
 		{Name: "ProductSettings", Members: "*"},
+		{Name: "Profile", Members: "*"},
 		{Name: "Queue", Members: "*"},
 		{Name: "QuickAction", Members: "*"},
 		{Name: "QuoteSettings", Members: "*"},
@@ -165,7 +167,7 @@ func runExport(cmd *Command, args []string) {
 		{Name: "StaticResource", Members: "*"},
 		{Name: "Territory", Members: "*"},
 		{Name: "Translations", Members: "*"},
-		{Name: "ValidationRule", Members: "*"},
+		{Name: "ValidationRule", Members: "*"},*/
 	}
 	files, err := force.Metadata.Retrieve(query)
 	if err != nil {
