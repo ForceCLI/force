@@ -37,3 +37,18 @@ A command-line interface to force.com
 	   help      Show this help
 	
 	Run 'force help [command]' for details.
+
+### Hacking
+
+    # set these environment variables in your startup scripts
+    export GOPATH=~/go
+    export PATH="$GOPATH/bin:$PATH"
+
+    # download the source and all dependencies
+    $ export GOPATH=~/go
+    $ go get -u github.com/heroku/force
+    $ cd $GOPATH/github.com/heroku/force
+
+    # to compile and test modifications
+    $ go get .
+    $ force
