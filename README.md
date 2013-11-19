@@ -46,7 +46,7 @@ A command-line interface to force.com
 
     # download the source and all dependencies
     $ go get -u github.com/heroku/force
-    $ cd $GOPATH/github.com/heroku/force
+    $ cd $GOPATH/src/github.com/heroku/force
 
     # to compile and test modifications
     $ go get .
