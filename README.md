@@ -45,7 +45,6 @@ A command-line interface to force.com
     export PATH="$GOPATH/bin:$PATH"
 
     # download the source and all dependencies
-    $ export GOPATH=~/go
     $ go get -u github.com/heroku/force
     $ cd $GOPATH/github.com/heroku/force
 
