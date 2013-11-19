@@ -164,15 +164,13 @@ func (f *Force) GetSobject(name string) (sobject ForceSobject, err error) {
 	return
 }
 
-func (f *Force) Query(query string) (records []ForceRecord, err error) {
+func (f *Force) Query(query string) (result ForceQueryResult, err error) {
 	url := fmt.Sprintf("%s/services/data/%s/query?q=%s", f.Credentials.InstanceUrl, apiVersion, url.QueryEscape(query))
 	body, err := f.httpGet(url)
 	if err != nil {
 		return
 	}
-	var result ForceQueryResult
 	json.Unmarshal(body, &result)
-	records = result.Records
 	return
 }
 

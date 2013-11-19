@@ -18,8 +18,11 @@ func DisplayForceSobjects(sobjects []ForceSobject) {
 	}
 }
 
-func DisplayForceRecords(records []ForceRecord) {
-	fmt.Println(RenderForceRecords(records))
+func DisplayForceRecords(result ForceQueryResult) {
+	if len(result.Records) > 0 {
+		fmt.Print(RenderForceRecords(result.Records))
+	}
+	fmt.Println(fmt.Sprintf(" (%d records)", result.TotalSize))
 }
 
 func recordColumns(records []ForceRecord) (columns []string) {
