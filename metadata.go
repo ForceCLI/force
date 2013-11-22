@@ -168,6 +168,8 @@ func (fm *ForceMetadata) CreateCustomField(object, field, typ string) (err error
 		soapField = "<type>Number</type><precision>10</precision><scale>0</scale>"
 	case "float":
 		soapField = "<type>Number</type><precision>10</precision><scale>2</scale>"
+	case "textarea":
+		soapField = "<type>TextArea</type>"
 	default:
 		ErrorAndExit("unable to create field type: %s", typ)
 	}
