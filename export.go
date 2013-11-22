@@ -19,98 +19,127 @@ Examples:
   force export
 
   force export org/schema
+  
+  force export ?
+  
+  force export [Metadata Type] [Name]
+  
+  force export CustomObject Case
 `,
 }
 
 func runExport(cmd *Command, args []string) {
 	wd, _ := os.Getwd()
 	root := filepath.Join(wd, "metadata")
+	
+	typeMembers := []string{
+		"AccountSettings",
+		"ActivitiesSettings",
+		"AddressSettings",
+		"AnalyticSnapshot",
+		"ApexClass",
+		"ApexComponent",
+		"ApexPage",
+		"ApexTrigger",
+		"ApprovalProcess",
+		"AssignmentRules",
+		"AuthProvider",
+		"AutoResponseRules",
+		"BusinessHoursSettings",
+		"BusinessProcess",
+		"CallCenter",
+		"CaseSettings",
+		"ChatterAnswersSettings",
+		"CompanySettings",
+		"Community",
+		"CompactLayout",
+		"ConnectedApp",
+		"ContractSettings",
+		"CustomApplication",
+		"CustomApplicationComponent",
+		"CustomApplication",
+		"CustomField",
+		"CustomLabels",
+		"CustomObject",
+		"CustomObjectTranslation",
+		"CustomPageWebLink",
+		"CustomSite",
+		"CustomTab",
+		"Dashboard",
+		"DataCategoryGroup",
+		"Document",
+		"EmailTemplate",
+		"EntitlementProcess",
+		"EntitlementSettings",
+		"EntitlementTemplate",
+		"ExternalDataSource",
+		"FieldSet",
+		"Flow",
+		"ForecastingSettings",
+		"Group",
+		"HomePageComponent",
+		"HomePageLayout",
+		"IdeasSettings",
+		"KnowledgeSettings",
+		"Letterhead",
+		"ListView",
+		"LiveAgentSettings",
+		"LiveChatAgentConfig",
+		"LiveChatButton",
+		"LiveChatDeployment",
+		"MilestoneType",
+		"MobileSettings",
+		"NamedFilter",
+		"Network",
+		"OpportunitySettings",
+		"PermissionSet",
+		"Portal",
+		"PostTemplate",
+		"ProductSettings",
+		"Queue",
+		"QuickAction",
+		"QuoteSettings",
+		"RecordType",
+		"RemoteSiteSetting",
+		"Report",
+		"ReportType",
+		"Role",
+		"SamlSsoConfig",
+		"Scontrol",
+		"SecuritySettings",
+		"SharingReason",
+		"Skill",
+		"StaticResource",
+		"Territory",
+		"Translations",
+		"ValidationRule",
+	}
+	
 	if len(args) == 1 {
+		if (args[0] == "?") {
+			fmt.Printf("Available types: %v\n", typeMembers)
+			return
+		}
 		root, _ = filepath.Abs(args[0])
 	}
-	force, _ := ActiveForce()
-	query := ForceMetadataQuery{
-		{Name: "AccountSettings", Members: "*"},
-		{Name: "ActivitiesSettings", Members: "*"},
-		{Name: "AddressSettings", Members: "*"},
-		{Name: "AnalyticSnapshot", Members: "*"},
-		{Name: "ApexClass", Members: "*"},
-		{Name: "ApexComponent", Members: "*"},
-		{Name: "ApexPage", Members: "*"},
-		{Name: "ApexTrigger", Members: "*"},
-		{Name: "ApprovalProcess", Members: "*"},
-		{Name: "AssignmentRules", Members: "*"},
-		{Name: "AuthProvider", Members: "*"},
-		{Name: "AutoResponseRules", Members: "*"},
-		{Name: "BusinessHoursSettings", Members: "*"},
-		{Name: "BusinessProcess", Members: "*"},
-		{Name: "CallCenter", Members: "*"},
-		{Name: "CaseSettings", Members: "*"},
-		{Name: "ChatterAnswersSettings", Members: "*"},
-		{Name: "CompanySettings", Members: "*"},
-		{Name: "Community", Members: "*"},
-		{Name: "CompactLayout", Members: "*"},
-		{Name: "ConnectedApp", Members: "*"},
-		{Name: "ContractSettings", Members: "*"},
-		{Name: "CustomApplication", Members: "*"},
-		{Name: "CustomApplicationComponent", Members: "*"},
-		{Name: "CustomApplication", Members: "*"},
-		{Name: "CustomField", Members: "*"},
-		{Name: "CustomLabels", Members: "*"},
-		{Name: "CustomObject", Members: "*"},
-		{Name: "CustomObjectTranslation", Members: "*"},
-		{Name: "CustomPageWebLink", Members: "*"},
-		{Name: "CustomSite", Members: "*"},
-		{Name: "CustomTab", Members: "*"},
-		{Name: "Dashboard", Members: "*"},
-		{Name: "DataCategoryGroup", Members: "*"},
-		{Name: "Document", Members: "*"},
-		{Name: "EmailTemplate", Members: "*"},
-		{Name: "EntitlementProcess", Members: "*"},
-		{Name: "EntitlementSettings", Members: "*"},
-		{Name: "EntitlementTemplate", Members: "*"},
-		{Name: "ExternalDataSource", Members: "*"},
-		{Name: "FieldSet", Members: "*"},
-		{Name: "Flow", Members: "*"},
-		{Name: "ForecastingSettings", Members: "*"},
-		{Name: "Group", Members: "*"},
-		{Name: "HomePageComponent", Members: "*"},
-		{Name: "HomePageLayout", Members: "*"},
-		{Name: "IdeasSettings", Members: "*"},
-		{Name: "KnowledgeSettings", Members: "*"},
-		{Name: "Letterhead", Members: "*"},
-		{Name: "ListView", Members: "*"},
-		{Name: "LiveAgentSettings", Members: "*"},
-		{Name: "LiveChatAgentConfig", Members: "*"},
-		{Name: "LiveChatButton", Members: "*"},
-		{Name: "LiveChatDeployment", Members: "*"},
-		{Name: "MilestoneType", Members: "*"},
-		{Name: "MobileSettings", Members: "*"},
-		{Name: "NamedFilter", Members: "*"},
-		{Name: "Network", Members: "*"},
-		{Name: "OpportunitySettings", Members: "*"},
-		{Name: "PermissionSet", Members: "*"},
-		{Name: "Portal", Members: "*"},
-		{Name: "PostTemplate", Members: "*"},
-		{Name: "ProductSettings", Members: "*"},
-		{Name: "Queue", Members: "*"},
-		{Name: "QuickAction", Members: "*"},
-		{Name: "QuoteSettings", Members: "*"},
-		{Name: "RecordType", Members: "*"},
-		{Name: "RemoteSiteSetting", Members: "*"},
-		{Name: "Report", Members: "*"},
-		{Name: "ReportType", Members: "*"},
-		{Name: "Role", Members: "*"},
-		{Name: "SamlSsoConfig", Members: "*"},
-		{Name: "Scontrol", Members: "*"},
-		{Name: "SecuritySettings", Members: "*"},
-		{Name: "SharingReason", Members: "*"},
-		{Name: "Skill", Members: "*"},
-		{Name: "StaticResource", Members: "*"},
-		{Name: "Territory", Members: "*"},
-		{Name: "Translations", Members: "*"},
-		{Name: "ValidationRule", Members: "*"},
+	
+	var query ForceMetadataQuery
+	
+	if len(args) == 2 {
+		query = ForceMetadataQuery{
+			{Name: "Profile", Members: "*"},
+			{Name: args[0], Members: args[1]},
+		}
+	} else {
+		query = make([]ForceMetadataQueryElement, len(typeMembers))
+		
+		for i := 0; i < len(typeMembers); i++ {
+			query[i] = ForceMetadataQueryElement{Name: typeMembers[i], Members: "*"}
+		}
 	}
+	
+	force, _ := ActiveForce()
+	
 	files, err := force.Metadata.Retrieve(query)
 	if err != nil {
 		ErrorAndExit(err.Error())
