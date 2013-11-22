@@ -30,7 +30,7 @@ A command-line interface to force.com
 	   record    Create, modify, or view records
 	   export    Export metadata to a local directory
 	   import    Import metadata from a local directory
-	   query     Execute a SOQL query
+	   select     Execute a SOQL query
 	   apex      Execute anonymous Apex code
 	   version   Display current version
 	   update    Update to the latest version
