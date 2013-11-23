@@ -11,6 +11,20 @@ type ForcePartner struct {
 	Force *Force
 }
 
+type TestCoverage struct {
+		Log 							string `xml:"Header>DebuggingInfo>debugLog"`
+		NumberRun 						string `xml:"Body>runTestsResponse>result>numTestsRun"`
+		NumberLocations 				[]int `xml:"Body>runTestsResponse>result>codeCoverage>numLocations"`
+		NumberLocationsNotCovered		[]int `xml:"Body>runTestsResponse>result>codeCoverage>numLocationsNotCovered"`
+		Type 							[]string `xml:"Body>runTestsResponse>result>codeCoverage>type"`
+		Name 							[]string `xml:"Body>runTestsResponse>result>codeCoverage>name"`
+		Id 								[]string `xml:Body>runTestsResponse>result>codeCoverage>id"`
+		SMethodNames 					[]string `xml:"Body>runTestsResponse>result>successes>methodName"`
+		SClassNames						[]string `xml:"Body>runTestsResponse>result>successes>name"`
+		FMethodNames 					[]string `xml:"Body>runTestsResponse>result>failures>methodName"`
+		FClassNames						[]string `xml:"Body>runTestsResponse>result>failures>name"`
+}
+
 func NewForcePartner(force *Force) (partner *ForcePartner) {
 	partner = &ForcePartner{Force: force}
 	return
@@ -76,6 +90,29 @@ func (partner *ForcePartner) soapExecuteCore(action, query string) (response []b
 	soap.Header = "<apex:DebuggingHeader><apex:debugLevel>DEBUGONLY</apex:debugLevel></apex:DebuggingHeader>"
 	response, err = soap.Execute(action, query)
 	return
+}
+
+func (partner *ForcePartner) RunTests(tests string) (output TestCoverage, err error) {
+	test_names := strings.Split(tests," ")
+	soap := "<RunTestsRequest>\n"
+	if test_names[0] == "all" || test_names[0] == "All" {
+		soap+="<allTests>True</allTests>\n"
+	}else{
+		for _,element := range test_names {
+			soap+="<classes>" + element + "</classes>\n"
+		}
+	}
+	soap+="</RunTestsRequest>"
+	body, err := partner.soapExecute("runTests", soap)
+	if err != nil {
+		return 
+	}
+	var result TestCoverage
+	if err = xml.Unmarshal(body, &result); err != nil {
+		return 
+	}
+	output = result
+	return 
 }
 
 func (partner *ForcePartner) soapExecute(action, query string) (response []byte, err error) {
