@@ -21,6 +21,7 @@ var commands = []*Command{
 	cmdQuery,
 	cmdApex,
 	cmdOauth,
+	cmdTest,
 	cmdVersion,
 	cmdUpdate,
 	cmdHelp,
