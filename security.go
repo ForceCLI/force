@@ -215,9 +215,9 @@ func parseCustomObjectXML(objectName string, text string) CustomObject {
 var cmdSecurity = &Command{
 	Run:   runSecurity,
 	Usage: "security [SObject]",
-	Short: "Displays the OLS and FLS for a give object",
+	Short: "Displays the OLS and FLS for a give SObject",
 	Long: `
-Displays the OLS and FLS for a give object
+Displays the OLS and FLS for a given SObject
 
 Examples:
 
@@ -227,101 +227,8 @@ Examples:
 
 func runSecurity(cmd *Command, args []string) {
 	wd, _ := os.Getwd()
-	root := filepath.Join(wd, "metadata")
+	root := filepath.Join(wd, ".")
 
-/*	
-	typeMembers := []string{
-		"AccountSettings",
-		"ActivitiesSettings",
-		"AddressSettings",
-		"AnalyticSnapshot",
-		"ApexClass",
-		"ApexComponent",
-		"ApexPage",
-		"ApexTrigger",
-		"ApprovalProcess",
-		"AssignmentRules",
-		"AuthProvider",
-		"AutoResponseRules",
-		"BusinessHoursSettings",
-		"BusinessProcess",
-		"CallCenter",
-		"CaseSettings",
-		"ChatterAnswersSettings",
-		"CompanySettings",
-		"Community",
-		"CompactLayout",
-		"ConnectedApp",
-		"ContractSettings",
-		"CustomApplication",
-		"CustomApplicationComponent",
-		"CustomApplication",
-		"CustomField",
-		"CustomLabels",
-		"CustomObject",
-		"CustomObjectTranslation",
-		"CustomPageWebLink",
-		"CustomSite",
-		"CustomTab",
-		"Dashboard",
-		"DataCategoryGroup",
-		"Document",
-		"EmailTemplate",
-		"EntitlementProcess",
-		"EntitlementSettings",
-		"EntitlementTemplate",
-		"ExternalDataSource",
-		"FieldSet",
-		"Flow",
-		"ForecastingSettings",
-		"Group",
-		"HomePageComponent",
-		"HomePageLayout",
-		"IdeasSettings",
-		"KnowledgeSettings",
-		"Letterhead",
-		"ListView",
-		"LiveAgentSettings",
-		"LiveChatAgentConfig",
-		"LiveChatButton",
-		"LiveChatDeployment",
-		"MilestoneType",
-		"MobileSettings",
-		"NamedFilter",
-		"Network",
-		"OpportunitySettings",
-		"PermissionSet",
-		"Portal",
-		"PostTemplate",
-		"ProductSettings",
-		"Queue",
-		"QuickAction",
-		"QuoteSettings",
-		"RecordType",
-		"RemoteSiteSetting",
-		"Report",
-		"ReportType",
-		"Role",
-		"SamlSsoConfig",
-		"Scontrol",
-		"SecuritySettings",
-		"SharingReason",
-		"Skill",
-		"StaticResource",
-		"Territory",
-		"Translations",
-		"ValidationRule",
-	}
-	*/
-/*	
-	if len(args) == 1 {
-		if (args[0] == "?") {
-			fmt.Printf("Available types: %v\n", typeMembers)
-			return
-		}
-		root, _ = filepath.Abs(args[0])
-	}
-*/	
 	var query ForceMetadataQuery
 	
 	if len(args) == 1 {
@@ -332,20 +239,17 @@ func runSecurity(cmd *Command, args []string) {
 	} else {
 		fmt.Printf("Pass an SObject name")
 		return
-/*		query = make([]ForceMetadataQueryElement, len(typeMembers))
-		
-		for i := 0; i < len(typeMembers); i++ {
-			query[i] = ForceMetadataQueryElement{Name: typeMembers[i], Members: "*"}
-		}*/
 	}
 	
 	force, _ := ActiveForce()
 	
+	// Step 1: retrieve the desired metadata
 	files, err := force.Metadata.Retrieve(query)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
 	
+	// Step 2: go through the metadata and construct a list of Profile (profiles) and a CustomObject (theObject)
 	var profiles list.List
 	var theObject CustomObject
 	
@@ -361,6 +265,8 @@ func runSecurity(cmd *Command, args []string) {
 		}
 	}
 
+	// Step 3: group the profiles that have the exact same OLS and FLS
+	// for the desired object together
 	allProfiles := map[string]list.List { }
 	var p Profile
 	var profileKeys list.List
@@ -379,6 +285,8 @@ func runSecurity(cmd *Command, args []string) {
 		}
 	}
 
+	// Step 4: generate an HTML file that shows the various groups of profiles
+	// as well as their OLS and FLS
 	HTMLoutput := "<html><body>" +
 	              "<table border=\"1\" style=\"border-collapse:collapse;\">" +
 	              "<tr><td></td>"
@@ -428,9 +336,10 @@ func runSecurity(cmd *Command, args []string) {
 	
 	HTMLoutput += "</table></body></html>"
 	
-	if err := ioutil.WriteFile(filepath.Join(root, "output.html"), []byte(HTMLoutput), 0644); err != nil {
+	// Last step: write the file on disk and display it inside a Web browser
+	if err := ioutil.WriteFile(filepath.Join(root, "security.html"), []byte(HTMLoutput), 0644); err != nil {
 		ErrorAndExit(err.Error())
 	}
 	
-	Open(filepath.Join(root, "output.html"))
+	Open(filepath.Join(root, "security.html"))
 }
