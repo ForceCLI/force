@@ -13,7 +13,12 @@ Log in to force.com
 
 Examples:
 
-  force login
+  force login 		# for Production and DE orgs
+
+  force login test 	# for Sandbox orgs
+
+  force login pre 	# for Pre-release feature orgs
+  
 `,
 }
 
