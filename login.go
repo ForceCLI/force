@@ -14,6 +14,12 @@ Log in to force.com
 Examples:
 
   force login
+
+  force login pre
+
+  force login test
+
+  force login CLIENTID@SERVER:PORT
 `,
 }
 
@@ -26,10 +32,8 @@ func runLogin(cmd *Command, args []string) {
 			endpoint = EndpointTest
 		case "pre":
 			endpoint = EndpointPrerelease
-		case "dev":
-			endpoint = EndpointDev
 		default:
-			ErrorAndExit("no such endpoint: %s", args[0])
+			endpoint = EndpointDev
 		}
 	}
 	_, err := ForceLoginAndSave(endpoint)

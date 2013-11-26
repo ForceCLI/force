@@ -28,17 +28,11 @@ const (
 	EndpointProduction = iota
 	EndpointTest       = iota
 	EndpointPrerelease = iota
-	EndpointDev      = iota
+	EndpointDev        = iota
 )
 
 const (
 	apiVersion = "v29.0" //winter 14
-)
-
-const (
-	DevServerEnvVarName = "FORCE_DEV_SERVER"
-	DevHttpsPortEnvVarName = "FORCE_DEV_HTTPS_PORT"
-	DevClientIdEnvVarName = "FORCE_DEV_CLIENT_ID"
 )
 
 var RootCertificates = `
@@ -145,12 +139,7 @@ func ForceLogin(endpoint ForceEndpoint) (creds ForceCredentials, err error) {
 	case EndpointPrerelease:
 		url = fmt.Sprintf("https://prerellogin.pre.salesforce.com/services/oauth2/authorize?response_type=token&client_id=%s&redirect_uri=%s&state=%d&prompt=login", PrereleaseClientId, RedirectUri, port)
 	case EndpointDev:
-		devServer := os.Getenv(DevServerEnvVarName)
-		devHttpsPort := os.Getenv(DevHttpsPortEnvVarName)
-		devClientId := os.Getenv(DevClientIdEnvVarName)
-		if devServer == "" || devHttpsPort == "" || devClientId == "" {
-			ErrorAndExit("%s, %s and %s env variables must be set to login to dev endpoint", DevServerEnvVarName, DevHttpsPortEnvVarName, DevClientIdEnvVarName)
-		}
+		devClientId, devServer, devHttpsPort := ParseDevEndpointURL(os.Args[2])
 		url = fmt.Sprintf("https://%s:%s/services/oauth2/authorize?response_type=token&client_id=%s&redirect_uri=%s&state=%d&prompt=login", devServer, devHttpsPort, devClientId, RedirectUri, port)
 		allowSelfSignedCertificates = true
 	default:
@@ -159,6 +148,22 @@ func ForceLogin(endpoint ForceEndpoint) (creds ForceCredentials, err error) {
 	err = Open(url)
 	creds = <-ch
 	creds.AllowSelfSignedCertificates = allowSelfSignedCertificates
+	return
+}
+
+func ParseDevEndpointURL(url string) (clientId, server, httpsPort string) {
+	splitURL := strings.Split(url, ":")
+	if len(splitURL) > 1 {
+		httpsPort = splitURL[1]
+		splitURL = strings.Split(splitURL[0], "@")
+		if len(splitURL) > 1 {
+			server = splitURL[1]
+			splitURL = strings.Split(splitURL[0], "://") // in case someone left https:// in the URL
+			clientId = splitURL[len(splitURL)-1] 
+			return
+		}
+	}
+	ErrorAndExit("Dev server URL must be in the format of CLIENTID@SERVER:PORT")
 	return
 }
 
