@@ -33,44 +33,35 @@ func runTests(cmd *Command, args []string) {
 		if output.NumberRun == "0" {
 			println("test classes specified not found")
 		}else{
-			println("NumberRun: " + output.NumberRun)
-			println()
+			var percent string
 			println(output.Log)
 			println()
-			println("****Test Coverage****")
-			println("__________________________________")
-			var percent string
-			var locs_covered, locs_not int
+			println()
+			println("Coverage:")
+			println()
+			//println()
 			for index := range output.NumberLocations {
 				if output.NumberLocations[index] != 0 {
 					percent = strconv.Itoa(((output.NumberLocations[index]-output.NumberLocationsNotCovered[index])/output.NumberLocations[index])*100) + "%"
-					locs_covered += output.NumberLocations[index]
-					locs_not += output.NumberLocationsNotCovered[index]
 				} else {
 					percent = "0%"
 				} 
-				println(output.Name[index] + "  " + output.Type[index] + "  " + percent)
+				println(percent + "   " + output.Name[index])
 			}
-			println("__________________________________")
-			println("Total" + "  " + strconv.Itoa(((locs_covered-locs_not)/locs_covered)*100) + "%")
-			
 			println()
 			println()
-
-			println("****SUCCESSES****")
-			println("__________________________________")
+			println("Results:")
+			println()
+			//println()
 			for index := range output.SMethodNames{
-				println(output.SClassNames[index] + "    " + output.SMethodNames[index])
+				println("[PASS]    " + output.SClassNames[index] + "::" + output.SMethodNames[index])
 			}
 
-			println()
-			println()
-
-			println("****FAILURES****")
-			println("__________________________________")
 			for index := range output.FMethodNames{
-				println(output.FClassNames[index] + "    " + output.FMethodNames[index])
+				println("[FAIL]    " + output.FClassNames[index] + "::" + output.FMethodNames[index])
 			}
+			println()
+			println()
 		}
 	}
 }

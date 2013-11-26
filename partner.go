@@ -13,12 +13,9 @@ type ForcePartner struct {
 
 type TestCoverage struct {
 		Log 							string `xml:"Header>DebuggingInfo>debugLog"`
-		NumberRun 						string `xml:"Body>runTestsResponse>result>numTestsRun"`
 		NumberLocations 				[]int `xml:"Body>runTestsResponse>result>codeCoverage>numLocations"`
 		NumberLocationsNotCovered		[]int `xml:"Body>runTestsResponse>result>codeCoverage>numLocationsNotCovered"`
-		Type 							[]string `xml:"Body>runTestsResponse>result>codeCoverage>type"`
 		Name 							[]string `xml:"Body>runTestsResponse>result>codeCoverage>name"`
-		Id 								[]string `xml:Body>runTestsResponse>result>codeCoverage>id"`
 		SMethodNames 					[]string `xml:"Body>runTestsResponse>result>successes>methodName"`
 		SClassNames						[]string `xml:"Body>runTestsResponse>result>successes>name"`
 		FMethodNames 					[]string `xml:"Body>runTestsResponse>result>failures>methodName"`
