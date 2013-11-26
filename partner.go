@@ -71,7 +71,7 @@ func (partner *ForcePartner) soapExecute(action, query string) (response []byte,
 	}
 	url := strings.Replace(login["urls"].(map[string]interface{})["partner"].(string), "{version}", "28.0", 1)
 	url = strings.Replace(url, "/u/", "/s/", 1) // seems dirty
-	soap := NewSoap(url, "http://soap.sforce.com/2006/08/apex", partner.Force.Credentials.AccessToken)
+	soap := NewSoap(url, "http://soap.sforce.com/2006/08/apex", partner.Force.Credentials.AccessToken, partner.Force.Credentials.AllowSelfSignedCertificates)
 	soap.Header = "<apex:DebuggingHeader><apex:debugLevel>DEBUGONLY</apex:debugLevel></apex:DebuggingHeader>"
 	response, err = soap.Execute(action, query)
 	return

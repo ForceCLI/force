@@ -370,7 +370,7 @@ func (fm *ForceMetadata) soapExecute(action, query string) (response []byte, err
 		return
 	}
 	url := strings.Replace(login["urls"].(map[string]interface{})["metadata"].(string), "{version}", fm.ApiVersion, 1)
-	soap := NewSoap(url, "http://soap.sforce.com/2006/04/metadata", fm.Force.Credentials.AccessToken)
+	soap := NewSoap(url, "http://soap.sforce.com/2006/04/metadata", fm.Force.Credentials.AccessToken, fm.Force.Credentials.AllowSelfSignedCertificates)
 	response, err = soap.Execute(action, query)
 	return
 }

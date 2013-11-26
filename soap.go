@@ -15,14 +15,16 @@ type SoapError struct {
 
 type Soap struct {
 	AccessToken string
+	AllowSelfSignedCertificates bool
 	Endpoint    string
 	Header      string
 	Namespace   string
 }
 
-func NewSoap(endpoint, namespace, accessToken string) (s *Soap) {
+func NewSoap(endpoint, namespace, accessToken string, allowSelfSignedCertificates bool) (s *Soap) {
 	s = new(Soap)
 	s.AccessToken = accessToken
+	s.AllowSelfSignedCertificates = allowSelfSignedCertificates
 	s.Namespace = namespace
 	s.Endpoint = endpoint
 	return
@@ -51,7 +53,7 @@ func (s *Soap) Execute(action, query string) (response []byte, err error) {
 	}
 	req.Header.Add("Content-Type", "text/xml")
 	req.Header.Add("SOAPACtion", action)
-	res, err := httpClient().Do(req)
+	res, err := httpClient(s.AllowSelfSignedCertificates).Do(req)
 	if err != nil {
 		return
 	}
