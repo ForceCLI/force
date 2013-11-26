@@ -13,6 +13,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"runtime"
 	"strings"
 )
@@ -27,10 +28,17 @@ const (
 	EndpointProduction = iota
 	EndpointTest       = iota
 	EndpointPrerelease = iota
+	EndpointDev      = iota
 )
 
 const (
 	apiVersion = "v29.0" //winter 14
+)
+
+const (
+	DevServerEnvVarName = "FORCE_DEV_SERVER"
+	DevHttpsPortEnvVarName = "FORCE_DEV_HTTPS_PORT"
+	DevClientIdEnvVarName = "FORCE_DEV_CLIENT_ID"
 )
 
 var RootCertificates = `
@@ -80,6 +88,7 @@ type Force struct {
 
 type ForceCredentials struct {
 	AccessToken string
+	AllowSelfSignedCertificates bool
 	Id          string
 	InstanceUrl string
 	IssuedAt    string
@@ -125,6 +134,7 @@ func NewForce(creds ForceCredentials) (force *Force) {
 
 func ForceLogin(endpoint ForceEndpoint) (creds ForceCredentials, err error) {
 	ch := make(chan ForceCredentials)
+	allowSelfSignedCertificates := false
 	port, err := startLocalHttpServer(ch)
 	var url string
 	switch endpoint {
@@ -134,11 +144,21 @@ func ForceLogin(endpoint ForceEndpoint) (creds ForceCredentials, err error) {
 		url = fmt.Sprintf("https://test.salesforce.com/services/oauth2/authorize?response_type=token&client_id=%s&redirect_uri=%s&state=%d&prompt=login", ProductionClientId, RedirectUri, port)
 	case EndpointPrerelease:
 		url = fmt.Sprintf("https://prerellogin.pre.salesforce.com/services/oauth2/authorize?response_type=token&client_id=%s&redirect_uri=%s&state=%d&prompt=login", PrereleaseClientId, RedirectUri, port)
+	case EndpointDev:
+		devServer := os.Getenv(DevServerEnvVarName)
+		devHttpsPort := os.Getenv(DevHttpsPortEnvVarName)
+		devClientId := os.Getenv(DevClientIdEnvVarName)
+		if devServer == "" || devHttpsPort == "" || devClientId == "" {
+			ErrorAndExit("%s, %s and %s env variables must be set to login to dev endpoint", DevServerEnvVarName, DevHttpsPortEnvVarName, DevClientIdEnvVarName)
+		}
+		url = fmt.Sprintf("https://%s:%s/services/oauth2/authorize?response_type=token&client_id=%s&redirect_uri=%s&state=%d&prompt=login", devServer, devHttpsPort, devClientId, RedirectUri, port)
+		allowSelfSignedCertificates = true
 	default:
 		ErrorAndExit("no such endpoint type")
 	}
 	err = Open(url)
 	creds = <-ch
+	creds.AllowSelfSignedCertificates = allowSelfSignedCertificates
 	return
 }
 
@@ -226,7 +246,7 @@ func (f *Force) httpGet(url string) (body []byte, err error) {
 		return
 	}
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", f.Credentials.AccessToken))
-	res, err := httpClient().Do(req)
+	res, err := httpClient(f.Credentials.AllowSelfSignedCertificates).Do(req)
 	if err != nil {
 		return
 	}
@@ -257,7 +277,7 @@ func (f *Force) httpPost(url string, attrs map[string]string) (body []byte, err 
 	}
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", f.Credentials.AccessToken))
 	req.Header.Add("Content-Type", "application/json")
-	res, err := httpClient().Do(req)
+	res, err := httpClient(f.Credentials.AllowSelfSignedCertificates).Do(req)
 	if err != nil {
 		return
 	}
@@ -284,7 +304,7 @@ func (f *Force) httpPatch(url string, attrs map[string]string) (body []byte, err
 	}
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", f.Credentials.AccessToken))
 	req.Header.Add("Content-Type", "application/json")
-	res, err := httpClient().Do(req)
+	res, err := httpClient(f.Credentials.AllowSelfSignedCertificates).Do(req)
 	if err != nil {
 		return
 	}
@@ -309,7 +329,7 @@ func (f *Force) httpDelete(url string) (body []byte, err error) {
 		return
 	}
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", f.Credentials.AccessToken))
-	res, err := httpClient().Do(req)
+	res, err := httpClient(f.Credentials.AllowSelfSignedCertificates).Do(req)
 	if err != nil {
 		return
 	}
@@ -328,9 +348,9 @@ func (f *Force) httpDelete(url string) (body []byte, err error) {
 	return
 }
 
-func httpClient() (client *http.Client) {
+func httpClient(allowSelfSignedCertificates bool) (client *http.Client) {
 	chain := rootCertificate()
-	config := tls.Config{}
+	config := tls.Config{InsecureSkipVerify:allowSelfSignedCertificates}
 	config.RootCAs = x509.NewCertPool()
 	for _, cert := range chain.Certificate {
 		x509Cert, err := x509.ParseCertificate(cert)
