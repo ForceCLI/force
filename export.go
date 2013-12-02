@@ -5,8 +5,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	//"bitbucket.org/pkg/inflect"
-	//"strings"
 )
 
 var cmdExport = &Command{
@@ -24,58 +22,6 @@ Examples:
 `,
 }
 
-var cmdFetch = &Command{
-	Run: runFetch,
-	Usage: "fetch <type> <name>",
-	Short: "Export a single artifact to a local directory",
-	Long: `
-Export a single artifact to a local directory
-
-Examples
-
-  force fetch ConnectedApp Node_App
-`,
-}
-
-func runFetch(cmd *Command, args []string) {
-	wd, _ := os.Getwd()
-	root := filepath.Join(wd, "metadata")
-	artifactType := ""
-	artifactName := "*"
-	if len(args) < 1 {
-		ErrorAndExit("must specify object type and/or object name")
-	}
-
-	artifactType = args[0]
-	query := ForceMetadataQuery{}
-	if len(args) >= 2 {
-		newargs := args[1:]
-		for artifactNames := range newargs {
-			mq := ForceMetadataQueryElement{artifactType, newargs[artifactNames]}
-			query = append(query, mq)
-		}
-	} else {
-		mq := ForceMetadataQueryElement{artifactType, artifactName}
-		query = append(query, mq)
-	}
-
-	force, _ := ActiveForce()
-	files, err := force.Metadata.Retrieve(query)
-	if err != nil {
-		ErrorAndExit(err.Error())
-	}
-	for name, data := range files {
-		file := filepath.Join(root, name)
-		dir := filepath.Dir(file)
-		if err := os.MkdirAll(dir, 0755); err != nil {
-			ErrorAndExit(err.Error())
-		}
-		if err := ioutil.WriteFile(filepath.Join(root, name), data, 0644); err != nil {
-			ErrorAndExit(err.Error())
-		}
-	}
-	fmt.Printf("Exported %s to %s\n", artifactName, root)
-}
 
 func runExport(cmd *Command, args []string) {
 	wd, _ := os.Getwd()

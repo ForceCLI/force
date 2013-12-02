@@ -22,6 +22,8 @@ const (
 	PrereleaseClientId = "3MVG9lKcPoNINVBIRgC7lsz5tIhlg0mtoEqkA9ZjDAwEMbBy43gsnfkzzdTdhFLeNnWS8M4bnRnVv1Qj0k9MD"
 	Mobile1ClientId    = "3MVG9Iu66FKeHhIPqCB9VWfYPxjfcb5Ube.v5L81BLhnJtDYVP2nkA.mDPwfm5FTLbvL6aMftfi8w0rL7Dv7f"
 	RedirectUri        = "https://force-cli.herokuapp.com/auth/callback"
+	davesClientId	   = "3MVG9A2kN3Bn17htmL6C3hdKUUDXH8kC2thx.N2hfbgxgwJezoJuGWSHCtwsdt.zv1h_BTCH7PEr5pkcB6O71"
+	daveSecret		   = "5214780887033742883"
 	
 )
 
@@ -89,6 +91,11 @@ type ForceCredentials struct {
 	Scope       string
 }
 
+type GenericForceError struct {
+	Error_Description 	string
+	Error 			string
+}
+
 type ForceError struct {
 	Message   string
 	ErrorCode string
@@ -152,6 +159,45 @@ func ForceLogin(endpoint ForceEndpoint) (creds ForceCredentials, err error) {
 	}
 	err = Open(url)
 	creds = <-ch
+	return
+}
+
+func ForceLoginUsernamePassword(endpoint ForceEndpoint, username string, password string) (creds ForceCredentials, err error) {
+	var lurl = "https://login.salesforce.com/services/oauth2/token"
+	var attrs = make(url.Values)
+	attrs.Set("grant_type", "password")
+	attrs.Set("client_id", davesClientId)
+	attrs.Set("client_secret", daveSecret)
+	attrs.Set("username", username)
+	attrs.Set("password", password)
+
+	rbody, _ := json.Marshal(attrs)
+
+	req, err := httpRequest("POST", lurl, bytes.NewReader(rbody))
+	res, err := httpClient().Do(req)
+	if err != nil {
+		return
+	}
+	defer res.Body.Close()
+
+	var body []byte
+	fmt.Println(res.StatusCode)
+	body, err = ioutil.ReadAll(res.Body)
+	fmt.Println(string(body))
+
+	if res.StatusCode == 401 {
+		err = errors.New("authorization expired, please run `force login`")
+		return
+	} else if res.StatusCode == 400 {
+		var message GenericForceError
+		json.Unmarshal(body, &message)
+		err = errors.New(message.Error_Description)
+	} else if res.StatusCode/100 != 2 {
+		var messages []ForceError
+		json.Unmarshal(body, &messages)
+		err = errors.New(messages[0].Message)
+		return
+	}
 	return
 }
 
