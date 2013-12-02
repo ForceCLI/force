@@ -300,6 +300,8 @@ func (fm *ForceMetadata) CreateCustomField(object, field, typ string) (err error
 		inp2 = scanner.Text()
 
 		soapField = fmt.Sprintf(soapField, inp, inp2, strings.Replace(inp2, " ", "_", -1))
+	case "textarea":
+		soapField = "<type>TextArea</type>"
 	default:
 		ErrorAndExit("unable to create field type: %s", typ)
 	}

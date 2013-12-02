@@ -51,7 +51,7 @@ func runPasswordStatus(args []string) {
 	if err != nil {
 		ErrorAndExit(err.Error())
 	} else {
-		object, err := force.GetPasswordStatus(records[0]["Id"].(string))
+		object, err := force.GetPasswordStatus(records.Records[0]["Id"].(string))
 		if err != nil {
 			ErrorAndExit(err.Error())
 		} else {
@@ -66,7 +66,7 @@ func runPasswordReset(args []string) {
 	}
 	force, _ := ActiveForce()
 	records, err := force.Query(fmt.Sprintf("select Id From User Where UserName = '%s'", args[0]))
-	object, err := force.ResetPassword(records[0]["Id"].(string))
+	object, err := force.ResetPassword(records.Records[0]["Id"].(string))
 	if err != nil {
 		ErrorAndExit(err.Error())
 	} else {
@@ -84,7 +84,7 @@ func runPasswordChange(args []string) {
 		ErrorAndExit(err.Error())
 	} else {
 		attrs := ParseArgumentAttrs(args[1:])
-		_, err := force.ChangePassword(records[0]["Id"].(string), attrs)
+		_, err := force.ChangePassword(records.Records[0]["Id"].(string), attrs)
 		if err != nil {
 			ErrorAndExit(err.Error())
 		} else {

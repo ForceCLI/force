@@ -42,7 +42,7 @@ func runQuery(cmd *Command, args []string) {
 			if format == "console" {
 				DisplayForceRecords(records)
 			} else  {
-				DisplayForceRecordsf(records, format)
+				DisplayForceRecordsf(records.Records, format)
 			}
 		}
 	}
