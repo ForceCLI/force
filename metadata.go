@@ -13,6 +13,8 @@ import (
 	"bufio"
 	"os"
 	"time"
+	"reflect"
+	"strconv"
 )
 
 type ForceConnectedApps []ForceConnectedApp
@@ -98,13 +100,142 @@ type ForceMetadata struct {
 	Force      *Force
 }
 
+type ForceStringFieldRequired struct {
+	Length			int `xml:"length"`
+}
+
+type ForceStringField struct {
+	Label 			string 	`xml:"label"`
+	Name 			string 	`xml:"fullName"`
+	Required 		bool 	`xml:"required"`
+	Length 			int 	`xml:"length"`
+	Description 	string 	`xml:"description"`
+	HelpText		string  `xml:"helpText"`
+	Unique			bool 	`xml:"unique"`
+	CaseSensative	bool 	`xml:"caseSensative"`
+	ExternalId 		bool 	`xml:"externalId"`
+	DefaultValue 	string 	`xml:"defaultValue"`
+}
+
+// Example of how to use Go's reflection
+// Print the attributes of a Data Model
+func attributes(m interface{}) (map[string]reflect.StructField) {
+  typ := reflect.TypeOf(m)
+  // if a pointer to a struct is passed, get the type of the dereferenced object
+  if typ.Kind() == reflect.Ptr{
+    typ = typ.Elem()
+  }
+ 
+  // create an attribute data structure as a map of types keyed by a string.
+  attrs := make(map[string]reflect.StructField)
+  // Only structs are supported so return an empty result if the passed object
+  // isn't a struct
+  if typ.Kind() != reflect.Struct {
+    fmt.Printf("%v type can't have attributes inspected\n", typ.Kind())
+    return attrs
+  }
+ 
+  // loop through the struct's fields and set the map
+  for i := 0; i < typ.NumField(); i++ {
+    p := typ.Field(i)
+      if !p.Anonymous {
+        attrs[strings.ToLower(p.Name)] = p
+      }
+     }
+ 
+  return attrs
+}
+
+func ValidateOptionsAndDefaults(typ string, fields map[string]reflect.StructField, requiredDefaults reflect.Value, options map[string]string) (newOptions map[string]string, err error) {
+	newOptions = make(map[string]string)
+
+	// validate optional attributes
+	for name, value := range(options) {
+		field, ok := fields[strings.ToLower(name)]
+		if !ok {
+			err = errors.New(fmt.Sprintf("validation error: %s:%s is not a valid option for field type %s", name, value, typ))
+		} else {
+			newOptions[field.Tag.Get("xml")] = options[strings.ToLower(name)];
+		}
+	}
+
+	// validate required attributes
+	s := requiredDefaults
+	tod := s.Type()
+	for i := 0; i<s.NumField(); i++ {
+		_, ok := options[strings.ToLower(tod.Field(i).Name)]
+		if !ok {
+			switch s.Field(i).Type().Name() {
+				case "int":
+					newOptions[tod.Field(i).Tag.Get("xml")] = strconv.Itoa(s.Field(i).Interface().(int))
+					break;
+				case "bool":
+					newOptions[tod.Field(i).Tag.Get("xml")] = strconv.FormatBool(s.Field(i).Interface().(bool))
+					break;
+				default:
+					fmt.Println(s.Field(i).Type().Name())
+					fmt.Println(tod.Field(i).Name + "\n\n");
+					newOptions[tod.Field(i).Tag.Get("xml")] = s.Field(i).Interface().(string)
+					break;
+			}
+		} else {
+			newOptions[tod.Field(i).Tag.Get("xml")] = options[strings.ToLower(tod.Field(i).Name)]
+		}
+	}
+	return newOptions, err
+}
+func (fm *ForceMetadata) ValidateFieldOptions(typ string, options map[string]string) (newOptions map[string]string, err error) {
+
+	newOptions = make(map[string]string)
+
+	switch typ {
+		case "string", "text":
+			requiredDefaults := ForceStringFieldRequired{255}
+			attrs := attributes(&ForceStringField{})
+			s := reflect.ValueOf(&requiredDefaults).Elem()
+			newOptions, err = ValidateOptionsAndDefaults(typ, attrs, s, options)
+			// validate optional attributes
+			/*for name, value := range(options) {
+				attr, ok := attrs[strings.ToLower(name)]
+				if !ok {
+					err = errors.New(fmt.Sprintf("validation error: %s:%s is not a valid option for field type %s", name, value, typ))
+				} else {
+					newOptions[attr.Tag.Get("xml")] = options[strings.ToLower(name)];
+				}
+			}
+
+			// validate required attributes
+			s := reflect.ValueOf(&requiredDefaults).Elem()
+			tod := s.Type()
+			for i := 0; i<s.NumField(); i++ {
+				_, ok := options[strings.ToLower(tod.Field(i).Name)]
+				if !ok {
+					switch s.Field(i).Type().Name() {
+						case "int":
+							newOptions[tod.Field(i).Tag.Get("xml")] = strconv.Itoa(s.Field(i).Interface().(int))
+							break;
+						case "bool":
+							newOptions[tod.Field(i).Tag.Get("xml")] = strconv.FormatBool(s.Field(i).Interface().(bool))
+							break;
+						default:
+							newOptions[tod.Field(i).Tag.Get("xml")], ok = s.Field(i).Interface().(string)
+							break;
+					}
+				} else {
+					newOptions[tod.Field(i).Tag.Get("xml")] = options[strings.ToLower(tod.Field(i).Name)]
+				}
+			}*/
+			break
+		default:
+			break
+  	}
+  	return newOptions, nil
+}
 
 func NewForceMetadata(force *Force) (fm *ForceMetadata) {
 	fm = &ForceMetadata{ApiVersion:"29.0", Force: force}
 	return
 }
-
-
 
 func (fm *ForceMetadata) CheckStatus(id string) (err error) {
 	body, err := fm.soapExecute("checkStatus", fmt.Sprintf("<id>%s</id>", id))
@@ -222,7 +353,7 @@ func (fm *ForceMetadata) CreateConnectedApp(name, callback string) (err error) {
 	return
 }
 
-func (fm *ForceMetadata) CreateCustomField(object, field, typ string) (err error) {
+func (fm *ForceMetadata) CreateCustomField(object, field, typ string, options map[string]string) (err error) {
 	soap := `
 		<metadata xsi:type="CustomField" xmlns:cmd="http://soap.sforce.com/2006/04/metadata">
 			<fullName>%s.%s__c</fullName>
@@ -239,7 +370,11 @@ func (fm *ForceMetadata) CreateCustomField(object, field, typ string) (err error
 					<externalId>false</externalId>
 					<trackTrending>false</trackTrending>`
 	case "text", "string":
-		soapField = "<type>Text</type><length>255</length>"
+		soapField = "<type>Text</type>"
+		for key, value := range(options) {
+			soapField += fmt.Sprintf("<%s>%s</%s>", key, value, key)
+		}
+		fmt.Println("\n" + soapField + "\n\n")
 	case "datetime":
 		soapField = "<type>DateTime</type>"
 	case "number", "int":
