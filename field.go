@@ -68,7 +68,27 @@ func runFieldCreate(args []string) {
 	if len(parts) != 2 {
 		ErrorAndExit("must specify name:type for fields")
 	}
-	if err := force.Metadata.CreateCustomField(args[0], parts[0], parts[1]); err != nil {
+
+	var optionMap = make(map[string]string)
+	var newOptions = make(map[string]string)
+	if len(args) > 2 {
+		for _, value := range args[2:] {
+			options := strings.Split(value, ":")
+			//fmt.Println("options: " + options[0] + " - " + options[1])
+    		optionMap[options[0]] = options[1]
+		}
+		// Validate the options for this field type
+		xOptions, err := force.Metadata.ValidateFieldOptions(parts[1], optionMap)
+		if err != nil {
+			ErrorAndExit(err.Error())
+		}
+		fmt.Println("Checking keys...")
+		for key, val := range newOptions {
+			fmt.Println("Key: " + key + ", val: " + val)
+		}
+		newOptions = xOptions
+	}
+	if err := force.Metadata.CreateCustomField(args[0], parts[0], parts[1], newOptions); err != nil {
 		ErrorAndExit(err.Error())
 	}
 	fmt.Println("Custom field created")
