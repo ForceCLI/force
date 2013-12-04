@@ -83,10 +83,12 @@ func runFieldCreate(args []string) {
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
-	fmt.Println("Checking keys...")
+	
+	/*fmt.Println("Checking keys...")
 	for key, val := range newOptions {
 		fmt.Println("Key: " + key + ", val: " + val)
-	}
+	}*/
+	
 	newOptions = xOptions
 
 	if err := force.Metadata.CreateCustomField(args[0], parts[0], parts[1], newOptions); err != nil {
