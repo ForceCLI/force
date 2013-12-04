@@ -273,7 +273,6 @@ func ValidateOptionsAndDefaults(typ string, fields map[string]reflect.StructFiel
 	// validate optional attributes
 	for name, value := range(options) {
 		field, ok := fields[strings.ToLower(name)]
-		fmt.Printf("%v Checking if field is in struct: " + name + ":" + field.Name, ok)
 		if !ok {
 			ErrorAndExit(fmt.Sprintf("validation error: %s:%s is not a valid option for field type %s", name, value, typ))
 		} else {
@@ -287,7 +286,6 @@ func ValidateOptionsAndDefaults(typ string, fields map[string]reflect.StructFiel
 	for i := 0; i<s.NumField(); i++ {
 		_, ok := options[strings.ToLower(tod.Field(i).Name)]
 		if !ok {
-			fmt.Println(s.Field(i).Type().Name())
 			switch s.Field(i).Type().Name() {
 				case "int":
 					newOptions[tod.Field(i).Tag.Get("xml")] = strconv.Itoa(s.Field(i).Interface().(int))
@@ -296,8 +294,6 @@ func ValidateOptionsAndDefaults(typ string, fields map[string]reflect.StructFiel
 					newOptions[tod.Field(i).Tag.Get("xml")] = strconv.FormatBool(s.Field(i).Interface().(bool))
 					break;
 				default:
-					fmt.Println(s.Field(i).Type().Name())
-					fmt.Println(tod.Field(i).Name + "\n\n");
 					newOptions[tod.Field(i).Tag.Get("xml")] = s.Field(i).Interface().(string)
 					break;
 			}
@@ -499,6 +495,8 @@ func (fm *ForceMetadata) CreateConnectedApp(name, callback string) (err error) {
 }
 
 func (fm *ForceMetadata) CreateCustomField(object, field, typ string, options map[string]string) (err error) {
+	label := field
+	field = strings.Replace(field, " ", "_", -1)
 	soap := `
 		<metadata xsi:type="CustomField" xmlns:cmd="http://soap.sforce.com/2006/04/metadata">
 			<fullName>%s.%s__c</fullName>
@@ -607,7 +605,7 @@ func (fm *ForceMetadata) CreateCustomField(object, field, typ string, options ma
 
 	fmt.Println("\n" + soapField + "\n\n")
 
-	body, err := fm.soapExecute("create", fmt.Sprintf(soap, object, field, field, soapField))
+	body, err := fm.soapExecute("create", fmt.Sprintf(soap, object, field, label, soapField))
 	if err != nil {
 		return err
 	}
