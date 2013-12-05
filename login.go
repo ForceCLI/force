@@ -22,19 +22,6 @@ Examples:
 `,
 }
 
-var cmdLogin1 = &Command{
-	Run:   runLogin1,
-	Usage: "login1",
-	Short: "Log in to force.com",
-	Long: `
-Log in to force.com
-
-Examples:
-
-  force login1
-`,
-}
-
 func runLogin(cmd *Command, args []string) {
 	var endpoint ForceEndpoint
 	endpoint = EndpointProduction
@@ -44,8 +31,6 @@ func runLogin(cmd *Command, args []string) {
 			endpoint = EndpointTest
 		case "pre":
 			endpoint = EndpointPrerelease
-		case "mobile1":
-			endpoint = EndpointMobile1
 		default:
 			ErrorAndExit("no such endpoint: %s", args[0])
 		}
@@ -53,39 +38,6 @@ func runLogin(cmd *Command, args []string) {
 	_, err := ForceLoginAndSave(endpoint)
 	if err != nil {
 		ErrorAndExit(err.Error())
-	}
-}
-
-func runLogin1(cmd *Command, args []string) {
-	var endpoint ForceEndpoint
-	var un, pw string
-
-	endpoint = EndpointProduction
-	if len(args) > 1 {
-		switch args[0] {
-		case "test":
-			endpoint = EndpointTest
-		case "pre":
-			endpoint = EndpointPrerelease
-		case "mobile1":
-			endpoint = EndpointMobile1
-		default:
-			endpoint = EndpointProduction
-//			ErrorAndExit("no such endpoint: %s", args[0])
-		}
-	}
-	if len(args) == 3 {
-		un = args[1]
-		pw = args[2]
-		_, err := ForceLoginUsernamePassword(endpoint, un, pw)
-		if err != nil {
-			ErrorAndExit(err.Error())
-		}
-	} else {
-		_, err := ForceLoginAndSave(endpoint)
-		if err != nil {
-			ErrorAndExit(err.Error())
-		}
 	}
 }
 
