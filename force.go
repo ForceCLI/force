@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
 	"runtime"
 	"strings"
 )
@@ -152,18 +153,15 @@ func ForceLogin(endpoint ForceEndpoint) (creds ForceCredentials, err error) {
 }
 
 func ParseDevEndpointURL(url string) (clientId, server, httpsPort string) {
-	splitURL := strings.Split(url, ":")
-	if len(splitURL) > 1 {
-		httpsPort = splitURL[1]
-		splitURL = strings.Split(splitURL[0], "@")
-		if len(splitURL) > 1 {
-			server = splitURL[1]
-			splitURL = strings.Split(splitURL[0], "://") // in case someone left https:// in the URL
-			clientId = splitURL[len(splitURL)-1] 
-			return
-		}
+	re := regexp.MustCompile("^(?:http[s]//)?(.+)(?:@)([\\w-.]+)(?::)([0-9]+)")
+	splitURL := re.FindStringSubmatch(url)
+	if len(splitURL) != 4 {
+		ErrorAndExit("Dev server URL must be in the format of CLIENTID@SERVER:PORT")	
+		
 	}
-	ErrorAndExit("Dev server URL must be in the format of CLIENTID@SERVER:PORT")
+	clientId = splitURL[1]
+	server = splitURL[2]
+	httpsPort = splitURL[3]
 	return
 }
 
