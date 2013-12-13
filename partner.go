@@ -12,14 +12,15 @@ type ForcePartner struct {
 }
 
 type TestCoverage struct {
-		Log 							string `xml:"Header>DebuggingInfo>debugLog"`
-		NumberLocations 				[]int `xml:"Body>runTestsResponse>result>codeCoverage>numLocations"`
-		NumberLocationsNotCovered		[]int `xml:"Body>runTestsResponse>result>codeCoverage>numLocationsNotCovered"`
-		Name 							[]string `xml:"Body>runTestsResponse>result>codeCoverage>name"`
-		SMethodNames 					[]string `xml:"Body>runTestsResponse>result>successes>methodName"`
-		SClassNames						[]string `xml:"Body>runTestsResponse>result>successes>name"`
-		FMethodNames 					[]string `xml:"Body>runTestsResponse>result>failures>methodName"`
-		FClassNames						[]string `xml:"Body>runTestsResponse>result>failures>name"`
+	Log                       string   `xml:"Header>DebuggingInfo>debugLog"`
+	NumberRun                 int      `xml:"Body>runTestsResponse>result>numTestsRun"`
+	NumberLocations           []int    `xml:"Body>runTestsResponse>result>codeCoverage>numLocations"`
+	NumberLocationsNotCovered []int    `xml:"Body>runTestsResponse>result>codeCoverage>numLocationsNotCovered"`
+	Name                      []string `xml:"Body>runTestsResponse>result>codeCoverage>name"`
+	SMethodNames              []string `xml:"Body>runTestsResponse>result>successes>methodName"`
+	SClassNames               []string `xml:"Body>runTestsResponse>result>successes>name"`
+	FMethodNames              []string `xml:"Body>runTestsResponse>result>failures>methodName"`
+	FClassNames               []string `xml:"Body>runTestsResponse>result>failures>name"`
 }
 
 func NewForcePartner(force *Force) (partner *ForcePartner) {
@@ -90,26 +91,26 @@ func (partner *ForcePartner) soapExecuteCore(action, query string) (response []b
 }
 
 func (partner *ForcePartner) RunTests(tests string) (output TestCoverage, err error) {
-	test_names := strings.Split(tests," ")
+	test_names := strings.Split(tests, " ")
 	soap := "<RunTestsRequest>\n"
-	if test_names[0] == "all" || test_names[0] == "All" {
-		soap+="<allTests>True</allTests>\n"
-	}else{
-		for _,element := range test_names {
-			soap+="<classes>" + element + "</classes>\n"
+	if strings.EqualFold(test_names[0], "all") {
+		soap += "<allTests>True</allTests>\n"
+	} else {
+		for _, element := range test_names {
+			soap += "<classes>" + element + "</classes>\n"
 		}
 	}
-	soap+="</RunTestsRequest>"
+	soap += "</RunTestsRequest>"
 	body, err := partner.soapExecute("runTests", soap)
 	if err != nil {
-		return 
+		return
 	}
 	var result TestCoverage
 	if err = xml.Unmarshal(body, &result); err != nil {
-		return 
+		return
 	}
 	output = result
-	return 
+	return
 }
 
 func (partner *ForcePartner) soapExecute(action, query string) (response []byte, err error) {
