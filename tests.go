@@ -30,9 +30,9 @@ func runTests(cmd *Command, args []string) {
 		ErrorAndExit(err.Error())
 	} else {
 		//working on a better way to do this - catches when no class are found and ran
-		if output.NumberRun == "0" {
+		if output.NumberRun == 0 {
 			println("test classes specified not found")
-		}else{
+		} else {
 			var percent string
 			println(output.Log)
 			println()
@@ -45,7 +45,7 @@ func runTests(cmd *Command, args []string) {
 					percent = strconv.Itoa(((output.NumberLocations[index]-output.NumberLocationsNotCovered[index])/output.NumberLocations[index])*100) + "%"
 				} else {
 					percent = "0%"
-				} 
+				}
 				println(percent + "   " + output.Name[index])
 			}
 			println()
@@ -53,11 +53,11 @@ func runTests(cmd *Command, args []string) {
 			println("Results:")
 			println()
 			//println()
-			for index := range output.SMethodNames{
+			for index := range output.SMethodNames {
 				println("[PASS]    " + output.SClassNames[index] + "::" + output.SMethodNames[index])
 			}
 
-			for index := range output.FMethodNames{
+			for index := range output.FMethodNames {
 				println("[FAIL]    " + output.FClassNames[index] + "::" + output.FMethodNames[index])
 			}
 			println()
