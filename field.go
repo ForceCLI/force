@@ -16,7 +16,7 @@ Usage:
 
   force field list <object>
 
-  force field create <object> <field>:<type>
+  force field create <object> <field>:<type> [<option>:<value>]
 
   force field delete <object> <field>
 
@@ -24,7 +24,7 @@ Examples:
 
   force field list Todo__c
 
-  force field create Todo__c Due:DateTime
+  force field create Todo__c Due:DateTime required:true
 
   force field delete Todo__c Due
 `,
@@ -83,12 +83,6 @@ func runFieldCreate(args []string) {
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
-
-	/*fmt.Println("Checking keys...")
-	for key, val := range newOptions {
-		fmt.Println("Key: " + key + ", val: " + val)
-	}*/
-
 	newOptions = xOptions
 
 	if err := force.Metadata.CreateCustomField(args[0], parts[0], parts[1], newOptions); err != nil {

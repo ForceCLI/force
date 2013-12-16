@@ -14,7 +14,11 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"reflect"
+	"strconv"
 	"time"
+	"bufio"
+	"os"
 )
 
 type ForceConnectedApps []ForceConnectedApp
@@ -106,6 +110,7 @@ type ForceMetadata struct {
    a custom field.
 */
 type GeolocationFieldRequired struct {
+<<<<<<< HEAD
 	DsiplayLocationInDecimal bool `xml:"displayLocationInDecimal"`
 	Scale                    int  `xml:"scale"`
 }
@@ -365,6 +370,128 @@ func (fm *ForceMetadata) ValidateFieldOptions(typ string, options map[string]str
 func NewForceMetadata(force *Force) (fm *ForceMetadata) {
 	fm = &ForceMetadata{ApiVersion: "29.0", Force: force}
 	return
+}
+
+// Example of how to use Go's reflection
+// Print the attributes of a Data Model
+func getAttributes(m interface{}) map[string]reflect.StructField {
+	typ := reflect.TypeOf(m)
+	// if a pointer to a struct is passed, get the type of the dereferenced object
+	if typ.Kind() == reflect.Ptr {
+		typ = typ.Elem()
+	}
+
+	// create an attribute data structure as a map of types keyed by a string.
+	attrs := make(map[string]reflect.StructField)
+	// Only structs are supported so return an empty result if the passed object
+	// isn't a struct
+	if typ.Kind() != reflect.Struct {
+		fmt.Printf("%v type can't have attributes inspected\n", typ.Kind())
+		return attrs
+	}
+
+	// loop through the struct's fields and set the map
+	for i := 0; i < typ.NumField(); i++ {
+		p := typ.Field(i)
+		if !p.Anonymous {
+			attrs[strings.ToLower(p.Name)] = p
+		}
+	}
+
+	return attrs
+}
+
+func ValidateOptionsAndDefaults(typ string, fields map[string]reflect.StructField, requiredDefaults reflect.Value, options map[string]string) (newOptions map[string]string, err error) {
+	newOptions = make(map[string]string)
+
+	// validate optional attributes
+	for name, value := range(options) {
+		field, ok := fields[strings.ToLower(name)]
+		if !ok {
+			ErrorAndExit(fmt.Sprintf("validation error: %s:%s is not a valid option for field type %s", name, value, typ))
+		} else {
+			newOptions[field.Tag.Get("xml")] = options[name]
+		}	
+	}
+
+	// validate required attributes
+	s := requiredDefaults
+	tod := s.Type()
+	for i := 0; i<s.NumField(); i++ {
+		_, ok := options[strings.ToLower(tod.Field(i).Name)]
+		if !ok {
+			switch s.Field(i).Type().Name() {
+				case "int":
+					newOptions[tod.Field(i).Tag.Get("xml")] = strconv.Itoa(s.Field(i).Interface().(int))
+					break;
+				case "bool":
+					newOptions[tod.Field(i).Tag.Get("xml")] = strconv.FormatBool(s.Field(i).Interface().(bool))
+					break;
+				default:
+					newOptions[tod.Field(i).Tag.Get("xml")] = s.Field(i).Interface().(string)
+					break;
+			}
+		} else {
+			newOptions[tod.Field(i).Tag.Get("xml")] = options[strings.ToLower(tod.Field(i).Name)]
+		}
+	}
+	return newOptions, err
+}
+
+func (fm *ForceMetadata) ValidateFieldOptions(typ string, options map[string]string) (newOptions map[string]string, err error) {
+
+	newOptions = make(map[string]string)
+	var attrs map[string]reflect.StructField
+	var s reflect.Value
+
+	switch typ {
+	case "string", "text":
+		attrs = getAttributes(&StringField{})
+		s = reflect.ValueOf(&StringFieldRequired{255}).Elem()
+		break
+	case "textarea":
+		attrs = getAttributes(&TextAreaField{})
+		s = reflect.ValueOf(&TextAreaFieldRequired{}).Elem()
+		break
+	case "longtextarea":
+		attrs = getAttributes(&LongTextAreaField{})
+		s = reflect.ValueOf(&LongTextAreaFieldRequired{32768, 5}).Elem()
+		break
+	case "richtextarea":
+		attrs = getAttributes(&RichTextAreaField{})
+		s = reflect.ValueOf(&RichTextAreaFieldRequired{32768, 5}).Elem()
+		break
+	case "bool", "boolean", "checkbox":
+		attrs = getAttributes(&BoolField{})
+		s = reflect.ValueOf(&BoolFieldRequired{false}).Elem()
+		break
+	case "datetime":
+		attrs = getAttributes(&DatetimeField{})
+		s = reflect.ValueOf(&DatetimeFieldRequired{}).Elem()
+		break
+	case "float":
+		attrs = getAttributes(&FloatField{})
+		s = reflect.ValueOf(&FloatFieldRequired{16, 2}).Elem()
+		break
+	case "number", "int":
+		attrs = getAttributes(&NumberField{})
+		s = reflect.ValueOf(&NumberFieldRequired{18, 0}).Elem()
+		break
+	case "autonumber":
+		attrs = getAttributes(&AutoNumberField{})
+		s = reflect.ValueOf(&AutoNumberFieldRequired{0, "AN-{00000}"}).Elem()
+		break
+	case "geolocation":
+		attrs = getAttributes(&GeolocationField{})
+		s = reflect.ValueOf(&GeolocationFieldRequired{true, 5}).Elem()
+		break
+	default:
+		break
+	}
+
+	newOptions, err = ValidateOptionsAndDefaults(typ, attrs, s, options)
+
+	return newOptions, nil
 }
 
 func (fm *ForceMetadata) CheckStatus(id string) (err error) {
