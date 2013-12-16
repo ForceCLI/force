@@ -22,14 +22,13 @@ const (
 	PrereleaseClientId = "3MVG9lKcPoNINVBIRgC7lsz5tIhlg0mtoEqkA9ZjDAwEMbBy43gsnfkzzdTdhFLeNnWS8M4bnRnVv1Qj0k9MD"
 	Mobile1ClientId    = "3MVG9Iu66FKeHhIPqCB9VWfYPxjfcb5Ube.v5L81BLhnJtDYVP2nkA.mDPwfm5FTLbvL6aMftfi8w0rL7Dv7f"
 	RedirectUri        = "https://force-cli.herokuapp.com/auth/callback"
-	
 )
 
 const (
 	EndpointProduction = iota
 	EndpointTest       = iota
 	EndpointPrerelease = iota
-	EndpointMobile1	   = iota	
+	EndpointMobile1    = iota
 )
 
 const (
@@ -90,8 +89,8 @@ type ForceCredentials struct {
 }
 
 type GenericForceError struct {
-	Error_Description 	string
-	Error 			string
+	Error_Description string
+	Error             string
 }
 
 type ForceError struct {
@@ -112,11 +111,11 @@ type ForceCreateRecordResult struct {
 }
 
 type ForcePasswordStatusResult struct {
-	IsExpired	bool
+	IsExpired bool
 }
 
 type ForcePasswordResetResult struct {
-	NewPassword	string
+	NewPassword string
 }
 
 type ForceQueryResult struct {
@@ -159,7 +158,6 @@ func ForceLogin(endpoint ForceEndpoint) (creds ForceCredentials, err error) {
 	creds = <-ch
 	return
 }
-
 
 func (f *Force) ListSobjects() (sobjects []ForceSobject, err error) {
 	url := fmt.Sprintf("%s/services/data/%s/sobjects", f.Credentials.InstanceUrl, apiVersion)

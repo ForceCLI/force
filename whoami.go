@@ -1,7 +1,6 @@
 package main
 
-import (
-)
+import ()
 
 var cmdWhoami = &Command{
 	Run:   runWhoami,
@@ -23,5 +22,5 @@ func runWhoami(cmd *Command, args []string) {
 		ErrorAndExit(err.Error())
 	} else if len(args) == 0 {
 		DisplayForceRecord(me)
-	} 
+	}
 }

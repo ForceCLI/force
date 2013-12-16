@@ -8,7 +8,7 @@ import (
 )
 
 var cmdFetch = &Command{
-	Run: runFetch,
+	Run:   runFetch,
 	Usage: "fetch <type> [<artifact name>]",
 	Short: "Export specified artifact(s) to a local directory",
 	Long: `

@@ -47,16 +47,16 @@ func runPush(cmd *Command, args []string) {
 	objType := args[1]
 
 	switch args[1] {
-		case "objects":
-			objType = "CustomObject"
-		case "flexipages":
-			objType = "FlexiPage" 
-		case "tabs":
-			objType = "CustomTab"
-		default:
-			ErrorAndExit("That folder type is not supported")
+	case "objects":
+		objType = "CustomObject"
+	case "flexipages":
+		objType = "FlexiPage"
+	case "tabs":
+		objType = "CustomTab"
+	default:
+		ErrorAndExit("That folder type is not supported")
 	}
-	
+
 	found := false
 	err := filepath.Walk(filepath.Join(root, args[1]), func(path string, f os.FileInfo, err error) error {
 		if f.Mode().IsRegular() {
@@ -73,15 +73,14 @@ func runPush(cmd *Command, args []string) {
 		ErrorAndExit("Could not find " + args[2] + " in " + args[1])
 	}
 
-
 	force, _ := ActiveForce()
 	files := make(ForceMetadataFiles)
-	
+
 	err = os.Rename(filepath.Join(root, "package.xml"), filepath.Join(root, "package.copy.xml"))
 
 	if err := ioutil.WriteFile(filepath.Join(root, "package.xml"), []byte(fmt.Sprintf(pxml, args[2], objType)), 0644); err != nil {
-			ErrorAndExit(err.Error())
-		}
+		ErrorAndExit(err.Error())
+	}
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
