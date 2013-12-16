@@ -22,7 +22,6 @@ Examples:
 `,
 }
 
-
 func runExport(cmd *Command, args []string) {
 	wd, _ := os.Getwd()
 	root := filepath.Join(wd, "metadata")

@@ -51,7 +51,7 @@ func runSobjectList(args []string) {
 	force, _ := ActiveForce()
 	sobjects, err := force.ListSobjects()
 
-	l := make ([]ForceSobject, 0)
+	l := make([]ForceSobject, 0)
 	for _, sobject := range sobjects {
 		if len(args) == 1 {
 			if strings.Contains(sobject["name"].(string), args[0]) {

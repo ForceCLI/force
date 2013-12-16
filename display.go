@@ -159,17 +159,17 @@ func recordRow(record ForceRecord, columns []string, lengths map[string]int, pre
 
 // returns first index of a given string
 func StringSlicePos(slice []string, value string) int {
-        for p, v := range slice {
-                if v == value {
-                        return p
-                }
-        }
-        return -1
+	for p, v := range slice {
+		if v == value {
+			return p
+		}
+	}
+	return -1
 }
 
 // returns true if a slice contains given string
 func StringSliceContains(slice []string, value string) bool {
-        return StringSlicePos(slice, value) > -1
+	return StringSlicePos(slice, value) > -1
 }
 
 func RenderForceRecordsCSV(records []ForceRecord, format string) string {
@@ -199,7 +199,7 @@ func RenderForceRecordsCSV(records []ForceRecord, format string) string {
 			formatter_parts[i] = fmt.Sprintf(`"%%-%ds"`, length)
 		}
 
-		formatter := strings.Join(formatter_parts,`,`)
+		formatter := strings.Join(formatter_parts, `,`)
 		out.WriteString(fmt.Sprintf(formatter+"\n", StringSliceToInterfaceSlice(keys)...))
 		for _, record := range flattenedRecords {
 			values := make([][]string, len(keys))

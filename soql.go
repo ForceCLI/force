@@ -30,7 +30,7 @@ func runSoql(cmd *Command, args []string) {
 		formatArg := args[len(args)-1]
 
 		if strings.Contains(formatArg, "format:") {
-			args = args[:len(args) - 1]
+			args = args[:len(args)-1]
 			format = strings.SplitN(formatArg, ":", 2)[1]
 		}
 
@@ -41,7 +41,7 @@ func runSoql(cmd *Command, args []string) {
 		} else {
 			if format == "console" {
 				DisplayForceRecords(records)
-			} else  {
+			} else {
 				DisplayForceRecordsf(records.Records, format)
 			}
 		}

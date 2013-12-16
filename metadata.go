@@ -3,18 +3,18 @@ package main
 import (
 	"archive/zip"
 	"bitbucket.org/pkg/inflect"
+	"bufio"
 	"bytes"
 	"encoding/base64"
 	"encoding/xml"
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"strings"
-	"bufio"
 	"os"
-	"time"
 	"reflect"
 	"strconv"
+	"strings"
+	"time"
 )
 
 type ForceConnectedApps []ForceConnectedApp
@@ -26,53 +26,53 @@ type ForceConnectedApp struct {
 }
 
 type ComponentFailure struct {
-	Changed 		bool 	`xml:"changed"`
-	Created 		bool 	`xml:"created"`
-	Deleted 		bool 	`xml:"deleted"`
-	FileName 		string 	`xml:"fileName"`
-	FullName 		string 	`xml:"fullName"`
-	Problem 		string 	`xml:"problem"`
-	ProblemType 	string 	`xml:"problemType"`
-	Success 		bool 	`xml:"success"`
+	Changed     bool   `xml:"changed"`
+	Created     bool   `xml:"created"`
+	Deleted     bool   `xml:"deleted"`
+	FileName    string `xml:"fileName"`
+	FullName    string `xml:"fullName"`
+	Problem     string `xml:"problem"`
+	ProblemType string `xml:"problemType"`
+	Success     bool   `xml:"success"`
 }
 
 type ComponentSuccess struct {
-	Changed 		bool 	`xml:"changed"`
-	Created 		bool 	`xml:"created"`
-	Deleted 		bool 	`xml:"deleted"`
-	FileName 		string 	`xml:"fileName"`
-	FullName 		string 	`xml:"fullName"`
-	Id 				string 	`xml:"id"`
-	Success 		bool 	`xml:"success"`
+	Changed  bool   `xml:"changed"`
+	Created  bool   `xml:"created"`
+	Deleted  bool   `xml:"deleted"`
+	FileName string `xml:"fileName"`
+	FullName string `xml:"fullName"`
+	Id       string `xml:"id"`
+	Success  bool   `xml:"success"`
 }
 
 type RunTestResult struct {
-	NumberOfFailures	int `xml:"numFailures"`
-	NumberOfTestsRun	int `xml:"numTestsRun"`
-	TotalTime			int `xml:"totalTime"`
+	NumberOfFailures int `xml:"numFailures"`
+	NumberOfTestsRun int `xml:"numTestsRun"`
+	TotalTime        int `xml:"totalTime"`
 }
 
 type ComponentDetails struct {
-	ComponentSuccesses	[]ComponentSuccess `xml:"componentSuccesses"`
-	ComponentFailures	[]ComponentFailure `xml:"componentFailures"`
+	ComponentSuccesses []ComponentSuccess `xml:"componentSuccesses"`
+	ComponentFailures  []ComponentFailure `xml:"componentFailures"`
 }
 
 type ForceCheckDeploymentStatusResult struct {
-	CheckOnly 					bool 	`xml:"checkOnly"`
-	CompletedDate				time.Time `xml:"completedDate"`
-	CreatedDate					time.Time `xml:"createdDate"`
-	Details 					ComponentDetails `xml:"details"`
-	Done 						bool 	`xml:"done"`
-	Id							string 	`xml:"id"`
-	NumberComponentErrors 		int 	`xml:"numberComponentErrors"`
-	NumberComponentsDeployed 	int 	`xml:"numberComponentsDeployed"`
-	NumberComponentsTotal 		int 	`xml:"numberComponentsTotal"`
-	NumberTestErrors 			int 	`xml:"numberTestErrors"`
-	NumberTestsCompleted 		int 	`xml:"numberTestsCompleted"`
-	NumberTestsTotal 			int 	`xml:"numberTestsTotal"`
-	RollbackOnError 			bool 	`xml:"rollbackOnError"`
-	Status 						string 	`xml:"status"`
-	Success 					bool 	`xml:"success"`
+	CheckOnly                bool             `xml:"checkOnly"`
+	CompletedDate            time.Time        `xml:"completedDate"`
+	CreatedDate              time.Time        `xml:"createdDate"`
+	Details                  ComponentDetails `xml:"details"`
+	Done                     bool             `xml:"done"`
+	Id                       string           `xml:"id"`
+	NumberComponentErrors    int              `xml:"numberComponentErrors"`
+	NumberComponentsDeployed int              `xml:"numberComponentsDeployed"`
+	NumberComponentsTotal    int              `xml:"numberComponentsTotal"`
+	NumberTestErrors         int              `xml:"numberTestErrors"`
+	NumberTestsCompleted     int              `xml:"numberTestsCompleted"`
+	NumberTestsTotal         int              `xml:"numberTestsTotal"`
+	RollbackOnError          bool             `xml:"rollbackOnError"`
+	Status                   string           `xml:"status"`
+	Success                  bool             `xml:"success"`
 }
 
 type ForceMetadataDeployProblem struct {
@@ -81,7 +81,7 @@ type ForceMetadataDeployProblem struct {
 	Deleted     bool   `xml:"deleted"`
 	Filename    string `xml:"fileName"`
 	Name        string `xml:"fullName"`
-	Problem     string `xml:"problem"` 
+	Problem     string `xml:"problem"`
 	ProblemType string `xml:"problemType"`
 	Success     bool   `xml:"success"`
 }
@@ -100,202 +100,205 @@ type ForceMetadata struct {
 	Force      *Force
 }
 
+/* These structs define which options are available and which are
+   required for the various field types you can create. Reflection
+   is used to leverage these structs in validating options when creating
+   a custom field.
+*/
 type GeolocationFieldRequired struct {
-	DsiplayLocationInDecimal	bool `xml:"displayLocationInDecimal"`
-	Scale 						int  `xml:"scale"`
+	DsiplayLocationInDecimal bool `xml:"displayLocationInDecimal"`
+	Scale                    int  `xml:"scale"`
 }
 
 type GeolocationField struct {
-	DsiplayLocationInDecimal	bool 	`xml:"displayLocationInDecimal"`
-	Required 					bool 	`xml:"required"`
-	Scale 						int  	`xml:"scale"`
-	Description 				string 	`xml:"description"`
-	HelpText					string  `xml:"helpText"`
+	DsiplayLocationInDecimal bool   `xml:"displayLocationInDecimal"`
+	Required                 bool   `xml:"required"`
+	Scale                    int    `xml:"scale"`
+	Description              string `xml:"description"`
+	HelpText                 string `xml:"helpText"`
 }
 
 type AutoNumberFieldRequired struct {
-	StartingNumber 		int 	`xml:"startingNumber"`
-	DisplayFormat 		string 	`xml:"displayFormat"`
+	StartingNumber int    `xml:"startingNumber"`
+	DisplayFormat  string `xml:"displayFormat"`
 }
 
 type AutoNumberField struct {
-	StartingNumber 		int 	`xml:"startingNumber"`
-	DisplayFormat 		string 	`xml:"displayFormat"`
-	Description 		string 	`xml:"description"`
-	HelpText			string  `xml:"helpText"`
-	ExternalId 			bool 	`xml:"externalId"`
+	StartingNumber int    `xml:"startingNumber"`
+	DisplayFormat  string `xml:"displayFormat"`
+	Description    string `xml:"description"`
+	HelpText       string `xml:"helpText"`
+	ExternalId     bool   `xml:"externalId"`
 }
 
 type FloatFieldRequired struct {
-	Precision 		int 	`xml:"precision"`
-	Scale 			int 	`xml:"scale"`
+	Precision int `xml:"precision"`
+	Scale     int `xml:"scale"`
 }
 
 type FloatField struct {
-	Length 			int 	`xml:"length"`
-	Description 	string 	`xml:"description"`
-	HelpText		string  `xml:"helpText"`
-	Unique			bool 	`xml:"unique"`
-	ExternalId 		bool 	`xml:"externalId"`
-	DefaultValue 	uint	`xml:"defaultValue"`
-	Precision 		int 	`xml:"precision"`
-	Scale 			int 	`xml:"scale"`
+	Length       int    `xml:"length"`
+	Description  string `xml:"description"`
+	HelpText     string `xml:"helpText"`
+	Unique       bool   `xml:"unique"`
+	ExternalId   bool   `xml:"externalId"`
+	DefaultValue uint   `xml:"defaultValue"`
+	Precision    int    `xml:"precision"`
+	Scale        int    `xml:"scale"`
 }
 
 type NumberFieldRequired struct {
-	Precision 		int 	`xml:"precision"`
-	Scale 			int 	`xml:"scale"`
+	Precision int `xml:"precision"`
+	Scale     int `xml:"scale"`
 }
 
 type NumberField struct {
-	Length 			int 	`xml:"length"`
-	Description 	string 	`xml:"description"`
-	HelpText		string  `xml:"helpText"`
-	Unique			bool 	`xml:"unique"`
-	ExternalId 		bool 	`xml:"externalId"`
-	DefaultValue 	uint	`xml:"defaultValue"`
+	Length       int    `xml:"length"`
+	Description  string `xml:"description"`
+	HelpText     string `xml:"helpText"`
+	Unique       bool   `xml:"unique"`
+	ExternalId   bool   `xml:"externalId"`
+	DefaultValue uint   `xml:"defaultValue"`
 }
 
 type DatetimeFieldRequired struct {
-
 }
 
 type DatetimeField struct {
-	Description 	string 		`xml:"description"`
-	HelpText		string  	`xml:"helpText"`
-	DefaultValue 	time.Time 	`xml:"defaultValue"`
-	Required 		bool 		`xml:"required"`
+	Description  string    `xml:"description"`
+	HelpText     string    `xml:"helpText"`
+	DefaultValue time.Time `xml:"defaultValue"`
+	Required     bool      `xml:"required"`
 }
 
 type BoolFieldRequired struct {
-	DefaultValue 	bool `xml:"defaultValue"`
+	DefaultValue bool `xml:"defaultValue"`
 }
 
 type BoolField struct {
-	Description 	string 	`xml:"description"`
-	HelpText		string  `xml:"helpText"`
-	DefaultValue 	bool `xml:"defaultValue"`
+	Description  string `xml:"description"`
+	HelpText     string `xml:"helpText"`
+	DefaultValue bool   `xml:"defaultValue"`
 }
 
 type StringFieldRequired struct {
-	Length			int `xml:"length"`
+	Length int `xml:"length"`
 }
 
 type StringField struct {
-	Label 			string 	`xml:"label"`
-	Name 			string 	`xml:"fullName"`
-	Required 		bool 	`xml:"required"`
-	Length 			int 	`xml:"length"`
-	Description 	string 	`xml:"description"`
-	HelpText		string  `xml:"helpText"`
-	Unique			bool 	`xml:"unique"`
-	CaseSensative	bool 	`xml:"caseSensative"`
-	ExternalId 		bool 	`xml:"externalId"`
-	DefaultValue 	string 	`xml:"defaultValue"`
+	Label         string `xml:"label"`
+	Name          string `xml:"fullName"`
+	Required      bool   `xml:"required"`
+	Length        int    `xml:"length"`
+	Description   string `xml:"description"`
+	HelpText      string `xml:"helpText"`
+	Unique        bool   `xml:"unique"`
+	CaseSensative bool   `xml:"caseSensative"`
+	ExternalId    bool   `xml:"externalId"`
+	DefaultValue  string `xml:"defaultValue"`
 }
 
 type TextAreaFieldRequired struct {
-
 }
 
 type TextAreaField struct {
-	Label 			string 	`xml:"label"`
-	Name 			string 	`xml:"fullName"`
-	Required 		bool 	`xml:"required"`
-	Description 	string 	`xml:"description"`
-	HelpText		string  `xml:"helpText"`
-	DefaultValue 	string 	`xml:"defaultValue"`
+	Label        string `xml:"label"`
+	Name         string `xml:"fullName"`
+	Required     bool   `xml:"required"`
+	Description  string `xml:"description"`
+	HelpText     string `xml:"helpText"`
+	DefaultValue string `xml:"defaultValue"`
 }
 
 type LongTextAreaFieldRequired struct {
-	Length 					int 	`xml:"length"`
-	VisibleLines			int `xml:"visibleLines"`
+	Length       int `xml:"length"`
+	VisibleLines int `xml:"visibleLines"`
 }
 
 type LongTextAreaField struct {
-	Label 					string 	`xml:"label"`
-	Name 					string 	`xml:"fullName"`
-	Required 				bool 	`xml:"required"`
-	Description 			string 	`xml:"description"`
-	HelpText				string  `xml:"helpText"`
-	DefaultValue 			string 	`xml:"defaultValue"`
-	Length 					int 	`xml:"length"`
-	VisibleLines			int `xml:"visibleLines"`
+	Label        string `xml:"label"`
+	Name         string `xml:"fullName"`
+	Required     bool   `xml:"required"`
+	Description  string `xml:"description"`
+	HelpText     string `xml:"helpText"`
+	DefaultValue string `xml:"defaultValue"`
+	Length       int    `xml:"length"`
+	VisibleLines int    `xml:"visibleLines"`
 }
 
 type RichTextAreaFieldRequired struct {
-	Length 					int 	`xml:"length"`
-	VisibleLines			int `xml:"visibleLines"`
+	Length       int `xml:"length"`
+	VisibleLines int `xml:"visibleLines"`
 }
 
 type RichTextAreaField struct {
-	Label 					string 	`xml:"label"`
-	Name 					string 	`xml:"fullName"`
-	Required 				bool 	`xml:"required"`
-	Description 			string 	`xml:"description"`
-	HelpText				string  `xml:"helpText"`
-	Length 					int 	`xml:"length"`
-	VisibleLines			int `xml:"visibleLines"`
+	Label        string `xml:"label"`
+	Name         string `xml:"fullName"`
+	Required     bool   `xml:"required"`
+	Description  string `xml:"description"`
+	HelpText     string `xml:"helpText"`
+	Length       int    `xml:"length"`
+	VisibleLines int    `xml:"visibleLines"`
 }
 
 // Example of how to use Go's reflection
 // Print the attributes of a Data Model
-func attributes(m interface{}) (map[string]reflect.StructField) {
-  typ := reflect.TypeOf(m)
-  // if a pointer to a struct is passed, get the type of the dereferenced object
-  if typ.Kind() == reflect.Ptr{
-    typ = typ.Elem()
-  }
- 
-  // create an attribute data structure as a map of types keyed by a string.
-  attrs := make(map[string]reflect.StructField)
-  // Only structs are supported so return an empty result if the passed object
-  // isn't a struct
-  if typ.Kind() != reflect.Struct {
-    fmt.Printf("%v type can't have attributes inspected\n", typ.Kind())
-    return attrs
-  }
- 
-  // loop through the struct's fields and set the map
-  for i := 0; i < typ.NumField(); i++ {
-    p := typ.Field(i)
-      if !p.Anonymous {
-        attrs[strings.ToLower(p.Name)] = p
-      }
-     }
- 
-  return attrs
+func getAttributes(m interface{}) map[string]reflect.StructField {
+	typ := reflect.TypeOf(m)
+	// if a pointer to a struct is passed, get the type of the dereferenced object
+	if typ.Kind() == reflect.Ptr {
+		typ = typ.Elem()
+	}
+
+	// create an attribute data structure as a map of types keyed by a string.
+	attrs := make(map[string]reflect.StructField)
+	// Only structs are supported so return an empty result if the passed object
+	// isn't a struct
+	if typ.Kind() != reflect.Struct {
+		fmt.Printf("%v type can't have attributes inspected\n", typ.Kind())
+		return attrs
+	}
+
+	// loop through the struct's fields and set the map
+	for i := 0; i < typ.NumField(); i++ {
+		p := typ.Field(i)
+		if !p.Anonymous {
+			attrs[strings.ToLower(p.Name)] = p
+		}
+	}
+
+	return attrs
 }
 
 func ValidateOptionsAndDefaults(typ string, fields map[string]reflect.StructField, requiredDefaults reflect.Value, options map[string]string) (newOptions map[string]string, err error) {
 	newOptions = make(map[string]string)
 
 	// validate optional attributes
-	for name, value := range(options) {
+	for name, value := range options {
 		field, ok := fields[strings.ToLower(name)]
 		if !ok {
 			ErrorAndExit(fmt.Sprintf("validation error: %s:%s is not a valid option for field type %s", name, value, typ))
 		} else {
 			newOptions[field.Tag.Get("xml")] = options[name]
-		}	
+		}
 	}
 
 	// validate required attributes
 	s := requiredDefaults
 	tod := s.Type()
-	for i := 0; i<s.NumField(); i++ {
+	for i := 0; i < s.NumField(); i++ {
 		_, ok := options[strings.ToLower(tod.Field(i).Name)]
 		if !ok {
 			switch s.Field(i).Type().Name() {
-				case "int":
-					newOptions[tod.Field(i).Tag.Get("xml")] = strconv.Itoa(s.Field(i).Interface().(int))
-					break;
-				case "bool":
-					newOptions[tod.Field(i).Tag.Get("xml")] = strconv.FormatBool(s.Field(i).Interface().(bool))
-					break;
-				default:
-					newOptions[tod.Field(i).Tag.Get("xml")] = s.Field(i).Interface().(string)
-					break;
+			case "int":
+				newOptions[tod.Field(i).Tag.Get("xml")] = strconv.Itoa(s.Field(i).Interface().(int))
+				break
+			case "bool":
+				newOptions[tod.Field(i).Tag.Get("xml")] = strconv.FormatBool(s.Field(i).Interface().(bool))
+				break
+			default:
+				newOptions[tod.Field(i).Tag.Get("xml")] = s.Field(i).Interface().(string)
+				break
 			}
 		} else {
 			newOptions[tod.Field(i).Tag.Get("xml")] = options[strings.ToLower(tod.Field(i).Name)]
@@ -306,76 +309,61 @@ func ValidateOptionsAndDefaults(typ string, fields map[string]reflect.StructFiel
 func (fm *ForceMetadata) ValidateFieldOptions(typ string, options map[string]string) (newOptions map[string]string, err error) {
 
 	newOptions = make(map[string]string)
+	var attrs map[string]reflect.StructField
+	var s reflect.Value
 
 	switch typ {
-		case "string", "text":
-			requiredDefaults := StringFieldRequired{255}
-			attrs := attributes(&StringField{})
-			s := reflect.ValueOf(&requiredDefaults).Elem()
-			newOptions, err = ValidateOptionsAndDefaults(typ, attrs, s, options)
-			break
-		case "textarea":
-			requiredDefaults := TextAreaFieldRequired{}
-			attrs := attributes(&TextAreaField{})
-			s := reflect.ValueOf(&requiredDefaults).Elem()
-			newOptions, err = ValidateOptionsAndDefaults(typ, attrs, s, options)
-			break
-		case "longtextarea":
-			requiredDefaults := LongTextAreaFieldRequired{32768, 5}
-			attrs := attributes(&LongTextAreaField{})
-			s := reflect.ValueOf(&requiredDefaults).Elem()
-			newOptions, err = ValidateOptionsAndDefaults(typ, attrs, s, options)
-			break
-		case "richtextarea":
-			requiredDefaults := RichTextAreaFieldRequired{32768, 5}
-			attrs := attributes(&RichTextAreaField{})
-			s := reflect.ValueOf(&requiredDefaults).Elem()
-			newOptions, err = ValidateOptionsAndDefaults(typ, attrs, s, options)
-			break
-		case "bool", "boolean", "checkbox":
-			requiredDefaults := BoolFieldRequired{false}
-			attrs := attributes(&BoolField{})
-			s := reflect.ValueOf(&requiredDefaults).Elem()
-			newOptions, err = ValidateOptionsAndDefaults(typ, attrs, s, options)
-			break;
-		case "datetime":
-			requiredDefaults := DatetimeFieldRequired{}
-			attrs := attributes(&DatetimeField{})
-			s := reflect.ValueOf(&requiredDefaults).Elem()
-			newOptions, err = ValidateOptionsAndDefaults(typ, attrs, s, options)
-			break;
-		case "float":
-			requiredDefaults := FloatFieldRequired{16, 2}
-			attrs := attributes(&FloatField{})
-			s := reflect.ValueOf(&requiredDefaults).Elem()
-			newOptions, err = ValidateOptionsAndDefaults(typ, attrs, s, options)
-			break;
-		case "number", "int":
-			requiredDefaults := NumberFieldRequired{18, 0}
-			attrs := attributes(&NumberField{})
-			s := reflect.ValueOf(&requiredDefaults).Elem()
-			newOptions, err = ValidateOptionsAndDefaults(typ, attrs, s, options)
-			break;
-		case "autonumber":
-			requiredDefaults := AutoNumberFieldRequired{0, "AN-{00000}"}
-			attrs := attributes(&AutoNumberField{})
-			s := reflect.ValueOf(&requiredDefaults).Elem()
-			newOptions, err = ValidateOptionsAndDefaults(typ, attrs, s, options)
-			break;
-		case "geolocation":
-			requiredDefaults := GeolocationFieldRequired{true, 5}
-			attrs := attributes(&GeolocationField{})
-			s := reflect.ValueOf(&requiredDefaults).Elem()
-			newOptions, err = ValidateOptionsAndDefaults(typ, attrs, s, options)
-			break;
-		default:
-			break
-  	}
-  	return newOptions, nil
+	case "string", "text":
+		attrs = getAttributes(&StringField{})
+		s = reflect.ValueOf(&StringFieldRequired{255}).Elem()
+		break
+	case "textarea":
+		attrs = getAttributes(&TextAreaField{})
+		s = reflect.ValueOf(&TextAreaFieldRequired{}).Elem()
+		break
+	case "longtextarea":
+		attrs = getAttributes(&LongTextAreaField{})
+		s = reflect.ValueOf(&LongTextAreaFieldRequired{32768, 5}).Elem()
+		break
+	case "richtextarea":
+		attrs = getAttributes(&RichTextAreaField{})
+		s = reflect.ValueOf(&RichTextAreaFieldRequired{32768, 5}).Elem()
+		break
+	case "bool", "boolean", "checkbox":
+		attrs = getAttributes(&BoolField{})
+		s = reflect.ValueOf(&BoolFieldRequired{false}).Elem()
+		break
+	case "datetime":
+		attrs = getAttributes(&DatetimeField{})
+		s = reflect.ValueOf(&DatetimeFieldRequired{}).Elem()
+		break
+	case "float":
+		attrs = getAttributes(&FloatField{})
+		s = reflect.ValueOf(&FloatFieldRequired{16, 2}).Elem()
+		break
+	case "number", "int":
+		attrs = getAttributes(&NumberField{})
+		s = reflect.ValueOf(&NumberFieldRequired{18, 0}).Elem()
+		break
+	case "autonumber":
+		attrs = getAttributes(&AutoNumberField{})
+		s = reflect.ValueOf(&AutoNumberFieldRequired{0, "AN-{00000}"}).Elem()
+		break
+	case "geolocation":
+		attrs = getAttributes(&GeolocationField{})
+		s = reflect.ValueOf(&GeolocationFieldRequired{true, 5}).Elem()
+		break
+	default:
+		break
+	}
+
+	newOptions, err = ValidateOptionsAndDefaults(typ, attrs, s, options)
+
+	return newOptions, nil
 }
 
 func NewForceMetadata(force *Force) (fm *ForceMetadata) {
-	fm = &ForceMetadata{ApiVersion:"29.0", Force: force}
+	fm = &ForceMetadata{ApiVersion: "29.0", Force: force}
 	return
 }
 
@@ -406,7 +394,7 @@ func (fm *ForceMetadata) CheckDeployStatus(id string) (results ForceCheckDeploym
 	if err != nil {
 		return
 	}
-	
+
 	//fmt.Println("CDS: \n" + string(body))
 
 	var deployResult struct {
@@ -416,7 +404,7 @@ func (fm *ForceMetadata) CheckDeployStatus(id string) (results ForceCheckDeploym
 	if err = xml.Unmarshal(body, &deployResult); err != nil {
 		ErrorAndExit(err.Error())
 	}
-	
+
 	/*if !deployResult.Results.Success {
 		//ErrorAndExit("Push failed, there were %v components with errors\nID: %v", deployResult.Results.NumberComponentErrors, deployResult.Results.Id)
 	}
@@ -508,37 +496,37 @@ func (fm *ForceMetadata) CreateCustomField(object, field, typ string, options ma
 	switch strings.ToLower(typ) {
 	case "bool", "boolean", "checkbox":
 		soapField = `<type>Checkbox</type>`
-		for key, value := range(options) {
+		for key, value := range options {
 			soapField += fmt.Sprintf("<%s>%s</%s>", key, value, key)
 		}
 	case "text", "string":
 		soapField = "<type>Text</type>"
-		for key, value := range(options) {
+		for key, value := range options {
 			soapField += fmt.Sprintf("<%s>%s</%s>", key, value, key)
 		}
 	case "datetime":
 		soapField = "<type>DateTime</type>"
-		for key, value := range(options) {
+		for key, value := range options {
 			soapField += fmt.Sprintf("<%s>%s</%s>", key, value, key)
 		}
 	case "number", "int":
 		soapField = "<type>Number</type>"
-		for key, value := range(options) {
+		for key, value := range options {
 			soapField += fmt.Sprintf("<%s>%s</%s>", key, value, key)
 		}
 	case "autonumber":
 		soapField = "<type>AutoNumber</type>"
-		for key, value := range(options) {
+		for key, value := range options {
 			soapField += fmt.Sprintf("<%s>%s</%s>", key, value, key)
 		}
 	case "float":
 		soapField = "<type>Number</type>"
-		for key, value := range(options) {
+		for key, value := range options {
 			soapField += fmt.Sprintf("<%s>%s</%s>", key, value, key)
 		}
 	case "geolocation":
 		soapField = "<type>Location</type>"
-		for key, value := range(options) {
+		for key, value := range options {
 			soapField += fmt.Sprintf("<%s>%s</%s>", key, value, key)
 		}
 	case "lookup":
@@ -550,10 +538,10 @@ func (fm *ForceMetadata) CreateCustomField(object, field, typ string, options ma
 		scanner := bufio.NewScanner(os.Stdin)
 
 		var inp, inp2 string
-		fmt.Print("Enter object to lookup: ");
+		fmt.Print("Enter object to lookup: ")
 
 		scanner.Scan()
-		inp = scanner.Text();
+		inp = scanner.Text()
 
 		fmt.Print("What is the label for the loookup? ")
 		scanner.Scan()
@@ -574,8 +562,8 @@ func (fm *ForceMetadata) CreateCustomField(object, field, typ string, options ma
 
 		scanner := bufio.NewScanner(os.Stdin)
 		var inp, inp2 string
-		fmt.Print("Enter object to lookup: ");
-		
+		fmt.Print("Enter object to lookup: ")
+
 		scanner.Scan()
 		inp = scanner.Text()
 
@@ -586,17 +574,17 @@ func (fm *ForceMetadata) CreateCustomField(object, field, typ string, options ma
 		soapField = fmt.Sprintf(soapField, inp, inp2, strings.Replace(inp2, " ", "_", -1))
 	case "textarea":
 		soapField = "<type>TextArea</type>"
-		for key, value := range(options) {
+		for key, value := range options {
 			soapField += fmt.Sprintf("<%s>%s</%s>", key, value, key)
 		}
 	case "longtextarea":
 		soapField = "<type>LongTextArea</type>"
-		for key, value := range(options) {
+		for key, value := range options {
 			soapField += fmt.Sprintf("<%s>%s</%s>", key, value, key)
 		}
 	case "richtextarea":
 		soapField = "<type>Html</type>"
-		for key, value := range(options) {
+		for key, value := range options {
 			soapField += fmt.Sprintf("<%s>%s</%s>", key, value, key)
 		}
 	default:
@@ -733,7 +721,7 @@ func (fm *ForceMetadata) Deploy(files ForceMetadataFiles) (successes []Component
 		return
 	}
 	results, err := fm.CheckDeployStatus(status.Id)
-	
+
 	for _, problem := range results.Details.ComponentFailures {
 		problems = append(problems, problem)
 	}
