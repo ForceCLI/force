@@ -17,6 +17,8 @@ Export specified artifact(s) to a local directory
 Examples
 
   force fetch CustomObject Book__c Author__c
+
+  force fetch CustomObject
 `,
 }
 
