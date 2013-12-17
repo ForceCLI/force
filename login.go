@@ -14,12 +14,17 @@ Log in to force.com
 
 Examples:
 
-  force login       # log in to production or developer org
+  force login     		 # log in to production or developer org
 
-  force login test  # log in to sandbox org
+  force login test 		 # log in to sandbox org
 
-  force login pre   # log in to prerelease org
+  force login pre  		 # log in to prerelease org
   
+  force login un pw 	 # log in using SOAP
+
+  force login test un pw # log in using SOAP to sandbox org
+
+  force login na1-blitz01.soma.salesforce.com un pw #internal only
 `,
 }
 
