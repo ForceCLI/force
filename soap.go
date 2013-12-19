@@ -28,6 +28,44 @@ func NewSoap(endpoint, namespace, accessToken string) (s *Soap) {
 	return
 }
 
+func (s *Soap) ExecuteLogin(username, password string) (response []byte, err error) {
+	soap := `
+		<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+  				xmlns:urn="urn:partner.soap.sforce.com">
+  			<soapenv:Body>
+    			<urn:login>
+      				<urn:username>%s</urn:username>
+      				<urn:password>%s</urn:password>
+    			</urn:login>
+  			</soapenv:Body>
+		</soapenv:Envelope>
+		`
+	rbody := fmt.Sprintf(soap, username, password)
+
+	req, err := httpRequest("POST", s.Endpoint, strings.NewReader(rbody))
+	if err != nil {
+		return
+	}
+	req.Header.Add("Content-Type", "text/xml")
+	req.Header.Add("SOAPACtion", "login")
+	res, err := httpClient().Do(req)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer res.Body.Close()
+	if res.StatusCode == 401 {
+		err = errors.New("authorization expired, please run `force login`")
+		return
+	}
+	response, err = ioutil.ReadAll(res.Body)
+	if err != nil {
+		return
+	}
+	err = processError(response)
+	return
+
+}
 func (s *Soap) Execute(action, query string) (response []byte, err error) {
 	soap := `
 		<env:Envelope xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:env="http://schemas.xmlsoap.org/soap/envelope/" xmlns:cmd="%s" xmlns:apex="http://soap.sforce.com/2006/08/apex">

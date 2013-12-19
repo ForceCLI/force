@@ -6,6 +6,7 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
+	"encoding/xml"
 	"errors"
 	"fmt"
 	"io"
@@ -23,10 +24,13 @@ const (
 	RedirectUri        = "https://force-cli.herokuapp.com/auth/callback"
 )
 
+var CustomEndpoint = ``
+
 const (
 	EndpointProduction = iota
 	EndpointTest       = iota
 	EndpointPrerelease = iota
+	EndpointCustom     = iota
 )
 
 const (
@@ -84,6 +88,18 @@ type ForceCredentials struct {
 	InstanceUrl string
 	IssuedAt    string
 	Scope       string
+	IsCustomEP 	bool
+}
+
+type LoginFault struct {
+	ExceptionCode    string `xml:"exceptionCode"`
+	ExceptionMessage string `xml:"exceptionMessage"`
+}
+
+type SoapFault struct {
+	FaultCode   string     `xml:"Body>Fault>faultcode"`
+	FaultString string     `xml:"Body>Fault>faultstring"`
+	Detail      LoginFault `xml:"Body>Fault>detail>LoginFault"`
 }
 
 type ForceError struct {
@@ -123,6 +139,47 @@ func NewForce(creds ForceCredentials) (force *Force) {
 	return
 }
 
+func ForceSoapLogin(endpoint ForceEndpoint, username string, password string) (creds ForceCredentials, err error) {
+	var surl string
+	version := strings.Split(apiVersion, "v")[1]
+	switch endpoint {
+	case EndpointProduction:
+		surl = fmt.Sprintf("https://login.salesforce.com/services/Soap/u/%s", version)
+	case EndpointTest:
+		surl = fmt.Sprintf("https://test.salesforce.com/services/Soap/u/%s", version)
+	case EndpointPrerelease:
+		surl = fmt.Sprintf("https://prerellogin.pre.salesforce.com/services/Soap/u/%s", version)
+	case EndpointCustom:
+		surl = fmt.Sprintf(CustomEndpoint+"/services/Soap/u/%s", version)
+	default:
+		ErrorAndExit("no such endpoint type")
+	}
+
+	soap := NewSoap(surl, "", "")
+	response, err := soap.ExecuteLogin(username, password)
+	var result struct {
+		SessionId    string `xml:"Body>loginResponse>result>sessionId"`
+		Id           string `xml:"Body>loginResponse>result>userId"`
+		Instance_url string `xml:"Body>loginResponse>result>serverUrl"`
+	}
+	var fault SoapFault
+	if err = xml.Unmarshal(response, &fault); fault.Detail.ExceptionMessage != "" {
+		ErrorAndExit(fault.Detail.ExceptionCode + ": " + fault.Detail.ExceptionMessage)
+	}
+	if err = xml.Unmarshal(response, &result); err != nil {
+		return
+	}
+	orgid := strings.Split(result.SessionId, "!")[0]
+	u, err := url.Parse(result.Instance_url)
+	if err != nil {
+		return
+	}
+	instanceUrl := u.Scheme + "://" + u.Host
+	identity := u.Scheme + "://" + u.Host + "/id/" + orgid + "/" + result.Id
+	creds = ForceCredentials{result.SessionId, identity, instanceUrl, "", "", endpoint == EndpointCustom}
+	return
+}
+
 func ForceLogin(endpoint ForceEndpoint) (creds ForceCredentials, err error) {
 	ch := make(chan ForceCredentials)
 	port, err := startLocalHttpServer(ch)
@@ -139,6 +196,7 @@ func ForceLogin(endpoint ForceEndpoint) (creds ForceCredentials, err error) {
 	}
 	err = Open(url)
 	creds = <-ch
+	creds.IsCustomEP = false;
 	return
 }
 
@@ -258,6 +316,7 @@ func (f *Force) httpPost(url string, attrs map[string]string) (body []byte, err 
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", f.Credentials.AccessToken))
 	req.Header.Add("Content-Type", "application/json")
 	res, err := httpClient().Do(req)
+	fmt.Println("hey")
 	if err != nil {
 		return
 	}
@@ -329,19 +388,23 @@ func (f *Force) httpDelete(url string) (body []byte, err error) {
 }
 
 func httpClient() (client *http.Client) {
-	chain := rootCertificate()
-	config := tls.Config{}
-	config.RootCAs = x509.NewCertPool()
-	for _, cert := range chain.Certificate {
-		x509Cert, err := x509.ParseCertificate(cert)
-		if err != nil {
-			panic(err)
+	if CustomEndpoint == "" {
+		chain := rootCertificate()
+		config := tls.Config{}
+		config.RootCAs = x509.NewCertPool()
+		for _, cert := range chain.Certificate {
+			x509Cert, err := x509.ParseCertificate(cert)
+			if err != nil {
+				panic(err)
+			}
+			config.RootCAs.AddCert(x509Cert)
 		}
-		config.RootCAs.AddCert(x509Cert)
+		config.BuildNameToCertificate()
+		tr := http.Transport{TLSClientConfig: &config}
+		client = &http.Client{Transport: &tr}
+	} else {
+		client = &http.Client{}
 	}
-	config.BuildNameToCertificate()
-	tr := http.Transport{TLSClientConfig: &config}
-	client = &http.Client{Transport: &tr}
 	return
 }
 
