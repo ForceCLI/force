@@ -74,7 +74,7 @@ func runFieldCreate(args []string) {
 	if len(args) > 2 {
 		for _, value := range args[2:] {
 			options := strings.Split(value, ":")
-    		optionMap[options[0]] = options[1]
+			optionMap[options[0]] = options[1]
 		}
 	}
 
@@ -83,7 +83,7 @@ func runFieldCreate(args []string) {
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
-	
+
 	newOptions = xOptions
 
 	if err := force.Metadata.CreateCustomField(args[0], parts[0], parts[1], newOptions); err != nil {
