@@ -235,6 +235,10 @@ func (f *Force) httpGet(url string) (body []byte, err error) {
 		err = errors.New("authorization expired, please run `force login`")
 		return
 	}
+	if res.StatusCode == 403 {
+		err = errors.New("Forbidden; Your authorization may have expired, or you do not have access. Please run `force login` and try again")
+		return
+	}
 	body, err = ioutil.ReadAll(res.Body)
 	if res.StatusCode/100 != 2 {
 		var messages []ForceError
@@ -290,7 +294,7 @@ func (f *Force) httpPatch(url string, attrs map[string]string) (body []byte, err
 	}
 	defer res.Body.Close()
 	if res.StatusCode == 401 {
-		err = errors.New("authorization expired, please run `force login`")
+		err = errors.New("Authorization expired, please run `force login`")
 		return
 	}
 	body, err = ioutil.ReadAll(res.Body)
