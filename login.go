@@ -39,32 +39,34 @@ func runLogin(cmd *Command, args []string) {
 		case "pre":
 			endpoint = EndpointPrerelease
 		default:
-			// need to determine the form of the endpoint
-			uri, err := url.Parse(args[0])
-			if err != nil {
-				ErrorAndExit("no such endpointx: %s", args[0])
-			}
-			// Could be short hand?
-			if uri.Host == "" {
-				uri, err = url.Parse("https://" + args[0])
+			if len(args) == 1 || len(args) == 3 {
+				//need to determine the form of the endpoint
+				uri, err := url.Parse(args[0])
 				if err != nil {
 					ErrorAndExit("no such endpoint: %s", args[0])
 				}
+				// Could be short hand?
+				if uri.Host == "" {
+					uri, err = url.Parse("https://" + args[0])
+					if err != nil {
+						ErrorAndExit("no such endpoint: %s", args[0])
+					}
+				}
+				CustomEndpoint = uri.Scheme + "://" + uri.Host
+				endpoint = EndpointCustom
+				if len(args) == 3 {
+					username = args[1]
+					password = args[2]
+				}
 			}
-			CustomEndpoint = uri.Scheme + "://" + uri.Host
-			endpoint = EndpointCustom
+			if len(args) == 2 { 
+				//username and password option
+				username = args[0];
+				password = args[1];
+			} 
 		}
 	}
 	if len(args) > 1 {
-		if len(args) == 2 {
-			// username and password option
-			username = args[0]
-			password = args[1]
-		} else if len(args) == 3 {
-			// endpoint, username, password
-			username = args[1]
-			password = args[2]
-		}
 		_, err := ForceLoginAndSaveSoap(endpoint, username, password)
 		if err != nil {
 			ErrorAndExit(err.Error())
@@ -101,6 +103,7 @@ func runLogout(cmd *Command, args []string) {
 		SetActiveAccountDefault()
 	}
 }
+
 func ForceLoginAndSaveSoap(endpoint ForceEndpoint, user_name string, password string) (username string, err error) {
 	creds, err := ForceSoapLogin(endpoint, user_name, password)
 	if err != nil {
