@@ -63,7 +63,9 @@ func runFieldCreate(args []string) {
 	if len(args) < 2 {
 		ErrorAndExit("must specify object and at least one field")
 	}
+
 	force, _ := ActiveForce()
+
 	parts := strings.Split(args[1], ":")
 	if len(parts) != 2 {
 		ErrorAndExit("must specify name:type for fields")
@@ -73,6 +75,9 @@ func runFieldCreate(args []string) {
 	if len(args) > 2 {
 		for _, value := range args[2:] {
 			options := strings.Split(value, ":")
+			if len(options) != 2 {
+				ErrorAndExit(fmt.Sprintf("Missing value for field attribute %s", value))
+			}
 			optionMap[options[0]] = options[1]
 		}
 	}
