@@ -70,7 +70,6 @@ func runFieldCreate(args []string) {
 	}
 
 	var optionMap = make(map[string]string)
-	var newOptions = make(map[string]string)
 	if len(args) > 2 {
 		for _, value := range args[2:] {
 			options := strings.Split(value, ":")
@@ -79,12 +78,10 @@ func runFieldCreate(args []string) {
 	}
 
 	// Validate the options for this field type
-	xOptions, err := force.Metadata.ValidateFieldOptions(parts[1], optionMap)
+	newOptions, err := force.Metadata.ValidateFieldOptions(parts[1], optionMap)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
-
-	newOptions = xOptions
 
 	if err := force.Metadata.CreateCustomField(args[0], parts[0], parts[1], newOptions); err != nil {
 		ErrorAndExit(err.Error())
