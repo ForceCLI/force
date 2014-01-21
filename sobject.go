@@ -65,8 +65,8 @@ func runSobjectCreate(args []string) {
 	if err := force.Metadata.CreateCustomObject(args[0]); err != nil {
 		ErrorAndExit(err.Error())
 	}
-	args[0] = fmt.Sprintf("%s__c", args[0]);
-	
+	args[0] = fmt.Sprintf("%s__c", args[0])
+
 	runFieldCreate(args)
 	fmt.Println("Custom object created")
 }
