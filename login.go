@@ -106,7 +106,7 @@ func runLogout(cmd *Command, args []string) {
 	Config.Delete("accounts", account)
 	if active, _ := Config.Load("current", "account"); active == account {
 		Config.Delete("current", "account")
-		SetActiveAccountDefault()
+		SetActiveLoginDefault()
 	}
 }
 
