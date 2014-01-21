@@ -527,8 +527,6 @@ func (fm *ForceMetadata) CreateCustomField(object, field, typ string, options ma
 		ErrorAndExit("unable to create field type: %s", typ)
 	}
 
-	fmt.Println("\n" + soapField + "\n\n")
-
 	body, err := fm.soapExecute("create", fmt.Sprintf(soap, object, field, label, soapField))
 	if err != nil {
 		return err
