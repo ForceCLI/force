@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	//"strings"
 )
 
 var cmdSobject = &Command{
