@@ -3,12 +3,14 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"text/tabwriter"
 )
 
-var cmdAccounts = &Command{
-	Run:   runAccounts,
-	Usage: "accounts",
-	Short: "List force.com accounts",
+var cmdLogins = &Command{
+	Run:   runLogins,
+	Usage: "logins",
+	Short: "List force.com logins used",
 	Long: `
 List force.com accounts
 
@@ -18,38 +20,54 @@ Examples:
 `,
 }
 
-func runAccounts(cmd *Command, args []string) {
-	active, _ := ActiveAccount()
+func runLogins(cmd *Command, args []string) {
+	active, _ := ActiveLogin()
 	accounts, _ := Config.List("accounts")
 	if len(accounts) == 0 {
 		fmt.Println("no accounts")
 	} else {
+		w := new(tabwriter.Writer)
+		w.Init(os.Stdout, 1, 0, 1, ' ', 0)
+
 		for _, account := range accounts {
-			var banner string
-			if account == active {
-				banner = " (active)"
+			var creds ForceCredentials
+			data, err := Config.Load("accounts", account)
+			json.Unmarshal([]byte(data), &creds)
+
+			if err != nil {
+				return
 			}
-			fmt.Printf("%s%s\n", account, banner)
+
+			var banner = fmt.Sprintf("\t%s", creds.InstanceUrl)
+			if account == active {
+				account = fmt.Sprintf("%s \x1b[31;1m(active)\x1b[0m", account)
+			} else {
+				account = fmt.Sprintf("%s \x1b[31;1m\x1b[0m", account)
+			}
+			fmt.Fprintln(w, fmt.Sprintf("%s%s", account, banner))
 		}
+		fmt.Fprintln(w)
+		w.Flush()
 	}
+
 }
 
-func ActiveAccount() (account string, err error) {
+func ActiveLogin() (account string, err error) {
 	account, err = Config.Load("current", "account")
 	if err != nil {
 		accounts, _ := Config.List("accounts")
 		if len(accounts) > 0 {
-			SetActiveAccountDefault()
+			SetActiveLoginDefault()
 		} else {
 			account, err = ForceLoginAndSave(EndpointProduction)
-			SetActiveAccount(account)
+			SetActiveLogin(account)
 		}
 	}
 	return
 }
 
 func ActiveCredentials() (creds ForceCredentials, err error) {
-	account, err := ActiveAccount()
+	account, err := ActiveLogin()
 	if err != nil {
 		return
 	}
@@ -67,16 +85,16 @@ func ActiveForce() (force *Force, err error) {
 	return
 }
 
-func SetActiveAccountDefault() (account string) {
+func SetActiveLoginDefault() (account string) {
 	accounts, _ := Config.List("accounts")
 	if len(accounts) > 0 {
 		account = accounts[0]
-		SetActiveAccount(account)
+		SetActiveLogin(account)
 	}
 	return
 }
 
-func SetActiveAccount(account string) (err error) {
+func SetActiveLogin(account string) (err error) {
 	err = Config.Save("current", "account", account)
 	return
 }

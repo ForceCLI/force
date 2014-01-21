@@ -6,6 +6,7 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
+	"encoding/xml"
 	"errors"
 	"fmt"
 	"io"
@@ -23,10 +24,13 @@ const (
 	RedirectUri        = "https://force-cli.herokuapp.com/auth/callback"
 )
 
+var CustomEndpoint = ``
+
 const (
 	EndpointProduction = iota
 	EndpointTest       = iota
 	EndpointPrerelease = iota
+	EndpointCustom     = iota
 )
 
 const (
@@ -84,6 +88,18 @@ type ForceCredentials struct {
 	InstanceUrl string
 	IssuedAt    string
 	Scope       string
+	IsCustomEP  bool
+}
+
+type LoginFault struct {
+	ExceptionCode    string `xml:"exceptionCode"`
+	ExceptionMessage string `xml:"exceptionMessage"`
+}
+
+type SoapFault struct {
+	FaultCode   string     `xml:"Body>Fault>faultcode"`
+	FaultString string     `xml:"Body>Fault>faultstring"`
+	Detail      LoginFault `xml:"Body>Fault>detail>LoginFault"`
 }
 
 type ForceError struct {
@@ -120,6 +136,47 @@ func NewForce(creds ForceCredentials) (force *Force) {
 	force.Credentials = creds
 	force.Metadata = NewForceMetadata(force)
 	force.Partner = NewForcePartner(force)
+	return
+}
+
+func ForceSoapLogin(endpoint ForceEndpoint, username string, password string) (creds ForceCredentials, err error) {
+	var surl string
+	version := strings.Split(apiVersion, "v")[1]
+	switch endpoint {
+	case EndpointProduction:
+		surl = fmt.Sprintf("https://login.salesforce.com/services/Soap/u/%s", version)
+	case EndpointTest:
+		surl = fmt.Sprintf("https://test.salesforce.com/services/Soap/u/%s", version)
+	case EndpointPrerelease:
+		surl = fmt.Sprintf("https://prerelna1.pre.salesforce.com/services/Soap/u/%s", version)
+	case EndpointCustom:
+		surl = fmt.Sprintf("%s/services/Soap/u/%s", CustomEndpoint, version)
+	default:
+		ErrorAndExit("no such endpoint type")
+	}
+
+	soap := NewSoap(surl, "", "")
+	response, err := soap.ExecuteLogin(username, password)
+	var result struct {
+		SessionId    string `xml:"Body>loginResponse>result>sessionId"`
+		Id           string `xml:"Body>loginResponse>result>userId"`
+		Instance_url string `xml:"Body>loginResponse>result>serverUrl"`
+	}
+	var fault SoapFault
+	if err = xml.Unmarshal(response, &fault); fault.Detail.ExceptionMessage != "" {
+		ErrorAndExit(fault.Detail.ExceptionCode + ": " + fault.Detail.ExceptionMessage)
+	}
+	if err = xml.Unmarshal(response, &result); err != nil {
+		return
+	}
+	orgid := strings.Split(result.SessionId, "!")[0]
+	u, err := url.Parse(result.Instance_url)
+	if err != nil {
+		return
+	}
+	instanceUrl := u.Scheme + "://" + u.Host
+	identity := u.Scheme + "://" + u.Host + "/id/" + orgid + "/" + result.Id
+	creds = ForceCredentials{result.SessionId, identity, instanceUrl, "", "", endpoint == EndpointCustom}
 	return
 }
 
