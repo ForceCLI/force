@@ -11,6 +11,18 @@ type ForcePartner struct {
 	Force *Force
 }
 
+type TestCoverage struct {
+	Log                       string   `xml:"Header>DebuggingInfo>debugLog"`
+	NumberRun                 int      `xml:"Body>runTestsResponse>result>numTestsRun"`
+	NumberLocations           []int    `xml:"Body>runTestsResponse>result>codeCoverage>numLocations"`
+	NumberLocationsNotCovered []int    `xml:"Body>runTestsResponse>result>codeCoverage>numLocationsNotCovered"`
+	Name                      []string `xml:"Body>runTestsResponse>result>codeCoverage>name"`
+	SMethodNames              []string `xml:"Body>runTestsResponse>result>successes>methodName"`
+	SClassNames               []string `xml:"Body>runTestsResponse>result>successes>name"`
+	FMethodNames              []string `xml:"Body>runTestsResponse>result>failures>methodName"`
+	FClassNames               []string `xml:"Body>runTestsResponse>result>failures>name"`
+}
+
 func NewForcePartner(force *Force) (partner *ForcePartner) {
 	partner = &ForcePartner{Force: force}
 	return
@@ -61,6 +73,29 @@ func (partner *ForcePartner) ExecuteAnonymous(apex string) (output string, err e
 		return
 	}
 	output = result.Log
+	return
+}
+
+func (partner *ForcePartner) RunTests(tests string) (output TestCoverage, err error) {
+	test_names := strings.Split(tests, " ")
+	soap := "<RunTestsRequest>\n"
+	if strings.EqualFold(test_names[0], "all") {
+		soap += "<allTests>True</allTests>\n"
+	} else {
+		for _, element := range test_names {
+			soap += "<classes>" + element + "</classes>\n"
+		}
+	}
+	soap += "</RunTestsRequest>"
+	body, err := partner.soapExecute("runTests", soap)
+	if err != nil {
+		return
+	}
+	var result TestCoverage
+	if err = xml.Unmarshal(body, &result); err != nil {
+		return
+	}
+	output = result
 	return
 }
 
