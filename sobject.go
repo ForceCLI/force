@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"strings"
+	//"strings"
 )
 
 var cmdSobject = &Command{
@@ -65,15 +65,9 @@ func runSobjectCreate(args []string) {
 	if err := force.Metadata.CreateCustomObject(args[0]); err != nil {
 		ErrorAndExit(err.Error())
 	}
-	for _, field := range args[1:] {
-		parts := strings.Split(field, ":")
-		if len(parts) != 2 {
-			ErrorAndExit("must specify name:type for fields")
-		}
-		if err := force.Metadata.CreateCustomField(fmt.Sprintf("%s__c", args[0]), parts[0], parts[1], nil); err != nil {
-			ErrorAndExit(err.Error())
-		}
-	}
+	args[0] = fmt.Sprintf("%s__c", args[0]);
+	
+	runFieldCreate(args)
 	fmt.Println("Custom object created")
 }
 
