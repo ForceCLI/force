@@ -3,8 +3,8 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"text/tabwriter"
 	"os"
+	"text/tabwriter"
 )
 
 var cmdLogins = &Command{
@@ -28,16 +28,16 @@ func runLogins(cmd *Command, args []string) {
 	} else {
 		w := new(tabwriter.Writer)
 		w.Init(os.Stdout, 1, 0, 1, ' ', 0)
-		
+
 		for _, account := range accounts {
 			var creds ForceCredentials
 			data, err := Config.Load("accounts", account)
 			json.Unmarshal([]byte(data), &creds)
-			
+
 			if err != nil {
 				return
 			}
-			
+
 			var banner = fmt.Sprintf("\t%s", creds.InstanceUrl)
 			if account == active {
 				account = fmt.Sprintf("%s \x1b[31;1m(active)\x1b[0m", account)
@@ -49,7 +49,7 @@ func runLogins(cmd *Command, args []string) {
 		fmt.Fprintln(w)
 		w.Flush()
 	}
-	
+
 }
 
 func ActiveLogin() (account string, err error) {

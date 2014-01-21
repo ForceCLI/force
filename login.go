@@ -84,7 +84,6 @@ func runLogin(cmd *Command, args []string) {
 	}
 }
 
-
 var cmdLogout = &Command{
 	Run:   runLogout,
 	Usage: "logout <account>",
