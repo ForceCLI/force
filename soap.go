@@ -70,7 +70,11 @@ func (s *Soap) ExecuteLogin(username, password string) (response []byte, err err
 
 func (s *Soap) Execute(action, query string) (response []byte, err error) {
 	soap := `
-		<env:Envelope xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:env="http://schemas.xmlsoap.org/soap/envelope/" xmlns:cmd="%s" xmlns:apex="http://soap.sforce.com/2006/08/apex">
+		<env:Envelope xmlns:xsd="http://www.w3.org/2001/XMLSchema" 
+		xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+		xmlns:env="http://schemas.xmlsoap.org/soap/envelope/" 
+		xmlns:cmd="%s" 
+		xmlns:apex="http://soap.sforce.com/2006/08/apex">
 			<env:Header>
 				<cmd:SessionHeader>
 					<cmd:sessionId>%s</cmd:sessionId>
@@ -84,7 +88,8 @@ func (s *Soap) Execute(action, query string) (response []byte, err error) {
 			</env:Body>
 		</env:Envelope>
 	`
-	rbody := fmt.Sprintf(soap, s.Namespace, s.AccessToken, s.Header, action, s.Namespace, query, action)
+	rbody := fmt.Sprintf(soap, s.Namespace,
+		s.AccessToken, s.Header, action, s.Namespace, query, action)
 	req, err := httpRequest("POST", s.Endpoint, strings.NewReader(rbody))
 	if err != nil {
 		return

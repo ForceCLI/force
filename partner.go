@@ -64,6 +64,19 @@ func (partner *ForcePartner) ExecuteAnonymous(apex string) (output string, err e
 	return
 }
 
+func (partner *ForcePartner) soapExecuteCore(action, query string) (response []byte, err error) {
+	login, err := partner.Force.Get(partner.Force.Credentials.Id)
+	if err != nil {
+		return
+	}
+	url := strings.Replace(login["urls"].(map[string]interface{})["partner"].(string), "{version}", "28.0", 1)
+	//url = strings.Replace(url, "/u/", "/s/", 1) // seems dirty
+	soap := NewSoap(url, "urn:partner.soap.sforce.com", partner.Force.Credentials.AccessToken)
+	soap.Header = "<apex:DebuggingHeader><apex:debugLevel>DEBUGONLY</apex:debugLevel></apex:DebuggingHeader>"
+	response, err = soap.Execute(action, query)
+	return
+}
+
 func (partner *ForcePartner) soapExecute(action, query string) (response []byte, err error) {
 	login, err := partner.Force.Get(partner.Force.Credentials.Id)
 	if err != nil {
