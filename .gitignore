@@ -1,3 +1,7 @@
 # Force CLI specific things
 force
 metadata
+
+*.json
+
+*.xml
