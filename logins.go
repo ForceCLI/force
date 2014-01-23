@@ -24,7 +24,7 @@ func runLogins(cmd *Command, args []string) {
 	active, _ := ActiveLogin()
 	accounts, _ := Config.List("accounts")
 	if len(accounts) == 0 {
-		fmt.Println("no accounts")
+		fmt.Println("no logins")
 	} else {
 		w := new(tabwriter.Writer)
 		w.Init(os.Stdout, 1, 0, 1, ' ', 0)

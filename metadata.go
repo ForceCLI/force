@@ -698,6 +698,39 @@ func (fm *ForceMetadata) Retrieve(query ForceMetadataQuery) (files ForceMetadata
 	return
 }
 
+func (fm *ForceMetadata) RetrievePackage(packageName string) (files ForceMetadataFiles, err error) {
+	soap := `
+		<retrieveRequest>
+			<apiVersion>29.0</apiVersion>
+			<packageNames>%s</packageNames>
+		</retrieveRequest>
+	`
+	soap = fmt.Sprintf(soap, packageName)
+	body, err := fm.soapExecute("retrieve", soap)
+	if err != nil {
+		return
+	}
+	var status struct {
+		Id string `xml:"Body>retrieveResponse>result>id"`
+	}
+	if err = xml.Unmarshal(body, &status); err != nil {
+		return
+	}
+	if err = fm.CheckStatus(status.Id); err != nil {
+		return
+	}
+	raw_files, err := fm.CheckRetrieveStatus(status.Id)
+	if err != nil {
+		return
+	}
+	files = make(ForceMetadataFiles)
+	for raw_name, data := range raw_files {
+		name := strings.Replace(raw_name, "unpackaged/", "", -1)
+		files[name] = data
+	}
+	return
+}
+
 func (fm *ForceMetadata) ListMetadata(query string) (res []byte, err error) {
 	return fm.soapExecute("listMetadata", fmt.Sprintf("<queries><type>%s</type></queries>", query))
 }
