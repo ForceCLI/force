@@ -12,13 +12,15 @@ var cmdFetch = &Command{
 	Usage: "fetch <type> [<artifact name>]",
 	Short: "Export specified artifact(s) to a local directory",
 	Long: `
-Export specified artifact(s) to a local directory
+Export specified artifact(s) to a local directory. Use "package" type to retrieve an unmanaged package.
 
 Examples
 
   force fetch CustomObject Book__c Author__c
 
   force fetch CustomObject
+
+  force fetch package MyPackagedApp
 `,
 }
 

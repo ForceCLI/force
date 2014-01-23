@@ -699,24 +699,13 @@ func (fm *ForceMetadata) Retrieve(query ForceMetadataQuery) (files ForceMetadata
 }
 
 func (fm *ForceMetadata) RetrievePackage(packageName string) (files ForceMetadataFiles, err error) {
-	fmt.Println(packageName)
 	soap := `
 		<retrieveRequest>
 			<apiVersion>29.0</apiVersion>
 			<packageNames>%s</packageNames>
 		</retrieveRequest>
 	`
-	/*soapType := `
-		<types>
-			<name>%s</name>
-			<members>%s</members>
-		</types>
-	`
-	types := ""
-	for _, element := range query {
-		types += fmt.Sprintf(soapType, element.Name, element.Members)
-	}*/
-	soap = fmt.Sprintf(soap, packageName);
+	soap = fmt.Sprintf(soap, packageName)
 	body, err := fm.soapExecute("retrieve", soap)
 	if err != nil {
 		return
