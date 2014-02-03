@@ -119,7 +119,17 @@ func runSobjectImport(args []string) {
 				}
 			} else {
 				if record[key] != nil {
-					fields += fmt.Sprintf("\t<%s>%s</%s>\n", key, html.EscapeString(record[key].(string)), key)
+					val, ok :=record[key].(string)
+					if ok {
+						fields += fmt.Sprintf("\t<%s>%s</%s>\n", key, html.EscapeString(val), key)
+					} else {
+						valf, ok := record[key].(float64)
+						if ok {
+							fields += fmt.Sprintf("\t<%s>%f</%s>\n", key, valf, key)
+						} else {
+							fields += fmt.Sprintf("\t<%s>%s</%s>\n", key, record[key].(string), key)
+						}
+					}
 				}
 			}
 		}
@@ -144,6 +154,7 @@ func runSobjectImport(args []string) {
 	var xmlresponse struct {
 		Results []result `xml:"Body>createResponse>result"`
 	}
+	fmt.Println(string(response))
 	xml.Unmarshal(response, &xmlresponse)
 
 	for i, res := range xmlresponse.Results {
