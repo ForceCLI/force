@@ -7,12 +7,13 @@ import (
 var commands = []*Command{
 	cmdLogin,
 	cmdLogout,
-	/* cmdAccounts,*/
-	/* cmdActive,*/
+	cmdLogins,
+	cmdActive,
 	cmdWhoami,
 	cmdSobject,
 	cmdField,
 	cmdRecord,
+	cmdFetch,
 	cmdExport,
 	cmdImport,
 	cmdQuery,

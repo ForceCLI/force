@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"net/url"
 )
 
 var cmdLogin = &Command{
@@ -13,13 +14,37 @@ Log in to force.com
 
 Examples:
 
-  force login
+  force login     		 # log in to production or developer org
+
+  force login test 		 # log in to sandbox org
+
+  force login pre  		 # log in to prerelease org
+  
+  force login un pw 	 # log in using SOAP
+
+  force login test un pw # log in using SOAP to sandbox org
+
+  force login na1-blitz01.soma.salesforce.com un pw #internal only
 `,
 }
 
 func runLogin(cmd *Command, args []string) {
 	var endpoint ForceEndpoint
+	var username, password string
 	endpoint = EndpointProduction
+
+	//username and password option with custom endpoint
+	if len(args) == 3 {
+		username = args[1]
+		password = args[2]
+	}
+
+	//username and password option
+	if len(args) == 2 {
+		username = args[0]
+		password = args[1]
+	}
+
 	if len(args) > 0 {
 		switch args[0] {
 		case "test":
@@ -27,12 +52,35 @@ func runLogin(cmd *Command, args []string) {
 		case "pre":
 			endpoint = EndpointPrerelease
 		default:
-			ErrorAndExit("no such endpoint: %s", args[0])
+			if len(args) == 1 || len(args) == 3 {
+				//need to determine the form of the endpoint
+				uri, err := url.Parse(args[0])
+				if err != nil {
+					ErrorAndExit("no such endpoint: %s", args[0])
+				}
+				// Could be short hand?
+				if uri.Host == "" {
+					uri, err = url.Parse("https://" + args[0])
+					if err != nil {
+						ErrorAndExit("no such endpoint: %s", args[0])
+					}
+				}
+				CustomEndpoint = uri.Scheme + "://" + uri.Host
+				endpoint = EndpointCustom
+			}
 		}
 	}
-	_, err := ForceLoginAndSave(endpoint)
-	if err != nil {
-		ErrorAndExit(err.Error())
+
+	if len(args) > 1 { // Do SOAP login
+		_, err := ForceLoginAndSaveSoap(endpoint, username, password)
+		if err != nil {
+			ErrorAndExit(err.Error())
+		}
+	} else { // Do OAuth login
+		_, err := ForceLoginAndSave(endpoint)
+		if err != nil {
+			ErrorAndExit(err.Error())
+		}
 	}
 }
 
@@ -57,15 +105,11 @@ func runLogout(cmd *Command, args []string) {
 	Config.Delete("accounts", account)
 	if active, _ := Config.Load("current", "account"); active == account {
 		Config.Delete("current", "account")
-		SetActiveAccountDefault()
+		SetActiveLoginDefault()
 	}
 }
 
-func ForceLoginAndSave(endpoint ForceEndpoint) (username string, err error) {
-	creds, err := ForceLogin(endpoint)
-	if err != nil {
-		return
-	}
+func ForceSaveLogin(creds ForceCredentials) (username string, err error) {
 	force := NewForce(creds)
 	login, err := force.Get(creds.Id)
 	if err != nil {
@@ -78,5 +122,23 @@ func ForceLoginAndSave(endpoint ForceEndpoint) (username string, err error) {
 	username = login["username"].(string)
 	Config.Save("accounts", username, string(body))
 	Config.Save("current", "account", username)
+	return
+}
+
+func ForceLoginAndSaveSoap(endpoint ForceEndpoint, user_name string, password string) (username string, err error) {
+	creds, err := ForceSoapLogin(endpoint, user_name, password)
+	if err != nil {
+		return
+	}
+	username, err = ForceSaveLogin(creds)
+	return
+}
+
+func ForceLoginAndSave(endpoint ForceEndpoint) (username string, err error) {
+	creds, err := ForceLogin(endpoint)
+	if err != nil {
+		return
+	}
+	username, err = ForceSaveLogin(creds)
 	return
 }
