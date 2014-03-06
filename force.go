@@ -131,6 +131,50 @@ type ForceSobjectsResult struct {
 	Sobjects     []ForceSobject
 }
 
+type Result struct {
+	Id 			string
+	Success 	bool
+	Created 	bool 
+	Message 	string
+}
+
+type BatchResult struct {
+	Results 	[]Result
+}
+
+type BatchInfo struct {
+	Id 						string `xml:"id"`
+	JobId 					string `xml:"jobId"`
+	State 					string `xml:"state"`
+	CreatedDate 			string `xml:"createdDate"`
+	SystemModstamp 			string `xml:"systemModstamp"`
+	NumberRecordsProcessed 	int 	`xml:"numberRecordsProcessed"`	
+}
+
+type JobInfo struct {
+	Id 						string `xml:"id"`
+	Operation 				string `xml:"operation"`
+	Object 					string `xml:"object"`
+	CreatedById 			string `xml:"createdById"`
+	CreatedDate 			string `xml:"createdDate"`
+	SystemModStamp 			string `xml:"systemModstamp"`
+	State 					string `xml:"state"`
+	ContentType 			string `xml:"contentType"`
+	ConcurrencyMode 		string `xml:"concurrencyMode"`
+ 	NumberBatchesQueued 	int `xml:"numberBatchesQueued"`
+ 	NumberBatchesInProgress	int `xml:"numberBatchesInProgress"`
+ 	NumberBatchesCompleted 	int `xml:"numberBatchesCompleted"`
+ 	NumberBatchesFailed 	int `xml:"numberBatchesFailed"`
+ 	NumberBatchesTotal 	int `xml:"numberBatchesTotal"`
+ 	NumberRecordsProcessed int `xml:"numberRecordsProcessed"`
+ 	NumberRetries 			int `xml:"numberRetries"`
+ 	ApiVersion 				string `xml:"apiVersion"`
+ 	NumberRecordsFailed 	int `xml:"numberRecordsFailed"`
+ 	TotalProcessingTime 	int `xml:"totalProcessingTime"`
+ 	ApiActiveProcessingTime int `xml:"apiActiveProcessingTime"`
+ 	ApexProcessingTime 		int `xml:"apexProcessingTime"`
+}
+
 func NewForce(creds ForceCredentials) (force *Force) {
 	force = new(Force)
 	force.Credentials = creds
@@ -259,6 +303,139 @@ func (f *Force) CreateRecord(sobject string, attrs map[string]string) (id string
 	return
 }
 
+func (f *Force) CreateBulkJob(xmlbody string) (result JobInfo, err error) {
+	url := fmt.Sprintf("%s/services/async/29.0/job", f.Credentials.InstanceUrl)
+	body, err := f.httpPostXML(url, xmlbody)
+	xml.Unmarshal(body, &result)
+	if len(result.Id) == 0 {
+		var fault LoginFault
+		xml.Unmarshal(body, &fault)
+		err = errors.New(fmt.Sprintf("%s: %s", fault.ExceptionCode, fault.ExceptionMessage))
+	}
+	return
+}
+
+func (f *Force) CloseBulkJob(jobId string, xmlbody string) (result JobInfo, err error) {
+	url := fmt.Sprintf("%s/services/async/29.0/job/%s", f.Credentials.InstanceUrl, jobId)
+	body, err := f.httpPostXML(url, xmlbody)
+	xml.Unmarshal(body, &result)
+	if len(result.Id) == 0 {
+		var fault LoginFault
+		xml.Unmarshal(body, &fault)
+		err = errors.New(fmt.Sprintf("%s: %s", fault.ExceptionCode, fault.ExceptionMessage))
+	}
+	return
+}
+
+func (f *Force) GetBulkJobs() (result []JobInfo, err error) {
+	url := fmt.Sprintf("%s/services/async/29.0/jobs", f.Credentials.InstanceUrl)
+	body, err := f.httpGetBulk(url)
+	xml.Unmarshal(body, &result)
+	if len(result[0].Id) == 0 {
+		var fault LoginFault
+		xml.Unmarshal(body, &fault)
+		err = errors.New(fmt.Sprintf("%s: %s", fault.ExceptionCode, fault.ExceptionMessage))
+	}
+	return
+}
+
+func (f *Force) BulkQuery(soql string, jobId string, contettype string) (result BatchInfo, err error) {
+	url := fmt.Sprintf("%s/services/async/29.0/job/%s/batch", f.Credentials.InstanceUrl, jobId)
+	var body []byte
+
+	if contettype == "CSV" {
+		body, err = f.httpPostCSV(url, soql)
+		xml.Unmarshal(body, &result)
+	} else {
+		body, err = f.httpPostXML(url, soql)
+		xml.Unmarshal(body, &result)
+	}
+	if len(result.Id) == 0 {
+		var fault LoginFault
+		xml.Unmarshal(body, &fault)
+		err = errors.New(fmt.Sprintf("%s: %s", fault.ExceptionCode, fault.ExceptionMessage))
+	}
+	return
+}
+
+func (f *Force) AddBatchToJob(xmlbody string, jobId string) (result BatchInfo, err error) {
+	url := fmt.Sprintf("%s/services/async/29.0/job/%s/batch", f.Credentials.InstanceUrl, jobId)
+	body, err := f.httpPostCSV(url, xmlbody)
+	xml.Unmarshal(body, &result)
+	if len(result.Id) == 0 {
+		var fault LoginFault
+		xml.Unmarshal(body, &fault)
+		err = errors.New(fmt.Sprintf("%s: %s", fault.ExceptionCode, fault.ExceptionMessage))
+	}
+	return
+}
+
+func (f *Force) GetBatchInfo(jobId string, batchId string) (result BatchInfo, err error) {
+	url := fmt.Sprintf("%s/services/async/29.0/job/%s/batch/%s", f.Credentials.InstanceUrl, jobId, batchId)
+	body, err := f.httpGetBulk(url)
+	xml.Unmarshal(body, &result)
+	if len(result.Id) == 0 {
+		var fault LoginFault
+		xml.Unmarshal(body, &fault)
+		err = errors.New(fmt.Sprintf("%s: %s", fault.ExceptionCode, fault.ExceptionMessage))
+	}
+	return
+}
+
+func (f *Force) GetBatches(jobId string) (result []BatchInfo, err error) {
+	url := fmt.Sprintf("%s/services/async/29.0/job/%s/batch", f.Credentials.InstanceUrl, jobId)
+	body, err := f.httpGetBulk(url)
+
+	var batchInfoList struct {
+		BatchInfos 	[]BatchInfo `xml:"batchInfo"`
+	}
+
+	xml.Unmarshal(body, &batchInfoList)
+	result = batchInfoList.BatchInfos
+	if len(result) == 0 {
+		var fault LoginFault
+		xml.Unmarshal(body, &fault)
+		err = errors.New(fmt.Sprintf("%s: %s", fault.ExceptionCode, fault.ExceptionMessage))
+	}
+	return
+}
+
+func (f *Force) GetJobInfo(jobId string) (result JobInfo, err error) {
+	url := fmt.Sprintf("%s/services/async/29.0/job/%s", f.Credentials.InstanceUrl, jobId)
+	body, err := f.httpGetBulk(url)
+	xml.Unmarshal(body, &result)
+	if len(result.Id) == 0 {
+		var fault LoginFault
+		xml.Unmarshal(body, &fault)
+		err = errors.New(fmt.Sprintf("%s: %s", fault.ExceptionCode, fault.ExceptionMessage))
+	}
+	return
+}
+
+func (f *Force) RetrieveBulkQuery(jobId string, batchId string) (result []byte, err error) {
+	url := fmt.Sprintf("%s/services/async/29.0/job/%s/batch/%s/result", f.Credentials.InstanceUrl, jobId, batchId)
+	result, err = f.httpGetBulk(url)
+	return
+}
+
+func (f *Force) RetrieveBulkQueryResults(jobId string, batchId string, resultId string) (result []byte, err error) {
+	url := fmt.Sprintf("%s/services/async/29.0/job/%s/batch/%s/result/%s", f.Credentials.InstanceUrl, jobId, batchId, resultId)
+	result, err = f.httpGetBulk(url)
+	return
+}
+
+func (f *Force) RetrieveBulkBatchResults(jobId string, batchId string) (results BatchResult, err error) {
+	url := fmt.Sprintf("%s/services/async/29.0/job/%s/batch/%s/result", f.Credentials.InstanceUrl, jobId, batchId)
+	result, err := f.httpGetBulk(url)
+	if len(result) == 0 {
+		var fault LoginFault
+		xml.Unmarshal(result, &fault)
+		err = errors.New(fmt.Sprintf("%s: %s", fault.ExceptionCode, fault.ExceptionMessage))
+	}
+//	sreader = Reader.NewReader(result);
+	return
+}
+
 func (f *Force) UpdateRecord(sobject string, id string, attrs map[string]string) (err error) {
 	url := fmt.Sprintf("%s/services/data/%s/sobjects/%s/%s", f.Credentials.InstanceUrl, apiVersion, sobject, id)
 	_, err = f.httpPatch(url, attrs)
@@ -278,11 +455,21 @@ func (f *Force) Whoami() (me ForceRecord, err error) {
 }
 
 func (f *Force) httpGet(url string) (body []byte, err error) {
+	body, err = f.httpGetRequest(url, "Authorization", fmt.Sprintf("Bearer %s", f.Credentials.AccessToken))
+	return
+}
+
+func (f *Force) httpGetBulk(url string) (body []byte, err error) {
+	body, err = f.httpGetRequest(url, "X-SFDC-Session", fmt.Sprintf("Bearer %s", f.Credentials.AccessToken))
+	return
+}
+
+func (f *Force) httpGetRequest(url string, headerName string, headerValue string) (body []byte, err error) {
 	req, err := httpRequest("GET", url, nil)
 	if err != nil {
 		return
 	}
-	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", f.Credentials.AccessToken))
+	req.Header.Add(headerName, headerValue)
 	res, err := httpClient().Do(req)
 	if err != nil {
 		return
@@ -304,6 +491,47 @@ func (f *Force) httpGet(url string) (body []byte, err error) {
 			err = errors.New(messages[0].Message)
 		} else {
 			err = errors.New(string(body))
+		}
+		return
+	}
+	return
+}
+
+func (f *Force) httpPostCSV(url string, data string) (body []byte, err error) {
+	body, err = f.httpPostWithContentType(url, data, "text/csv")
+	return
+}
+
+func (f *Force) httpPostXML(url string, data string) (body []byte, err error) {
+	body, err = f.httpPostWithContentType(url, data, "application/xml")
+	return
+}
+
+func (f *Force) httpPostWithContentType(url string, data string, contenttype string) (body []byte, err error) {
+	rbody := data
+	req, err := httpRequest("POST", url, bytes.NewReader([]byte(rbody)))
+	if err != nil {
+		return
+	}
+
+	req.Header.Add("X-SFDC-Session", f.Credentials.AccessToken)
+	req.Header.Add("Content-Type", contenttype)
+	res, err := httpClient().Do(req)
+	if err != nil {
+		return
+	}
+	defer res.Body.Close()
+	if res.StatusCode == 401 {
+		err = errors.New("authorization expired, please run `force login`")
+		return
+	}
+	body, err = ioutil.ReadAll(res.Body)
+
+	if res.StatusCode/100 != 2 {
+		var messages []ForceError
+		json.Unmarshal(body, &messages)
+		if messages != nil {
+			err = errors.New(messages[0].Message)
 		}
 		return
 	}
