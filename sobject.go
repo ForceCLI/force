@@ -119,7 +119,7 @@ func runSobjectImport(args []string) {
 				}
 			} else {
 				if record[key] != nil {
-					val, ok :=record[key].(string)
+					val, ok := record[key].(string)
 					if ok {
 						fields += fmt.Sprintf("\t<%s>%s</%s>\n", key, html.EscapeString(val), key)
 					} else {

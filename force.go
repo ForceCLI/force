@@ -132,47 +132,47 @@ type ForceSobjectsResult struct {
 }
 
 type Result struct {
-	Id 			string
-	Success 	bool
-	Created 	bool 
-	Message 	string
+	Id      string
+	Success bool
+	Created bool
+	Message string
 }
 
 type BatchResult struct {
-	Results 	[]Result
+	Results []Result
 }
 
 type BatchInfo struct {
-	Id 						string `xml:"id"`
-	JobId 					string `xml:"jobId"`
-	State 					string `xml:"state"`
-	CreatedDate 			string `xml:"createdDate"`
-	SystemModstamp 			string `xml:"systemModstamp"`
-	NumberRecordsProcessed 	int 	`xml:"numberRecordsProcessed"`	
+	Id                     string `xml:"id"`
+	JobId                  string `xml:"jobId"`
+	State                  string `xml:"state"`
+	CreatedDate            string `xml:"createdDate"`
+	SystemModstamp         string `xml:"systemModstamp"`
+	NumberRecordsProcessed int    `xml:"numberRecordsProcessed"`
 }
 
 type JobInfo struct {
-	Id 						string `xml:"id"`
-	Operation 				string `xml:"operation"`
-	Object 					string `xml:"object"`
-	CreatedById 			string `xml:"createdById"`
-	CreatedDate 			string `xml:"createdDate"`
-	SystemModStamp 			string `xml:"systemModstamp"`
-	State 					string `xml:"state"`
-	ContentType 			string `xml:"contentType"`
-	ConcurrencyMode 		string `xml:"concurrencyMode"`
- 	NumberBatchesQueued 	int `xml:"numberBatchesQueued"`
- 	NumberBatchesInProgress	int `xml:"numberBatchesInProgress"`
- 	NumberBatchesCompleted 	int `xml:"numberBatchesCompleted"`
- 	NumberBatchesFailed 	int `xml:"numberBatchesFailed"`
- 	NumberBatchesTotal 	int `xml:"numberBatchesTotal"`
- 	NumberRecordsProcessed int `xml:"numberRecordsProcessed"`
- 	NumberRetries 			int `xml:"numberRetries"`
- 	ApiVersion 				string `xml:"apiVersion"`
- 	NumberRecordsFailed 	int `xml:"numberRecordsFailed"`
- 	TotalProcessingTime 	int `xml:"totalProcessingTime"`
- 	ApiActiveProcessingTime int `xml:"apiActiveProcessingTime"`
- 	ApexProcessingTime 		int `xml:"apexProcessingTime"`
+	Id                      string `xml:"id"`
+	Operation               string `xml:"operation"`
+	Object                  string `xml:"object"`
+	CreatedById             string `xml:"createdById"`
+	CreatedDate             string `xml:"createdDate"`
+	SystemModStamp          string `xml:"systemModstamp"`
+	State                   string `xml:"state"`
+	ContentType             string `xml:"contentType"`
+	ConcurrencyMode         string `xml:"concurrencyMode"`
+	NumberBatchesQueued     int    `xml:"numberBatchesQueued"`
+	NumberBatchesInProgress int    `xml:"numberBatchesInProgress"`
+	NumberBatchesCompleted  int    `xml:"numberBatchesCompleted"`
+	NumberBatchesFailed     int    `xml:"numberBatchesFailed"`
+	NumberBatchesTotal      int    `xml:"numberBatchesTotal"`
+	NumberRecordsProcessed  int    `xml:"numberRecordsProcessed"`
+	NumberRetries           int    `xml:"numberRetries"`
+	ApiVersion              string `xml:"apiVersion"`
+	NumberRecordsFailed     int    `xml:"numberRecordsFailed"`
+	TotalProcessingTime     int    `xml:"totalProcessingTime"`
+	ApiActiveProcessingTime int    `xml:"apiActiveProcessingTime"`
+	ApexProcessingTime      int    `xml:"apexProcessingTime"`
 }
 
 func NewForce(creds ForceCredentials) (force *Force) {
@@ -387,7 +387,7 @@ func (f *Force) GetBatches(jobId string) (result []BatchInfo, err error) {
 	body, err := f.httpGetBulk(url)
 
 	var batchInfoList struct {
-		BatchInfos 	[]BatchInfo `xml:"batchInfo"`
+		BatchInfos []BatchInfo `xml:"batchInfo"`
 	}
 
 	xml.Unmarshal(body, &batchInfoList)
@@ -432,7 +432,7 @@ func (f *Force) RetrieveBulkBatchResults(jobId string, batchId string) (results 
 		xml.Unmarshal(result, &fault)
 		err = errors.New(fmt.Sprintf("%s: %s", fault.ExceptionCode, fault.ExceptionMessage))
 	}
-//	sreader = Reader.NewReader(result);
+	//	sreader = Reader.NewReader(result);
 	return
 }
 

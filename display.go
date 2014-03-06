@@ -15,8 +15,9 @@ CreatedDate 		%s
 SystemModstamp 		%s
 NumberRecordsProcessed  %d
 `
+
 func DisplayBatchList(batchInfos []BatchInfo) {
-	
+
 	for i, batchInfo := range batchInfos {
 		fmt.Printf("Batch %d", i)
 		DisplayBatchInfo(batchInfo)
@@ -25,10 +26,10 @@ func DisplayBatchList(batchInfos []BatchInfo) {
 }
 
 func DisplayBatchInfo(batchInfo BatchInfo) {
-	
+
 	fmt.Printf(BatchInfoTemplate, batchInfo.Id, batchInfo.JobId, batchInfo.State,
-				batchInfo.CreatedDate, batchInfo.SystemModstamp, 
-				batchInfo.NumberRecordsProcessed)
+		batchInfo.CreatedDate, batchInfo.SystemModstamp,
+		batchInfo.NumberRecordsProcessed)
 }
 
 func DisplayJobInfo(jobInfo JobInfo) {
@@ -59,14 +60,14 @@ Api Active Processing Time 	%d
 Apex Processing Time 		%d
 `
 	fmt.Printf(msg, jobInfo.Id, jobInfo.State, jobInfo.Operation, jobInfo.Object, jobInfo.ApiVersion,
-				jobInfo.CreatedById, jobInfo.CreatedDate, jobInfo.SystemModStamp, 
-				jobInfo.ContentType, jobInfo.ConcurrencyMode,
-				jobInfo.NumberBatchesQueued, jobInfo.NumberBatchesInProgress,
-				jobInfo.NumberBatchesCompleted, jobInfo.NumberBatchesFailed,
-				jobInfo.NumberBatchesTotal, jobInfo.NumberRecordsProcessed,
-				jobInfo.NumberRetries, 
-				jobInfo.NumberRecordsFailed, jobInfo.TotalProcessingTime,
-				jobInfo.ApiActiveProcessingTime, jobInfo.ApexProcessingTime)
+		jobInfo.CreatedById, jobInfo.CreatedDate, jobInfo.SystemModStamp,
+		jobInfo.ContentType, jobInfo.ConcurrencyMode,
+		jobInfo.NumberBatchesQueued, jobInfo.NumberBatchesInProgress,
+		jobInfo.NumberBatchesCompleted, jobInfo.NumberBatchesFailed,
+		jobInfo.NumberBatchesTotal, jobInfo.NumberRecordsProcessed,
+		jobInfo.NumberRetries,
+		jobInfo.NumberRecordsFailed, jobInfo.TotalProcessingTime,
+		jobInfo.ApiActiveProcessingTime, jobInfo.ApexProcessingTime)
 }
 
 func DisplayForceSobjects(sobjects []ForceSobject) {
