@@ -39,7 +39,7 @@ Jobs and batches can be monitored.
 bulk command
 force bulk jobs
 
-bulk command 
+bulk command
 force bulk job <jobId>
 
 bulk command
@@ -55,9 +55,9 @@ force bulk batch <batchId>
 */
 
 import (
+	"encoding/xml"
 	"fmt"
 	"io/ioutil"
-	"encoding/xml"
 )
 
 var cmdBulk = &Command{
@@ -88,7 +88,7 @@ Examples:
 }
 
 func runBulk(cmd *Command, args []string) {
-	
+
 	if len(args) == 1 {
 		if args[0] == "jobs" {
 			listJobs()
@@ -127,7 +127,7 @@ func runBulk(cmd *Command, args []string) {
 		} else if args[0] == "batch" {
 			getBatchResults(args[2], args[3])
 		} else if args[0] == "query" {
-			if (args[1] == "retrieve") {
+			if args[1] == "retrieve" {
 				fmt.Println(string(getBulkQueryResults(args[2], args[3])))
 			} else if args[1] == "status" {
 				DisplayBatchInfo(getBatchDetails(args[2], args[3]))
@@ -137,7 +137,6 @@ func runBulk(cmd *Command, args []string) {
 		}
 	}
 }
-
 
 func doBulkQuery(objectType string, soql string, contenttype string) {
 	jobInfo, err := createBulkJob(objectType, "query", contenttype)
@@ -187,7 +186,7 @@ func retrieveBulkQueryResults(jobId string, batchId string, resultId string) (da
 	return
 }
 
-func listJobs()(jobs []JobInfo, err error) {
+func listJobs() (jobs []JobInfo, err error) {
 	force, _ := ActiveForce()
 	jobs, err = force.GetBulkJobs()
 	if err != nil {
@@ -258,7 +257,7 @@ func getBatchDetails(jobId string, batchId string) (batchInfo BatchInfo) {
 func createBulkInsertJob(csvFilePath string, objectType string, format string) {
 	jobInfo, err := createBulkJob(objectType, "insert", format)
 	if err != nil {
-		ErrorAndExit(err.Error())		
+		ErrorAndExit(err.Error())
 	} else {
 		batchInfo, err := addBatchToJob(csvFilePath, jobInfo.Id)
 		if err != nil {

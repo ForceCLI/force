@@ -48,7 +48,7 @@ func runRecord(cmd *Command, args []string) {
 			if len(args) == 3 {
 				createBulkInsertJob(args[2], args[1], "CSV")
 			} else if len(args) == 4 {
-				createBulkInsertJob(args[2], args[1], args[3])				
+				createBulkInsertJob(args[2], args[1], args[3])
 			}
 		case "update":
 			runRecordUpdate(args[1:])
