@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 var cmdExport = &Command{
@@ -36,8 +37,9 @@ func runExport(cmd *Command, args []string) {
 	stdObjects := make([]string, 1, len(sobjects)+1)
 	stdObjects[0] = "*"
 	for _, sobject := range sobjects {
-		if !sobject["custom"].(bool) {
-			stdObjects = append(stdObjects, sobject["name"].(string))
+		name := sobject["name"].(string)
+		if !sobject["custom"].(bool) && !strings.HasSuffix(name, "__Tag") && !strings.HasSuffix(name, "__History") && !strings.HasSuffix(name, "__Share") {
+			stdObjects = append(stdObjects, name)
 		}
 	}
 	query := ForceMetadataQuery{
