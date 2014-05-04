@@ -34,7 +34,7 @@ const (
 )
 
 const (
-	apiVersion = "v29.0" //winter 14
+	apiVersion = "v30.0" // Spring 14
 )
 
 var RootCertificates = `
