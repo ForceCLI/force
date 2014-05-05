@@ -100,6 +100,19 @@ type ForceMetadata struct {
 	Force      *Force
 }
 
+type ForceDeployOptions struct {
+	AllowMissingFiles bool     `xml:"allowMissingFiles"`
+	AutoUpdatePackage bool     `xml:"autoUpdatePackage"`
+	CheckOnly         bool     `xml:"checkOnly"`
+	IgnoreWarnings    bool     `xml:"ignoreWarnings"`
+	PerformRetrieve   bool     `xml:"performRetrieve"`
+	PurgeOnDelete     bool     `xml:"purgeOnDelete"`
+	RollbackOnError   bool     `xml:"rollbackOnError"`
+	RunAllTests       bool     `xml:"runAllTests"`
+	runTests          []string `xml:"runTests"`
+	SinglePackage     bool     `xml:"singlePackage"`
+}
+
 /* These structs define which options are available and which are
    required for the various field types you can create. Reflection
    is used to leverage these structs in validating options when creating
@@ -844,9 +857,19 @@ func (fm *ForceMetadata) DeleteCustomObject(object string) (err error) {
 	return
 }
 
-func (fm *ForceMetadata) Deploy(files ForceMetadataFiles) (successes []ComponentSuccess, problems []ComponentFailure, err error) {
+
+func (fm *ForceMetadata) Deploy(files ForceMetadataFiles, options ForceDeployOptions) (successes []ComponentSuccess, problems []ComponentFailure, err error) {
 	soap := `
 		<zipFile>%s</zipFile>
+		<deployOptions>
+			<allowMissingFiles>%t</allowMissingFiles>
+			<autoUpdatePackage>%t</autoUpdatePackage>
+			<checkOnly>%t</checkOnly>
+			<ignoreWarnings>%t</ignoreWarnings>
+			<purgeOnDelete>%t</purgeOnDelete>
+			<rollbackOnError>%t</rollbackOnError>
+			<runAllTests>%t</runAllTests>
+		</deployOptions>
 	`
 	zipfile := new(bytes.Buffer)
 	zipper := zip.NewWriter(zipfile)
@@ -859,7 +882,7 @@ func (fm *ForceMetadata) Deploy(files ForceMetadataFiles) (successes []Component
 	}
 	zipper.Close()
 	encoded := base64.StdEncoding.EncodeToString(zipfile.Bytes())
-	body, err := fm.soapExecute("deploy", fmt.Sprintf(soap, encoded))
+	body, err := fm.soapExecute("deploy", fmt.Sprintf(soap, encoded, options.AllowMissingFiles, options.AutoUpdatePackage, options.CheckOnly, options.IgnoreWarnings, options.PurgeOnDelete, options.RollbackOnError, options.RunAllTests))
 	if err != nil {
 		fmt.Println(err.Error())
 		return
