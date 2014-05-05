@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
-	"strings"
 	"io/ioutil"
 	"os"
+	"strings"
 )
 
 var cmdQuery = &Command{
@@ -29,7 +29,7 @@ func init() {
 }
 
 var (
-	qQueryFlag = cmdQuery.Flag.Bool("q", false, "enters quiet mode")
+	qQueryFlag      = cmdQuery.Flag.Bool("q", false, "enters quiet mode")
 	formatQueryFlag = cmdQuery.Flag.String("format", "console", "control output format")
 )
 
@@ -41,7 +41,7 @@ func runQuery(cmd *Command, args []string) {
 			fmt.Println(">> Start typing SOQL; press CTRL-D when finished\n")
 		}
 		stdin, err := ioutil.ReadAll(os.Stdin)
-		if !*qQueryFlag { 
+		if !*qQueryFlag {
 			fmt.Println("\n\n>> Executing SOQL...\n")
 		}
 		if err != nil {
