@@ -18,7 +18,7 @@ var commands = []*Command{
 	cmdImport,
 	cmdQuery,
 	cmdApex,
-	/* cmdOauth,*/
+	cmdOauth,
 	cmdVersion,
 	cmdUpdate,
 	cmdHelp,
