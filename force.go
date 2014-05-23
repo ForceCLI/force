@@ -18,6 +18,7 @@ import (
 	"strings"
 )
 
+
 const (
 	ProductionClientId = "3MVG9A2kN3Bn17huXZp1OQhPe8y4_ozAQZZCKxsWbef9GjSnHGOunHSwhnY1BWz_5vHkTL9BeLMriIX5EUKaw"
 	PrereleaseClientId = "3MVG9lKcPoNINVBIRgC7lsz5tIhlg0mtoEqkA9ZjDAwEMbBy43gsnfkzzdTdhFLeNnWS8M4bnRnVv1Qj0k9MD"
@@ -36,7 +37,7 @@ const (
 )
 
 const (
-	apiVersion = "v29.0" //winter 14
+	apiVersion = "v30.0" // Spring 14
 )
 
 var RootCertificates = `
@@ -284,7 +285,6 @@ func (f *Force) GetCodeCoverage(classId string, className string) (err error) {
 
 func (f *Force) ListSobjects() (sobjects []ForceSobject, err error) {
 	url := fmt.Sprintf("%s/services/data/%s/sobjects", f.Credentials.InstanceUrl, apiVersion)
-	fmt.Println(url)
 	body, err := f.httpGet(url)
 	if err != nil {
 		return
@@ -402,6 +402,10 @@ func (f *Force) httpGet(url string) (body []byte, err error) {
 		err = errors.New("authorization expired, please run `force login`")
 		return
 	}
+	if res.StatusCode == 403 {
+		err = errors.New("Forbidden; Your authorization may have expired, or you do not have access. Please run `force login` and try again")
+		return
+	}
 	body, err = ioutil.ReadAll(res.Body)
 	if res.StatusCode/100 != 2 {
 		var messages []ForceError
@@ -457,7 +461,7 @@ func (f *Force) httpPatch(url string, attrs map[string]string) (body []byte, err
 	}
 	defer res.Body.Close()
 	if res.StatusCode == 401 {
-		err = errors.New("authorization expired, please run `force login`")
+		err = errors.New("Authorization expired, please run `force login`")
 		return
 	}
 	body, err = ioutil.ReadAll(res.Body)

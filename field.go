@@ -63,17 +63,21 @@ func runFieldCreate(args []string) {
 	if len(args) < 2 {
 		ErrorAndExit("must specify object and at least one field")
 	}
+
 	force, _ := ActiveForce()
+
 	parts := strings.Split(args[1], ":")
 	if len(parts) != 2 {
 		ErrorAndExit("must specify name:type for fields")
 	}
 
 	var optionMap = make(map[string]string)
-	var newOptions = make(map[string]string)
 	if len(args) > 2 {
 		for _, value := range args[2:] {
 			options := strings.Split(value, ":")
+			if len(options) != 2 {
+				ErrorAndExit(fmt.Sprintf("Missing value for field attribute %s", value))
+			}
 			optionMap[options[0]] = options[1]
 		}
 	}
@@ -83,8 +87,6 @@ func runFieldCreate(args []string) {
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
-	//	newOptions = xOptions
-
 	if err := force.Metadata.CreateCustomField(args[0], parts[0], parts[1], newOptions); err != nil {
 		ErrorAndExit(err.Error())
 	}
