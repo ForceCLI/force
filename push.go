@@ -31,6 +31,8 @@ var pxml = `<?xml version="1.0" encoding="UTF-8"?>
 </Package>`
 
 func runPush(cmd *Command, args []string) {
+	fmt.Println("args: " + args[0])
+
 	wd, _ := os.Getwd()
 	root := filepath.Join(wd, "metadata")
 	//if len(args) == 1 {
@@ -40,27 +42,33 @@ func runPush(cmd *Command, args []string) {
 		ErrorAndExit("Must specify a directory that contains metadata files")
 	}
 
-	if _, err := os.Stat(filepath.Join(root, args[1])); os.IsNotExist(err) {
-		ErrorAndExit("Folder " + args[1] + " not found, must specify a metadata folder")
+	if _, err := os.Stat(filepath.Join(root, args[0])); os.IsNotExist(err) {
+		ErrorAndExit("Folder " + args[0] + " not found, must specify a metadata folder")
 	}
 
-	objType := args[1]
+	objType := args[0]
 
-	switch args[1] {
+	switch args[0] {
 	case "objects":
 		objType = "CustomObject"
 	case "flexipages":
 		objType = "FlexiPage"
 	case "tabs":
 		objType = "CustomTab"
+	case "components":
+		objType = "ApexComponent"
+	case "pages":
+		objType = "ApexPage"
+	case "classes":
+		objType = "ApexClass"
 	default:
 		ErrorAndExit("That folder type is not supported")
 	}
 
 	found := false
-	err := filepath.Walk(filepath.Join(root, args[1]), func(path string, f os.FileInfo, err error) error {
+	err := filepath.Walk(filepath.Join(root, args[0]), func(path string, f os.FileInfo, err error) error {
 		if f.Mode().IsRegular() {
-			if strings.Contains(strings.ToLower(f.Name()), strings.ToLower(args[2])) {
+			if strings.Contains(strings.ToLower(f.Name()), strings.ToLower(args[1])) {
 				found = true
 			}
 		}
@@ -70,7 +78,7 @@ func runPush(cmd *Command, args []string) {
 		ErrorAndExit(err.Error())
 	}
 	if !found {
-		ErrorAndExit("Could not find " + args[2] + " in " + args[1])
+		ErrorAndExit("Could not find " + args[1] + " in " + args[1])
 	}
 
 	force, _ := ActiveForce()
@@ -78,7 +86,7 @@ func runPush(cmd *Command, args []string) {
 
 	err = os.Rename(filepath.Join(root, "package.xml"), filepath.Join(root, "package.copy.xml"))
 
-	if err := ioutil.WriteFile(filepath.Join(root, "package.xml"), []byte(fmt.Sprintf(pxml, args[2], objType)), 0644); err != nil {
+	if err := ioutil.WriteFile(filepath.Join(root, "package.xml"), []byte(fmt.Sprintf(pxml, args[1], objType)), 0644); err != nil {
 		ErrorAndExit(err.Error())
 	}
 	if err != nil {
@@ -87,7 +95,7 @@ func runPush(cmd *Command, args []string) {
 
 	err = filepath.Walk(root, func(path string, f os.FileInfo, err error) error {
 		if f.Mode().IsRegular() {
-			if strings.Contains(strings.ToLower(f.Name()), strings.ToLower(args[2])) ||
+			if strings.Contains(strings.ToLower(f.Name()), strings.ToLower(args[1])) ||
 				strings.Contains(strings.ToLower(f.Name()), "package.xml") {
 				data, err := ioutil.ReadFile(path)
 				if err != nil {
@@ -130,5 +138,5 @@ func runPush(cmd *Command, args []string) {
 		}
 	}
 
-	fmt.Printf("Pushed %s to Force.com\n", args[2])
+	fmt.Printf("Pushed %s to Force.com\n", args[1])
 }

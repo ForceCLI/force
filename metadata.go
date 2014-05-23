@@ -14,11 +14,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
-	"reflect"
-	"strconv"
 	"time"
-	"bufio"
-	"os"
 )
 
 type ForceConnectedApps []ForceConnectedApp
@@ -110,7 +106,6 @@ type ForceMetadata struct {
    a custom field.
 */
 type GeolocationFieldRequired struct {
-<<<<<<< HEAD
 	DsiplayLocationInDecimal bool `xml:"displayLocationInDecimal"`
 	Scale                    int  `xml:"scale"`
 }
@@ -374,7 +369,7 @@ func NewForceMetadata(force *Force) (fm *ForceMetadata) {
 
 // Example of how to use Go's reflection
 // Print the attributes of a Data Model
-func getAttributes(m interface{}) map[string]reflect.StructField {
+/*func getAttributes(m interface{}) map[string]reflect.StructField {
 	typ := reflect.TypeOf(m)
 	// if a pointer to a struct is passed, get the type of the dereferenced object
 	if typ.Kind() == reflect.Ptr {
@@ -399,9 +394,9 @@ func getAttributes(m interface{}) map[string]reflect.StructField {
 	}
 
 	return attrs
-}
+}*/
 
-func ValidateOptionsAndDefaults(typ string, fields map[string]reflect.StructField, requiredDefaults reflect.Value, options map[string]string) (newOptions map[string]string, err error) {
+/*func ValidateOptionsAndDefaults(typ string, fields map[string]reflect.StructField, requiredDefaults reflect.Value, options map[string]string) (newOptions map[string]string, err error) {
 	newOptions = make(map[string]string)
 
 	// validate optional attributes
@@ -411,7 +406,7 @@ func ValidateOptionsAndDefaults(typ string, fields map[string]reflect.StructFiel
 			ErrorAndExit(fmt.Sprintf("validation error: %s:%s is not a valid option for field type %s", name, value, typ))
 		} else {
 			newOptions[field.Tag.Get("xml")] = options[name]
-		}	
+		}
 	}
 
 	// validate required attributes
@@ -492,7 +487,7 @@ func (fm *ForceMetadata) ValidateFieldOptions(typ string, options map[string]str
 	newOptions, err = ValidateOptionsAndDefaults(typ, attrs, s, options)
 
 	return newOptions, nil
-}
+}*/
 
 func (fm *ForceMetadata) CheckStatus(id string) (err error) {
 	body, err := fm.soapExecute("checkStatus", fmt.Sprintf("<id>%s</id>", id))
@@ -859,6 +854,7 @@ func (fm *ForceMetadata) Deploy(files ForceMetadataFiles) (successes []Component
 }
 
 func (fm *ForceMetadata) Retrieve(query ForceMetadataQuery) (files ForceMetadataFiles, err error) {
+
 	soap := `
 		<retrieveRequest>
 			<apiVersion>29.0</apiVersion>

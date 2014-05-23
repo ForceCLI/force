@@ -6,6 +6,7 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
+	"encoding/xml"
 	"errors"
 	"fmt"
 	"io"
@@ -24,11 +25,14 @@ const (
 	RedirectUri        = "https://force-cli.herokuapp.com/auth/callback"
 )
 
+var CustomEndpoint = ``
+
 const (
 	EndpointProduction = iota
 	EndpointTest       = iota
 	EndpointPrerelease = iota
 	EndpointMobile1    = iota
+	EndpointCustom     = iota
 )
 
 const (
@@ -72,6 +76,48 @@ hS9OMPagMRYjyOfiZRYzy78aG6A9+MpeizGLYAiJLQwGXFK3xPkKmNEVX58Svnw2
 Yzi9RKR/5CYrCsSXaQ3pjOLAEFe4yHYSkVXySGnYvCoCWw9E1CAx2/S6cCZdkGCe
 vEsXCS+0yx5DaMkHJ8HSXPfqIbloEpw8nL+e/IBcm2PN7EeqJSdnoDfzAIJ9VNep
 +OkuE6N36B9K
+-----END CERTIFICATE-----
+-----BEGIN CERTIFICATE-----
+MIIDdzCCAl+gAwIBAgIEAgAAuTANBgkqhkiG9w0BAQUFADBaMQswCQYDVQQGEwJJ
+RTESMBAGA1UEChMJQmFsdGltb3JlMRMwEQYDVQQLEwpDeWJlclRydXN0MSIwIAYD
+VQQDExlCYWx0aW1vcmUgQ3liZXJUcnVzdCBSb290MB4XDTAwMDUxMjE4NDYwMFoX
+DTI1MDUxMjIzNTkwMFowWjELMAkGA1UEBhMCSUUxEjAQBgNVBAoTCUJhbHRpbW9y
+ZTETMBEGA1UECxMKQ3liZXJUcnVzdDEiMCAGA1UEAxMZQmFsdGltb3JlIEN5YmVy
+VHJ1c3QgUm9vdDCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAKMEuyKr
+mD1X6CZymrV51Cni4eiVgLGw41uOKymaZN+hXe2wCQVt2yguzmKiYv60iNoS6zjr
+IZ3AQSsBUnuId9Mcj8e6uYi1agnnc+gRQKfRzMpijS3ljwumUNKoUMMo6vWrJYeK
+mpYcqWe4PwzV9/lSEy/CG9VwcPCPwBLKBsua4dnKM3p31vjsufFoREJIE9LAwqSu
+XmD+tqYF/LTdB1kC1FkYmGP1pWPgkAx9XbIGevOF6uvUA65ehD5f/xXtabz5OTZy
+dc93Uk3zyZAsuT3lySNTPx8kmCFcB5kpvcY67Oduhjprl3RjM71oGDHweI12v/ye
+jl0qhqdNkNwnGjkCAwEAAaNFMEMwHQYDVR0OBBYEFOWdWTCCR1jMrPoIVDaGezq1
+BE3wMBIGA1UdEwEB/wQIMAYBAf8CAQMwDgYDVR0PAQH/BAQDAgEGMA0GCSqGSIb3
+DQEBBQUAA4IBAQCFDF2O5G9RaEIFoN27TyclhAO992T9Ldcw46QQF+vaKSm2eT92
+9hkTI7gQCvlYpNRhcL0EYWoSihfVCr3FvDB81ukMJY2GQE/szKN+OMY3EU/t3Wgx
+jkzSswF07r51XgdIGn9w/xZchMB5hbgF/X++ZRGjD8ACtPhSNzkE1akxehi/oCr0
+Epn3o0WC4zxe9Z2etciefC7IpJ5OCBRLbf1wbWsaY71k5h+3zvDyny67G7fyUIhz
+ksLi4xaNmjICq44Y3ekQEe5+NauQrz4wlHrQMz2nZQ/1/I6eYs9HRCwBXbsdtTLS
+R9I4LtD+gdwyah617jzV/OeBHRnDJELqYzmp
+-----END CERTIFICATE-----
+-----BEGIN CERTIFICATE-----
+MIIDdzCCAl+gAwIBAgIEAgAAuTANBgkqhkiG9w0BAQUFADBaMQswCQYDVQQGEwJJ
+RTESMBAGA1UEChMJQmFsdGltb3JlMRMwEQYDVQQLEwpDeWJlclRydXN0MSIwIAYD
+VQQDExlCYWx0aW1vcmUgQ3liZXJUcnVzdCBSb290MB4XDTAwMDUxMjE4NDYwMFoX
+DTI1MDUxMjIzNTkwMFowWjELMAkGA1UEBhMCSUUxEjAQBgNVBAoTCUJhbHRpbW9y
+ZTETMBEGA1UECxMKQ3liZXJUcnVzdDEiMCAGA1UEAxMZQmFsdGltb3JlIEN5YmVy
+VHJ1c3QgUm9vdDCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAKMEuyKr
+mD1X6CZymrV51Cni4eiVgLGw41uOKymaZN+hXe2wCQVt2yguzmKiYv60iNoS6zjr
+IZ3AQSsBUnuId9Mcj8e6uYi1agnnc+gRQKfRzMpijS3ljwumUNKoUMMo6vWrJYeK
+mpYcqWe4PwzV9/lSEy/CG9VwcPCPwBLKBsua4dnKM3p31vjsufFoREJIE9LAwqSu
+XmD+tqYF/LTdB1kC1FkYmGP1pWPgkAx9XbIGevOF6uvUA65ehD5f/xXtabz5OTZy
+dc93Uk3zyZAsuT3lySNTPx8kmCFcB5kpvcY67Oduhjprl3RjM71oGDHweI12v/ye
+jl0qhqdNkNwnGjkCAwEAAaNFMEMwHQYDVR0OBBYEFOWdWTCCR1jMrPoIVDaGezq1
+BE3wMBIGA1UdEwEB/wQIMAYBAf8CAQMwDgYDVR0PAQH/BAQDAgEGMA0GCSqGSIb3
+DQEBBQUAA4IBAQCFDF2O5G9RaEIFoN27TyclhAO992T9Ldcw46QQF+vaKSm2eT92
+9hkTI7gQCvlYpNRhcL0EYWoSihfVCr3FvDB81ukMJY2GQE/szKN+OMY3EU/t3Wgx
+jkzSswF07r51XgdIGn9w/xZchMB5hbgF/X++ZRGjD8ACtPhSNzkE1akxehi/oCr0
+Epn3o0WC4zxe9Z2etciefC7IpJ5OCBRLbf1wbWsaY71k5h+3zvDyny67G7fyUIhz
+ksLi4xaNmjICq44Y3ekQEe5+NauQrz4wlHrQMz2nZQ/1/I6eYs9HRCwBXbsdtTLS
+R9I4LtD+gdwyah617jzV/OeBHRnDJELqYzmp
 -----END CERTIFICATE-----`
 
 type Force struct {
@@ -86,6 +132,18 @@ type ForceCredentials struct {
 	InstanceUrl string
 	IssuedAt    string
 	Scope       string
+	IsCustomEP  bool
+}
+
+type LoginFault struct {
+	ExceptionCode    string `xml:"exceptionCode"`
+	ExceptionMessage string `xml:"exceptionMessage"`
+}
+
+type SoapFault struct {
+	FaultCode   string     `xml:"Body>Fault>faultcode"`
+	FaultString string     `xml:"Body>Fault>faultstring"`
+	Detail      LoginFault `xml:"Body>Fault>detail>LoginFault"`
 }
 
 type GenericForceError struct {
@@ -138,6 +196,47 @@ func NewForce(creds ForceCredentials) (force *Force) {
 	return
 }
 
+func ForceSoapLogin(endpoint ForceEndpoint, username string, password string) (creds ForceCredentials, err error) {
+	var surl string
+	version := strings.Split(apiVersion, "v")[1]
+	switch endpoint {
+	case EndpointProduction:
+		surl = fmt.Sprintf("https://login.salesforce.com/services/Soap/u/%s", version)
+	case EndpointTest:
+		surl = fmt.Sprintf("https://test.salesforce.com/services/Soap/u/%s", version)
+	case EndpointPrerelease:
+		surl = fmt.Sprintf("https://prerelna1.pre.salesforce.com/services/Soap/u/%s", version)
+	case EndpointCustom:
+		surl = fmt.Sprintf("%s/services/Soap/u/%s", CustomEndpoint, version)
+	default:
+		ErrorAndExit("no such endpoint type")
+	}
+
+	soap := NewSoap(surl, "", "")
+	response, err := soap.ExecuteLogin(username, password)
+	var result struct {
+		SessionId    string `xml:"Body>loginResponse>result>sessionId"`
+		Id           string `xml:"Body>loginResponse>result>userId"`
+		Instance_url string `xml:"Body>loginResponse>result>serverUrl"`
+	}
+	var fault SoapFault
+	if err = xml.Unmarshal(response, &fault); fault.Detail.ExceptionMessage != "" {
+		ErrorAndExit(fault.Detail.ExceptionCode + ": " + fault.Detail.ExceptionMessage)
+	}
+	if err = xml.Unmarshal(response, &result); err != nil {
+		return
+	}
+	orgid := strings.Split(result.SessionId, "!")[0]
+	u, err := url.Parse(result.Instance_url)
+	if err != nil {
+		return
+	}
+	instanceUrl := u.Scheme + "://" + u.Host
+	identity := u.Scheme + "://" + u.Host + "/id/" + orgid + "/" + result.Id
+	creds = ForceCredentials{result.SessionId, identity, instanceUrl, "", "", endpoint == EndpointCustom}
+	return
+}
+
 func ForceLogin(endpoint ForceEndpoint) (creds ForceCredentials, err error) {
 	ch := make(chan ForceCredentials)
 	port, err := startLocalHttpServer(ch)
@@ -159,8 +258,33 @@ func ForceLogin(endpoint ForceEndpoint) (creds ForceCredentials, err error) {
 	return
 }
 
+func (f *Force) GetCodeCoverage(classId string, className string) (err error) {
+	url := fmt.Sprintf("%s/services/data/%s/query/?q=Select+Id+From+ApexClass+Where+Name+=+'%s'", f.Credentials.InstanceUrl, apiVersion, className)
+	fmt.Println(url)
+	body, err := f.httpGet(url)
+	if err != nil {
+		return
+	}
+	var result ForceQueryResult
+	json.Unmarshal(body, &result)
+
+	classId = result.Records[0]["Id"].(string)
+	url = fmt.Sprintf("%s/services/data/%s/tooling/query/?q=Select+Coverage,+NumLinesCovered,+NumLinesUncovered,+ApexTestClassId,+ApexClassorTriggerId+From+ApexCodeCoverage+Where+ApexClassorTriggerId='%s'", f.Credentials.InstanceUrl, apiVersion, classId)
+	fmt.Println(url)
+	body, err = f.httpGet(url)
+	if err != nil {
+		return
+	}
+	fmt.Println(string(body))
+	//var result ForceSobjectsResult
+	json.Unmarshal(body, &result)
+	fmt.Printf("\n%d lines covered\n%d lines not covered\n", int(result.Records[0]["NumLinesCovered"].(float64)), int(result.Records[0]["NumLinesUncovered"].(float64)))
+	return
+}
+
 func (f *Force) ListSobjects() (sobjects []ForceSobject, err error) {
 	url := fmt.Sprintf("%s/services/data/%s/sobjects", f.Credentials.InstanceUrl, apiVersion)
+	fmt.Println(url)
 	body, err := f.httpGet(url)
 	if err != nil {
 		return
@@ -372,19 +496,23 @@ func (f *Force) httpDelete(url string) (body []byte, err error) {
 }
 
 func httpClient() (client *http.Client) {
-	chain := rootCertificate()
-	config := tls.Config{}
-	config.RootCAs = x509.NewCertPool()
-	for _, cert := range chain.Certificate {
-		x509Cert, err := x509.ParseCertificate(cert)
-		if err != nil {
-			panic(err)
+	if CustomEndpoint == "" {
+		chain := rootCertificate()
+		config := tls.Config{}
+		config.RootCAs = x509.NewCertPool()
+		for _, cert := range chain.Certificate {
+			x509Cert, err := x509.ParseCertificate(cert)
+			if err != nil {
+				panic(err)
+			}
+			config.RootCAs.AddCert(x509Cert)
 		}
-		config.RootCAs.AddCert(x509Cert)
+		config.BuildNameToCertificate()
+		tr := http.Transport{TLSClientConfig: &config}
+		client = &http.Client{Transport: &tr}
+	} else {
+		client = &http.Client{}
 	}
-	config.BuildNameToCertificate()
-	tr := http.Transport{TLSClientConfig: &config}
-	client = &http.Client{Transport: &tr}
 	return
 }
 
