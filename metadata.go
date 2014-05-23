@@ -400,7 +400,7 @@ func NewForceMetadata(force *Force) (fm *ForceMetadata) {
 	newOptions = make(map[string]string)
 
 	// validate optional attributes
-	for name, value := range(options) {
+	for name, value := range options {
 		field, ok := fields[strings.ToLower(name)]
 		if !ok {
 			ErrorAndExit(fmt.Sprintf("validation error: %s:%s is not a valid option for field type %s", name, value, typ))
@@ -412,19 +412,19 @@ func NewForceMetadata(force *Force) (fm *ForceMetadata) {
 	// validate required attributes
 	s := requiredDefaults
 	tod := s.Type()
-	for i := 0; i<s.NumField(); i++ {
+	for i := 0; i < s.NumField(); i++ {
 		_, ok := options[strings.ToLower(tod.Field(i).Name)]
 		if !ok {
 			switch s.Field(i).Type().Name() {
-				case "int":
-					newOptions[tod.Field(i).Tag.Get("xml")] = strconv.Itoa(s.Field(i).Interface().(int))
-					break;
-				case "bool":
-					newOptions[tod.Field(i).Tag.Get("xml")] = strconv.FormatBool(s.Field(i).Interface().(bool))
-					break;
-				default:
-					newOptions[tod.Field(i).Tag.Get("xml")] = s.Field(i).Interface().(string)
-					break;
+			case "int":
+				newOptions[tod.Field(i).Tag.Get("xml")] = strconv.Itoa(s.Field(i).Interface().(int))
+				break
+			case "bool":
+				newOptions[tod.Field(i).Tag.Get("xml")] = strconv.FormatBool(s.Field(i).Interface().(bool))
+				break
+			default:
+				newOptions[tod.Field(i).Tag.Get("xml")] = s.Field(i).Interface().(string)
+				break
 			}
 		} else {
 			newOptions[tod.Field(i).Tag.Get("xml")] = options[strings.ToLower(tod.Field(i).Name)]
@@ -713,8 +713,6 @@ func (fm *ForceMetadata) CreateCustomField(object, field, typ string, options ma
 		ErrorAndExit("unable to create field type: %s", typ)
 	}
 
-	fmt.Println("\n" + soapField + "\n\n")
-
 	body, err := fm.soapExecute("create", fmt.Sprintf(soap, object, field, label, soapField))
 	if err != nil {
 		return err
@@ -874,6 +872,39 @@ func (fm *ForceMetadata) Retrieve(query ForceMetadataQuery) (files ForceMetadata
 		types += fmt.Sprintf(soapType, element.Name, element.Members)
 	}
 	body, err := fm.soapExecute("retrieve", fmt.Sprintf(soap, types))
+	if err != nil {
+		return
+	}
+	var status struct {
+		Id string `xml:"Body>retrieveResponse>result>id"`
+	}
+	if err = xml.Unmarshal(body, &status); err != nil {
+		return
+	}
+	if err = fm.CheckStatus(status.Id); err != nil {
+		return
+	}
+	raw_files, err := fm.CheckRetrieveStatus(status.Id)
+	if err != nil {
+		return
+	}
+	files = make(ForceMetadataFiles)
+	for raw_name, data := range raw_files {
+		name := strings.Replace(raw_name, "unpackaged/", "", -1)
+		files[name] = data
+	}
+	return
+}
+
+func (fm *ForceMetadata) RetrievePackage(packageName string) (files ForceMetadataFiles, err error) {
+	soap := `
+		<retrieveRequest>
+			<apiVersion>29.0</apiVersion>
+			<packageNames>%s</packageNames>
+		</retrieveRequest>
+	`
+	soap = fmt.Sprintf(soap, packageName)
+	body, err := fm.soapExecute("retrieve", soap)
 	if err != nil {
 		return
 	}

@@ -7,7 +7,7 @@ import (
 var commands = []*Command{
 	cmdLogin,
 	cmdLogout,
-	cmdAccounts,
+	cmdLogins,
 	cmdActive,
 	cmdWhoami,
 	cmdSobject,
@@ -17,7 +17,6 @@ var commands = []*Command{
 	cmdExport,
 	cmdFetch,
 	cmdImport,
-	cmdSoql,
 	cmdQuery,
 	cmdApex,
 	cmdOauth,

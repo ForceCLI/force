@@ -1,2 +1,12 @@
+<<<<<<< HEAD
 .DS_Store
 metadata/
+=======
+# Force CLI specific things
+force
+metadata
+
+*.json
+
+*.xml
+>>>>>>> upstream/master

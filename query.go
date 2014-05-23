@@ -1,23 +1,23 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 )
 
 var cmdQuery = &Command{
 	Run:   runQuery,
-	Usage: "query <soql statement> [output format]",
-	Short: "Execute a SOQL statement",
+	Usage: "query <soql> [format:<json, csv>]",
+	Short: "Execute a SOQL query, optionally specify output format",
 	Long: `
 Execute a SOQL statement
 
 Examples:
 
-  force soql select Id, Name, Account.Name From Contact
+  force query select id, name from user
 
-  force soql select Id, Name, Account.Name From Contact --format:csv
-  
+  force query select Id, FirstName, LastName From Contact format:json
 `,
 }
 
