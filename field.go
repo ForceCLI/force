@@ -79,11 +79,11 @@ func runFieldCreate(args []string) {
 	}
 
 	// Validate the options for this field type
-	xOptions, err := force.Metadata.ValidateFieldOptions(parts[1], optionMap)
+	newOptions, err := force.Metadata.ValidateFieldOptions(parts[1], optionMap)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
-	newOptions = xOptions
+	//	newOptions = xOptions
 
 	if err := force.Metadata.CreateCustomField(args[0], parts[0], parts[1], newOptions); err != nil {
 		ErrorAndExit(err.Error())
