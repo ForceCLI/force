@@ -46,6 +46,14 @@ A command-line interface to force.com
 	
 	Run 'force help [command]' for details.
 
+### login
+      force login     		 	# log in to production or developer org
+      force login test 		 	# log in to sandbox org
+      force login pre  		 	# log in to prerelease org
+      force login un pw 	 	# log in using SOAP
+      force login test un pw     	# log in using SOAP to sandbox org
+      force login <instance> un pw 	# internal only
+
 ### Hacking
 
     # set these environment variables in your startup scripts
