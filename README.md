@@ -15,7 +15,7 @@ A command-line interface to force.com
 
 ##### Compile from Source
 
-    $ go get -u github.com/dcarroll/force
+    $ go get -u github.com/heroku/force
 
 ### Usage
 
@@ -30,12 +30,7 @@ A command-line interface to force.com
 	   record    Create, modify, or view records
 	   export    Export metadata to a local directory
 	   import    Import metadata from a local directory
-<<<<<<< HEAD
-	   select    Execute a SOQL select
-	   soql 	 Exectue a SOQL statement
-=======
 	   query     Execute a SOQL query
->>>>>>> 7b71603a08103adea72f0164428f695558f9a787
 	   apex      Execute anonymous Apex code
 	   version   Display current version
 	   update    Update to the latest version
