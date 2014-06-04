@@ -24,18 +24,24 @@ A command-line interface to force.com
 	Available commands:
 	   login     Log in to force.com
 	   logout    Log out from force.com
+   	   logins    List force.com logins used
+   	   active    Show or set the active force.com account
 	   whoami    Show information about the active account
-	   sobject   Manage sobjects
+	   sobject   Manage standard & custom objects
 	   field     Manage sobject fields
 	   record    Create, modify, or view records
-	   export    Export metadata to a local directory
+	   bulk      Load csv file use Bulk API
+	   fetch     Export specified artifact(s) to a local directory
+   	   export    Export metadata to a local directory
+	   fetch     Export specified artifact(s) to a local directory
 	   import    Import metadata from a local directory
-	   query     Execute a SOQL query
+	   query     Execute a SOQL statement
 	   apex      Execute anonymous Apex code
+	   oauth     Manage ConnectedApp credentials
 	   version   Display current version
 	   update    Update to the latest version
-	   fetch 	 Export a single artifact to a local directory
-	   push		 Deploy a single artifact from local directory to Force.com 
+	   push      Deploy single artifact from a local directory
+	   password  See password status or reset password
 	   help      Show this help
 	
 	Run 'force help [command]' for details.
