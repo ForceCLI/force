@@ -68,6 +68,19 @@ Logins will list all the user names that you have used to authenticate with the 
       
 ![](https://raw.githubusercontent.com/dcarroll/dcarroll.github.io/master/images/force/screenshot-191.png)
 
+### active
+Active without any arguments will display the currently acctive login that you are using. You can also supply a username argument that will set the active login to the one corresponding to the username argument. Note, just because you set a login as active, does not mean that the token is necessarily valid.
+
+      force active
+      force active dave@demo.1
+      
+### whoami
+Whoami will display detailed user information about the currently active logged in user.  This is Force.com specific information.
+
+      force whomai
+      
+![](https://raw.githubusercontent.com/dcarroll/dcarroll.github.io/master/images/force/screenshot-191%20copy.png)
+
 ### Hacking
 
     # set these environment variables in your startup scripts
