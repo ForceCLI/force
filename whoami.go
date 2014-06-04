@@ -20,7 +20,7 @@ func runWhoami(cmd *Command, args []string) {
 	me, err := force.Whoami()
 	if err != nil {
 		ErrorAndExit(err.Error())
-	} else {
+	} else if len(args) == 0 {
 		DisplayForceRecord(me)
 	}
 }

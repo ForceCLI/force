@@ -5,23 +5,23 @@ import (
 	"strings"
 )
 
-var cmdQuery = &Command{
-	Run:   runQuery,
-	Usage: "query <soql statement> [output format]",
+var cmdSoql = &Command{
+	Run:   runSoql,
+	Usage: "soql <soql statement> [output format]",
 	Short: "Execute a SOQL statement",
 	Long: `
 Execute a SOQL statement
 
 Examples:
 
-  force query select Id, Name, Account.Name From Contact
+  force soql select Id, Name, Account.Name From Contact
 
-  force query select Id, Name, Account.Name From Contact --format:csv
+  force soql select Id, Name, Account.Name From Contact --format:csv
   
 `,
 }
 
-func runQuery(cmd *Command, args []string) {
+func runSoql(cmd *Command, args []string) {
 	force, _ := ActiveForce()
 	if len(args) < 1 {
 		cmd.printUsage()

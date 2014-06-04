@@ -1,15 +1,15 @@
 package main
 
 import (
+	"archive/zip"
+	"encoding/xml"
 	"fmt"
+	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
-	"encoding/xml"
-	"archive/zip"
-	"log"
-	"io"
 )
 
 var cmdFetch = &Command{
@@ -46,13 +46,18 @@ func runFetch(cmd *Command, args []string) {
 	force, _ := ActiveForce()
 	var files ForceMetadataFiles
 	var err error
-	var expandResources bool = false;
+	var expandResources bool = false
 
 	artifactType := args[0]
 	if artifactType == "package" {
 		files, err = force.Metadata.RetrievePackage(args[1])
 		if err != nil {
 			ErrorAndExit(err.Error())
+		}
+		for artifactNames := range args[1:] {
+			if args[1:][artifactNames] == "--unpack" || args[1:][artifactNames] == "-u" {
+				expandResources = true
+			}
 		}
 	} else {
 		query := ForceMetadataQuery{}
@@ -82,15 +87,24 @@ func runFetch(cmd *Command, args []string) {
 	for name, data := range files {
 		file := filepath.Join(root, name)
 		dir := filepath.Dir(file)
+
 		if err := os.MkdirAll(dir, 0755); err != nil {
 			ErrorAndExit(err.Error())
 		}
 		if err := ioutil.WriteFile(filepath.Join(root, name), data, 0644); err != nil {
 			ErrorAndExit(err.Error())
 		}
+		var isResource = false
+		if artifactType == "StaticResource" {
+			isResource = true
+		} else if strings.HasSuffix(file, ".resource-meta.xml") {
+			isResource = true
+		}
 		//Handle expanding static resources into a "bundle" folder
-		if artifactType == "StaticResource" && expandResources && name != "package.xml"  {
-			resourceName := strings.Split(name, "/")[1]
+		if isResource && expandResources && name != "package.xml" {
+			pathParts := strings.Split(name, "/")
+			resourceName := pathParts[cap(pathParts)-1]
+
 			resourceExt := strings.Split(resourceName, ".")[1]
 			resourceName = strings.Split(resourceName, ".")[0]
 			if resourceExt == "resource-meta" {
@@ -98,14 +112,14 @@ func runFetch(cmd *Command, args []string) {
 				// We are looking for application/zip
 				var meta struct {
 					CacheControl string `xml:"cacheControl"`
-					ContentType string `xml:"contentType"`
+					ContentType  string `xml:"contentType"`
 				}
 				if err = xml.Unmarshal([]byte(data), &meta); err != nil {
 					//return
 				}
 				if meta.ContentType == "application/zip" {
 					// this is the meat for a zip file, so add the map
-					resourcesMap[resourceName] = resourceName + ".resource"
+					resourcesMap[resourceName] = filepath.Join(filepath.Dir(file), resourceName+".resource")
 				}
 			}
 		}
@@ -113,43 +127,44 @@ func runFetch(cmd *Command, args []string) {
 
 	// Now we need to see if we have any zips to expand
 	if expandResources && len(resourcesMap) > 0 {
-		for key, value := range(resourcesMap) {
-			resourcefile := filepath.Join(root, "staticresources", value)
-			dest := filepath.Join(root, "staticresources", key)
+		for key, value := range resourcesMap {
+			//resourcefile := filepath.Join(root, "staticresources", value)
+			resourcefile := value
+			dest := filepath.Join(filepath.Dir(value), key)
 			if err := os.MkdirAll(dest, 0755); err != nil {
 				ErrorAndExit(err.Error())
 			}
 			//f, err := os.Open(resourcefile);
 			r, err := zip.OpenReader(resourcefile)
-    		if err != nil {
-            	log.Fatal(err)
-    		}
-    		defer r.Close()
+			if err != nil {
+				log.Fatal(err)
+			}
+			defer r.Close()
 
 			for _, f := range r.File {
-    			rc, err := f.Open()
-        		if err != nil {
-            		fmt.Println(err)
-        		}
-        		defer rc.Close()
+				rc, err := f.Open()
+				if err != nil {
+					fmt.Println(err)
+				}
+				defer rc.Close()
 
-    			path := filepath.Join(dest, f.Name)
-    			if !strings.HasPrefix(f.Name, "__") {
-	    			if f.FileInfo().IsDir() {
-	            		os.MkdirAll(path, f.Mode())
-	        		} else {
+				path := filepath.Join(dest, f.Name)
+				if !strings.HasPrefix(f.Name, "__") {
+					if f.FileInfo().IsDir() {
+						os.MkdirAll(path, f.Mode())
+					} else {
 						zf, err := os.OpenFile(
-	                		path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
-	            		if err != nil {
-	                		fmt.Println(err)
-	            		}
+							path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
+						if err != nil {
+							fmt.Println(err)
+						}
 
 						_, err = io.Copy(zf, rc)
-	            		if err != nil {
-	                		fmt.Println(err)
-	                		zf.Close()
-	            		}
-	            		zf.Close()
+						if err != nil {
+							fmt.Println(err)
+							zf.Close()
+						}
+						zf.Close()
 					}
 				}
 			}

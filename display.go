@@ -7,6 +7,69 @@ import (
 	"strings"
 )
 
+var BatchInfoTemplate = `
+Id 			%s
+JobId 			%s
+State 			%s
+CreatedDate 		%s
+SystemModstamp 		%s
+NumberRecordsProcessed  %d
+`
+
+func DisplayBatchList(batchInfos []BatchInfo) {
+
+	for i, batchInfo := range batchInfos {
+		fmt.Printf("Batch %d", i)
+		DisplayBatchInfo(batchInfo)
+		fmt.Println()
+	}
+}
+
+func DisplayBatchInfo(batchInfo BatchInfo) {
+
+	fmt.Printf(BatchInfoTemplate, batchInfo.Id, batchInfo.JobId, batchInfo.State,
+		batchInfo.CreatedDate, batchInfo.SystemModstamp,
+		batchInfo.NumberRecordsProcessed)
+}
+
+func DisplayJobInfo(jobInfo JobInfo) {
+	var msg = `
+Id				%s
+State 				%s
+Operation			%s
+Object 				%s
+Api Version 			%s
+
+Created By Id 			%s
+Created Date 			%s
+System Mod Stamp		%s
+Content Type 			%s
+Concurrency Mode 		%s
+
+Number Batches Queued 		%d
+Number Batches In Progress	%d
+Number Batches Completed 	%d
+Number Batches Failed 		%d
+Number Batches Total 		%d
+Number Records Processed 	%d
+Number Retries 			%d
+
+Number Records Failed 		%d
+Total Processing Time 		%d
+Api Active Processing Time 	%d
+Apex Processing Time 		%d
+`
+	fmt.Printf(msg, jobInfo.Id, jobInfo.State, jobInfo.Operation, jobInfo.Object, jobInfo.ApiVersion,
+		jobInfo.CreatedById, jobInfo.CreatedDate, jobInfo.SystemModStamp,
+		jobInfo.ContentType, jobInfo.ConcurrencyMode,
+		jobInfo.NumberBatchesQueued, jobInfo.NumberBatchesInProgress,
+		jobInfo.NumberBatchesCompleted, jobInfo.NumberBatchesFailed,
+		jobInfo.NumberBatchesTotal, jobInfo.NumberRecordsProcessed,
+		jobInfo.NumberRetries,
+		jobInfo.NumberRecordsFailed, jobInfo.TotalProcessingTime,
+		jobInfo.ApiActiveProcessingTime, jobInfo.ApexProcessingTime)
+}
+
 func DisplayForceSobjects(sobjects []ForceSobject) {
 	names := make([]string, len(sobjects))
 	for i, sobject := range sobjects {
@@ -15,6 +78,15 @@ func DisplayForceSobjects(sobjects []ForceSobject) {
 	sort.Strings(names)
 	for _, name := range names {
 		fmt.Println(name)
+	}
+}
+
+func DisplayForceRecordsf(records []ForceRecord, format string) {
+	switch format {
+	case "csv":
+		fmt.Println(RenderForceRecordsCSV(records, format))
+	default:
+		fmt.Printf("Format %s not supported\n\n", format)
 	}
 }
 
@@ -146,6 +218,85 @@ func recordRow(record ForceRecord, columns []string, lengths map[string]int, pre
 	}
 	out = strings.Join(rows, "\n")
 	return
+}
+
+// returns first index of a given string
+func StringSlicePos(slice []string, value string) int {
+	for p, v := range slice {
+		if v == value {
+			return p
+		}
+	}
+	return -1
+}
+
+// returns true if a slice contains given string
+func StringSliceContains(slice []string, value string) bool {
+	return StringSlicePos(slice, value) > -1
+}
+
+func RenderForceRecordsCSV(records []ForceRecord, format string) string {
+	var out bytes.Buffer
+
+	var keys []string
+	var flattenedRecords []map[string]interface{}
+	for _, record := range records {
+		flattenedRecord := flattenForceRecord(record)
+		flattenedRecords = append(flattenedRecords, flattenedRecord)
+		for key, _ := range flattenedRecord {
+			if !StringSliceContains(keys, key) {
+				keys = append(keys, key)
+			}
+		}
+	}
+	//keys = RemoveTransientRelationships(keys)
+	f, _ := ActiveCredentials()
+	if len(records) > 0 {
+		lengths := make([]int, len(keys))
+		outKeys := make([]string, len(keys))
+		for i, key := range keys {
+			lengths[i] = len(key)
+			if strings.HasSuffix(key, "__c") && f.Namespace != "" {
+				outKeys[i] = fmt.Sprintf(`%%%`, f.Namespace, "__", key)
+			} else {
+				outKeys[i] = key
+			}
+		}
+
+		formatter_parts := make([]string, len(outKeys))
+		for i, length := range lengths {
+			formatter_parts[i] = fmt.Sprintf(`"%%-%ds"`, length)
+		}
+
+		formatter := strings.Join(formatter_parts, `,`)
+		out.WriteString(fmt.Sprintf(formatter+"\n", StringSliceToInterfaceSlice(outKeys)...))
+		for _, record := range flattenedRecords {
+			values := make([][]string, len(keys))
+			for i, key := range keys {
+				values[i] = strings.Split(fmt.Sprintf(`%v`, record[key]), `\n`)
+			}
+
+			maxLines := 0
+			for _, value := range values {
+				lines := len(value)
+				if lines > maxLines {
+					maxLines = lines
+				}
+			}
+
+			for li := 0; li < maxLines; li++ {
+				line := make([]string, len(values))
+				for i, value := range values {
+					if len(value) > li {
+						line[i] = strings.Replace(value[li], `"`, `'`, -1)
+					}
+				}
+				out.WriteString(fmt.Sprintf(formatter+"\n", StringSliceToInterfaceSlice(line)...))
+			}
+		}
+	}
+	return out.String()
+	return ""
 }
 
 func flattenForceRecord(record ForceRecord) (flattened ForceRecord) {
