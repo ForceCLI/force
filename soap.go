@@ -68,7 +68,7 @@ func (s *Soap) ExecuteLogin(username, password string) (response []byte, err err
 }
 
 // Execute soap
-func (s *Soap) ExecuteLogin(username, password string) (response []byte, err error) {
+/*func (s *Soap) ExecuteLogin(username, password string) (response []byte, err error) {
 	soap := `
 		<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
   				xmlns:urn="urn:partner.soap.sforce.com">
@@ -106,7 +106,7 @@ func (s *Soap) ExecuteLogin(username, password string) (response []byte, err err
 	err = processError(response)
 	return
 
-}
+}*/
 
 func (s *Soap) Execute(action, query string) (response []byte, err error) {
 	soap := `

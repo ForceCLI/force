@@ -31,7 +31,10 @@ var pxml = `<?xml version="1.0" encoding="UTF-8"?>
 </Package>`
 
 func runPush(cmd *Command, args []string) {
-	fmt.Println("args: " + args[0])
+	if len(args) == 0 {
+		cmd.printUsage()
+		return
+	}
 
 	wd, _ := os.Getwd()
 	root := filepath.Join(wd, "metadata")

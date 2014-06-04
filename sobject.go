@@ -7,6 +7,7 @@ import (
 	"html"
 	"io/ioutil"
 	"os"
+	"strings"
 )
 
 var cmdSobject = &Command{
@@ -141,7 +142,7 @@ func runSobjectImport(args []string) {
 				}
 			} else {
 				if record[key] != nil {
-					val, ok :=record[key].(string)
+					val, ok := record[key].(string)
 					if ok {
 						fields += fmt.Sprintf("\t<%s>%s</%s>\n", key, html.EscapeString(val), key)
 					} else {
@@ -176,7 +177,7 @@ func runSobjectImport(args []string) {
 	var xmlresponse struct {
 		Results []result `xml:"Body>createResponse>result"`
 	}
-	fmt.Println(string(response))
+
 	xml.Unmarshal(response, &xmlresponse)
 
 	for i, res := range xmlresponse.Results {
