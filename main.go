@@ -13,6 +13,7 @@ var commands = []*Command{
 	cmdSobject,
 	cmdField,
 	cmdRecord,
+	cmdBulk,
 	cmdFetch,
 	cmdExport,
 	cmdFetch,

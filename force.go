@@ -18,7 +18,6 @@ import (
 	"strings"
 )
 
-
 const (
 	ProductionClientId = "3MVG9A2kN3Bn17huXZp1OQhPe8y4_ozAQZZCKxsWbef9GjSnHGOunHSwhnY1BWz_5vHkTL9BeLMriIX5EUKaw"
 	PrereleaseClientId = "3MVG9lKcPoNINVBIRgC7lsz5tIhlg0mtoEqkA9ZjDAwEMbBy43gsnfkzzdTdhFLeNnWS8M4bnRnVv1Qj0k9MD"
@@ -119,6 +118,32 @@ jkzSswF07r51XgdIGn9w/xZchMB5hbgF/X++ZRGjD8ACtPhSNzkE1akxehi/oCr0
 Epn3o0WC4zxe9Z2etciefC7IpJ5OCBRLbf1wbWsaY71k5h+3zvDyny67G7fyUIhz
 ksLi4xaNmjICq44Y3ekQEe5+NauQrz4wlHrQMz2nZQ/1/I6eYs9HRCwBXbsdtTLS
 R9I4LtD+gdwyah617jzV/OeBHRnDJELqYzmp
+-----END CERTIFICATE-----
+-----BEGIN CERTIFICATE-----
+MIIEeDCCA2CgAwIBAgIOAQAAAAABNwQKT8CN490wDQYJKoZIhvcNAQEFBQAwUDEX
+MBUGA1UEChMOQ3liZXJ0cnVzdCBJbmMxNTAzBgNVBAMTLEN5YmVydHJ1c3QgU3Vy
+ZVNlcnZlciBTdGFuZGFyZCBWYWxpZGF0aW9uIENBMB4XDTEyMDQzMDE2MzI0NloX
+DTE1MDQzMDE2MzI0NlowgbExCzAJBgNVBAYTAlVTMRMwEQYDVQQIEwpDYWxpZm9y
+bmlhMRYwFAYDVQQHEw1TYW4gRnJhbmNpc2NvMRswGQYDVQQKExJTYWxlc2ZvcmNl
+LmNvbSBJbmMxFTATBgNVBAsTDEFwcGxpY2F0aW9uczEhMB8GCSqGSIb3DQEJARYS
+bm9jQHNhbGVzZm9yY2UuY29tMR4wHAYDVQQDDBUqLnNvbWEuc2FsZXNmb3JjZS5j
+b20wggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDHo8bILux1ZYwD1JTW
+PBE6LTV0hAdILIv06++N0RkhYU0ry69/yAFKWM5SUqt19dk9H3x43uC50tFRUT/l
+UoP/ztjT8Z47UczjVXSPrRCa/HloiA9zobLNFrsES/atCLHjzoxBLth477iZNnFs
+sINW8Kz6+v+7G83zzrMs6J4eYzZauNlhvCHBjwotPqtbJEp6MESoEO0XcNJkVLXA
+2sysfOpZH89P8j+1AMByc/32aauAZqwfmTD1iyGHyguieFdySWMDYL3r3j+uhey8
+XjxMO5AYRRh6EB4UQ5IlsjyzoAeJg5+q7+dJRhZ3KVr9KJ74UkRLab4NiUFRbXjj
+TnqjAgMBAAGjge0wgeowHwYDVR0jBBgwFoAUzTqWn65uD0BcHEj4Sy24cQHridow
+OQYDVR0fBDIwMDAuoCygKoYoaHR0cDovL2NybC5vbW5pcm9vdC5jb20vU3VyZVNl
+cnZlckcyLmNybDAdBgNVHQ4EFgQUVKhO+ZroJ0ZNcV80wap72/eTqGswCQYDVR0T
+BAIwADAOBgNVHQ8BAf8EBAMCBaAwHQYDVR0lBBYwFAYIKwYBBQUHAwEGCCsGAQUF
+BwMCMBEGCWCGSAGG+EIBAQQEAwIGwDAgBgNVHREEGTAXghUqLnNvbWEuc2FsZXNm
+b3JjZS5jb20wDQYJKoZIhvcNAQEFBQADggEBACiMRXtltlPjDdzuTG6B8F6c0AOE
+nJl5T4Lz4BMc5jvyin3zR1uPrZC7H/VEc6MOzXQK+n1i9xfNGURjTtfpCOdbcmZ9
+MkkRbu8EJyoO2FM84BdVtCOs5nomE/Py9xqX4mdy38yhjnJywvFa+M4rGDNcVR4W
+ZOV5H9LlMuEjuVuWYRLSRwu6Uk+QVN/tL9ImiWM1p4cziuizWXtjPqLyaQmOvykY
+4ihtSnZuel7PqGhBMoFHbuw11CB3S3ap2hzfreeJcYT/019Y5p8DPuFh6BJ3Q85J
+oo54Un5pgx/wX8L1UaMLMLUSv9d+nuKKLYYg+MW+1+LNNkLP704/Y/GWPvE=
 -----END CERTIFICATE-----`
 
 type Force struct {
@@ -134,6 +159,7 @@ type ForceCredentials struct {
 	IssuedAt    string
 	Scope       string
 	IsCustomEP  bool
+	Namespace   string
 }
 
 type LoginFault struct {
@@ -189,6 +215,50 @@ type ForceSobjectsResult struct {
 	Sobjects     []ForceSobject
 }
 
+type Result struct {
+	Id      string
+	Success bool
+	Created bool
+	Message string
+}
+
+type BatchResult struct {
+	Results []Result
+}
+
+type BatchInfo struct {
+	Id                     string `xml:"id"`
+	JobId                  string `xml:"jobId"`
+	State                  string `xml:"state"`
+	CreatedDate            string `xml:"createdDate"`
+	SystemModstamp         string `xml:"systemModstamp"`
+	NumberRecordsProcessed int    `xml:"numberRecordsProcessed"`
+}
+
+type JobInfo struct {
+	Id                      string `xml:"id"`
+	Operation               string `xml:"operation"`
+	Object                  string `xml:"object"`
+	CreatedById             string `xml:"createdById"`
+	CreatedDate             string `xml:"createdDate"`
+	SystemModStamp          string `xml:"systemModstamp"`
+	State                   string `xml:"state"`
+	ContentType             string `xml:"contentType"`
+	ConcurrencyMode         string `xml:"concurrencyMode"`
+	NumberBatchesQueued     int    `xml:"numberBatchesQueued"`
+	NumberBatchesInProgress int    `xml:"numberBatchesInProgress"`
+	NumberBatchesCompleted  int    `xml:"numberBatchesCompleted"`
+	NumberBatchesFailed     int    `xml:"numberBatchesFailed"`
+	NumberBatchesTotal      int    `xml:"numberBatchesTotal"`
+	NumberRecordsProcessed  int    `xml:"numberRecordsProcessed"`
+	NumberRetries           int    `xml:"numberRetries"`
+	ApiVersion              string `xml:"apiVersion"`
+	NumberRecordsFailed     int    `xml:"numberRecordsFailed"`
+	TotalProcessingTime     int    `xml:"totalProcessingTime"`
+	ApiActiveProcessingTime int    `xml:"apiActiveProcessingTime"`
+	ApexProcessingTime      int    `xml:"apexProcessingTime"`
+}
+
 func NewForce(creds ForceCredentials) (force *Force) {
 	force = new(Force)
 	force.Credentials = creds
@@ -234,7 +304,7 @@ func ForceSoapLogin(endpoint ForceEndpoint, username string, password string) (c
 	}
 	instanceUrl := u.Scheme + "://" + u.Host
 	identity := u.Scheme + "://" + u.Host + "/id/" + orgid + "/" + result.Id
-	creds = ForceCredentials{result.SessionId, identity, instanceUrl, "", "", endpoint == EndpointCustom}
+	creds = ForceCredentials{result.SessionId, identity, instanceUrl, "", "", endpoint == EndpointCustom, ""}
 	return
 }
 
@@ -261,7 +331,7 @@ func ForceLogin(endpoint ForceEndpoint) (creds ForceCredentials, err error) {
 
 func (f *Force) GetCodeCoverage(classId string, className string) (err error) {
 	url := fmt.Sprintf("%s/services/data/%s/query/?q=Select+Id+From+ApexClass+Where+Name+=+'%s'", f.Credentials.InstanceUrl, apiVersion, className)
-	fmt.Println(url)
+
 	body, err := f.httpGet(url)
 	if err != nil {
 		return
@@ -271,12 +341,12 @@ func (f *Force) GetCodeCoverage(classId string, className string) (err error) {
 
 	classId = result.Records[0]["Id"].(string)
 	url = fmt.Sprintf("%s/services/data/%s/tooling/query/?q=Select+Coverage,+NumLinesCovered,+NumLinesUncovered,+ApexTestClassId,+ApexClassorTriggerId+From+ApexCodeCoverage+Where+ApexClassorTriggerId='%s'", f.Credentials.InstanceUrl, apiVersion, classId)
-	fmt.Println(url)
+
 	body, err = f.httpGet(url)
 	if err != nil {
 		return
 	}
-	fmt.Println(string(body))
+
 	//var result ForceSobjectsResult
 	json.Unmarshal(body, &result)
 	fmt.Printf("\n%d lines covered\n%d lines not covered\n", int(result.Records[0]["NumLinesCovered"].(float64)), int(result.Records[0]["NumLinesUncovered"].(float64)))
@@ -369,6 +439,139 @@ func (f *Force) CreateRecord(sobject string, attrs map[string]string) (id string
 	return
 }
 
+func (f *Force) CreateBulkJob(xmlbody string) (result JobInfo, err error) {
+	url := fmt.Sprintf("%s/services/async/29.0/job", f.Credentials.InstanceUrl)
+	body, err := f.httpPostXML(url, xmlbody)
+	xml.Unmarshal(body, &result)
+	if len(result.Id) == 0 {
+		var fault LoginFault
+		xml.Unmarshal(body, &fault)
+		err = errors.New(fmt.Sprintf("%s: %s", fault.ExceptionCode, fault.ExceptionMessage))
+	}
+	return
+}
+
+func (f *Force) CloseBulkJob(jobId string, xmlbody string) (result JobInfo, err error) {
+	url := fmt.Sprintf("%s/services/async/29.0/job/%s", f.Credentials.InstanceUrl, jobId)
+	body, err := f.httpPostXML(url, xmlbody)
+	xml.Unmarshal(body, &result)
+	if len(result.Id) == 0 {
+		var fault LoginFault
+		xml.Unmarshal(body, &fault)
+		err = errors.New(fmt.Sprintf("%s: %s", fault.ExceptionCode, fault.ExceptionMessage))
+	}
+	return
+}
+
+func (f *Force) GetBulkJobs() (result []JobInfo, err error) {
+	url := fmt.Sprintf("%s/services/async/29.0/jobs", f.Credentials.InstanceUrl)
+	body, err := f.httpGetBulk(url)
+	xml.Unmarshal(body, &result)
+	if len(result[0].Id) == 0 {
+		var fault LoginFault
+		xml.Unmarshal(body, &fault)
+		err = errors.New(fmt.Sprintf("%s: %s", fault.ExceptionCode, fault.ExceptionMessage))
+	}
+	return
+}
+
+func (f *Force) BulkQuery(soql string, jobId string, contettype string) (result BatchInfo, err error) {
+	url := fmt.Sprintf("%s/services/async/29.0/job/%s/batch", f.Credentials.InstanceUrl, jobId)
+	var body []byte
+
+	if contettype == "CSV" {
+		body, err = f.httpPostCSV(url, soql)
+		xml.Unmarshal(body, &result)
+	} else {
+		body, err = f.httpPostXML(url, soql)
+		xml.Unmarshal(body, &result)
+	}
+	if len(result.Id) == 0 {
+		var fault LoginFault
+		xml.Unmarshal(body, &fault)
+		err = errors.New(fmt.Sprintf("%s: %s", fault.ExceptionCode, fault.ExceptionMessage))
+	}
+	return
+}
+
+func (f *Force) AddBatchToJob(xmlbody string, jobId string) (result BatchInfo, err error) {
+	url := fmt.Sprintf("%s/services/async/29.0/job/%s/batch", f.Credentials.InstanceUrl, jobId)
+	body, err := f.httpPostCSV(url, xmlbody)
+	xml.Unmarshal(body, &result)
+	if len(result.Id) == 0 {
+		var fault LoginFault
+		xml.Unmarshal(body, &fault)
+		err = errors.New(fmt.Sprintf("%s: %s", fault.ExceptionCode, fault.ExceptionMessage))
+	}
+	return
+}
+
+func (f *Force) GetBatchInfo(jobId string, batchId string) (result BatchInfo, err error) {
+	url := fmt.Sprintf("%s/services/async/29.0/job/%s/batch/%s", f.Credentials.InstanceUrl, jobId, batchId)
+	body, err := f.httpGetBulk(url)
+	xml.Unmarshal(body, &result)
+	if len(result.Id) == 0 {
+		var fault LoginFault
+		xml.Unmarshal(body, &fault)
+		err = errors.New(fmt.Sprintf("%s: %s", fault.ExceptionCode, fault.ExceptionMessage))
+	}
+	return
+}
+
+func (f *Force) GetBatches(jobId string) (result []BatchInfo, err error) {
+	url := fmt.Sprintf("%s/services/async/29.0/job/%s/batch", f.Credentials.InstanceUrl, jobId)
+	body, err := f.httpGetBulk(url)
+
+	var batchInfoList struct {
+		BatchInfos []BatchInfo `xml:"batchInfo"`
+	}
+
+	xml.Unmarshal(body, &batchInfoList)
+	result = batchInfoList.BatchInfos
+	if len(result) == 0 {
+		var fault LoginFault
+		xml.Unmarshal(body, &fault)
+		err = errors.New(fmt.Sprintf("%s: %s", fault.ExceptionCode, fault.ExceptionMessage))
+	}
+	return
+}
+
+func (f *Force) GetJobInfo(jobId string) (result JobInfo, err error) {
+	url := fmt.Sprintf("%s/services/async/29.0/job/%s", f.Credentials.InstanceUrl, jobId)
+	body, err := f.httpGetBulk(url)
+	xml.Unmarshal(body, &result)
+	if len(result.Id) == 0 {
+		var fault LoginFault
+		xml.Unmarshal(body, &fault)
+		err = errors.New(fmt.Sprintf("%s: %s", fault.ExceptionCode, fault.ExceptionMessage))
+	}
+	return
+}
+
+func (f *Force) RetrieveBulkQuery(jobId string, batchId string) (result []byte, err error) {
+	url := fmt.Sprintf("%s/services/async/29.0/job/%s/batch/%s/result", f.Credentials.InstanceUrl, jobId, batchId)
+	result, err = f.httpGetBulk(url)
+	return
+}
+
+func (f *Force) RetrieveBulkQueryResults(jobId string, batchId string, resultId string) (result []byte, err error) {
+	url := fmt.Sprintf("%s/services/async/29.0/job/%s/batch/%s/result/%s", f.Credentials.InstanceUrl, jobId, batchId, resultId)
+	result, err = f.httpGetBulk(url)
+	return
+}
+
+func (f *Force) RetrieveBulkBatchResults(jobId string, batchId string) (results BatchResult, err error) {
+	url := fmt.Sprintf("%s/services/async/29.0/job/%s/batch/%s/result", f.Credentials.InstanceUrl, jobId, batchId)
+	result, err := f.httpGetBulk(url)
+	if len(result) == 0 {
+		var fault LoginFault
+		xml.Unmarshal(result, &fault)
+		err = errors.New(fmt.Sprintf("%s: %s", fault.ExceptionCode, fault.ExceptionMessage))
+	}
+	//	sreader = Reader.NewReader(result);
+	return
+}
+
 func (f *Force) UpdateRecord(sobject string, id string, attrs map[string]string) (err error) {
 	url := fmt.Sprintf("%s/services/data/%s/sobjects/%s/%s", f.Credentials.InstanceUrl, apiVersion, sobject, id)
 	_, err = f.httpPatch(url, attrs)
@@ -388,6 +591,90 @@ func (f *Force) Whoami() (me ForceRecord, err error) {
 }
 
 func (f *Force) httpGet(url string) (body []byte, err error) {
+	body, err = f.httpGetRequest(url, "Authorization", fmt.Sprintf("Bearer %s", f.Credentials.AccessToken))
+	return
+}
+
+func (f *Force) httpGetBulk(url string) (body []byte, err error) {
+	body, err = f.httpGetRequest(url, "X-SFDC-Session", fmt.Sprintf("Bearer %s", f.Credentials.AccessToken))
+	return
+}
+
+func (f *Force) httpGetRequest(url string, headerName string, headerValue string) (body []byte, err error) {
+	req, err := httpRequest("GET", url, nil)
+	if err != nil {
+		return
+	}
+	req.Header.Add(headerName, headerValue)
+	res, err := httpClient().Do(req)
+	if err != nil {
+		return
+	}
+	defer res.Body.Close()
+	if res.StatusCode == 401 {
+		err = errors.New("authorization expired, please run `force login`")
+		return
+	}
+	if res.StatusCode == 403 {
+		err = errors.New("Forbidden; Your authorization may have expired, or you do not have access. Please run `force login` and try again")
+		return
+	}
+	body, err = ioutil.ReadAll(res.Body)
+	if res.StatusCode/100 != 2 {
+		var messages []ForceError
+		json.Unmarshal(body, &messages)
+		if len(messages) > 0 {
+			err = errors.New(messages[0].Message)
+		} else {
+			err = errors.New(string(body))
+		}
+		return
+	}
+	return
+}
+
+func (f *Force) httpPostCSV(url string, data string) (body []byte, err error) {
+	body, err = f.httpPostWithContentType(url, data, "text/csv")
+	return
+}
+
+func (f *Force) httpPostXML(url string, data string) (body []byte, err error) {
+	body, err = f.httpPostWithContentType(url, data, "application/xml")
+	return
+}
+
+func (f *Force) httpPostWithContentType(url string, data string, contenttype string) (body []byte, err error) {
+	rbody := data
+	req, err := httpRequest("POST", url, bytes.NewReader([]byte(rbody)))
+	if err != nil {
+		return
+	}
+
+	req.Header.Add("X-SFDC-Session", f.Credentials.AccessToken)
+	req.Header.Add("Content-Type", contenttype)
+	res, err := httpClient().Do(req)
+	if err != nil {
+		return
+	}
+	defer res.Body.Close()
+	if res.StatusCode == 401 {
+		err = errors.New("authorization expired, please run `force login`")
+		return
+	}
+	body, err = ioutil.ReadAll(res.Body)
+
+	if res.StatusCode/100 != 2 {
+		var messages []ForceError
+		json.Unmarshal(body, &messages)
+		if messages != nil {
+			err = errors.New(messages[0].Message)
+		}
+		return
+	}
+	return
+}
+
+/*func (f *Force) httpGet(url string) (body []byte, err error) {
 	req, err := httpRequest("GET", url, nil)
 	if err != nil {
 		return
@@ -418,7 +705,7 @@ func (f *Force) httpGet(url string) (body []byte, err error) {
 		return
 	}
 	return
-}
+}*/
 
 func (f *Force) httpPost(url string, attrs map[string]string) (body []byte, err error) {
 	rbody, _ := json.Marshal(attrs)
@@ -502,7 +789,7 @@ func (f *Force) httpDelete(url string) (body []byte, err error) {
 func httpClient() (client *http.Client) {
 	if CustomEndpoint == "" {
 		chain := rootCertificate()
-		config := tls.Config{}
+		config := tls.Config{InsecureSkipVerify: true}
 		config.RootCAs = x509.NewCertPool()
 		for _, cert := range chain.Certificate {
 			x509Cert, err := x509.ParseCertificate(cert)

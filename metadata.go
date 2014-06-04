@@ -185,6 +185,22 @@ type StringFieldRequired struct {
 	Length int `xml:"length"`
 }
 
+type DescribeMetadataObject struct {
+	ChildXmlNames []string `xml:"childXmlNames"`
+	DirectoryName string   `xml:"directoryName"`
+	InFolder      bool     `xml:"inFolder"`
+	MetaFile      bool     `xml:"metaFile"`
+	Suffix        string   `xml:"suffix"`
+	XmlName       string   `xml:"xmlName"`
+}
+
+type MetadataDescribeResult struct {
+	NamespacePrefix    string                   `xml:"organizationNamespace"`
+	PartialSaveAllowed bool                     `xml:"partialSaveAllowed"`
+	TestRequired       bool                     `xml:"testRequired"`
+	MetadataObjects    []DescribeMetadataObject `xml:"metadataObjects"`
+}
+
 type StringField struct {
 	Label         string `xml:"label"`
 	Name          string `xml:"fullName"`
@@ -566,6 +582,26 @@ func (fm *ForceMetadata) CheckRetrieveStatus(id string) (files ForceMetadataFile
 		data, _ := ioutil.ReadAll(fd)
 		files[file.Name] = data
 	}
+	return
+}
+
+func (fm *ForceMetadata) DescribeMetadata() (describe MetadataDescribeResult, err error) {
+	body, err := fm.soapExecute("describeMetadata", fmt.Sprintf("<apiVersion>%s</apiVersion>", "30.0"))
+	if err != nil {
+		return
+	}
+
+	//fmt.Println("CDS: \n" + string(body))
+
+	var result struct {
+		Data MetadataDescribeResult `xml:"Body>describeMetadataResponse>result"`
+	}
+
+	if err = xml.Unmarshal(body, &result); err != nil {
+		ErrorAndExit(err.Error())
+	}
+
+	describe = result.Data
 	return
 }
 
