@@ -47,12 +47,25 @@ A command-line interface to force.com
 	Run 'force help [command]' for details.
 
 ### login
+When you login using the CLI a record of the login is saved. Eventually your token will expire requiring re-authentication. The default login is for all production instances of salesforce.com. Two predefined non-production instances are available using the test and pre aliases.  You can set an arbitrary instance to log in to by specifying the instance url in the form of subdomain.domain. For example login-blitz.soma.salesforce.com.
+
       force login     		 	# log in to production or developer org
       force login test 		 	# log in to sandbox org
       force login pre  		 	# log in to prerelease org
       force login un pw 	 	# log in using SOAP
       force login test un pw     	# log in using SOAP to sandbox org
       force login <instance> un pw 	# internal only
+
+### logout
+Logout will delete your authentication token and remove the saved record of that login.
+
+      force logout user@example.org
+
+### logins
+Logins will list all the user names that you have used to authenticate with the instance URL associated with each one.  The active login will be indicated behind the login name in red.
+
+      force logins
+      
 
 ### Hacking
 
