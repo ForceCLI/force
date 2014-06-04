@@ -81,6 +81,15 @@ Whoami will display detailed user information about the currently active logged 
       
 ![](https://raw.githubusercontent.com/dcarroll/dcarroll.github.io/master/images/force/screenshot-191%20copy.png)
 
+### sobject
+Sobject command gives you access to creating and deleting schema objects.
+
+      force sobject list
+      force sobject create <object> [<field>:<type>]...
+      force sobject delete <object>
+
+![](https://raw.githubusercontent.com/dcarroll/dcarroll.github.io/master/images/force/screenshot-192.png)
+
 ### Hacking
 
     # set these environment variables in your startup scripts
