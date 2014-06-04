@@ -120,6 +120,10 @@ func ForceSaveLogin(creds ForceCredentials) (username string, err error) {
 		return
 	}
 	username = login["username"].(string)
+	force, _ = ActiveForce()
+	describe, err := force.Metadata.DescribeMetadata()
+	creds.Namespace = describe.NamespacePrefix
+
 	Config.Save("accounts", username, string(body))
 	Config.Save("current", "account", username)
 	return
@@ -130,6 +134,7 @@ func ForceLoginAndSaveSoap(endpoint ForceEndpoint, user_name string, password st
 	if err != nil {
 		return
 	}
+
 	username, err = ForceSaveLogin(creds)
 	return
 }

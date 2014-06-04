@@ -22,6 +22,57 @@ type ForceConnectedApps []ForceConnectedApp
 type ForceConnectedApp struct {
 	Name string `xml:"fullName"`
 	Id   string `xml:"id"`
+	Type string `xml:"type"`
+}
+
+type ComponentFailure struct {
+	Changed     bool   `xml:"changed"`
+	Created     bool   `xml:"created"`
+	Deleted     bool   `xml:"deleted"`
+	FileName    string `xml:"fileName"`
+	FullName    string `xml:"fullName"`
+	Problem     string `xml:"problem"`
+	ProblemType string `xml:"problemType"`
+	Success     bool   `xml:"success"`
+}
+
+type ComponentSuccess struct {
+	Changed  bool   `xml:"changed"`
+	Created  bool   `xml:"created"`
+	Deleted  bool   `xml:"deleted"`
+	FileName string `xml:"fileName"`
+	FullName string `xml:"fullName"`
+	Id       string `xml:"id"`
+	Success  bool   `xml:"success"`
+}
+
+type RunTestResult struct {
+	NumberOfFailures int `xml:"numFailures"`
+	NumberOfTestsRun int `xml:"numTestsRun"`
+	TotalTime        int `xml:"totalTime"`
+}
+
+type ComponentDetails struct {
+	ComponentSuccesses []ComponentSuccess `xml:"componentSuccesses"`
+	ComponentFailures  []ComponentFailure `xml:"componentFailures"`
+}
+
+type ForceCheckDeploymentStatusResult struct {
+	CheckOnly                bool             `xml:"checkOnly"`
+	CompletedDate            time.Time        `xml:"completedDate"`
+	CreatedDate              time.Time        `xml:"createdDate"`
+	Details                  ComponentDetails `xml:"details"`
+	Done                     bool             `xml:"done"`
+	Id                       string           `xml:"id"`
+	NumberComponentErrors    int              `xml:"numberComponentErrors"`
+	NumberComponentsDeployed int              `xml:"numberComponentsDeployed"`
+	NumberComponentsTotal    int              `xml:"numberComponentsTotal"`
+	NumberTestErrors         int              `xml:"numberTestErrors"`
+	NumberTestsCompleted     int              `xml:"numberTestsCompleted"`
+	NumberTestsTotal         int              `xml:"numberTestsTotal"`
+	RollbackOnError          bool             `xml:"rollbackOnError"`
+	Status                   string           `xml:"status"`
+	Success                  bool             `xml:"success"`
 }
 
 type ForceMetadataDeployProblem struct {
@@ -134,6 +185,22 @@ type StringFieldRequired struct {
 	Length int `xml:"length"`
 }
 
+type DescribeMetadataObject struct {
+	ChildXmlNames []string `xml:"childXmlNames"`
+	DirectoryName string   `xml:"directoryName"`
+	InFolder      bool     `xml:"inFolder"`
+	MetaFile      bool     `xml:"metaFile"`
+	Suffix        string   `xml:"suffix"`
+	XmlName       string   `xml:"xmlName"`
+}
+
+type MetadataDescribeResult struct {
+	NamespacePrefix    string                   `xml:"organizationNamespace"`
+	PartialSaveAllowed bool                     `xml:"partialSaveAllowed"`
+	TestRequired       bool                     `xml:"testRequired"`
+	MetadataObjects    []DescribeMetadataObject `xml:"metadataObjects"`
+}
+
 type StringField struct {
 	Label         string `xml:"label"`
 	Name          string `xml:"fullName"`
@@ -190,11 +257,6 @@ type RichTextAreaField struct {
 	VisibleLines int    `xml:"visibleLines"`
 }
 
-func NewForceMetadata(force *Force) (fm *ForceMetadata) {
-	fm = &ForceMetadata{ApiVersion: "28.0", Force: force}
-	return
-}
-
 // Example of how to use Go's reflection
 // Print the attributes of a Data Model
 func getAttributes(m interface{}) map[string]reflect.StructField {
@@ -225,6 +287,132 @@ func getAttributes(m interface{}) map[string]reflect.StructField {
 }
 
 func ValidateOptionsAndDefaults(typ string, fields map[string]reflect.StructField, requiredDefaults reflect.Value, options map[string]string) (newOptions map[string]string, err error) {
+	newOptions = make(map[string]string)
+
+	// validate optional attributes
+	for name, value := range options {
+		field, ok := fields[strings.ToLower(name)]
+		if !ok {
+			ErrorAndExit(fmt.Sprintf("validation error: %s:%s is not a valid option for field type %s", name, value, typ))
+		} else {
+			newOptions[field.Tag.Get("xml")] = options[name]
+		}
+	}
+
+	// validate required attributes
+	s := requiredDefaults
+	tod := s.Type()
+	for i := 0; i < s.NumField(); i++ {
+		_, ok := options[strings.ToLower(tod.Field(i).Name)]
+		if !ok {
+			switch s.Field(i).Type().Name() {
+			case "int":
+				newOptions[tod.Field(i).Tag.Get("xml")] = strconv.Itoa(s.Field(i).Interface().(int))
+				break
+			case "bool":
+				newOptions[tod.Field(i).Tag.Get("xml")] = strconv.FormatBool(s.Field(i).Interface().(bool))
+				break
+			default:
+				newOptions[tod.Field(i).Tag.Get("xml")] = s.Field(i).Interface().(string)
+				break
+			}
+		} else {
+			newOptions[tod.Field(i).Tag.Get("xml")] = options[strings.ToLower(tod.Field(i).Name)]
+		}
+	}
+	return newOptions, err
+}
+func (fm *ForceMetadata) ValidateFieldOptions(typ string, options map[string]string) (newOptions map[string]string, err error) {
+
+	newOptions = make(map[string]string)
+	var attrs map[string]reflect.StructField
+	var s reflect.Value
+
+	switch typ {
+	case "string", "text":
+		attrs = getAttributes(&StringField{})
+		s = reflect.ValueOf(&StringFieldRequired{255}).Elem()
+		break
+	case "textarea":
+		attrs = getAttributes(&TextAreaField{})
+		s = reflect.ValueOf(&TextAreaFieldRequired{}).Elem()
+		break
+	case "longtextarea":
+		attrs = getAttributes(&LongTextAreaField{})
+		s = reflect.ValueOf(&LongTextAreaFieldRequired{32768, 5}).Elem()
+		break
+	case "richtextarea":
+		attrs = getAttributes(&RichTextAreaField{})
+		s = reflect.ValueOf(&RichTextAreaFieldRequired{32768, 5}).Elem()
+		break
+	case "bool", "boolean", "checkbox":
+		attrs = getAttributes(&BoolField{})
+		s = reflect.ValueOf(&BoolFieldRequired{false}).Elem()
+		break
+	case "datetime":
+		attrs = getAttributes(&DatetimeField{})
+		s = reflect.ValueOf(&DatetimeFieldRequired{}).Elem()
+		break
+	case "float":
+		attrs = getAttributes(&FloatField{})
+		s = reflect.ValueOf(&FloatFieldRequired{16, 2}).Elem()
+		break
+	case "number", "int":
+		attrs = getAttributes(&NumberField{})
+		s = reflect.ValueOf(&NumberFieldRequired{18, 0}).Elem()
+		break
+	case "autonumber":
+		attrs = getAttributes(&AutoNumberField{})
+		s = reflect.ValueOf(&AutoNumberFieldRequired{0, "AN-{00000}"}).Elem()
+		break
+	case "geolocation":
+		attrs = getAttributes(&GeolocationField{})
+		s = reflect.ValueOf(&GeolocationFieldRequired{true, 5}).Elem()
+		break
+	default:
+		break
+	}
+
+	newOptions, err = ValidateOptionsAndDefaults(typ, attrs, s, options)
+
+	return newOptions, nil
+}
+
+func NewForceMetadata(force *Force) (fm *ForceMetadata) {
+	fm = &ForceMetadata{ApiVersion: "29.0", Force: force}
+	return
+}
+
+// Example of how to use Go's reflection
+// Print the attributes of a Data Model
+/*func getAttributes(m interface{}) map[string]reflect.StructField {
+	typ := reflect.TypeOf(m)
+	// if a pointer to a struct is passed, get the type of the dereferenced object
+	if typ.Kind() == reflect.Ptr {
+		typ = typ.Elem()
+	}
+
+	// create an attribute data structure as a map of types keyed by a string.
+	attrs := make(map[string]reflect.StructField)
+	// Only structs are supported so return an empty result if the passed object
+	// isn't a struct
+	if typ.Kind() != reflect.Struct {
+		fmt.Printf("%v type can't have attributes inspected\n", typ.Kind())
+		return attrs
+	}
+
+	// loop through the struct's fields and set the map
+	for i := 0; i < typ.NumField(); i++ {
+		p := typ.Field(i)
+		if !p.Anonymous {
+			attrs[strings.ToLower(p.Name)] = p
+		}
+	}
+
+	return attrs
+}*/
+
+/*func ValidateOptionsAndDefaults(typ string, fields map[string]reflect.StructField, requiredDefaults reflect.Value, options map[string]string) (newOptions map[string]string, err error) {
 	newOptions = make(map[string]string)
 
 	// validate optional attributes
@@ -315,7 +503,7 @@ func (fm *ForceMetadata) ValidateFieldOptions(typ string, options map[string]str
 	newOptions, err = ValidateOptionsAndDefaults(typ, attrs, s, options)
 
 	return newOptions, nil
-}
+}*/
 
 func (fm *ForceMetadata) CheckStatus(id string) (err error) {
 	body, err := fm.soapExecute("checkStatus", fmt.Sprintf("<id>%s</id>", id))
@@ -339,18 +527,32 @@ func (fm *ForceMetadata) CheckStatus(id string) (err error) {
 	return
 }
 
-func (fm *ForceMetadata) CheckDeployStatus(id string) (problems []ForceMetadataDeployProblem, err error) {
-	body, err := fm.soapExecute("checkDeployStatus", fmt.Sprintf("<id>%s</id>", id))
+func (fm *ForceMetadata) CheckDeployStatus(id string) (results ForceCheckDeploymentStatusResult, err error) {
+	body, err := fm.soapExecute("checkDeployStatus", fmt.Sprintf("<id>%s</id><includeDetails>true</includeDetails>", id))
 	if err != nil {
 		return
+	}
+
+	//fmt.Println("CDS: \n" + string(body))
+
+	var deployResult struct {
+		Results ForceCheckDeploymentStatusResult `xml:"Body>checkDeployStatusResponse>result"`
+	}
+
+	if err = xml.Unmarshal(body, &deployResult); err != nil {
+		ErrorAndExit(err.Error())
+	}
+
+	/*if !deployResult.Results.Success {
+		//ErrorAndExit("Push failed, there were %v components with errors\nID: %v", deployResult.Results.NumberComponentErrors, deployResult.Results.Id)
 	}
 	var result struct {
 		Problems []ForceMetadataDeployProblem `xml:"Body>checkDeployStatusResponse>result>messages"`
 	}
 	if err = xml.Unmarshal(body, &result); err != nil {
 		return
-	}
-	problems = result.Problems
+	}*/
+	results = deployResult.Results
 	return
 }
 
@@ -380,6 +582,26 @@ func (fm *ForceMetadata) CheckRetrieveStatus(id string) (files ForceMetadataFile
 		data, _ := ioutil.ReadAll(fd)
 		files[file.Name] = data
 	}
+	return
+}
+
+func (fm *ForceMetadata) DescribeMetadata() (describe MetadataDescribeResult, err error) {
+	body, err := fm.soapExecute("describeMetadata", fmt.Sprintf("<apiVersion>%s</apiVersion>", "30.0"))
+	if err != nil {
+		return
+	}
+
+	//fmt.Println("CDS: \n" + string(body))
+
+	var result struct {
+		Data MetadataDescribeResult `xml:"Body>describeMetadataResponse>result"`
+	}
+
+	if err = xml.Unmarshal(body, &result); err != nil {
+		ErrorAndExit(err.Error())
+	}
+
+	describe = result.Data
 	return
 }
 
@@ -566,6 +788,9 @@ func (fm *ForceMetadata) DeleteCustomField(object, field string) (err error) {
 }
 
 func (fm *ForceMetadata) CreateCustomObject(object string) (err error) {
+	fld := ""
+	fld = strings.ToUpper(object)
+	fld = fld[0:1]
 	soap := `
 		<metadata xsi:type="CustomObject" xmlns:cmd="http://soap.sforce.com/2006/04/metadata">
 			<fullName>%s__c</fullName>
@@ -574,12 +799,14 @@ func (fm *ForceMetadata) CreateCustomObject(object string) (err error) {
 			<deploymentStatus>Deployed</deploymentStatus>
 			<sharingModel>ReadWrite</sharingModel>
 			<nameField>
-				<label>ID</label>
+				<label>%s Name</label>
 				<type>AutoNumber</type>
+				<displayFormat>%s-{00000}</displayFormat>
+				<startingNumber>1</startingNumber>
 			</nameField>
 		</metadata>
 	`
-	body, err := fm.soapExecute("create", fmt.Sprintf(soap, object, object, inflect.Pluralize(object)))
+	body, err := fm.soapExecute("create", fmt.Sprintf(soap, object, object, inflect.Pluralize(object), object, fld))
 	if err != nil {
 		return err
 	}
@@ -617,7 +844,7 @@ func (fm *ForceMetadata) DeleteCustomObject(object string) (err error) {
 	return
 }
 
-func (fm *ForceMetadata) Deploy(files ForceMetadataFiles) (problems []ForceMetadataDeployProblem, err error) {
+func (fm *ForceMetadata) Deploy(files ForceMetadataFiles) (successes []ComponentSuccess, problems []ComponentFailure, err error) {
 	soap := `
 		<zipFile>%s</zipFile>
 	`
@@ -626,7 +853,7 @@ func (fm *ForceMetadata) Deploy(files ForceMetadataFiles) (problems []ForceMetad
 	for name, data := range files {
 		wr, err := zipper.Create(fmt.Sprintf("unpackaged/%s", name))
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		wr.Write(data)
 	}
@@ -634,8 +861,12 @@ func (fm *ForceMetadata) Deploy(files ForceMetadataFiles) (problems []ForceMetad
 	encoded := base64.StdEncoding.EncodeToString(zipfile.Bytes())
 	body, err := fm.soapExecute("deploy", fmt.Sprintf(soap, encoded))
 	if err != nil {
+		fmt.Println(err.Error())
 		return
 	}
+
+	//fmt.Println(string(body))
+
 	var status struct {
 		Id string `xml:"Body>deployResponse>result>id"`
 	}
@@ -645,16 +876,19 @@ func (fm *ForceMetadata) Deploy(files ForceMetadataFiles) (problems []ForceMetad
 	if err = fm.CheckStatus(status.Id); err != nil {
 		return
 	}
-	messages, err := fm.CheckDeployStatus(status.Id)
-	for _, problem := range messages {
-		if !problem.Success {
-			problems = append(problems, problem)
-		}
+	results, err := fm.CheckDeployStatus(status.Id)
+
+	for _, problem := range results.Details.ComponentFailures {
+		problems = append(problems, problem)
+	}
+	for _, success := range results.Details.ComponentSuccesses {
+		successes = append(successes, success)
 	}
 	return
 }
 
 func (fm *ForceMetadata) Retrieve(query ForceMetadataQuery) (files ForceMetadataFiles, err error) {
+
 	soap := `
 		<retrieveRequest>
 			<apiVersion>29.0</apiVersion>
