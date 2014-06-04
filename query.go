@@ -6,7 +6,7 @@ import (
 )
 
 var cmdQuery = &Command{
-	Run:   runSoql,
+	Run:   runQuery,
 	Usage: "query <soql statement> [output format]",
 	Short: "Execute a SOQL statement",
 	Long: `
@@ -21,7 +21,7 @@ Examples:
 `,
 }
 
-func runSoql(cmd *Command, args []string) {
+func runQuery(cmd *Command, args []string) {
 	force, _ := ActiveForce()
 	if len(args) < 1 {
 		cmd.printUsage()
