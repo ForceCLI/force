@@ -66,6 +66,7 @@ Logins will list all the user names that you have used to authenticate with the 
 
       force logins
       
+![](https://raw.githubusercontent.com/dcarroll/dcarroll.github.io/master/images/force/screenshot-191.png)
 
 ### Hacking
 
