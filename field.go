@@ -20,6 +20,10 @@ Usage:
 
   force field delete <object> <field>
 
+  force field type 
+
+  force field type <fieldtype>
+
 Examples:
 
   force field list Todo__c
@@ -27,6 +31,11 @@ Examples:
   force field create Todo__c Due:DateTime required:true
 
   force field delete Todo__c Due
+
+  force field type     #displays all the supported field types 
+
+  force field type email   #displays the required and optional attributes
+  
 `,
 }
 
