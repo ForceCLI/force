@@ -426,3 +426,288 @@ func DisplayForceSobject(sobject ForceSobject) {
 		}
 	}
 }
+
+func DisplayFieldTypes() {
+	var msg = `
+  text/string            (length = 255)
+  textarea               (length = 255)
+  longtextarea           (length = 32768, visibleLines = 5)
+  richtextarea           (length = 32768, visibleLines = 5)
+  checkbox/bool/boolean  (defaultValue = false)
+  datetime               ()
+  float/double/currency  (length = 16, precision = 2)
+  number/int             (length = 18, precision = 0)
+  autonumber             (displayFormat = "AN {00000}", startingNumber = 0)
+  geolocation            (displayLocationInDecimal = true, scale = 5)
+  lookup                 (will be prompted for Object and label)
+  masterdetail           (will be prompted for Object and label)
+
+  *To create a formula field add a formula argument to the command.
+  force field create <objectname> <fieldName>:text formula:'LOWER("HEY MAN")'
+  `
+	fmt.Println(msg);
+}
+
+func DisplayFieldDetails(fieldType string) {
+	var msg = ``
+	switch fieldType {
+	case "text", "string":
+		msg = DisplayTextFieldDetails();
+		break
+	case "textarea":
+		msg = DisplayTextAreaFieldDetails();
+		break
+	case "longtextarea":
+		msg = DisplayLongTextAreaFieldDetails();
+		break
+	case "richtextarea":
+		msg = DisplayRichTextAreaFieldDetails();
+		break
+	case "checkbox", "bool", "boolean":
+		msg = DisplayCheckboxFieldDetails();
+		break
+	case "datetime":
+		msg = DisplayDatetimeFieldDetails();
+		break
+	case "float", "double", "currency":
+		if fieldType == "currency" {
+			msg = DisplayCurrencyFieldDetails();
+		} else {
+			msg = DisplayDoubleFieldDetails();
+		}
+		break
+	case "number", "int":
+		msg = DisplayDoubleFieldDetails();
+		break
+	case "autonumber":
+		msg = DisplayAutonumberFieldDetails();
+		break
+	case "geolocation":
+		msg = DisplayGeolocationFieldDetails();
+		break
+	case "lookup":
+		msg = DisplayLookupFieldDetails();
+		break
+	case "masterdetail":
+		msg = DisplayMasterDetailFieldDetails();
+		break
+	default: 
+			msg = `
+  Sorry, that is not a valid field type.
+`
+	}
+	fmt.Printf(msg + "\n")
+}
+
+func DisplayTextFieldDetails()(message string) {
+	return fmt.Sprintf(`
+  Allows users to enter any combination of letters and numbers.
+
+    %s
+      label            - defaults to name
+      length           - defaults to 255
+      name
+  
+    %s
+      description
+      helptext
+      required         - defaults to false
+      unique           - defaults to false
+      caseSensistive   - defaults to false
+      externalId       - defaults to false
+      defaultValue
+      formula          - defaultValue must be blask
+      formulaTreatBlanksAs  - defaults to "BlankAsZero"
+`, "\x1b[31;1mrequired attributes\x1b[0m", "\x1b[31;1moptional attributes\x1b[0m")
+}
+func DisplayTextAreaFieldDetails()(message string) {
+	return fmt.Sprintf(`
+  Allows users to enter up to 255 characters on separate lines.
+
+    %s
+      label            - defaults to name
+      name
+  
+    %s
+      description
+      helptext
+      required         - defaults to false
+      defaultValue
+`, "\x1b[31;1mrequired attributes\x1b[0m", "\x1b[31;1moptional attributes\x1b[0m")
+}
+func DisplayLongTextAreaFieldDetails()(message string) {
+	return fmt.Sprintf(`
+  Allows users to enter up to 32,768 characters on separate lines.
+
+    %s
+      label            - defaults to name
+      length           - defaults to 32,768
+      name
+      visibleLines     - defaults to 3
+  
+    %s
+      description
+      helptext
+      defaultValue
+`, "\x1b[31;1mrequired attributes\x1b[0m", "\x1b[31;1moptional attributes\x1b[0m")
+}
+func DisplayRichTextAreaFieldDetails()(message string) {
+	return fmt.Sprintf(`
+  Allows users to enter formatted text, add images and links. Up to 32,768 characters on separate lines.
+
+    %s
+      label            - defaults to name
+      length           - defaults to 32,768
+      name
+      visibleLines     - defaults to 25
+  
+    %s
+      description
+      helptext
+`, "\x1b[31;1mrequired attributes\x1b[0m", "\x1b[31;1moptional attributes\x1b[0m")
+}
+func DisplayCheckboxFieldDetails()(message string) {
+	return fmt.Sprintf(`
+  Allows users to select a True (checked) or False (unchecked) value.
+
+    %s
+      label            - defaults to name
+      name
+  
+    %s
+      description
+      helptext
+      defaultValue     - defaults to unchecked or false
+      formula          - defaultValue must be blask
+      formulaTreatBlanksAs  - defaults to "BlankAsZero"
+`, "\x1b[31;1mrequired attributes\x1b[0m", "\x1b[31;1moptional attributes\x1b[0m")
+}
+func DisplayDatetimeFieldDetails()(message string) {
+	return fmt.Sprintf(`
+  Allows users to enter a date and time.
+
+    %s
+      label            - defaults to name
+      name
+  
+    %s
+      description
+      helptext
+      defaultValue     
+      required         - defaults to false
+      formula          - defaultValue must be blask
+      formulaTreatBlanksAs  - defaults to "BlankAsZero"
+`, "\x1b[31;1mrequired attributes\x1b[0m", "\x1b[31;1moptional attributes\x1b[0m")
+}
+func DisplayDoubleFieldDetails()(message string) {
+	return fmt.Sprintf(`
+  Allows users to enter any number. Leading zeros are removed.
+
+    %s
+      label            - defaults to name
+      length           - defaults to 18
+      name
+      precision        - decimal places (defaults to 0)
+      scale            - digits left of decimal (defaults to 18)
+  
+    %s
+      description
+      helptext
+      required         - defaults to false
+      unique           - defaults to false
+      externalId       - defaults to false 
+      defaultValue
+      formula          - defaultValue must be blask
+      formulaTreatBlanksAs  - defaults to "BlankAsZero"
+`, "\x1b[31;1mrequired attributes\x1b[0m", "\x1b[31;1moptional attributes\x1b[0m")
+}
+func DisplayCurrencyFieldDetails()(message string) {
+	return fmt.Sprintf(`
+  Allows users to enter a dollar or other currency amount and automatically formats the field as a currency amount.
+
+    %s
+      label            - defaults to name
+      length           - defaults to 18
+      name
+      precision        - decimal places (defaults to 0)
+      scale            - digits left of decimal (defaults to 18)
+  
+    %s
+      description
+      helptext
+      required         - defaults to false
+      defaultValue
+      formula          - defaultValue must be blask
+      formulaTreatBlanksAs  - defaults to "BlankAsZero"
+`, "\x1b[31;1mrequired attributes\x1b[0m", "\x1b[31;1moptional attributes\x1b[0m")
+}
+func DisplayAutonumberFieldDetails()(message string) {
+	return fmt.Sprintf(`
+  A system-generated sequence number that uses a display format you define. The number is automatically incremented for each new record.
+
+    %s
+      label            - defaults to name
+      name
+      displayFormat    - defaults to "AN-{00000}"
+      startingNumber   - defaults to 0
+  
+    %s
+      description
+      helptext
+      externalId       - defaults to false
+`, "\x1b[31;1mrequired attributes\x1b[0m", "\x1b[31;1moptional attributes\x1b[0m")
+}
+func DisplayGeolocationFieldDetails()(message string) {
+	return fmt.Sprintf(`
+   Allows users to define locations.
+
+    %s
+      label                       - defaults to name
+      name
+      DisplayLocationInDecimal    - defaults false
+      scale                       - defaults to 5 (number of decimals to the right)
+  
+    %s
+      description
+      helptext
+      required                    - defaults to false
+`, "\x1b[31;1mrequired attributes\x1b[0m", "\x1b[31;1moptional attributes\x1b[0m")
+}
+func DisplayLookupFieldDetails()(message string) {
+	return fmt.Sprintf(`
+   Creates a relationship that links this object to another object.
+
+    %s
+      label            - defaults to name
+      name
+      referenceTo      - Name of related object
+      relationshipName - defaults to referenceTo value
+
+    %s
+      description
+      helptext
+      required         - defaults to false
+      relationShipLabel
+`, "\x1b[31;1mrequired attributes\x1b[0m", "\x1b[31;1moptional attributes\x1b[0m")
+}
+func DisplayMasterDetailFieldDetails()(message string) {
+	return fmt.Sprintf(`
+   Creates a special type of parent-child relationship between this object (the child, or "detail") and another object (the parent, or "master") where:
+     The relationship field is required on all detail records.
+     The ownership and sharing of a detail record are determined by the master record.
+     When a user deletes the master record, all detail records are deleted.
+     You can create rollup summary fields on the master record to summarize the detail records.
+
+    %s
+      label            - defaults to name
+      name
+      referenceTo      - Name of related object
+      relationshipName - defaults to referenceTo value
+
+    %s
+      description
+      helptext
+      required         - defaults to false
+      relationShipLabel
+`, "\x1b[31;1mrequired attributes\x1b[0m", "\x1b[31;1moptional attributes\x1b[0m")
+}
