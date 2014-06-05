@@ -41,6 +41,12 @@ func runField(cmd *Command, args []string) {
 			runFieldCreate(args[1:])
 		case "delete", "remove":
 			runFieldDelete(args[1:])
+		case "type":
+			if len(args) == 1 {
+				DisplayFieldTypes();
+			} else if len(args) == 2 {
+				DisplayFieldDetails(args[1])
+			}
 		default:
 			ErrorAndExit("no such command: %s", args[0])
 		}
@@ -88,6 +94,7 @@ func runFieldCreate(args []string) {
 		ErrorAndExit(err.Error())
 	}
 	if err := force.Metadata.CreateCustomField(args[0], parts[0], parts[1], newOptions); err != nil {
+		fmt.Println("Got an error")
 		ErrorAndExit(err.Error())
 	}
 	fmt.Println("Custom field created")
