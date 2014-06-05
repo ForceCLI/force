@@ -857,7 +857,6 @@ func (fm *ForceMetadata) DeleteCustomObject(object string) (err error) {
 	return
 }
 
-
 func (fm *ForceMetadata) Deploy(files ForceMetadataFiles, options ForceDeployOptions) (successes []ComponentSuccess, problems []ComponentFailure, err error) {
 	soap := `
 		<zipFile>%s</zipFile>
