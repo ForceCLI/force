@@ -301,6 +301,7 @@ func ValidateOptionsAndDefaults(typ string, fields map[string]reflect.StructFiel
 
 	// validate required attributes
 	s := requiredDefaults
+	fmt.Println(s)
 	tod := s.Type()
 	for i := 0; i < s.NumField(); i++ {
 		_, ok := options[strings.ToLower(tod.Field(i).Name)]

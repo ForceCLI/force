@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"net/url"
+	"fmt"
 )
 
 var cmdLogin = &Command{
@@ -72,6 +73,7 @@ func runLogin(cmd *Command, args []string) {
 	}
 
 	if len(args) > 1 { // Do SOAP login
+		fmt.Println(endpoint)
 		_, err := ForceLoginAndSaveSoap(endpoint, username, password)
 		if err != nil {
 			ErrorAndExit(err.Error())
@@ -120,7 +122,7 @@ func ForceSaveLogin(creds ForceCredentials) (username string, err error) {
 		return
 	}
 	username = login["username"].(string)
-	force, _ = ActiveForce()
+
 	describe, err := force.Metadata.DescribeMetadata()
 	creds.Namespace = describe.NamespacePrefix
 
