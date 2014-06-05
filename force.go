@@ -282,7 +282,7 @@ func ForceSoapLogin(endpoint ForceEndpoint, username string, password string) (c
 	default:
 		ErrorAndExit("no such endpoint type")
 	}
-	fmt.Println(surl)
+
 	soap := NewSoap(surl, "", "")
 	response, err := soap.ExecuteLogin(username, password)
 	var result struct {
@@ -305,7 +305,7 @@ func ForceSoapLogin(endpoint ForceEndpoint, username string, password string) (c
 	instanceUrl := u.Scheme + "://" + u.Host
 	identity := u.Scheme + "://" + u.Host + "/id/" + orgid + "/" + result.Id
 	creds = ForceCredentials{result.SessionId, identity, instanceUrl, "", "", endpoint == EndpointCustom, ""}
-	fmt.Println("checkpoint 1")
+
 	return
 }
 
@@ -326,8 +326,6 @@ func ForceLogin(endpoint ForceEndpoint) (creds ForceCredentials, err error) {
 		ErrorAndExit("no such endpoint type")
 	}
 
-
-	fmt.Println(url)
 	err = Open(url)
 	creds = <-ch
 	return

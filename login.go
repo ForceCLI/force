@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"net/url"
-	"fmt"
 )
 
 var cmdLogin = &Command{
@@ -73,7 +72,6 @@ func runLogin(cmd *Command, args []string) {
 	}
 
 	if len(args) > 1 { // Do SOAP login
-		fmt.Println(endpoint)
 		_, err := ForceLoginAndSaveSoap(endpoint, username, password)
 		if err != nil {
 			ErrorAndExit(err.Error())
