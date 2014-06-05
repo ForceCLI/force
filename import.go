@@ -9,18 +9,42 @@ import (
 )
 
 var cmdImport = &Command{
-	Run:   runImport,
-	Usage: "import [dir]",
+	Usage: "import [deployment options] [dir]",
 	Short: "Import metadata from a local directory",
 	Long: `
 Import metadata from a local directory
+
+Deployment Options
+  -rollbackonerror    Indicates whether any failure causes a complete rollback
+  -runalltests        If set all Apex tests defined in the organization are run
+  -checkonly          Indicates whether classes and triggers are saved during deployment
+  -purgeondelete      If set the deleted components are not stored in recycle bin
+  -allowmissingfiles  Specifies whether a deploy succeeds even if files missing
+  -autoupdatepackage  Auto add files to the package if missing
+  -ignorewarnings     Indicates if warnings should fail deployment or not
 
 Examples:
 
   force import
 
   force import org/schema
+
+  force import -checkonly -runalltests
 `,
+}
+
+var (
+	rollBackOnErrorFlag   = cmdImport.Flag.Bool("rollbackonerror", false, "set roll back on error")
+	runAllTestsFlag       = cmdImport.Flag.Bool("runalltests", false, "set run all tests")
+	checkOnlyFlag         = cmdImport.Flag.Bool("checkonly", false, "set check only")
+	purgeOnDeleteFlag     = cmdImport.Flag.Bool("purgeondelete", false, "set purge on delete")
+	allowMissingFilesFlag = cmdImport.Flag.Bool("allowmissingfiles", false, "set allow missing files")
+	autoUpdatePackageFlag = cmdImport.Flag.Bool("autoupdatepackage", false, "set auto update package")
+	ignoreWarningsFlag    = cmdImport.Flag.Bool("ignorewarnings", false, "set ignore warnings")
+)
+
+func init() {
+	cmdImport.Run = runImport
 }
 
 func runImport(cmd *Command, args []string) {
@@ -51,7 +75,15 @@ func runImport(cmd *Command, args []string) {
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
-	successes, problems, err := force.Metadata.Deploy(files)
+	var DeploymentOptions ForceDeployOptions
+	DeploymentOptions.AllowMissingFiles = *allowMissingFilesFlag
+	DeploymentOptions.AutoUpdatePackage = *autoUpdatePackageFlag
+	DeploymentOptions.CheckOnly = *checkOnlyFlag
+	DeploymentOptions.IgnoreWarnings = *ignoreWarningsFlag
+	DeploymentOptions.PurgeOnDelete = *purgeOnDeleteFlag
+	DeploymentOptions.RollbackOnError = *rollBackOnErrorFlag
+	DeploymentOptions.RunAllTests = *runAllTestsFlag
+	successes, problems, err := force.Metadata.Deploy(files, DeploymentOptions)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
