@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"flag"
 	"text/template"
 )
 
@@ -55,6 +56,7 @@ func printUsage() {
 }
 
 func usage() {
+	flag.PrintDefaults()
 	printUsage()
 	os.Exit(2)
 }

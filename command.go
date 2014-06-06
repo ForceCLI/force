@@ -28,10 +28,10 @@ func (c *Command) printUsage() {
 
 func (c *Command) Name() string {
 	name := c.Usage
-	i := strings.Index(name, " ")
-	if i >= 0 {
-		name = name[:i]
-	}
+	//i := strings.Index(name, " ")
+	//if i >= 0 {
+	//	name = name[:i]
+	//}
 	return name
 }
 
