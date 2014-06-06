@@ -4,7 +4,7 @@ import ()
 
 var cmdWhoami = &Command{
 	Run:   runWhoami,
-	Usage: "whoami [account]",
+	Usage: "whoami",
 	Short: "Show information about the active account",
 	Long: `
 Show information about the active account
