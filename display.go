@@ -445,61 +445,61 @@ func DisplayFieldTypes() {
   *To create a formula field add a formula argument to the command.
   force field create <objectname> <fieldName>:text formula:'LOWER("HEY MAN")'
   `
-	fmt.Println(msg);
+	fmt.Println(msg)
 }
 
 func DisplayFieldDetails(fieldType string) {
 	var msg = ``
 	switch fieldType {
 	case "text", "string":
-		msg = DisplayTextFieldDetails();
+		msg = DisplayTextFieldDetails()
 		break
 	case "textarea":
-		msg = DisplayTextAreaFieldDetails();
+		msg = DisplayTextAreaFieldDetails()
 		break
 	case "longtextarea":
-		msg = DisplayLongTextAreaFieldDetails();
+		msg = DisplayLongTextAreaFieldDetails()
 		break
 	case "richtextarea":
-		msg = DisplayRichTextAreaFieldDetails();
+		msg = DisplayRichTextAreaFieldDetails()
 		break
 	case "checkbox", "bool", "boolean":
-		msg = DisplayCheckboxFieldDetails();
+		msg = DisplayCheckboxFieldDetails()
 		break
 	case "datetime":
-		msg = DisplayDatetimeFieldDetails();
+		msg = DisplayDatetimeFieldDetails()
 		break
 	case "float", "double", "currency":
 		if fieldType == "currency" {
-			msg = DisplayCurrencyFieldDetails();
+			msg = DisplayCurrencyFieldDetails()
 		} else {
-			msg = DisplayDoubleFieldDetails();
+			msg = DisplayDoubleFieldDetails()
 		}
 		break
 	case "number", "int":
-		msg = DisplayDoubleFieldDetails();
+		msg = DisplayDoubleFieldDetails()
 		break
 	case "autonumber":
-		msg = DisplayAutonumberFieldDetails();
+		msg = DisplayAutonumberFieldDetails()
 		break
 	case "geolocation":
-		msg = DisplayGeolocationFieldDetails();
+		msg = DisplayGeolocationFieldDetails()
 		break
 	case "lookup":
-		msg = DisplayLookupFieldDetails();
+		msg = DisplayLookupFieldDetails()
 		break
 	case "masterdetail":
-		msg = DisplayMasterDetailFieldDetails();
+		msg = DisplayMasterDetailFieldDetails()
 		break
-	default: 
-			msg = `
+	default:
+		msg = `
   Sorry, that is not a valid field type.
 `
 	}
 	fmt.Printf(msg + "\n")
 }
 
-func DisplayTextFieldDetails()(message string) {
+func DisplayTextFieldDetails() (message string) {
 	return fmt.Sprintf(`
   Allows users to enter any combination of letters and numbers.
 
@@ -520,7 +520,7 @@ func DisplayTextFieldDetails()(message string) {
       formulaTreatBlanksAs  - defaults to "BlankAsZero"
 `, "\x1b[31;1mrequired attributes\x1b[0m", "\x1b[31;1moptional attributes\x1b[0m")
 }
-func DisplayTextAreaFieldDetails()(message string) {
+func DisplayTextAreaFieldDetails() (message string) {
 	return fmt.Sprintf(`
   Allows users to enter up to 255 characters on separate lines.
 
@@ -535,7 +535,7 @@ func DisplayTextAreaFieldDetails()(message string) {
       defaultValue
 `, "\x1b[31;1mrequired attributes\x1b[0m", "\x1b[31;1moptional attributes\x1b[0m")
 }
-func DisplayLongTextAreaFieldDetails()(message string) {
+func DisplayLongTextAreaFieldDetails() (message string) {
 	return fmt.Sprintf(`
   Allows users to enter up to 32,768 characters on separate lines.
 
@@ -551,7 +551,7 @@ func DisplayLongTextAreaFieldDetails()(message string) {
       defaultValue
 `, "\x1b[31;1mrequired attributes\x1b[0m", "\x1b[31;1moptional attributes\x1b[0m")
 }
-func DisplayRichTextAreaFieldDetails()(message string) {
+func DisplayRichTextAreaFieldDetails() (message string) {
 	return fmt.Sprintf(`
   Allows users to enter formatted text, add images and links. Up to 32,768 characters on separate lines.
 
@@ -566,7 +566,7 @@ func DisplayRichTextAreaFieldDetails()(message string) {
       helptext
 `, "\x1b[31;1mrequired attributes\x1b[0m", "\x1b[31;1moptional attributes\x1b[0m")
 }
-func DisplayCheckboxFieldDetails()(message string) {
+func DisplayCheckboxFieldDetails() (message string) {
 	return fmt.Sprintf(`
   Allows users to select a True (checked) or False (unchecked) value.
 
@@ -582,7 +582,7 @@ func DisplayCheckboxFieldDetails()(message string) {
       formulaTreatBlanksAs  - defaults to "BlankAsZero"
 `, "\x1b[31;1mrequired attributes\x1b[0m", "\x1b[31;1moptional attributes\x1b[0m")
 }
-func DisplayDatetimeFieldDetails()(message string) {
+func DisplayDatetimeFieldDetails() (message string) {
 	return fmt.Sprintf(`
   Allows users to enter a date and time.
 
@@ -599,7 +599,7 @@ func DisplayDatetimeFieldDetails()(message string) {
       formulaTreatBlanksAs  - defaults to "BlankAsZero"
 `, "\x1b[31;1mrequired attributes\x1b[0m", "\x1b[31;1moptional attributes\x1b[0m")
 }
-func DisplayDoubleFieldDetails()(message string) {
+func DisplayDoubleFieldDetails() (message string) {
 	return fmt.Sprintf(`
   Allows users to enter any number. Leading zeros are removed.
 
@@ -621,7 +621,7 @@ func DisplayDoubleFieldDetails()(message string) {
       formulaTreatBlanksAs  - defaults to "BlankAsZero"
 `, "\x1b[31;1mrequired attributes\x1b[0m", "\x1b[31;1moptional attributes\x1b[0m")
 }
-func DisplayCurrencyFieldDetails()(message string) {
+func DisplayCurrencyFieldDetails() (message string) {
 	return fmt.Sprintf(`
   Allows users to enter a dollar or other currency amount and automatically formats the field as a currency amount.
 
@@ -641,7 +641,7 @@ func DisplayCurrencyFieldDetails()(message string) {
       formulaTreatBlanksAs  - defaults to "BlankAsZero"
 `, "\x1b[31;1mrequired attributes\x1b[0m", "\x1b[31;1moptional attributes\x1b[0m")
 }
-func DisplayAutonumberFieldDetails()(message string) {
+func DisplayAutonumberFieldDetails() (message string) {
 	return fmt.Sprintf(`
   A system-generated sequence number that uses a display format you define. The number is automatically incremented for each new record.
 
@@ -657,7 +657,7 @@ func DisplayAutonumberFieldDetails()(message string) {
       externalId       - defaults to false
 `, "\x1b[31;1mrequired attributes\x1b[0m", "\x1b[31;1moptional attributes\x1b[0m")
 }
-func DisplayGeolocationFieldDetails()(message string) {
+func DisplayGeolocationFieldDetails() (message string) {
 	return fmt.Sprintf(`
    Allows users to define locations.
 
@@ -673,7 +673,7 @@ func DisplayGeolocationFieldDetails()(message string) {
       required                    - defaults to false
 `, "\x1b[31;1mrequired attributes\x1b[0m", "\x1b[31;1moptional attributes\x1b[0m")
 }
-func DisplayLookupFieldDetails()(message string) {
+func DisplayLookupFieldDetails() (message string) {
 	return fmt.Sprintf(`
    Creates a relationship that links this object to another object.
 
@@ -690,7 +690,7 @@ func DisplayLookupFieldDetails()(message string) {
       relationShipLabel
 `, "\x1b[31;1mrequired attributes\x1b[0m", "\x1b[31;1moptional attributes\x1b[0m")
 }
-func DisplayMasterDetailFieldDetails()(message string) {
+func DisplayMasterDetailFieldDetails() (message string) {
 	return fmt.Sprintf(`
    Creates a special type of parent-child relationship between this object (the child, or "detail") and another object (the parent, or "master") where:
      The relationship field is required on all detail records.

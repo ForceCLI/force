@@ -150,15 +150,15 @@ type FloatFieldRequired struct {
 }
 
 type FloatField struct {
-	Length       int    `xml:"length"`
-	Description  string `xml:"description"`
-	HelpText     string `xml:"helpText"`
-	Unique       bool   `xml:"unique"`
-	ExternalId   bool   `xml:"externalId"`
-	DefaultValue uint   `xml:"defaultValue"`
-	Precision    int    `xml:"precision"`
-	Scale        int    `xml:"scale"`
-	Formula 	 string `xml:"formula"`
+	Length               int    `xml:"length"`
+	Description          string `xml:"description"`
+	HelpText             string `xml:"helpText"`
+	Unique               bool   `xml:"unique"`
+	ExternalId           bool   `xml:"externalId"`
+	DefaultValue         uint   `xml:"defaultValue"`
+	Precision            int    `xml:"precision"`
+	Scale                int    `xml:"scale"`
+	Formula              string `xml:"formula"`
 	FormulaTreatBlanksAs string `xml:"formulaTreatBlanksAs"`
 }
 
@@ -168,13 +168,13 @@ type NumberFieldRequired struct {
 }
 
 type NumberField struct {
-	Length       int    `xml:"length"`
-	Description  string `xml:"description"`
-	HelpText     string `xml:"helpText"`
-	Unique       bool   `xml:"unique"`
-	ExternalId   bool   `xml:"externalId"`
-	DefaultValue uint   `xml:"defaultValue"`
-	Formula 	 string `xml:"formula"`
+	Length               int    `xml:"length"`
+	Description          string `xml:"description"`
+	HelpText             string `xml:"helpText"`
+	Unique               bool   `xml:"unique"`
+	ExternalId           bool   `xml:"externalId"`
+	DefaultValue         uint   `xml:"defaultValue"`
+	Formula              string `xml:"formula"`
 	FormulaTreatBlanksAs string `xml:"formulaTreatBlanksAs"`
 }
 
@@ -182,12 +182,12 @@ type DatetimeFieldRequired struct {
 }
 
 type DatetimeField struct {
-	Description  string    `xml:"description"`
-	HelpText     string    `xml:"helpText"`
-	DefaultValue time.Time `xml:"defaultValue"`
-	Required     bool      `xml:"required"`
-	Formula 	 string `xml:"formula"`
-	FormulaTreatBlanksAs string `xml:"formulaTreatBlanksAs"`
+	Description          string    `xml:"description"`
+	HelpText             string    `xml:"helpText"`
+	DefaultValue         time.Time `xml:"defaultValue"`
+	Required             bool      `xml:"required"`
+	Formula              string    `xml:"formula"`
+	FormulaTreatBlanksAs string    `xml:"formulaTreatBlanksAs"`
 }
 
 type BoolFieldRequired struct {
@@ -195,10 +195,10 @@ type BoolFieldRequired struct {
 }
 
 type BoolField struct {
-	Description  string `xml:"description"`
-	HelpText     string `xml:"helpText"`
-	DefaultValue bool   `xml:"defaultValue"`
-	Formula 	 string `xml:"formula"`
+	Description          string `xml:"description"`
+	HelpText             string `xml:"helpText"`
+	DefaultValue         bool   `xml:"defaultValue"`
+	Formula              string `xml:"formula"`
 	FormulaTreatBlanksAs string `xml:"formulaTreatBlanksAs"`
 }
 
@@ -219,20 +219,20 @@ type MetadataDescribeResult struct {
 }
 
 type EncryptedFieldRequired struct {
-	Length int `xml:"length"`
+	Length   int    `xml:"length"`
 	MaskType string `xml:"maskType"`
 	MaskChar string `xml:"maskChar"`
 }
 
 type EncryptedField struct {
-	Label         string `xml:"label"`
-	Name          string `xml:"fullName"`
-	Required      bool   `xml:"required"`
-	Length        int    `xml:"length"`
-	Description   string `xml:"description"`
-	HelpText      string `xml:"helpText"`
-	MaskType      string `xml:"maskType"`
-	MaskChar      string `xml:"maskChar"`
+	Label       string `xml:"label"`
+	Name        string `xml:"fullName"`
+	Required    bool   `xml:"required"`
+	Length      int    `xml:"length"`
+	Description string `xml:"description"`
+	HelpText    string `xml:"helpText"`
+	MaskType    string `xml:"maskType"`
+	MaskChar    string `xml:"maskChar"`
 }
 
 type StringFieldRequired struct {
@@ -240,17 +240,17 @@ type StringFieldRequired struct {
 }
 
 type StringField struct {
-	Label         string `xml:"label"`
-	Name          string `xml:"fullName"`
-	Required      bool   `xml:"required"`
-	Length        int    `xml:"length"`
-	Description   string `xml:"description"`
-	HelpText      string `xml:"helpText"`
-	Unique        bool   `xml:"unique"`
-	CaseSensitive bool   `xml:"caseSensitive"`
-	ExternalId    bool   `xml:"externalId"`
-	DefaultValue  string `xml:"defaultValue"`
-	Formula 	 string `xml:"formula"`
+	Label                string `xml:"label"`
+	Name                 string `xml:"fullName"`
+	Required             bool   `xml:"required"`
+	Length               int    `xml:"length"`
+	Description          string `xml:"description"`
+	HelpText             string `xml:"helpText"`
+	Unique               bool   `xml:"unique"`
+	CaseSensitive        bool   `xml:"caseSensitive"`
+	ExternalId           bool   `xml:"externalId"`
+	DefaultValue         string `xml:"defaultValue"`
+	Formula              string `xml:"formula"`
 	FormulaTreatBlanksAs string `xml:"formulaTreatBlanksAs"`
 }
 
@@ -258,17 +258,16 @@ type PhoneFieldRequired struct {
 }
 
 type PhoneField struct {
-	Label         string `xml:"label"`
-	Name          string `xml:"fullName"`
-	Required      bool   `xml:"required"`
-	Description   string `xml:"description"`
-	HelpText      string `xml:"helpText"`
-	DefaultValue  string `xml:"defaultValue"`
+	Label        string `xml:"label"`
+	Name         string `xml:"fullName"`
+	Required     bool   `xml:"required"`
+	Description  string `xml:"description"`
+	HelpText     string `xml:"helpText"`
+	DefaultValue string `xml:"defaultValue"`
 }
 
 type EmailFieldRequired struct {
 }
-
 
 type TextAreaFieldRequired struct {
 }
@@ -313,20 +312,20 @@ type RichTextAreaField struct {
 	VisibleLines int    `xml:"visibleLines"`
 }
 
-type LookupFieldRequired struct {}
+type LookupFieldRequired struct{}
 
 type LookupField struct {
-	ReferenceTo 		string `xml:"referenceTo"`
-	RelationshipLabel 	string `xml:"relationshipLabel"`
-	RelationshipName 	string `xml:"relationshipName"`
+	ReferenceTo       string `xml:"referenceTo"`
+	RelationshipLabel string `xml:"relationshipLabel"`
+	RelationshipName  string `xml:"relationshipName"`
 }
 
-type MasterDetailRequired struct {}
+type MasterDetailRequired struct{}
 
 type MasterDetail struct {
-	ReferenceTo 		string `xml:"referenceTo"`
-	RelationshipLabel 	string `xml:"relationshipLabel"`
-	RelationshipName 	string `xml:"relationshipName"`
+	ReferenceTo       string `xml:"referenceTo"`
+	RelationshipLabel string `xml:"relationshipLabel"`
+	RelationshipName  string `xml:"relationshipName"`
 }
 
 // Example of how to use Go's reflection
@@ -390,9 +389,9 @@ func ValidateOptionsAndDefaults(typ string, fields map[string]reflect.StructFiel
 						if tod.Field(i).Tag.Get("xml") == "defaultValue" {
 							break
 						}
-					} 		
+					}
 				} //else {
-					newOptions[tod.Field(i).Tag.Get("xml")] = strconv.FormatBool(s.Field(i).Interface().(bool))
+				newOptions[tod.Field(i).Tag.Get("xml")] = strconv.FormatBool(s.Field(i).Interface().(bool))
 				//}
 				break
 			case "string":
@@ -416,20 +415,20 @@ func (fm *ForceMetadata) ValidateFieldOptions(typ string, options map[string]str
 	switch typ {
 	case "phone":
 		attrs = getAttributes(&PhoneField{})
-   		s = reflect.ValueOf(&PhoneFieldRequired{}).Elem()
+		s = reflect.ValueOf(&PhoneFieldRequired{}).Elem()
 		break
 	case "email", "url":
 		attrs = getAttributes(&StringField{})
-   		s = reflect.ValueOf(&EmailFieldRequired{}).Elem()
+		s = reflect.ValueOf(&EmailFieldRequired{}).Elem()
 		break
 	case "encryptedtext":
 		attrs = getAttributes(&EncryptedField{})
-   		s = reflect.ValueOf(&EncryptedFieldRequired{175,"all","asterisk"}).Elem()
+		s = reflect.ValueOf(&EncryptedFieldRequired{175, "all", "asterisk"}).Elem()
 		break
 	case "string", "text":
 		attrs = getAttributes(&StringField{})
-		if _,ok := options["formula"]; ok {
-    		s = reflect.ValueOf(&StringFieldRequired{}).Elem()
+		if _, ok := options["formula"]; ok {
+			s = reflect.ValueOf(&StringFieldRequired{}).Elem()
 		} else {
 			s = reflect.ValueOf(&StringFieldRequired{255}).Elem()
 		}
@@ -448,7 +447,7 @@ func (fm *ForceMetadata) ValidateFieldOptions(typ string, options map[string]str
 		break
 	case "bool", "boolean", "checkbox":
 		attrs = getAttributes(&BoolField{})
-		if _,ok := options["formula"]; ok {
+		if _, ok := options["formula"]; ok {
 			s = reflect.ValueOf(&BoolFieldRequired{}).Elem()
 		} else {
 			s = reflect.ValueOf(&BoolFieldRequired{false}).Elem()
