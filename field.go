@@ -52,7 +52,7 @@ func runField(cmd *Command, args []string) {
 			runFieldDelete(args[1:])
 		case "type":
 			if len(args) == 1 {
-				DisplayFieldTypes();
+				DisplayFieldTypes()
 			} else if len(args) == 2 {
 				DisplayFieldDetails(args[1])
 			}
