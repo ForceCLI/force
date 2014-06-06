@@ -69,7 +69,8 @@ func (partner *ForcePartner) soapExecuteCore(action, query string) (response []b
 	if err != nil {
 		return
 	}
-	url := strings.Replace(login["urls"].(map[string]interface{})["partner"].(string), "{version}", apiVersion, 1)
+	version := strings.Replace(apiVersion, "v", "", 1)
+	url := strings.Replace(login["urls"].(map[string]interface{})["partner"].(string), "{version}", version, 1)
 	//url = strings.Replace(url, "/u/", "/s/", 1) // seems dirty
 	soap := NewSoap(url, "urn:partner.soap.sforce.com", partner.Force.Credentials.AccessToken)
 	soap.Header = "<apex:DebuggingHeader><apex:debugLevel>DEBUGONLY</apex:debugLevel></apex:DebuggingHeader>"
@@ -82,7 +83,8 @@ func (partner *ForcePartner) soapExecute(action, query string) (response []byte,
 	if err != nil {
 		return
 	}
-	url := strings.Replace(login["urls"].(map[string]interface{})["partner"].(string), "{version}", apiVersion, 1)
+	version := strings.Replace(apiVersion, "v", "", 1)
+	url := strings.Replace(login["urls"].(map[string]interface{})["partner"].(string), "{version}", version, 1)
 	url = strings.Replace(url, "/u/", "/s/", 1) // seems dirty
 	soap := NewSoap(url, "http://soap.sforce.com/2006/08/apex", partner.Force.Credentials.AccessToken)
 	soap.Header = "<apex:DebuggingHeader><apex:debugLevel>DEBUGONLY</apex:debugLevel></apex:DebuggingHeader>"

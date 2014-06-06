@@ -113,7 +113,8 @@ func runPush(cmd *Command, args []string) {
 		ErrorAndExit(err.Error())
 	}
 
-	successes, problems, err := force.Metadata.Deploy(files)
+	var DeploymentOptions ForceDeployOptions
+	successes, problems, err := force.Metadata.Deploy(files, DeploymentOptions)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}

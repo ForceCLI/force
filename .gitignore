@@ -1,7 +1,6 @@
-<<<<<<< HEAD
 .DS_Store
 metadata/
-=======
+
 # Force CLI specific things
 force
 metadata
@@ -9,4 +8,3 @@ metadata
 *.json
 
 *.xml
->>>>>>> upstream/master
