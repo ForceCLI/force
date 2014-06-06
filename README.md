@@ -15,7 +15,7 @@ A command-line interface to force.com
 
 ##### Compile from Source
 
-    $ go get -u github.com/dcarroll/force
+    $ go get -u github.com/heroku/force
 
 ### Usage
 
@@ -24,26 +24,78 @@ A command-line interface to force.com
 	Available commands:
 	   login     Log in to force.com
 	   logout    Log out from force.com
+   	   logins    List force.com logins used
+   	   active    Show or set the active force.com account
 	   whoami    Show information about the active account
-	   sobject   Manage sobjects
+	   sobject   Manage standard & custom objects
 	   field     Manage sobject fields
 	   record    Create, modify, or view records
-	   export    Export metadata to a local directory
+	   bulk      Load csv file use Bulk API
+	   fetch     Export specified artifact(s) to a local directory
+   	   export    Export metadata to a local directory
+	   fetch     Export specified artifact(s) to a local directory
 	   import    Import metadata from a local directory
-<<<<<<< HEAD
-	   select    Execute a SOQL select
-	   soql 	 Exectue a SOQL statement
-=======
-	   query     Execute a SOQL query
->>>>>>> 7b71603a08103adea72f0164428f695558f9a787
+	   query     Execute a SOQL statement
 	   apex      Execute anonymous Apex code
+	   oauth     Manage ConnectedApp credentials
 	   version   Display current version
 	   update    Update to the latest version
-	   fetch 	 Export a single artifact to a local directory
-	   push		 Deploy a single artifact from local directory to Force.com 
+	   push      Deploy single artifact from a local directory
+	   password  See password status or reset password
 	   help      Show this help
 	
 	Run 'force help [command]' for details.
+
+### login
+When you login using the CLI a record of the login is saved. Eventually your token will expire requiring re-authentication. The default login is for all production instances of salesforce.com. Two predefined non-production instances are available using the test and pre aliases.  You can set an arbitrary instance to log in to by specifying the instance url in the form of subdomain.domain. For example login-blitz.soma.salesforce.com.
+
+      force login     		 	# log in to production or developer org
+      force login test 		 	# log in to sandbox org
+      force login pre  		 	# log in to prerelease org
+      force login un pw 	 	# log in using SOAP
+      force login test un pw     	# log in using SOAP to sandbox org
+      force login <instance> un pw 	# internal only
+
+### logout
+Logout will delete your authentication token and remove the saved record of that login.
+
+      force logout user@example.org
+
+### logins
+Logins will list all the user names that you have used to authenticate with the instance URL associated with each one.  The active login will be indicated behind the login name in red.
+
+      force logins
+      
+![](https://raw.githubusercontent.com/dcarroll/dcarroll.github.io/master/images/force/screenshot-191.png)
+
+### active
+Active without any arguments will display the currently acctive login that you are using. You can also supply a username argument that will set the active login to the one corresponding to the username argument. Note, just because you set a login as active, does not mean that the token is necessarily valid.
+
+      force active
+      force active dave@demo.1
+      
+### whoami
+Whoami will display detailed user information about the currently active logged in user.  This is Force.com specific information.
+
+      force whomai
+      
+![](https://raw.githubusercontent.com/dcarroll/dcarroll.github.io/master/images/force/screenshot-191%20copy.png)
+
+### sobject
+Sobject command gives you access to creating and deleting schema objects. The list argumenet will list ALL of the objects, both standard and custom, in your org.
+
+      force sobject list
+      force sobject create <object> [<field>:<type>]...
+      force sobject delete <object>
+
+![](https://raw.githubusercontent.com/dcarroll/dcarroll.github.io/master/images/force/screenshot-192.png)
+
+### field
+Field gives you the ability to create, list and delete the fields on an object. Fields need to be created one at a time. You can also set required and optional attributes for the type of field. All defaultable field attributes will be defaulted based on the defaults in the web UI.
+
+      force field list Todo__c
+      force field create Todo__c Due:DateTime required:true
+      force field delete Todo__c Due
 
 ### Hacking
 
