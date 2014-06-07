@@ -8,7 +8,7 @@ import (
 )
 
 var cmdQuery = &Command{
-	Usage: "query [-format=<json>] [-q] <soql statement>",
+	Usage: "query [-format=<console,csv>] [-q] <soql statement>",
 	Short: "Execute a SOQL statement",
 	Long: `
 Execute a SOQL statement
@@ -58,7 +58,7 @@ func runQuery(cmd *Command, args []string) {
 		if *formatQueryFlag == "console" {
 			DisplayForceRecords(records)
 		} else {
-			DisplayForceRecordsf(records.Records, format)
-		}		
+			DisplayForceRecordsf(records.Records, *formatQueryFlag)
+		}
 	}
 }
