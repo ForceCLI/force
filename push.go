@@ -41,8 +41,12 @@ func runPush(cmd *Command, args []string) {
 	//if len(args) == 1 {
 	//	root, _ = filepath.Abs(args[0])
 	//}
+
 	if _, err := os.Stat(filepath.Join(root, "package.xml")); os.IsNotExist(err) {
-		ErrorAndExit("Must specify a directory that contains metadata files")
+        root = filepath.Join(wd, "src")
+        if _, err := os.Stat(filepath.Join(root, "package.xml")); os.IsNotExist(err) {
+            ErrorAndExit("Must specify a directory that contains metadata files")
+        }
 	}
 
 	if _, err := os.Stat(filepath.Join(root, args[0])); os.IsNotExist(err) {
@@ -71,7 +75,9 @@ func runPush(cmd *Command, args []string) {
 	found := false
 	err := filepath.Walk(filepath.Join(root, args[0]), func(path string, f os.FileInfo, err error) error {
 		if f.Mode().IsRegular() {
-			if strings.Contains(strings.ToLower(f.Name()), strings.ToLower(args[1])) {
+            fname := strings.ToLower(f.Name())
+            fname = strings.TrimSuffix(fname, filepath.Ext(fname))
+			if strings.ToLower(fname) == strings.ToLower(args[1]) {
 				found = true
 			}
 		}
@@ -81,7 +87,7 @@ func runPush(cmd *Command, args []string) {
 		ErrorAndExit(err.Error())
 	}
 	if !found {
-		ErrorAndExit("Could not find " + args[1] + " in " + args[1])
+		ErrorAndExit("Could not find " + args[1] + " in " + args[0])
 	}
 
 	force, _ := ActiveForce()
@@ -98,14 +104,29 @@ func runPush(cmd *Command, args []string) {
 
 	err = filepath.Walk(root, func(path string, f os.FileInfo, err error) error {
 		if f.Mode().IsRegular() {
-			if strings.Contains(strings.ToLower(f.Name()), strings.ToLower(args[1])) ||
-				strings.Contains(strings.ToLower(f.Name()), "package.xml") {
+            fname := strings.ToLower(f.Name())
+            fname = strings.TrimSuffix(fname, filepath.Ext(fname))
+			if fname == strings.ToLower(args[1]) {
 				data, err := ioutil.ReadFile(path)
 				if err != nil {
 					ErrorAndExit(err.Error())
 				}
 				files[strings.Replace(path, fmt.Sprintf("%s/", root), "", -1)] = data
+
+                path += "-meta.xml"
+				data, err = ioutil.ReadFile(path)
+				if err != nil {
+					ErrorAndExit(err.Error())
+				}
+				files[strings.Replace(path, fmt.Sprintf("%s/", root), "", -1)] = data
 			}
+            if f.Name() == "package.xml" {
+				data, err := ioutil.ReadFile(path)
+				if err != nil {
+					ErrorAndExit(err.Error())
+				}
+				files[strings.Replace(path, fmt.Sprintf("%s/", root), "", -1)] = data
+            }
 		}
 		return nil
 	})
