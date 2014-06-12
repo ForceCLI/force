@@ -30,12 +30,59 @@ var pxml = `<?xml version="1.0" encoding="UTF-8"?>
     <version>29.0</version>
 </Package>`
 
+type metapath struct {
+    path string
+    name string
+}
+
+var metapaths = []metapath{
+    metapath{"classes"      , "ApexClass"},
+    metapath{"objects"      , "CustomObject"},
+    metapath{"tabs"         , "CustomTab"},
+    metapath{"flexipages"   , "FlexiPage"},
+    metapath{"components"   , "ApexComponent"},
+    metapath{"triggers"     , "ApexTrigger"},
+    metapath{"pages"        , "ApexPage"},
+}
+
+func getPathForMeta(metaname string) string {
+    for _, mp := range metapaths {
+        if mp.name == metaname {
+            return mp.path
+        }
+    }
+
+    // Unknown, so use metaname
+    return metaname
+}
+
+func getMetaForPath(path string) string {
+    for _, mp := range metapaths {
+        if mp.path == path {
+            return mp.name
+        }
+    }
+
+    // Unknown, so use path
+    return path
+}
+
 func runPush(cmd *Command, args []string) {
 	if len(args) == 0 {
 		cmd.printUsage()
 		return
 	}
 
+    if len(args) == 1 {
+        pushByPath(args[0])
+    }
+
+	if len(args) == 2 {
+        pushByName(args)
+    }
+}
+
+func pushByName(args []string) {
 	wd, _ := os.Getwd()
 	root := filepath.Join(wd, "metadata")
 	//if len(args) == 1 {
@@ -53,24 +100,7 @@ func runPush(cmd *Command, args []string) {
 		ErrorAndExit("Folder " + args[0] + " not found, must specify a metadata folder")
 	}
 
-	objType := args[0]
-
-	switch args[0] {
-	case "objects":
-		objType = "CustomObject"
-	case "flexipages":
-		objType = "FlexiPage"
-	case "tabs":
-		objType = "CustomTab"
-	case "components":
-		objType = "ApexComponent"
-	case "pages":
-		objType = "ApexPage"
-	case "classes":
-		objType = "ApexClass"
-	default:
-		ErrorAndExit("That folder type is not supported")
-	}
+    objType := getMetaForPath(args[0])
 
 	found := false
 	err := filepath.Walk(filepath.Join(root, args[0]), func(path string, f os.FileInfo, err error) error {
@@ -90,7 +120,6 @@ func runPush(cmd *Command, args []string) {
 		ErrorAndExit("Could not find " + args[1] + " in " + args[0])
 	}
 
-	force, _ := ActiveForce()
 	files := make(ForceMetadataFiles)
 
 	err = os.Rename(filepath.Join(root, "package.xml"), filepath.Join(root, "package.copy.xml"))
@@ -134,6 +163,70 @@ func runPush(cmd *Command, args []string) {
 		ErrorAndExit(err.Error())
 	}
 
+    deployFiles(files)
+
+	fmt.Printf("Pushed %s to Force.com\n", args[1])
+}
+
+// Push metadata object by path to a file
+func pushByPath(fpath string) {
+    fpath, err := filepath.Abs(fpath)
+    if err != nil {
+        ErrorAndExit("Cound not find " + fpath)
+    }
+    if _, err := os.Stat(fpath); err != nil {
+        ErrorAndExit("Cound not open " + fpath)
+    }
+
+    hasMeta := true
+    fname := filepath.Base(fpath)
+    fname = strings.TrimSuffix(fname, filepath.Ext(fname))
+    fdir := filepath.Dir(fpath)
+    typePath := filepath.Base(fdir)
+    srcDir := filepath.Dir(fdir)
+    metaType := getMetaForPath(typePath)
+    // Should be present since we worked back to srcDir
+    frel, _ := filepath.Rel(srcDir, fpath)
+
+    // Try to find meta file
+    fmeta := fpath + "-meta.xml"
+    fmetarel := ""
+    if _, err := os.Stat(fmeta); err != nil {
+        if os.IsNotExist(err) {
+            hasMeta = false
+        } else {
+            ErrorAndExit("Cound not open " + fmeta)
+        }
+    } else {
+        // Should be present since we worked back to srcDir
+        fmetarel, _ = filepath.Rel(srcDir, fmeta)
+    }
+
+    // DEBUG
+    // fmt.Println("Dir: " + fdir)
+    // fmt.Println("fname: " + fname)
+    // fmt.Println("Dir end: " + typePath)
+    // fmt.Println("srcDir: " + srcDir)
+    // fmt.Println("Type: " + metaType)
+    // fmt.Println("relPath: " + frel)
+
+	files := make(ForceMetadataFiles)
+
+    fdata, err := ioutil.ReadFile(fpath)
+    files[frel] = fdata
+    // IF META EXISTS
+    if hasMeta {
+        fdata, err = ioutil.ReadFile(fmeta)
+        files[fmetarel] = fdata
+    }
+
+    files["package.xml"] = []byte(fmt.Sprintf(pxml, fname, metaType))
+
+    deployFiles(files)
+}
+
+func deployFiles(files ForceMetadataFiles) {
+	force, _ := ActiveForce()
 	var DeploymentOptions ForceDeployOptions
 	successes, problems, err := force.Metadata.Deploy(files, DeploymentOptions)
 	if err != nil {
@@ -163,5 +256,4 @@ func runPush(cmd *Command, args []string) {
 		}
 	}
 
-	fmt.Printf("Pushed %s to Force.com\n", args[1])
 }
