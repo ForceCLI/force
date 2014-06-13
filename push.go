@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/xml"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -23,17 +24,24 @@ Examples:
 `,
 }
 
-var xmlBody = `<?xml version="1.0" encoding="UTF-8"?>
-<Package xmlns="http://soap.sforce.com/2006/04/metadata">%s
-    <version>29.0</version>
-</Package>`
+// Structs for XML building
+type Package struct {
+	Xmlns   string     `xml:"xmlns,attr"`
+	Types   []MetaType `xml:"types"`
+	Version string     `xml:"version"`
+}
 
-var xmlType = `
-    <types>%s
-        <name>%s</name>
-    </types>`
-var xmlMember = `
-        <members>%s</members>`
+type MetaType struct {
+	Members []string `xml:"members"`
+	Name    string   `xml:"name"`
+}
+
+func createPackage() Package {
+	return Package{
+		Version: "29.0",
+		Xmlns:   "http://soap.sforce.com/2006/04/metadata",
+	}
+}
 
 type metapath struct {
 	path string
@@ -211,21 +219,20 @@ func addFile(files ForceMetadataFiles, xmlMap map[string][]string, fpath string)
 }
 
 func buildXml(xmlMap map[string][]string) []byte {
-	var typeXml string
-	for metaType, members := range xmlMap {
-		var membersXml string
-		for _, member := range members {
-			membersXml += fmt.Sprintf(xmlMember, member)
-		}
+	p := createPackage()
 
-		if membersXml != "" {
-			typeXml += fmt.Sprintf(xmlType, membersXml, metaType)
+	for metaType, members := range xmlMap {
+		t := MetaType{Name: metaType}
+		for _, member := range members {
+			t.Members = append(t.Members, member)
 		}
+		p.Types = append(p.Types, t)
 	}
 
-	bodyXml := fmt.Sprintf(xmlBody, typeXml)
+	byteXml, _ := xml.MarshalIndent(p, "", "    ")
+	byteXml = append([]byte(xml.Header), byteXml...)
 
-	return []byte(bodyXml)
+	return byteXml
 }
 
 func deployFiles(files ForceMetadataFiles) {
