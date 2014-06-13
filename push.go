@@ -52,7 +52,7 @@ var metapaths = []metapath{
 
 func getPathForMeta(metaname string) string {
 	for _, mp := range metapaths {
-		if strings.ToLower(mp.name) == strings.ToLower(metaname) {
+		if strings.EqualFold(mp.name, metaname) {
 			return mp.path
 		}
 	}
@@ -128,12 +128,11 @@ func pushByName(objPath string, objName string) {
 
 	// Find file by walking directory and ignoring extension
 	found := false
-	fpath := ""
+	var fpath string
 	err := filepath.Walk(filepath.Join(root, objPath), func(path string, f os.FileInfo, err error) error {
 		if f.Mode().IsRegular() {
-			fname := strings.ToLower(f.Name())
-			fname = strings.TrimSuffix(fname, filepath.Ext(fname))
-			if strings.ToLower(fname) == strings.ToLower(objName) {
+			fname := strings.TrimSuffix(f.Name(), filepath.Ext(f.Name()))
+			if strings.EqualFold(fname, objName) {
 				found = true
 				fpath = filepath.Join(root, objPath, f.Name())
 			}
@@ -214,10 +213,8 @@ func addFile(files ForceMetadataFiles, xmlMap map[string][]string, fpath string)
 func buildXml(xmlMap map[string][]string) []byte {
 	var typeXml string
 	for metaType, members := range xmlMap {
-		fmt.Println("Type: " + metaType)
 		var membersXml string
 		for _, member := range members {
-			fmt.Println("member: " + member)
 			membersXml += fmt.Sprintf(xmlMember, member)
 		}
 
