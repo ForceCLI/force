@@ -38,7 +38,7 @@ type MetaType struct {
 
 func createPackage() Package {
 	return Package{
-		Version: "29.0",
+		Version: strings.TrimPrefix(apiVersion, "v"),
 		Xmlns:   "http://soap.sforce.com/2006/04/metadata",
 	}
 }
