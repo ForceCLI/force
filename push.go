@@ -36,47 +36,47 @@ var xmlMember = `
         <members>%s</members>`
 
 type metapath struct {
-    path string
-    name string
+	path string
+	name string
 }
 
 var metapaths = []metapath{
-    metapath{"classes"      , "ApexClass"},
-    metapath{"objects"      , "CustomObject"},
-    metapath{"tabs"         , "CustomTab"},
-    metapath{"flexipages"   , "FlexiPage"},
-    metapath{"components"   , "ApexComponent"},
-    metapath{"triggers"     , "ApexTrigger"},
-    metapath{"pages"        , "ApexPage"},
+	metapath{"classes", "ApexClass"},
+	metapath{"objects", "CustomObject"},
+	metapath{"tabs", "CustomTab"},
+	metapath{"flexipages", "FlexiPage"},
+	metapath{"components", "ApexComponent"},
+	metapath{"triggers", "ApexTrigger"},
+	metapath{"pages", "ApexPage"},
 }
 
 func getPathForMeta(metaname string) string {
-    for _, mp := range metapaths {
-        if strings.ToLower(mp.name) == strings.ToLower(metaname) {
-            return mp.path
-        }
-    }
+	for _, mp := range metapaths {
+		if strings.ToLower(mp.name) == strings.ToLower(metaname) {
+			return mp.path
+		}
+	}
 
-    // Unknown, so use metaname
-    return metaname
+	// Unknown, so use metaname
+	return metaname
 }
 
 func getMetaForPath(path string) string {
-    for _, mp := range metapaths {
-        if mp.path == path {
-            return mp.name
-        }
-    }
+	for _, mp := range metapaths {
+		if mp.path == path {
+			return mp.name
+		}
+	}
 
-    // Unknown, so use path
-    return path
+	// Unknown, so use path
+	return path
 }
 
 func argIsFile(fpath string) bool {
-    if _, err := os.Stat(fpath); err != nil {
-        return false
-    }
-    return true
+	if _, err := os.Stat(fpath); err != nil {
+		return false
+	}
+	return true
 }
 
 func runPush(cmd *Command, args []string) {
@@ -85,57 +85,57 @@ func runPush(cmd *Command, args []string) {
 		return
 	}
 
-    if argIsFile(args[0]) {
-        fpath := args[0]
-        pushByPaths(args)
+	if argIsFile(args[0]) {
+		fpath := args[0]
+		pushByPaths(args)
 
-        fmt.Printf("Pushed %s to Force.com\n", fpath)
-        return
-    }
+		fmt.Printf("Pushed %s to Force.com\n", fpath)
+		return
+	}
 
 	if len(args) == 2 {
-        // If arg[0] is already path or meta, the method will return arg[0]
-        objPath := getPathForMeta(args[0])
-        objName := args[1]
-        pushByName(objPath, objName)
+		// If arg[0] is already path or meta, the method will return arg[0]
+		objPath := getPathForMeta(args[0])
+		objName := args[1]
+		pushByName(objPath, objName)
 
-        fmt.Printf("Pushed %s to Force.com\n", objName)
-        return
-    }
+		fmt.Printf("Pushed %s to Force.com\n", objName)
+		return
+	}
 
-    fmt.Println("Could not find file or determine metadata")
+	fmt.Println("Could not find file or determine metadata")
 
-    // If we got here, something is not valid
-    cmd.printUsage()
+	// If we got here, something is not valid
+	cmd.printUsage()
 }
 
 func pushByName(objPath string, objName string) {
 	wd, _ := os.Getwd()
 
-    // First try for metadata directory
+	// First try for metadata directory
 	root := filepath.Join(wd, "metadata")
 	if _, err := os.Stat(filepath.Join(root, "package.xml")); os.IsNotExist(err) {
-        // If not found, try for src directory
-        root = filepath.Join(wd, "src")
-        if _, err := os.Stat(filepath.Join(root, "package.xml")); os.IsNotExist(err) {
-            ErrorAndExit("Current directory must contain a src or metadata directory")
-        }
+		// If not found, try for src directory
+		root = filepath.Join(wd, "src")
+		if _, err := os.Stat(filepath.Join(root, "package.xml")); os.IsNotExist(err) {
+			ErrorAndExit("Current directory must contain a src or metadata directory")
+		}
 	}
 
 	if _, err := os.Stat(filepath.Join(root, objPath)); os.IsNotExist(err) {
 		ErrorAndExit("Folder " + objPath + " not found, must specify valid metadata")
 	}
 
-    // Find file by walking directory and ignoring extension
+	// Find file by walking directory and ignoring extension
 	found := false
-    fpath := ""
+	fpath := ""
 	err := filepath.Walk(filepath.Join(root, objPath), func(path string, f os.FileInfo, err error) error {
 		if f.Mode().IsRegular() {
-            fname := strings.ToLower(f.Name())
-            fname = strings.TrimSuffix(fname, filepath.Ext(fname))
+			fname := strings.ToLower(f.Name())
+			fname = strings.TrimSuffix(fname, filepath.Ext(fname))
 			if strings.ToLower(fname) == strings.ToLower(objName) {
 				found = true
-                fpath = filepath.Join(root, objPath, f.Name())
+				fpath = filepath.Join(root, objPath, f.Name())
 			}
 		}
 		return nil
@@ -147,88 +147,88 @@ func pushByName(objPath string, objName string) {
 		ErrorAndExit("Could not find " + objName + " in " + objPath)
 	}
 
-    pushByPath(fpath)
+	pushByPath(fpath)
 }
 
 func pushByPath(fpath string) {
-    pushByPaths([]string{fpath})
+	pushByPaths([]string{fpath})
 }
 
 // Push metadata object by path to a file
 func pushByPaths(fpaths []string) {
 	files := make(ForceMetadataFiles)
-    xmlMap := make(map[string][]string)
+	xmlMap := make(map[string][]string)
 
-    for _, fpath := range fpaths{
-        addFile(files, xmlMap, fpath)
-    }
+	for _, fpath := range fpaths {
+		addFile(files, xmlMap, fpath)
+	}
 
-    files["package.xml"] = buildXml(xmlMap)
+	files["package.xml"] = buildXml(xmlMap)
 
-    deployFiles(files)
+	deployFiles(files)
 }
 
 func addFile(files ForceMetadataFiles, xmlMap map[string][]string, fpath string) {
-    fpath, err := filepath.Abs(fpath)
-    if err != nil {
-        ErrorAndExit("Cound not find " + fpath)
-    }
-    if _, err := os.Stat(fpath); err != nil {
-        ErrorAndExit("Cound not open " + fpath)
-    }
+	fpath, err := filepath.Abs(fpath)
+	if err != nil {
+		ErrorAndExit("Cound not find " + fpath)
+	}
+	if _, err := os.Stat(fpath); err != nil {
+		ErrorAndExit("Cound not open " + fpath)
+	}
 
-    hasMeta := true
-    fname := filepath.Base(fpath)
-    fname = strings.TrimSuffix(fname, filepath.Ext(fname))
-    fdir := filepath.Dir(fpath)
-    typePath := filepath.Base(fdir)
-    srcDir := filepath.Dir(fdir)
-    metaType := getMetaForPath(typePath)
-    // Should be present since we worked back to srcDir
-    frel, _ := filepath.Rel(srcDir, fpath)
+	hasMeta := true
+	fname := filepath.Base(fpath)
+	fname = strings.TrimSuffix(fname, filepath.Ext(fname))
+	fdir := filepath.Dir(fpath)
+	typePath := filepath.Base(fdir)
+	srcDir := filepath.Dir(fdir)
+	metaType := getMetaForPath(typePath)
+	// Should be present since we worked back to srcDir
+	frel, _ := filepath.Rel(srcDir, fpath)
 
-    // Try to find meta file
-    fmeta := fpath + "-meta.xml"
-    fmetarel := ""
-    if _, err := os.Stat(fmeta); err != nil {
-        if os.IsNotExist(err) {
-            hasMeta = false
-        } else {
-            ErrorAndExit("Cound not open " + fmeta)
-        }
-    } else {
-        // Should be present since we worked back to srcDir
-        fmetarel, _ = filepath.Rel(srcDir, fmeta)
-    }
+	// Try to find meta file
+	fmeta := fpath + "-meta.xml"
+	fmetarel := ""
+	if _, err := os.Stat(fmeta); err != nil {
+		if os.IsNotExist(err) {
+			hasMeta = false
+		} else {
+			ErrorAndExit("Cound not open " + fmeta)
+		}
+	} else {
+		// Should be present since we worked back to srcDir
+		fmetarel, _ = filepath.Rel(srcDir, fmeta)
+	}
 
-    xmlMap[metaType] = append(xmlMap[metaType], fname)
+	xmlMap[metaType] = append(xmlMap[metaType], fname)
 
-    fdata, err := ioutil.ReadFile(fpath)
-    files[frel] = fdata
-    if hasMeta {
-        fdata, err = ioutil.ReadFile(fmeta)
-        files[fmetarel] = fdata
-    }
+	fdata, err := ioutil.ReadFile(fpath)
+	files[frel] = fdata
+	if hasMeta {
+		fdata, err = ioutil.ReadFile(fmeta)
+		files[fmetarel] = fdata
+	}
 }
 
 func buildXml(xmlMap map[string][]string) []byte {
-    var typeXml string
-    for metaType, members := range xmlMap{
-        fmt.Println("Type: " + metaType)
-        var membersXml string
-        for _, member := range members{
-            fmt.Println("member: " + member)
-            membersXml += fmt.Sprintf(xmlMember, member)
-        }
+	var typeXml string
+	for metaType, members := range xmlMap {
+		fmt.Println("Type: " + metaType)
+		var membersXml string
+		for _, member := range members {
+			fmt.Println("member: " + member)
+			membersXml += fmt.Sprintf(xmlMember, member)
+		}
 
-        if membersXml != "" {
-            typeXml += fmt.Sprintf(xmlType, membersXml, metaType)
-        }
-    }
+		if membersXml != "" {
+			typeXml += fmt.Sprintf(xmlType, membersXml, metaType)
+		}
+	}
 
-    bodyXml := fmt.Sprintf(xmlBody, typeXml)
+	bodyXml := fmt.Sprintf(xmlBody, typeXml)
 
-    return []byte(bodyXml)
+	return []byte(bodyXml)
 }
 
 func deployFiles(files ForceMetadataFiles) {
