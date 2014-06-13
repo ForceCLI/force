@@ -10,25 +10,30 @@ import (
 
 var cmdPush = &Command{
 	Run:   runPush,
-	Usage: "push path name",
-	Short: "Deploy single artifact from a local directory",
+	Usage: "push (<metadata> <name> | <file>...)",
+	Short: "Deploy artifact from a local directory",
 	Long: `
-Deploy single artifact from a local directory
+Deploy artifact from a local directory
+<metadata>: Accepts either actual directory name or Metadata type
 
 Examples:
-
-  force push connectedApps name
+  force push classes MyClass
+  force push ApexClass MyClass
+  force push src/classes/MyClass.cls
 `,
 }
 
-var pxml = `<?xml version="1.0" encoding="UTF-8"?>
-<Package xmlns="http://soap.sforce.com/2006/04/metadata">
-    <types>
-        <members>%s</members>
-        <name>%s</name>
-    </types>
+var xmlBody = `<?xml version="1.0" encoding="UTF-8"?>
+<Package xmlns="http://soap.sforce.com/2006/04/metadata">%s
     <version>29.0</version>
 </Package>`
+
+var xmlType = `
+    <types>%s
+        <name>%s</name>
+    </types>`
+var xmlMember = `
+        <members>%s</members>`
 
 type metapath struct {
     path string
@@ -67,17 +72,25 @@ func getMetaForPath(path string) string {
     return path
 }
 
+func argIsFile(fpath string) bool {
+    if _, err := os.Stat(fpath); err != nil {
+        return false
+    }
+    return true
+}
+
 func runPush(cmd *Command, args []string) {
 	if len(args) == 0 {
 		cmd.printUsage()
 		return
 	}
 
-    if len(args) == 1 {
+    if argIsFile(args[0]) {
         fpath := args[0]
-        pushByPath(fpath)
+        pushByPaths(args)
 
         fmt.Printf("Pushed %s to Force.com\n", fpath)
+        return
     }
 
 	if len(args) == 2 {
@@ -87,7 +100,13 @@ func runPush(cmd *Command, args []string) {
         pushByName(objPath, objName)
 
         fmt.Printf("Pushed %s to Force.com\n", objName)
+        return
     }
+
+    fmt.Println("Could not find file or determine metadata")
+
+    // If we got here, something is not valid
+    cmd.printUsage()
 }
 
 func pushByName(objPath string, objName string) {
@@ -131,8 +150,25 @@ func pushByName(objPath string, objName string) {
     pushByPath(fpath)
 }
 
-// Push metadata object by path to a file
 func pushByPath(fpath string) {
+    pushByPaths([]string{fpath})
+}
+
+// Push metadata object by path to a file
+func pushByPaths(fpaths []string) {
+	files := make(ForceMetadataFiles)
+    xmlMap := make(map[string][]string)
+
+    for _, fpath := range fpaths{
+        addFile(files, xmlMap, fpath)
+    }
+
+    files["package.xml"] = buildXml(xmlMap)
+
+    deployFiles(files)
+}
+
+func addFile(files ForceMetadataFiles, xmlMap map[string][]string, fpath string) {
     fpath, err := filepath.Abs(fpath)
     if err != nil {
         ErrorAndExit("Cound not find " + fpath)
@@ -165,15 +201,7 @@ func pushByPath(fpath string) {
         fmetarel, _ = filepath.Rel(srcDir, fmeta)
     }
 
-    // DEBUG
-    // fmt.Println("Dir: " + fdir)
-    // fmt.Println("fname: " + fname)
-    // fmt.Println("Dir end: " + typePath)
-    // fmt.Println("srcDir: " + srcDir)
-    // fmt.Println("Type: " + metaType)
-    // fmt.Println("relPath: " + frel)
-
-	files := make(ForceMetadataFiles)
+    xmlMap[metaType] = append(xmlMap[metaType], fname)
 
     fdata, err := ioutil.ReadFile(fpath)
     files[frel] = fdata
@@ -181,10 +209,26 @@ func pushByPath(fpath string) {
         fdata, err = ioutil.ReadFile(fmeta)
         files[fmetarel] = fdata
     }
+}
 
-    files["package.xml"] = []byte(fmt.Sprintf(pxml, fname, metaType))
+func buildXml(xmlMap map[string][]string) []byte {
+    var typeXml string
+    for metaType, members := range xmlMap{
+        fmt.Println("Type: " + metaType)
+        var membersXml string
+        for _, member := range members{
+            fmt.Println("member: " + member)
+            membersXml += fmt.Sprintf(xmlMember, member)
+        }
 
-    deployFiles(files)
+        if membersXml != "" {
+            typeXml += fmt.Sprintf(xmlType, membersXml, metaType)
+        }
+    }
+
+    bodyXml := fmt.Sprintf(xmlBody, typeXml)
+
+    return []byte(bodyXml)
 }
 
 func deployFiles(files ForceMetadataFiles) {
