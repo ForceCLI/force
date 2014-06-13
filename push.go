@@ -251,7 +251,7 @@ func deployFiles(files ForceMetadataFiles) {
 		}
 	}
 
-	fmt.Printf("\nSuccesses - %d\n", len(successes))
+	fmt.Printf("\nSuccesses - %d\n", len(successes) - 1)
 	for _, success := range successes {
 		if success.FullName != "package.xml" {
 			verb := "unchanged"
