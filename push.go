@@ -47,7 +47,7 @@ var metapaths = []metapath{
 
 func getPathForMeta(metaname string) string {
     for _, mp := range metapaths {
-        if mp.name == metaname {
+        if strings.ToLower(mp.name) == strings.ToLower(metaname) {
             return mp.path
         }
     }
@@ -74,41 +74,49 @@ func runPush(cmd *Command, args []string) {
 	}
 
     if len(args) == 1 {
-        pushByPath(args[0])
+        fpath := args[0]
+        pushByPath(fpath)
+
+        fmt.Printf("Pushed %s to Force.com\n", fpath)
     }
 
 	if len(args) == 2 {
-        pushByName(args)
+        // If arg[0] is already path or meta, the method will return arg[0]
+        objPath := getPathForMeta(args[0])
+        objName := args[1]
+        pushByName(objPath, objName)
+
+        fmt.Printf("Pushed %s to Force.com\n", objName)
     }
 }
 
-func pushByName(args []string) {
+func pushByName(objPath string, objName string) {
 	wd, _ := os.Getwd()
-	root := filepath.Join(wd, "metadata")
-	//if len(args) == 1 {
-	//	root, _ = filepath.Abs(args[0])
-	//}
 
+    // First try for metadata directory
+	root := filepath.Join(wd, "metadata")
 	if _, err := os.Stat(filepath.Join(root, "package.xml")); os.IsNotExist(err) {
+        // If not found, try for src directory
         root = filepath.Join(wd, "src")
         if _, err := os.Stat(filepath.Join(root, "package.xml")); os.IsNotExist(err) {
-            ErrorAndExit("Must specify a directory that contains metadata files")
+            ErrorAndExit("Current directory must contain a src or metadata directory")
         }
 	}
 
-	if _, err := os.Stat(filepath.Join(root, args[0])); os.IsNotExist(err) {
-		ErrorAndExit("Folder " + args[0] + " not found, must specify a metadata folder")
+	if _, err := os.Stat(filepath.Join(root, objPath)); os.IsNotExist(err) {
+		ErrorAndExit("Folder " + objPath + " not found, must specify valid metadata")
 	}
 
-    objType := getMetaForPath(args[0])
-
+    // Find file by walking directory and ignoring extension
 	found := false
-	err := filepath.Walk(filepath.Join(root, args[0]), func(path string, f os.FileInfo, err error) error {
+    fpath := ""
+	err := filepath.Walk(filepath.Join(root, objPath), func(path string, f os.FileInfo, err error) error {
 		if f.Mode().IsRegular() {
             fname := strings.ToLower(f.Name())
             fname = strings.TrimSuffix(fname, filepath.Ext(fname))
-			if strings.ToLower(fname) == strings.ToLower(args[1]) {
+			if strings.ToLower(fname) == strings.ToLower(objName) {
 				found = true
+                fpath = filepath.Join(root, objPath, f.Name())
 			}
 		}
 		return nil
@@ -117,55 +125,10 @@ func pushByName(args []string) {
 		ErrorAndExit(err.Error())
 	}
 	if !found {
-		ErrorAndExit("Could not find " + args[1] + " in " + args[0])
+		ErrorAndExit("Could not find " + objName + " in " + objPath)
 	}
 
-	files := make(ForceMetadataFiles)
-
-	err = os.Rename(filepath.Join(root, "package.xml"), filepath.Join(root, "package.copy.xml"))
-
-	if err := ioutil.WriteFile(filepath.Join(root, "package.xml"), []byte(fmt.Sprintf(pxml, args[1], objType)), 0644); err != nil {
-		ErrorAndExit(err.Error())
-	}
-	if err != nil {
-		ErrorAndExit(err.Error())
-	}
-
-	err = filepath.Walk(root, func(path string, f os.FileInfo, err error) error {
-		if f.Mode().IsRegular() {
-            fname := strings.ToLower(f.Name())
-            fname = strings.TrimSuffix(fname, filepath.Ext(fname))
-			if fname == strings.ToLower(args[1]) {
-				data, err := ioutil.ReadFile(path)
-				if err != nil {
-					ErrorAndExit(err.Error())
-				}
-				files[strings.Replace(path, fmt.Sprintf("%s/", root), "", -1)] = data
-
-                path += "-meta.xml"
-				data, err = ioutil.ReadFile(path)
-				if err != nil {
-					ErrorAndExit(err.Error())
-				}
-				files[strings.Replace(path, fmt.Sprintf("%s/", root), "", -1)] = data
-			}
-            if f.Name() == "package.xml" {
-				data, err := ioutil.ReadFile(path)
-				if err != nil {
-					ErrorAndExit(err.Error())
-				}
-				files[strings.Replace(path, fmt.Sprintf("%s/", root), "", -1)] = data
-            }
-		}
-		return nil
-	})
-	if err != nil {
-		ErrorAndExit(err.Error())
-	}
-
-    deployFiles(files)
-
-	fmt.Printf("Pushed %s to Force.com\n", args[1])
+    pushByPath(fpath)
 }
 
 // Push metadata object by path to a file
@@ -214,7 +177,6 @@ func pushByPath(fpath string) {
 
     fdata, err := ioutil.ReadFile(fpath)
     files[frel] = fdata
-    // IF META EXISTS
     if hasMeta {
         fdata, err = ioutil.ReadFile(fmeta)
         files[fmetarel] = fdata
@@ -255,5 +217,4 @@ func deployFiles(files ForceMetadataFiles) {
 			fmt.Printf("%s\n\tstatus: %s\n\tid=%s\n", success.FullName, verb, success.Id)
 		}
 	}
-
 }
