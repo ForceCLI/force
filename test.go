@@ -1,16 +1,15 @@
 package main
 
 import (
+	"fmt"
 	"strconv"
-	"strings"
 )
 
 var cmdTest = &Command{
-	Run:   runTests,
-	Usage: "tests",
+	Usage: "test",
 	Short: "Run apex tests",
 	Long: `
-Execute apex tests 
+Execute apex -namespace=<namespace> tests 
 
 Examples:
 
@@ -19,49 +18,54 @@ Examples:
 `,
 }
 
+func init() {
+	cmdTest.Run = runTests
+}
+
+var (
+	namespaceTestFlag = cmdTest.Flag.String("namespace", "", "namespace to run tests in")
+)
+
 func runTests(cmd *Command, args []string) {
 	if len(args) < 1 {
 		ErrorAndExit("must specify tests to run")
 	}
-	tests := strings.Join(args, " ")
 	force, _ := ActiveForce()
-	output, err := force.Partner.RunTests(tests)
+	output, err := force.Partner.RunTests(args, *namespaceTestFlag)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	} else {
 		//working on a better way to do this - catches when no class are found and ran
 		if output.NumberRun == 0 {
-			println("test classes specified not found")
+			fmt.Println("test classes specified not found")
 		} else {
 			var percent string
-			println(output.Log)
-			println()
-			println()
-			println("Coverage:")
-			println()
-			//println()
+			fmt.Println(output.Log)
+			fmt.Println()
+			fmt.Println()
+			fmt.Println("Coverage:")
+			fmt.Println()
 			for index := range output.NumberLocations {
 				if output.NumberLocations[index] != 0 {
 					percent = strconv.Itoa(((output.NumberLocations[index]-output.NumberLocationsNotCovered[index])/output.NumberLocations[index])*100) + "%"
 				} else {
 					percent = "0%"
 				}
-				println(percent + "   " + output.Name[index])
+				fmt.Println(percent + "   " + output.Name[index])
 			}
-			println()
-			println()
-			println("Results:")
-			println()
-			//println()
+			fmt.Println()
+			fmt.Println()
+			fmt.Println("Results:")
+			fmt.Println()
 			for index := range output.SMethodNames {
-				println("[PASS]    " + output.SClassNames[index] + "::" + output.SMethodNames[index])
+				fmt.Println("[PASS]    " + output.SClassNames[index] + "::" + output.SMethodNames[index])
 			}
 
 			for index := range output.FMethodNames {
-				println("[FAIL]    " + output.FClassNames[index] + "::" + output.FMethodNames[index])
+				fmt.Println("[FAIL]    " + output.FClassNames[index] + "::" + output.FMethodNames[index])
 			}
-			println()
-			println()
+			fmt.Println()
+			fmt.Println()
 		}
 	}
 }
