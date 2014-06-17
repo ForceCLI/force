@@ -36,7 +36,8 @@ const (
 )
 
 const (
-	apiVersion = "v30.0" // Spring 14
+	apiVersion       = "v30.0" // Spring 14
+	apiVersionNumber = "30.0"
 )
 
 var RootCertificates = `
@@ -442,7 +443,7 @@ func (f *Force) CreateRecord(sobject string, attrs map[string]string) (id string
 }
 
 func (f *Force) CreateBulkJob(xmlbody string) (result JobInfo, err error) {
-	url := fmt.Sprintf("%s/services/async/29.0/job", f.Credentials.InstanceUrl)
+	url := fmt.Sprintf("%s/services/async/%s/job", f.Credentials.InstanceUrl, apiVersionNumber)
 	body, err := f.httpPostXML(url, xmlbody)
 	xml.Unmarshal(body, &result)
 	if len(result.Id) == 0 {
@@ -454,7 +455,7 @@ func (f *Force) CreateBulkJob(xmlbody string) (result JobInfo, err error) {
 }
 
 func (f *Force) CloseBulkJob(jobId string, xmlbody string) (result JobInfo, err error) {
-	url := fmt.Sprintf("%s/services/async/29.0/job/%s", f.Credentials.InstanceUrl, jobId)
+	url := fmt.Sprintf("%s/services/async/%s/job/%s", f.Credentials.InstanceUrl, apiVersionNumber, jobId)
 	body, err := f.httpPostXML(url, xmlbody)
 	xml.Unmarshal(body, &result)
 	if len(result.Id) == 0 {
@@ -466,7 +467,7 @@ func (f *Force) CloseBulkJob(jobId string, xmlbody string) (result JobInfo, err 
 }
 
 func (f *Force) GetBulkJobs() (result []JobInfo, err error) {
-	url := fmt.Sprintf("%s/services/async/29.0/jobs", f.Credentials.InstanceUrl)
+	url := fmt.Sprintf("%s/services/async/%s/jobs", f.Credentials.InstanceUrl, apiVersionNumber)
 	body, err := f.httpGetBulk(url)
 	xml.Unmarshal(body, &result)
 	if len(result[0].Id) == 0 {
@@ -478,7 +479,7 @@ func (f *Force) GetBulkJobs() (result []JobInfo, err error) {
 }
 
 func (f *Force) BulkQuery(soql string, jobId string, contettype string) (result BatchInfo, err error) {
-	url := fmt.Sprintf("%s/services/async/29.0/job/%s/batch", f.Credentials.InstanceUrl, jobId)
+	url := fmt.Sprintf("%s/services/async/%s/job/%s/batch", f.Credentials.InstanceUrl, apiVersionNumber, jobId)
 	var body []byte
 
 	if contettype == "CSV" {
@@ -497,7 +498,7 @@ func (f *Force) BulkQuery(soql string, jobId string, contettype string) (result 
 }
 
 func (f *Force) AddBatchToJob(xmlbody string, jobId string) (result BatchInfo, err error) {
-	url := fmt.Sprintf("%s/services/async/29.0/job/%s/batch", f.Credentials.InstanceUrl, jobId)
+	url := fmt.Sprintf("%s/services/async/%s/job/%s/batch", f.Credentials.InstanceUrl, apiVersionNumber, jobId)
 	body, err := f.httpPostCSV(url, xmlbody)
 	xml.Unmarshal(body, &result)
 	if len(result.Id) == 0 {
@@ -509,7 +510,7 @@ func (f *Force) AddBatchToJob(xmlbody string, jobId string) (result BatchInfo, e
 }
 
 func (f *Force) GetBatchInfo(jobId string, batchId string) (result BatchInfo, err error) {
-	url := fmt.Sprintf("%s/services/async/29.0/job/%s/batch/%s", f.Credentials.InstanceUrl, jobId, batchId)
+	url := fmt.Sprintf("%s/services/async/%s/job/%s/batch/%s", f.Credentials.InstanceUrl, apiVersionNumber, jobId, batchId)
 	body, err := f.httpGetBulk(url)
 	xml.Unmarshal(body, &result)
 	if len(result.Id) == 0 {
@@ -521,7 +522,7 @@ func (f *Force) GetBatchInfo(jobId string, batchId string) (result BatchInfo, er
 }
 
 func (f *Force) GetBatches(jobId string) (result []BatchInfo, err error) {
-	url := fmt.Sprintf("%s/services/async/29.0/job/%s/batch", f.Credentials.InstanceUrl, jobId)
+	url := fmt.Sprintf("%s/services/async/%s/job/%s/batch", f.Credentials.InstanceUrl, apiVersionNumber, jobId)
 	body, err := f.httpGetBulk(url)
 
 	var batchInfoList struct {
@@ -539,7 +540,7 @@ func (f *Force) GetBatches(jobId string) (result []BatchInfo, err error) {
 }
 
 func (f *Force) GetJobInfo(jobId string) (result JobInfo, err error) {
-	url := fmt.Sprintf("%s/services/async/29.0/job/%s", f.Credentials.InstanceUrl, jobId)
+	url := fmt.Sprintf("%s/services/async/%s/job/%s", f.Credentials.InstanceUrl, apiVersionNumber, jobId)
 	body, err := f.httpGetBulk(url)
 	xml.Unmarshal(body, &result)
 	if len(result.Id) == 0 {
@@ -551,19 +552,19 @@ func (f *Force) GetJobInfo(jobId string) (result JobInfo, err error) {
 }
 
 func (f *Force) RetrieveBulkQuery(jobId string, batchId string) (result []byte, err error) {
-	url := fmt.Sprintf("%s/services/async/29.0/job/%s/batch/%s/result", f.Credentials.InstanceUrl, jobId, batchId)
+	url := fmt.Sprintf("%s/services/async/%s/job/%s/batch/%s/result", f.Credentials.InstanceUrl, apiVersionNumber, jobId, batchId)
 	result, err = f.httpGetBulk(url)
 	return
 }
 
 func (f *Force) RetrieveBulkQueryResults(jobId string, batchId string, resultId string) (result []byte, err error) {
-	url := fmt.Sprintf("%s/services/async/29.0/job/%s/batch/%s/result/%s", f.Credentials.InstanceUrl, jobId, batchId, resultId)
+	url := fmt.Sprintf("%s/services/async/%s/job/%s/batch/%s/result/%s", f.Credentials.InstanceUrl, apiVersionNumber, jobId, batchId, resultId)
 	result, err = f.httpGetBulk(url)
 	return
 }
 
 func (f *Force) RetrieveBulkBatchResults(jobId string, batchId string) (results BatchResult, err error) {
-	url := fmt.Sprintf("%s/services/async/29.0/job/%s/batch/%s/result", f.Credentials.InstanceUrl, jobId, batchId)
+	url := fmt.Sprintf("%s/services/async/%s/job/%s/batch/%s/result", f.Credentials.InstanceUrl, apiVersionNumber, jobId, batchId)
 	result, err := f.httpGetBulk(url)
 	if len(result) == 0 {
 		var fault LoginFault
