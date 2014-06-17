@@ -58,6 +58,9 @@ var metapaths = []metapath{
 	metapath{"pages", "ApexPage"},
 }
 
+var namePaths = make(map[string]string)
+var byName = false
+
 func getPathForMeta(metaname string) string {
 	for _, mp := range metapaths {
 		if strings.EqualFold(mp.name, metaname) {
@@ -94,10 +97,7 @@ func runPush(cmd *Command, args []string) {
 	}
 
 	if argIsFile(args[0]) {
-		fpath := args[0]
 		pushByPaths(args)
-
-		fmt.Printf("Pushed %s to Force.com\n", fpath)
 		return
 	}
 
@@ -106,8 +106,6 @@ func runPush(cmd *Command, args []string) {
 		objPath := getPathForMeta(args[0])
 		objName := args[1]
 		pushByName(objPath, objName)
-
-		fmt.Printf("Pushed %s to Force.com\n", objName)
 		return
 	}
 
@@ -119,6 +117,7 @@ func runPush(cmd *Command, args []string) {
 
 func pushByName(objPath string, objName string) {
 	wd, _ := os.Getwd()
+    byName = true
 
 	// First try for metadata directory
 	root := filepath.Join(wd, "metadata")
@@ -167,7 +166,9 @@ func pushByPaths(fpaths []string) {
 	xmlMap := make(map[string][]string)
 
 	for _, fpath := range fpaths {
-		addFile(files, xmlMap, fpath)
+        name := addFile(files, xmlMap, fpath)
+        // Store paths by name for error messages
+        namePaths[name] = fpath
 	}
 
 	files["package.xml"] = buildXml(xmlMap)
@@ -175,7 +176,7 @@ func pushByPaths(fpaths []string) {
 	deployFiles(files)
 }
 
-func addFile(files ForceMetadataFiles, xmlMap map[string][]string, fpath string) {
+func addFile(files ForceMetadataFiles, xmlMap map[string][]string, fpath string) string {
 	fpath, err := filepath.Abs(fpath)
 	if err != nil {
 		ErrorAndExit("Cound not find " + fpath)
@@ -216,6 +217,8 @@ func addFile(files ForceMetadataFiles, xmlMap map[string][]string, fpath string)
 		fdata, err = ioutil.ReadFile(fmeta)
 		files[fmetarel] = fdata
 	}
+
+    return fname
 }
 
 func buildXml(xmlMap map[string][]string) []byte {
@@ -247,7 +250,15 @@ func deployFiles(files ForceMetadataFiles) {
 		if problem.FullName == "" {
 			fmt.Println(problem.Problem)
 		} else {
-			fmt.Printf("ERROR with %s:\n %s\n", problem.FullName, problem.Problem)
+            if (byName) {
+                fmt.Printf("ERROR with %s, line %d\n %s\n", problem.FullName, problem.LineNumber, problem.Problem)
+            } else {
+                fname, found := namePaths[problem.FullName]
+                if !found {
+                    fname = problem.FullName
+                }
+                fmt.Printf("\"%s\", line %d: %s %s\n", fname, problem.LineNumber, problem.ProblemType, problem.Problem)
+            }
 		}
 	}
 
