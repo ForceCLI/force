@@ -6,7 +6,7 @@ import (
 )
 
 var cmdTest = &Command{
-	Usage: "test",
+	Usage: "test (all | classname...)",
 	Short: "Run apex tests",
 	Long: `
 Execute apex -namespace=<namespace> tests 
@@ -37,12 +37,12 @@ func runTests(cmd *Command, args []string) {
 	} else {
 		//working on a better way to do this - catches when no class are found and ran
 		if output.NumberRun == 0 {
-			fmt.Println("test classes specified not found")
+			fmt.Println("Test classes specified not found")
 		} else {
 			var percent string
-			fmt.Println(output.Log)
-			fmt.Println()
-			fmt.Println()
+			//fmt.Println(output.Log)
+			//fmt.Println()
+			//fmt.Println()
 			fmt.Println("Coverage:")
 			fmt.Println()
 			for index := range output.NumberLocations {
@@ -51,18 +51,19 @@ func runTests(cmd *Command, args []string) {
 				} else {
 					percent = "0%"
 				}
-				fmt.Println(percent + "   " + output.Name[index])
+				fmt.Println("  " + percent + "   " + output.Name[index])
 			}
 			fmt.Println()
 			fmt.Println()
 			fmt.Println("Results:")
 			fmt.Println()
 			for index := range output.SMethodNames {
-				fmt.Println("[PASS]    " + output.SClassNames[index] + "::" + output.SMethodNames[index])
+				fmt.Println("  [PASS]  " + output.SClassNames[index] + "::" + output.SMethodNames[index])
 			}
 
 			for index := range output.FMethodNames {
-				fmt.Println("[FAIL]    " + output.FClassNames[index] + "::" + output.FMethodNames[index])
+				fmt.Println("  [FAIL]  " + output.FClassNames[index] + "::" + output.FMethodNames[index] + ": " + output.FMessage[index])
+				fmt.Println("    " + output.FStackTrace[index])
 			}
 			fmt.Println()
 			fmt.Println()
