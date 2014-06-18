@@ -21,6 +21,8 @@ type TestCoverage struct {
 	SClassNames               []string `xml:"Body>runTestsResponse>result>successes>name"`
 	FMethodNames              []string `xml:"Body>runTestsResponse>result>failures>methodName"`
 	FClassNames               []string `xml:"Body>runTestsResponse>result>failures>name"`
+	FMessage                  []string `xml:"Body>runTestsResponse>result>failures>message"`
+	FStackTrace               []string `xml:"Body>runTestsResponse>result>failures>stackTrace"`
 }
 
 func NewForcePartner(force *Force) (partner *ForcePartner) {
