@@ -31,6 +31,7 @@ type ComponentFailure struct {
 	Deleted     bool   `xml:"deleted"`
 	FileName    string `xml:"fileName"`
 	FullName    string `xml:"fullName"`
+    LineNumber  int    `xml:"lineNumber"`
 	Problem     string `xml:"problem"`
 	ProblemType string `xml:"problemType"`
 	Success     bool   `xml:"success"`
