@@ -276,4 +276,7 @@ func deployFiles(files ForceMetadataFiles) {
 			fmt.Printf("%s\n\tstatus: %s\n\tid=%s\n", success.FullName, verb, success.Id)
 		}
 	}
+
+	// Handle notifications
+	notifySuccess("push", len(problems) == 0)
 }

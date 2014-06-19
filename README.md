@@ -19,42 +19,42 @@ A command-line interface to force.com
 
 ### Usage
 
-	Usage: force <command> [<args>]
-	
-	Available commands:
-	   login     Log in to force.com
-	   logout    Log out from force.com
-   	   logins    List force.com logins used
-   	   active    Show or set the active force.com account
-	   whoami    Show information about the active account
-	   sobject   Manage standard & custom objects
-	   field     Manage sobject fields
-	   record    Create, modify, or view records
-	   bulk      Load csv file use Bulk API
-	   fetch     Export specified artifact(s) to a local directory
-   	   export    Export metadata to a local directory
-	   fetch     Export specified artifact(s) to a local directory
-	   import    Import metadata from a local directory
-	   query     Execute a SOQL statement
-	   apex      Execute anonymous Apex code
-	   oauth     Manage ConnectedApp credentials
-	   version   Display current version
-	   update    Update to the latest version
-	   push      Deploy single artifact from a local directory
-	   password  See password status or reset password
-	   help      Show this help
-	
-	Run 'force help [command]' for details.
+    Usage: force <command> [<args>]
+
+    Available commands:
+       login     Log in to force.com
+       logout    Log out from force.com
+       logins    List force.com logins used
+       active    Show or set the active force.com account
+       whoami    Show information about the active account
+       sobject   Manage standard & custom objects
+       field     Manage sobject fields
+       record    Create, modify, or view records
+       bulk      Load csv file use Bulk API
+       fetch     Export specified artifact(s) to a local directory
+       export    Export metadata to a local directory
+       fetch     Export specified artifact(s) to a local directory
+       import    Import metadata from a local directory
+       query     Execute a SOQL statement
+       apex      Execute anonymous Apex code
+       oauth     Manage ConnectedApp credentials
+       version   Display current version
+       update    Update to the latest version
+       push      Deploy single artifact from a local directory
+       password  See password status or reset password
+       help      Show this help
+
+    Run 'force help [command]' for details.
 
 ### login
 When you login using the CLI a record of the login is saved. Eventually your token will expire requiring re-authentication. The default login is for all production instances of salesforce.com. Two predefined non-production instances are available using the test and pre aliases.  You can set an arbitrary instance to log in to by specifying the instance url in the form of subdomain.domain. For example login-blitz.soma.salesforce.com.
 
-      force login     		 	# log in to production or developer org
-      force login -i=test 		 	# log in to sandbox org
-      force login -i=pre  		 	# log in to prerelease org
-      force login -u=un -p=pw 	 	# log in using SOAP
-      force login -i=test -u=un -p=pw     	# log in using SOAP to sandbox org
-      force login -i=<instance> -u=un -p=pw 	# internal only
+      force login               # log in to production or developer org
+      force login -i=test           # log in to sandbox org
+      force login -i=pre            # log in to prerelease org
+      force login -u=un -p=pw       # log in using SOAP
+      force login -i=test -u=un -p=pw       # log in using SOAP to sandbox org
+      force login -i=<instance> -u=un -p=pw     # internal only
 
 ### logout
 Logout will delete your authentication token and remove the saved record of that login.
@@ -65,7 +65,7 @@ Logout will delete your authentication token and remove the saved record of that
 Logins will list all the user names that you have used to authenticate with the instance URL associated with each one.  The active login will be indicated behind the login name in red.
 
       force logins
-      
+
 ![](https://raw.githubusercontent.com/dcarroll/dcarroll.github.io/master/images/force/screenshot-191.png)
 
 ### active
@@ -73,12 +73,12 @@ Active without any arguments will display the currently acctive login that you a
 
       force active
       force active dave@demo.1
-      
+
 ### whoami
 Whoami will display detailed user information about the currently active logged in user.  This is Force.com specific information.
 
       force whomai
-      
+
 ![](https://raw.githubusercontent.com/dcarroll/dcarroll.github.io/master/images/force/screenshot-191%20copy.png)
 
 ### sobject
@@ -96,6 +96,9 @@ Field gives you the ability to create, list and delete the fields on an object. 
       force field list Todo__c
       force field create Todo__c Due:DateTime required:true
       force field delete Todo__c Due
+
+### notifications
+Includes notification library, [gotifier](https://github.com/ViViDboarder/gotifier), that will display notifications for using either Using [terminal-notifier](https://github.com/alloy/terminal-notifier) on OSX or [notify-send](http://manpages.ubuntu.com/manpages/saucy/man1/notify-send.1.html) on Ubuntu. Currently, only the `push` method is displaying notifications.
 
 ### Hacking
 
