@@ -36,6 +36,7 @@ func runTests(cmd *Command, args []string) {
 	}
 	force, _ := ActiveForce()
 	output, err := force.Partner.RunTests(args, *namespaceTestFlag)
+	success := false
 	if err != nil {
 		ErrorAndExit(err.Error())
 	} else {
@@ -68,6 +69,11 @@ func runTests(cmd *Command, args []string) {
 			}
 			fmt.Println()
 			fmt.Println()
+
+			success = len(output.FMethodNames) == 0
 		}
+
+		// Handle notifications
+		notifySuccess("test", success)
 	}
 }
