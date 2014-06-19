@@ -9,12 +9,12 @@ var cmdTest = &Command{
 	Usage: "test (all | classname...)",
 	Short: "Run apex tests",
 	Long: `
-Execute apex -namespace=<namespace> tests 
+Execute apex -namespace=<namespace> tests
 
 Examples:
 
   force tests Test1 Test2 Test3
-  force tests all 
+  force tests all
 `,
 }
 
@@ -32,6 +32,7 @@ func runTests(cmd *Command, args []string) {
 	}
 	force, _ := ActiveForce()
 	output, err := force.Partner.RunTests(args, *namespaceTestFlag)
+	success := false
 	if err != nil {
 		ErrorAndExit(err.Error())
 	} else {
@@ -67,6 +68,11 @@ func runTests(cmd *Command, args []string) {
 			}
 			fmt.Println()
 			fmt.Println()
+
+			success = len(output.FMethodNames) == 0
 		}
+
+		// Handle notifications
+		notifySuccess("test", success)
 	}
 }
