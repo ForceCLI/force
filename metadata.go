@@ -31,6 +31,7 @@ type ComponentFailure struct {
 	Deleted     bool   `xml:"deleted"`
 	FileName    string `xml:"fileName"`
 	FullName    string `xml:"fullName"`
+    LineNumber  int    `xml:"lineNumber"`
 	Problem     string `xml:"problem"`
 	ProblemType string `xml:"problemType"`
 	Success     bool   `xml:"success"`
@@ -492,7 +493,7 @@ func (fm *ForceMetadata) ValidateFieldOptions(typ string, options map[string]str
 }
 
 func NewForceMetadata(force *Force) (fm *ForceMetadata) {
-	fm = &ForceMetadata{ApiVersion: "29.0", Force: force}
+	fm = &ForceMetadata{ApiVersion: apiVersionNumber, Force: force}
 	return
 }
 
@@ -699,7 +700,7 @@ func (fm *ForceMetadata) CheckRetrieveStatus(id string) (files ForceMetadataFile
 }
 
 func (fm *ForceMetadata) DescribeMetadata() (describe MetadataDescribeResult, err error) {
-	body, err := fm.soapExecute("describeMetadata", fmt.Sprintf("<apiVersion>%s</apiVersion>", "30.0"))
+	body, err := fm.soapExecute("describeMetadata", fmt.Sprintf("<apiVersion>%s</apiVersion>", apiVersionNumber))
 	if err != nil {
 		return
 	}
@@ -722,7 +723,7 @@ func (fm *ForceMetadata) CreateConnectedApp(name, callback string) (err error) {
 	soap := `
 		<metadata xsi:type="ConnectedApp">
 			<fullName>%s</fullName>
-			<version>29.0</version>
+			<version>%s</version>
 			<label>%s</label>
 			<contactEmail>%s</contactEmail>
 			<oauthConfig>
@@ -737,7 +738,7 @@ func (fm *ForceMetadata) CreateConnectedApp(name, callback string) (err error) {
 		return err
 	}
 	email := me["Email"]
-	body, err := fm.soapExecute("create", fmt.Sprintf(soap, name, name, email, callback))
+	body, err := fm.soapExecute("create", fmt.Sprintf(soap, name, apiVersionNumber, name, email, callback))
 	if err != nil {
 		return err
 	}
@@ -1048,7 +1049,7 @@ func (fm *ForceMetadata) Retrieve(query ForceMetadataQuery) (files ForceMetadata
 
 	soap := `
 		<retrieveRequest>
-			<apiVersion>29.0</apiVersion>
+			<apiVersion>%s</apiVersion>
 			<unpackaged>
 				%s
 			</unpackaged>
@@ -1064,7 +1065,7 @@ func (fm *ForceMetadata) Retrieve(query ForceMetadataQuery) (files ForceMetadata
 	for _, element := range query {
 		types += fmt.Sprintf(soapType, element.Name, element.Members)
 	}
-	body, err := fm.soapExecute("retrieve", fmt.Sprintf(soap, types))
+	body, err := fm.soapExecute("retrieve", fmt.Sprintf(soap, apiVersionNumber, types))
 	if err != nil {
 		return
 	}
@@ -1092,11 +1093,11 @@ func (fm *ForceMetadata) Retrieve(query ForceMetadataQuery) (files ForceMetadata
 func (fm *ForceMetadata) RetrievePackage(packageName string) (files ForceMetadataFiles, err error) {
 	soap := `
 		<retrieveRequest>
-			<apiVersion>29.0</apiVersion>
+			<apiVersion>%s</apiVersion>
 			<packageNames>%s</packageNames>
 		</retrieveRequest>
 	`
-	soap = fmt.Sprintf(soap, packageName)
+	soap = fmt.Sprintf(soap, apiVersionNumber, packageName)
 	body, err := fm.soapExecute("retrieve", soap)
 	if err != nil {
 		return
@@ -1128,7 +1129,7 @@ func (fm *ForceMetadata) ListMetadata(query string) (res []byte, err error) {
 
 func (fm *ForceMetadata) ListConnectedApps() (apps ForceConnectedApps, err error) {
 	originalVersion := fm.ApiVersion
-	fm.ApiVersion = "29.0"
+	fm.ApiVersion = apiVersionNumber
 	body, err := fm.ListMetadata("ConnectedApp")
 	fm.ApiVersion = originalVersion
 	if err != nil {
