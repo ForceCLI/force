@@ -8,9 +8,9 @@ import (
 
 var cmdLogin = &Command{
 	Usage: "login",
-	Short: "force login [-i] [<-u username> <-p password>]",
+	Short: "force login [-i=<instance>] [<-u=username> <-p=password>]",
 	Long: `
-  force login [-i] [<-u username> <-p password>]
+  force login [-i=<instance>] [<-u=username> <-p=password>]
 
   Examples:
     force login                     
