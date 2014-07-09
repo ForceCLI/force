@@ -118,6 +118,11 @@ func runFetch(cmd *Command, args []string) {
 		if err != nil {
 			ErrorAndExit(err.Error())
 		}
+		for artifactNames := range args[1:] {
+			if args[1:][artifactNames] == "--unpack" || args[1:][artifactNames] == "-u" {
+				expandResources = true
+			}
+		}
 	} else {
 		query := ForceMetadataQuery{}
 		if len(args) >= 2 {
@@ -146,15 +151,24 @@ func runFetch(cmd *Command, args []string) {
 	for name, data := range files {
 		file := filepath.Join(root, name)
 		dir := filepath.Dir(file)
+
 		if err := os.MkdirAll(dir, 0755); err != nil {
 			ErrorAndExit(err.Error())
 		}
 		if err := ioutil.WriteFile(filepath.Join(root, name), data, 0644); err != nil {
 			ErrorAndExit(err.Error())
 		}
+		var isResource = false
+		if artifactType == "StaticResource" {
+			isResource = true
+		} else if strings.HasSuffix(file, ".resource-meta.xml") {
+			isResource = true
+		}
 		//Handle expanding static resources into a "bundle" folder
-		if artifactType == "StaticResource" && expandResources && name != "package.xml" {
-			resourceName := strings.Split(name, "/")[1]
+		if isResource && expandResources && name != "package.xml" {
+			pathParts := strings.Split(name, "/")
+			resourceName := pathParts[cap(pathParts)-1]
+
 			resourceExt := strings.Split(resourceName, ".")[1]
 			resourceName = strings.Split(resourceName, ".")[0]
 			if resourceExt == "resource-meta" {
@@ -169,7 +183,7 @@ func runFetch(cmd *Command, args []string) {
 				}
 				if meta.ContentType == "application/zip" {
 					// this is the meat for a zip file, so add the map
-					resourcesMap[resourceName] = resourceName + ".resource"
+					resourcesMap[resourceName] = filepath.Join(filepath.Dir(file), resourceName+".resource")
 				}
 			}
 		}
@@ -178,8 +192,9 @@ func runFetch(cmd *Command, args []string) {
 	// Now we need to see if we have any zips to expand
 	if expandResources && len(resourcesMap) > 0 {
 		for key, value := range resourcesMap {
-			resourcefile := filepath.Join(root, "staticresources", value)
-			dest := filepath.Join(root, "staticresources", key)
+			//resourcefile := filepath.Join(root, "staticresources", value)
+			resourcefile := value
+			dest := filepath.Join(filepath.Dir(value), key)
 			if err := os.MkdirAll(dest, 0755); err != nil {
 				ErrorAndExit(err.Error())
 			}
