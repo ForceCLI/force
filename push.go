@@ -52,6 +52,7 @@ var metapaths = []metapath{
 	metapath{"classes", "ApexClass"},
 	metapath{"objects", "CustomObject"},
 	metapath{"tabs", "CustomTab"},
+	metapath{"labels", "CustomLabels"},
 	metapath{"flexipages", "FlexiPage"},
 	metapath{"components", "ApexComponent"},
 	metapath{"triggers", "ApexTrigger"},
