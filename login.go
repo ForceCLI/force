@@ -2,8 +2,8 @@ package main
 
 import (
 	"encoding/json"
-	"net/url"
 	"fmt"
+	"net/url"
 )
 
 var cmdLogin = &Command{
@@ -49,7 +49,7 @@ func runLogin(cmd *Command, args []string) {
 			// Could be short hand?
 			if uri.Host == "" {
 				uri, err = url.Parse(fmt.Sprintf("https://%s", *instance))
-			fmt.Println(uri)
+				fmt.Println(uri)
 				if err != nil {
 					ErrorAndExit("no such endpoint: %s", *instance)
 				}
@@ -71,7 +71,6 @@ func runLogin(cmd *Command, args []string) {
 		}
 	}
 }
-
 
 func ForceSaveLogin(creds ForceCredentials) (username string, err error) {
 	force := NewForce(creds)
