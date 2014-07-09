@@ -2,6 +2,7 @@ package main
 
 import (
 	"archive/zip"
+	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"io"
@@ -25,6 +26,8 @@ Examples
 
   force fetch CustomObject
 
+  force fetch Aura
+
   force fetch package MyPackagedApp
 
   options
@@ -34,6 +37,65 @@ Examples
       	  example: force fetch StaticResource MyResource --unpack
 
 `,
+}
+
+func runFetchAura(cmd *Command, args []string) {
+	force, _ := ActiveForce()
+
+	bundles, definitions, err := force.GetAuraBundlesList()
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
+
+	var bundleMap = make(map[string]string)
+	var bundleRecords = bundles.Records
+	for _, bundle := range bundleRecords {
+		id := fmt.Sprintf("%s", bundle["Id"])
+		bundleMap[id] = fmt.Sprintf("%s", bundle["DeveloperName"])
+	}
+
+	var defRecords = definitions.Records
+	wd, _ := os.Getwd()
+	root := filepath.Join(wd, "metadata", "aurabundles")
+
+	if err := os.MkdirAll(root, 0755); err != nil {
+		ErrorAndExit(err.Error())
+	}
+
+	for key, value := range bundleMap {
+		if err := os.MkdirAll(filepath.Join(root, value), 0755); err != nil {
+			ErrorAndExit(err.Error())
+		}
+
+		var bundleManifest = BundleManifest{}
+		bundleManifest.Name = value
+		bundleManifest.Files = []ComponentFile{}
+
+		for _, def := range defRecords {
+			var did = fmt.Sprintf("%s", def["AuraDefinitionBundleId"])
+			if did == key {
+				var entity = fmt.Sprintf("%s%s", value, strings.Title(strings.ToLower(fmt.Sprintf("%s", def["DefType"]))))
+				switch fmt.Sprintf("%s", def["DefType"]) {
+				case "COMPONENT":
+					entity += ".cmp"
+				case "APPLICATION":
+					entity += ".app"
+				case "EVENT":
+					entity += ".evt"
+				case "STYLE":
+					entity += ".css"
+				default:
+					entity += ".js"
+				}
+				var componentFile = ComponentFile{entity, fmt.Sprintf("%s", def["Id"])}
+				bundleManifest.Files = append(bundleManifest.Files, componentFile)
+				ioutil.WriteFile(filepath.Join(root, value, entity), []byte(fmt.Sprintf("%s", def["Source"])), 0644)
+			}
+		}
+		bmBody, _ := json.Marshal(bundleManifest)
+		ioutil.WriteFile(filepath.Join(root, value, "manifest.json"), bmBody, 0644)
+	}
+	return
 }
 
 func runFetch(cmd *Command, args []string) {
@@ -49,15 +111,12 @@ func runFetch(cmd *Command, args []string) {
 	var expandResources bool = false
 
 	artifactType := args[0]
-	if artifactType == "package" {
+	if strings.ToLower(artifactType) == "aura" {
+		runFetchAura(cmd, args)
+	} else if artifactType == "package" {
 		files, err = force.Metadata.RetrievePackage(args[1])
 		if err != nil {
 			ErrorAndExit(err.Error())
-		}
-		for artifactNames := range args[1:] {
-			if args[1:][artifactNames] == "--unpack" || args[1:][artifactNames] == "-u" {
-				expandResources = true
-			}
 		}
 	} else {
 		query := ForceMetadataQuery{}
@@ -87,24 +146,15 @@ func runFetch(cmd *Command, args []string) {
 	for name, data := range files {
 		file := filepath.Join(root, name)
 		dir := filepath.Dir(file)
-
 		if err := os.MkdirAll(dir, 0755); err != nil {
 			ErrorAndExit(err.Error())
 		}
 		if err := ioutil.WriteFile(filepath.Join(root, name), data, 0644); err != nil {
 			ErrorAndExit(err.Error())
 		}
-		var isResource = false
-		if artifactType == "StaticResource" {
-			isResource = true
-		} else if strings.HasSuffix(file, ".resource-meta.xml") {
-			isResource = true
-		}
 		//Handle expanding static resources into a "bundle" folder
-		if isResource && expandResources && name != "package.xml" {
-			pathParts := strings.Split(name, "/")
-			resourceName := pathParts[cap(pathParts)-1]
-
+		if artifactType == "StaticResource" && expandResources && name != "package.xml" {
+			resourceName := strings.Split(name, "/")[1]
 			resourceExt := strings.Split(resourceName, ".")[1]
 			resourceName = strings.Split(resourceName, ".")[0]
 			if resourceExt == "resource-meta" {
@@ -119,7 +169,7 @@ func runFetch(cmd *Command, args []string) {
 				}
 				if meta.ContentType == "application/zip" {
 					// this is the meat for a zip file, so add the map
-					resourcesMap[resourceName] = filepath.Join(filepath.Dir(file), resourceName+".resource")
+					resourcesMap[resourceName] = resourceName + ".resource"
 				}
 			}
 		}
@@ -128,9 +178,8 @@ func runFetch(cmd *Command, args []string) {
 	// Now we need to see if we have any zips to expand
 	if expandResources && len(resourcesMap) > 0 {
 		for key, value := range resourcesMap {
-			//resourcefile := filepath.Join(root, "staticresources", value)
-			resourcefile := value
-			dest := filepath.Join(filepath.Dir(value), key)
+			resourcefile := filepath.Join(root, "staticresources", value)
+			dest := filepath.Join(root, "staticresources", key)
 			if err := os.MkdirAll(dest, 0755); err != nil {
 				ErrorAndExit(err.Error())
 			}

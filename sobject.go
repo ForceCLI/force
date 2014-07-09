@@ -7,13 +7,12 @@ import (
 	"html"
 	"io/ioutil"
 	"os"
-	"strings"
 )
 
 var cmdSobject = &Command{
 	Run:   runSobject,
 	Usage: "sobject",
-	Short: "Manage standard & custom objects",
+	Short: "Manage sobjects",
 	Long: `
 Manage sobjects
 
@@ -58,42 +57,20 @@ func runSobject(cmd *Command, args []string) {
 func runSobjectList(args []string) {
 	force, _ := ActiveForce()
 	sobjects, err := force.ListSobjects()
-
-	l := make([]ForceSobject, 0)
-	for _, sobject := range sobjects {
-		if len(args) == 1 {
-			if strings.Contains(sobject["name"].(string), args[0]) {
-				l = append(l, sobject)
-			}
-		} else {
-			l = append(l, sobject)
-		}
-	}
-
 	if err != nil {
 		ErrorAndExit(fmt.Sprintf("ERROR: %s\n", err))
 	} else {
-		DisplayForceSobjects(l)
+		DisplayForceSobjects(sobjects)
 	}
 }
 
 func runSobjectCreate(args []string) {
-	if len(args) < 1 {
-		ErrorAndExit("must specify object name")
+	if len(args) < 2 {
+		ErrorAndExit("must specify object and at least one field")
 	}
 	force, _ := ActiveForce()
 	if err := force.Metadata.CreateCustomObject(args[0]); err != nil {
 		ErrorAndExit(err.Error())
-	}
-	for _, field := range args[1:] {
-		parts := strings.Split(field, ":")
-		if len(parts) != 2 {
-			ErrorAndExit("must specify name:type for fields")
-		} else {
-			if err := force.Metadata.CreateCustomField(fmt.Sprintf("%s__c", args[0]), parts[0], parts[1], nil); err != nil {
-				ErrorAndExit(err.Error())
-			}
-		}
 	}
 	args[0] = fmt.Sprintf("%s__c", args[0])
 
@@ -177,7 +154,7 @@ func runSobjectImport(args []string) {
 	var xmlresponse struct {
 		Results []result `xml:"Body>createResponse>result"`
 	}
-
+	fmt.Println(string(response))
 	xml.Unmarshal(response, &xmlresponse)
 
 	for i, res := range xmlresponse.Results {
