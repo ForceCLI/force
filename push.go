@@ -117,7 +117,7 @@ func runPush(cmd *Command, args []string) {
 
 func pushByName(objPath string, objName string) {
 	wd, _ := os.Getwd()
-    byName = true
+	byName = true
 
 	// First try for metadata directory
 	root := filepath.Join(wd, "metadata")
@@ -166,9 +166,9 @@ func pushByPaths(fpaths []string) {
 	xmlMap := make(map[string][]string)
 
 	for _, fpath := range fpaths {
-        name := addFile(files, xmlMap, fpath)
-        // Store paths by name for error messages
-        namePaths[name] = fpath
+		name := addFile(files, xmlMap, fpath)
+		// Store paths by name for error messages
+		namePaths[name] = fpath
 	}
 
 	files["package.xml"] = buildXml(xmlMap)
@@ -218,7 +218,7 @@ func addFile(files ForceMetadataFiles, xmlMap map[string][]string, fpath string)
 		files[fmetarel] = fdata
 	}
 
-    return fname
+	return fname
 }
 
 func buildXml(xmlMap map[string][]string) []byte {
@@ -250,19 +250,19 @@ func deployFiles(files ForceMetadataFiles) {
 		if problem.FullName == "" {
 			fmt.Println(problem.Problem)
 		} else {
-            if (byName) {
-                fmt.Printf("ERROR with %s, line %d\n %s\n", problem.FullName, problem.LineNumber, problem.Problem)
-            } else {
-                fname, found := namePaths[problem.FullName]
-                if !found {
-                    fname = problem.FullName
-                }
-                fmt.Printf("\"%s\", line %d: %s %s\n", fname, problem.LineNumber, problem.ProblemType, problem.Problem)
-            }
+			if byName {
+				fmt.Printf("ERROR with %s, line %d\n %s\n", problem.FullName, problem.LineNumber, problem.Problem)
+			} else {
+				fname, found := namePaths[problem.FullName]
+				if !found {
+					fname = problem.FullName
+				}
+				fmt.Printf("\"%s\", line %d: %s %s\n", fname, problem.LineNumber, problem.ProblemType, problem.Problem)
+			}
 		}
 	}
 
-	fmt.Printf("\nSuccesses - %d\n", len(successes) - 1)
+	fmt.Printf("\nSuccesses - %d\n", len(successes)-1)
 	for _, success := range successes {
 		if success.FullName != "package.xml" {
 			verb := "unchanged"
