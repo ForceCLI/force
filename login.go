@@ -84,8 +84,16 @@ func ForceSaveLogin(creds ForceCredentials) (username string, err error) {
 	}
 	username = login["username"].(string)
 
-	describe, err := force.Metadata.DescribeMetadata()
-	creds.Namespace = describe.NamespacePrefix
+	me, err := force.Whoami()
+	if err != nil {
+		return
+	}
+	fmt.Printf("Logged in as '%s'\n", me["Username"])
+
+	describe, meta_err := force.Metadata.DescribeMetadata()
+	if meta_err != nil {
+		creds.Namespace = describe.NamespacePrefix
+	}
 
 	Config.Save("accounts", username, string(body))
 	Config.Save("current", "account", username)
