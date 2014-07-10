@@ -169,6 +169,25 @@ type BundleManifest struct {
 	Files []ComponentFile
 }
 
+type AuraDefinitionBundleResult struct {
+	Done           bool
+	Records        []ForceRecord
+	TotalSize      int
+	QueryLocator   string
+	Size           int
+	EntityTypeName string
+}
+
+type ComponentFile struct {
+	FileName    string
+	ComponentId string
+}
+
+type BundleManifest struct {
+	Name  string
+	Files []ComponentFile
+}
+
 func NewForce(creds ForceCredentials) (force *Force) {
 	force = new(Force)
 	force.Credentials = creds
@@ -279,6 +298,27 @@ func (f *Force) GetAuraBundlesList() (bundles AuraDefinitionBundleResult, defini
 	return
 }
 
+func (f *Force) GetAuraBundlesList() (bundles AuraDefinitionBundleResult, definitions AuraDefinitionBundleResult, err error) {
+	aurl := fmt.Sprintf("%s/services/data/%s/tooling/query?q=%s", f.Credentials.InstanceUrl, apiVersion,
+		url.QueryEscape("SELECT Id, DeveloperName, NamespacePrefix, ApiVersion, Description FROM AuraDefinitionBundle"))
+	body, err := f.httpGet(aurl)
+	if err != nil {
+		return
+	}
+	json.Unmarshal(body, &bundles)
+
+	aurl = fmt.Sprintf("%s/services/data/%s/tooling/query?q=%s", f.Credentials.InstanceUrl, apiVersion,
+		url.QueryEscape("SELECT Id, Source, AuraDefinitionBundleId, DefType, Format FROM AuraDefinition"))
+
+	body, err = f.httpGet(aurl)
+	if err != nil {
+		return
+	}
+	json.Unmarshal(body, &definitions)
+
+	return
+}
+
 func (f *Force) ListSobjects() (sobjects []ForceSobject, err error) {
 	url := fmt.Sprintf("%s/services/data/%s/sobjects", f.Credentials.InstanceUrl, apiVersion)
 	body, err := f.httpGet(url)
@@ -336,6 +376,12 @@ func (f *Force) CreateRecord(sobject string, attrs map[string]string) (id string
 	var result ForceCreateRecordResult
 	json.Unmarshal(body, &result)
 	id = result.Id
+	return
+}
+
+func (f *Force) UpdateAuraComponent(source map[string]string, id string) (err error) {
+	url := fmt.Sprintf("%s/services/data/%s/tooling/sobjects/AuraDefinition/%s", f.Credentials.InstanceUrl, apiVersion, id)
+	_, err = f.httpPatch(url, source)
 	return
 }
 
