@@ -260,6 +260,25 @@ type JobInfo struct {
 	ApexProcessingTime      int    `xml:"apexProcessingTime"`
 }
 
+type AuraDefinitionBundleResult struct {
+	Done           bool
+	Records        []ForceRecord
+	TotalSize      int
+	QueryLocator   string
+	Size           int
+	EntityTypeName string
+}
+
+type ComponentFile struct {
+	FileName    string
+	ComponentId string
+}
+
+type BundleManifest struct {
+	Name  string
+	Files []ComponentFile
+}
+
 func NewForce(creds ForceCredentials) (force *Force) {
 	force = new(Force)
 	force.Credentials = creds
@@ -353,6 +372,27 @@ func (f *Force) GetCodeCoverage(classId string, className string) (err error) {
 	//var result ForceSobjectsResult
 	json.Unmarshal(body, &result)
 	fmt.Printf("\n%d lines covered\n%d lines not covered\n", int(result.Records[0]["NumLinesCovered"].(float64)), int(result.Records[0]["NumLinesUncovered"].(float64)))
+	return
+}
+
+func (f *Force) GetAuraBundlesList() (bundles AuraDefinitionBundleResult, definitions AuraDefinitionBundleResult, err error) {
+	aurl := fmt.Sprintf("%s/services/data/%s/tooling/query?q=%s", f.Credentials.InstanceUrl, apiVersion,
+		url.QueryEscape("SELECT Id, DeveloperName, NamespacePrefix, ApiVersion, Description FROM AuraDefinitionBundle"))
+	body, err := f.httpGet(aurl)
+	if err != nil {
+		return
+	}
+	json.Unmarshal(body, &bundles)
+
+	aurl = fmt.Sprintf("%s/services/data/%s/tooling/query?q=%s", f.Credentials.InstanceUrl, apiVersion,
+		url.QueryEscape("SELECT Id, Source, AuraDefinitionBundleId, DefType, Format FROM AuraDefinition"))
+
+	body, err = f.httpGet(aurl)
+	if err != nil {
+		return
+	}
+	json.Unmarshal(body, &definitions)
+
 	return
 }
 
@@ -572,6 +612,12 @@ func (f *Force) RetrieveBulkBatchResults(jobId string, batchId string) (results 
 		err = errors.New(fmt.Sprintf("%s: %s", fault.ExceptionCode, fault.ExceptionMessage))
 	}
 	//	sreader = Reader.NewReader(result);
+	return
+}
+
+func (f *Force) UpdateAuraComponent(source map[string]string, id string) (err error) {
+	url := fmt.Sprintf("%s/services/data/%s/tooling/sobjects/AuraDefinition/%s", f.Credentials.InstanceUrl, apiVersion, id)
+	_, err = f.httpPatch(url, source)
 	return
 }
 
