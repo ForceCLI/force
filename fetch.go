@@ -2,6 +2,7 @@ package main
 
 import (
 	"archive/zip"
+	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"io"
@@ -25,6 +26,8 @@ Examples
 
   force fetch CustomObject
 
+  force fetch Aura
+
   force fetch package MyPackagedApp
 
   options
@@ -34,6 +37,65 @@ Examples
       	  example: force fetch StaticResource MyResource --unpack
 
 `,
+}
+
+func runFetchAura(cmd *Command, args []string) {
+	force, _ := ActiveForce()
+
+	bundles, definitions, err := force.GetAuraBundlesList()
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
+
+	var bundleMap = make(map[string]string)
+	var bundleRecords = bundles.Records
+	for _, bundle := range bundleRecords {
+		id := fmt.Sprintf("%s", bundle["Id"])
+		bundleMap[id] = fmt.Sprintf("%s", bundle["DeveloperName"])
+	}
+
+	var defRecords = definitions.Records
+	wd, _ := os.Getwd()
+	root := filepath.Join(wd, "metadata", "aurabundles")
+
+	if err := os.MkdirAll(root, 0755); err != nil {
+		ErrorAndExit(err.Error())
+	}
+
+	for key, value := range bundleMap {
+		if err := os.MkdirAll(filepath.Join(root, value), 0755); err != nil {
+			ErrorAndExit(err.Error())
+		}
+
+		var bundleManifest = BundleManifest{}
+		bundleManifest.Name = value
+		bundleManifest.Files = []ComponentFile{}
+
+		for _, def := range defRecords {
+			var did = fmt.Sprintf("%s", def["AuraDefinitionBundleId"])
+			if did == key {
+				var entity = fmt.Sprintf("%s%s", value, strings.Title(strings.ToLower(fmt.Sprintf("%s", def["DefType"]))))
+				switch fmt.Sprintf("%s", def["DefType"]) {
+				case "COMPONENT":
+					entity += ".cmp"
+				case "APPLICATION":
+					entity += ".app"
+				case "EVENT":
+					entity += ".evt"
+				case "STYLE":
+					entity += ".css"
+				default:
+					entity += ".js"
+				}
+				var componentFile = ComponentFile{entity, fmt.Sprintf("%s", def["Id"])}
+				bundleManifest.Files = append(bundleManifest.Files, componentFile)
+				ioutil.WriteFile(filepath.Join(root, value, entity), []byte(fmt.Sprintf("%s", def["Source"])), 0644)
+			}
+		}
+		bmBody, _ := json.Marshal(bundleManifest)
+		ioutil.WriteFile(filepath.Join(root, value, "manifest.json"), bmBody, 0644)
+	}
+	return
 }
 
 func runFetch(cmd *Command, args []string) {
@@ -49,7 +111,9 @@ func runFetch(cmd *Command, args []string) {
 	var expandResources bool = false
 
 	artifactType := args[0]
-	if artifactType == "package" {
+	if strings.ToLower(artifactType) == "aura" {
+		runFetchAura(cmd, args)
+	} else if artifactType == "package" {
 		files, err = force.Metadata.RetrievePackage(args[1])
 		if err != nil {
 			ErrorAndExit(err.Error())
