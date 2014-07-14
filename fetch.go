@@ -93,7 +93,7 @@ func runFetchAura(cmd *Command, args []string) {
 			}
 		}
 		bmBody, _ := json.Marshal(bundleManifest)
-		ioutil.WriteFile(filepath.Join(root, value, "manifest.json"), bmBody, 0644)
+		ioutil.WriteFile(filepath.Join(root, value, ".manifest"), bmBody, 0644)
 	}
 	return
 }
