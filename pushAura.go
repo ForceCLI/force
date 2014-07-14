@@ -8,22 +8,29 @@ import (
 )
 
 var cmdPushAura = &Command{
-	Run:   runPushAura,
 	Usage: "pushAura",
-	Short: "TBD",
+	Short: "force pushAura -e=<filepath>",
 	Long: `
-	force pushAura fullFilePath entityId
+	force pushAura -e=<fullFilePath>
 
 	`,
 }
 
+func init() {
+	cmdPushAura.Run = runPushAura
+}
+
+var (
+	entity = cmdPushAura.Flag.String("e", "", "fully qualified file name for entity")
+)
+
 func runPushAura(cmd *Command, args []string) {
 	force, _ := ActiveForce()
 
-	fileName := args[0]
+	fileName := *entity
 
 	//Get the manifest
-	mbody, _ := readFile(filepath.Join(filepath.Dir(fileName), "manifest.json"))
+	mbody, _ := readFile(filepath.Join(filepath.Dir(fileName), ".manifest"))
 
 	var manifest BundleManifest
 	json.Unmarshal([]byte(mbody), &manifest)
