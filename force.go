@@ -375,19 +375,66 @@ func (f *Force) GetCodeCoverage(classId string, className string) (err error) {
 	return
 }
 
-func (f *Force) GetAuraBundlesList() (bundles AuraDefinitionBundleResult, definitions AuraDefinitionBundleResult, err error) {
+func (f *Force) GetAuraBundles() (bundles AuraDefinitionBundleResult, definitions AuraDefinitionBundleResult, err error) {
+	bundles, err = f.GetAuraBundlesList()
+	definitions, err = f.GetAuraBundleDefinitions()
+	return
+}
+
+func (f *Force) GetAuraBundleDefinitions() (definitions AuraDefinitionBundleResult, err error) {
+	aurl := fmt.Sprintf("%s/services/data/%s/tooling/query?q=%s", f.Credentials.InstanceUrl, apiVersion,
+		url.QueryEscape("SELECT Id, Source, AuraDefinitionBundleId, DefType, Format FROM AuraDefinition"))
+
+	body, err := f.httpGet(aurl)
+	if err != nil {
+		return
+	}
+	json.Unmarshal(body, &definitions)
+
+	return
+}
+
+func (f *Force) GetAuraBundlesList() (bundles AuraDefinitionBundleResult, err error) {
 	aurl := fmt.Sprintf("%s/services/data/%s/tooling/query?q=%s", f.Credentials.InstanceUrl, apiVersion,
 		url.QueryEscape("SELECT Id, DeveloperName, NamespacePrefix, ApiVersion, Description FROM AuraDefinitionBundle"))
+	fmt.Println(aurl)
 	body, err := f.httpGet(aurl)
 	if err != nil {
 		return
 	}
 	json.Unmarshal(body, &bundles)
 
-	aurl = fmt.Sprintf("%s/services/data/%s/tooling/query?q=%s", f.Credentials.InstanceUrl, apiVersion,
+	return
+}
+
+func (f *Force) GetAuraBundle(bundleName string) (bundles AuraDefinitionBundleResult, definitions AuraDefinitionBundleResult, err error) {
+	bundles, err = f.GetAuraBundleByName(bundleName)
+	bundle := bundles.Records[0]
+	definitions, err = f.GetAuraBundleDefinition(bundle["Id"].(string))
+	return
+}
+
+func (f *Force) GetAuraBundleByName(bundleName string) (bundles AuraDefinitionBundleResult, err error) {
+	criteria := fmt.Sprintf(" Where DeveloperName = '%s'", bundleName)
+	
+	aurl := fmt.Sprintf("%s/services/data/%s/tooling/query?q=%s", f.Credentials.InstanceUrl, apiVersion,
+		url.QueryEscape(fmt.Sprintf("SELECT Id, DeveloperName, NamespacePrefix, ApiVersion, Description FROM AuraDefinitionBundle%s", criteria)))
+	
+	fmt.Println(aurl)
+	body, err := f.httpGet(aurl)
+	if err != nil {
+		return
+	}
+	json.Unmarshal(body, &bundles)
+
+	return
+}
+
+func (f *Force) GetAuraBundleDefinition(id string) (definitions AuraDefinitionBundleResult, err error) {
+	aurl := fmt.Sprintf("%s/services/data/%s/tooling/query?q=%s", f.Credentials.InstanceUrl, apiVersion,
 		url.QueryEscape("SELECT Id, Source, AuraDefinitionBundleId, DefType, Format FROM AuraDefinition"))
 
-	body, err = f.httpGet(aurl)
+	body, err := f.httpGet(aurl)
 	if err != nil {
 		return
 	}
