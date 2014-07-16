@@ -27,6 +27,7 @@ var commands = []*Command{
 	cmdHelp,
 	cmdPush,
 	cmdPushAura,
+	cmdAura,
 	cmdPassword,
 }
 
