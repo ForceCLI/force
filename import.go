@@ -22,7 +22,7 @@ Deployment Options
   -allowmissingfiles  Specifies whether a deploy succeeds even if files missing
   -autoupdatepackage  Auto add files to the package if missing
   -ignorewarnings     Indicates if warnings should fail deployment or not
-
+  -verbose
 Examples:
 
   force import
@@ -41,24 +41,39 @@ var (
 	allowMissingFilesFlag = cmdImport.Flag.Bool("allowmissingfiles", false, "set allow missing files")
 	autoUpdatePackageFlag = cmdImport.Flag.Bool("autoupdatepackage", false, "set auto update package")
 	ignoreWarningsFlag    = cmdImport.Flag.Bool("ignorewarnings", false, "set ignore warnings")
+	verbose				  = cmdImport.Flag.Bool("verbose", false, "give more verbose output")
 )
 
 func init() {
 	cmdImport.Run = runImport
+	cmdImport.Flag.BoolVar(verbose, "v", false, "give more verbose output")
+	cmdImport.Flag.BoolVar(rollBackOnErrorFlag, "r", false, "set roll back on error")
+	cmdImport.Flag.BoolVar(runAllTestsFlag, "t", false, "set run all tests")
+	cmdImport.Flag.BoolVar(checkOnlyFlag, "c", false, "set check only")
+	cmdImport.Flag.BoolVar(purgeOnDeleteFlag, "p", false, "set purge on delete")
+	cmdImport.Flag.BoolVar(allowMissingFilesFlag, "m", false, "set allow missing files")
+	cmdImport.Flag.BoolVar(autoUpdatePackageFlag, "u", false, "set auto update package")
+	cmdImport.Flag.BoolVar(ignoreWarningsFlag, "i", false, "set ignore warnings")
 }
 
 func runImport(cmd *Command, args []string) {
+	fmt.Println(args)
+	if len(args) > 0 {
+		if err := cmd.Flag.Parse(args[1:]); err != nil {
+			os.Exit(2)
+		}
+	}
+
 	wd, _ := os.Getwd()
 	root := filepath.Join(wd, "metadata")
 	if len(args) >= 1 {
 		root, _ = filepath.Abs(args[0])
 	}
-	verbose := (len(args) == 2 && args[1] == "-v")
 
 	force, _ := ActiveForce()
 	files := make(ForceMetadataFiles)
 	if _, err := os.Stat(filepath.Join(root, "package.xml")); os.IsNotExist(err) {
-		ErrorAndExit("Must specify a directory that contains metadata files")
+		ErrorAndExit("No 'metadata' directory found and other directory specified")
 	}
 	err := filepath.Walk(root, func(path string, f os.FileInfo, err error) error {
 		if f.Mode().IsRegular() {
@@ -89,7 +104,7 @@ func runImport(cmd *Command, args []string) {
 	}
 
 	fmt.Printf("\nFailures - %d\n", len(problems))
-	if verbose {
+	if *verbose {
 		for _, problem := range problems {
 			if problem.FullName == "" {
 				fmt.Println(problem.Problem)
@@ -100,7 +115,7 @@ func runImport(cmd *Command, args []string) {
 	}
 
 	fmt.Printf("\nSuccesses - %d\n", len(successes))
-	if verbose {
+	if *verbose {
 		for _, success := range successes {
 			if success.FullName != "package.xml" {
 				verb := "unchanged"
