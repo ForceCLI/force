@@ -75,6 +75,7 @@ func runImport(cmd *Command, args []string) {
 	if _, err := os.Stat(filepath.Join(root, "package.xml")); os.IsNotExist(err) {
 		ErrorAndExit("No 'metadata' directory found and other directory specified")
 	}
+
 	err := filepath.Walk(root, func(path string, f os.FileInfo, err error) error {
 		if f.Mode().IsRegular() {
 			if f.Name() != ".DS_Store" {
@@ -82,7 +83,7 @@ func runImport(cmd *Command, args []string) {
 				if err != nil {
 					ErrorAndExit(err.Error())
 				}
-				files[strings.Replace(path, fmt.Sprintf("%s/", root), "", -1)] = data
+				files[strings.Replace(path, fmt.Sprintf("%s%s", root, string(os.PathSeparator)), "", -1)] = data
 			}
 		}
 		return nil
