@@ -416,10 +416,10 @@ func (f *Force) GetAuraBundle(bundleName string) (bundles AuraDefinitionBundleRe
 
 func (f *Force) GetAuraBundleByName(bundleName string) (bundles AuraDefinitionBundleResult, err error) {
 	criteria := fmt.Sprintf(" Where DeveloperName = '%s'", bundleName)
-	
+
 	aurl := fmt.Sprintf("%s/services/data/%s/tooling/query?q=%s", f.Credentials.InstanceUrl, apiVersion,
 		url.QueryEscape(fmt.Sprintf("SELECT Id, DeveloperName, NamespacePrefix, ApiVersion, Description FROM AuraDefinitionBundle%s", criteria)))
-	
+
 	fmt.Println(aurl)
 	body, err := f.httpGet(aurl)
 	if err != nil {
