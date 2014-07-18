@@ -29,7 +29,7 @@ func init() {
 }
 
 var (
-	auraentity = cmdAura.Flag.String("e", "", "fully qualified file name for entity")
+	auraentity     = cmdAura.Flag.String("e", "", "fully qualified file name for entity")
 	auraentitytype = cmdAura.Flag.String("t", "", "aura entity type")
 	auraentityname = cmdAura.Flag.String("n", "", "aura entity name")
 )
@@ -40,7 +40,7 @@ func runAura(cmd *Command, args []string) {
 	}
 	force, _ := ActiveForce()
 
-	subcommand := args[0];
+	subcommand := args[0]
 
 	switch strings.ToLower(subcommand) {
 	case "create":
@@ -64,4 +64,3 @@ func runAura(cmd *Command, args []string) {
 	fmt.Println(subcommand)
 	fmt.Println(*auraentity)
 }
-
