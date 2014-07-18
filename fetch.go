@@ -182,7 +182,7 @@ func runFetch(cmd *Command, args []string) {
 		}
 		//Handle expanding static resources into a "bundle" folder
 		if isResource && expandResources && name != "package.xml" {
-			pathParts := strings.Split(name, "/")
+			pathParts := strings.Split(name, string(os.PathSeparator))
 			resourceName := pathParts[cap(pathParts)-1]
 
 			resourceExt := strings.Split(resourceName, ".")[1]
