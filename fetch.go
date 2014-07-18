@@ -26,7 +26,7 @@ Examples
 
   force fetch CustomObject
 
-  force fetch Aura
+  force fetch Aura [<entity name>]
 
   force fetch package MyPackagedApp
 
@@ -39,12 +39,23 @@ Examples
 `,
 }
 
-func runFetchAura(cmd *Command, args []string) {
+func runFetchAura(cmd *Command, entityname string) {
 	force, _ := ActiveForce()
 
-	bundles, definitions, err := force.GetAuraBundlesList()
-	if err != nil {
-		ErrorAndExit(err.Error())
+	var bundles AuraDefinitionBundleResult
+	var definitions AuraDefinitionBundleResult
+	var err error
+
+	if entityname == "" {
+		bundles, definitions, err = force.GetAuraBundles()
+		if err != nil {
+			ErrorAndExit(err.Error())
+		}
+	} else {
+		bundles, definitions, err = force.GetAuraBundle(entityname)
+		if err != nil {
+			ErrorAndExit(err.Error())
+		}
 	}
 
 	var bundleMap = make(map[string]string)
@@ -112,7 +123,11 @@ func runFetch(cmd *Command, args []string) {
 
 	artifactType := args[0]
 	if strings.ToLower(artifactType) == "aura" {
-		runFetchAura(cmd, args)
+		if len(args) == 2 {
+			runFetchAura(cmd, args[1])
+		} else {
+			runFetchAura(cmd, "")
+		}
 	} else if artifactType == "package" {
 		files, err = force.Metadata.RetrievePackage(args[1])
 		if err != nil {
