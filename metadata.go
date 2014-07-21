@@ -886,7 +886,7 @@ func (fm *ForceMetadata) Deploy(files ForceMetadataFiles, options ForceDeployOpt
 	}
 	zipper.Close()
 
-	ioutil.WriteFile("package.zip", zipfile.Bytes(), 0644)
+	//ioutil.WriteFile("package.zip", zipfile.Bytes(), 0644)
 
 	encoded := base64.StdEncoding.EncodeToString(zipfile.Bytes())
 	body, err := fm.soapExecute("deploy", fmt.Sprintf(soap, encoded, options.AllowMissingFiles, options.AutoUpdatePackage, options.CheckOnly, options.IgnoreWarnings, options.PurgeOnDelete, options.RollbackOnError, options.RunAllTests))
