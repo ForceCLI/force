@@ -67,10 +67,24 @@ func runImport(cmd *Command, args []string) {
 	}
 
 	wd, _ := os.Getwd()
-	usr, _ := user.Current()
+	usr, err := user.Current()
+	var dir string
 
 	//Manually handle shell expansion short cut
-	dir := strings.Replace(*directory, "~", usr.HomeDir, 1)
+	if err != nil {
+		if strings.HasPrefix(*directory, "~") {
+			ErrorAndExit("Cannot determine tilde expansion, please use relative or absolute path to directory.")
+		} else {
+			dir = *directory
+		}
+	} else {
+		if strings.HasPrefix(*directory, "~") {
+			dir = strings.Replace(*directory, "~", usr.HomeDir, 1)
+		} else {
+			dir = *directory
+		}
+	}
+
 	root := filepath.Join(wd, dir)
 
 	// Check for absolute path
@@ -84,7 +98,7 @@ func runImport(cmd *Command, args []string) {
 		ErrorAndExit(" \n" + filepath.Join(root, "package.xml") + "\ndoes not exist")
 	}
 
-	err := filepath.Walk(root, func(path string, f os.FileInfo, err error) error {
+	err = filepath.Walk(root, func(path string, f os.FileInfo, err error) error {
 		if f.Mode().IsRegular() {
 			if f.Name() != ".DS_Store" {
 				data, err := ioutil.ReadFile(path)
