@@ -269,6 +269,36 @@ type AuraDefinitionBundleResult struct {
 	EntityTypeName string
 }
 
+type AuraDefinitionBundle struct {
+	Id               string
+	IsDeleted        bool
+	DeveloperName    string
+	Language         string
+	MasterLabel      string
+	NamespacePrefix  string
+	CreatedDate      string
+	CreatedById      string
+	LastModifiedDate string
+	LastModifiedById string
+	SystemModstamp   string
+	ApiVersion       int
+	Description      string
+}
+
+type AuraDefinition struct {
+	Id                     string
+	IsDeleted              bool
+	CreatedDate            string
+	CreatedById            string
+	LastModifiedDate       string
+	LastModifiedById       string
+	SystemModstamp         string
+	AuraDefinitionBundleId string
+	DefType                string
+	Format                 string
+	Source                 string
+}
+
 type ComponentFile struct {
 	FileName    string
 	ComponentId string
@@ -276,6 +306,7 @@ type ComponentFile struct {
 
 type BundleManifest struct {
 	Name  string
+	Id    string
 	Files []ComponentFile
 }
 
@@ -397,7 +428,6 @@ func (f *Force) GetAuraBundleDefinitions() (definitions AuraDefinitionBundleResu
 func (f *Force) GetAuraBundlesList() (bundles AuraDefinitionBundleResult, err error) {
 	aurl := fmt.Sprintf("%s/services/data/%s/tooling/query?q=%s", f.Credentials.InstanceUrl, apiVersion,
 		url.QueryEscape("SELECT Id, DeveloperName, NamespacePrefix, ApiVersion, Description FROM AuraDefinitionBundle"))
-	fmt.Println(aurl)
 	body, err := f.httpGet(aurl)
 	if err != nil {
 		return
@@ -420,7 +450,6 @@ func (f *Force) GetAuraBundleByName(bundleName string) (bundles AuraDefinitionBu
 	aurl := fmt.Sprintf("%s/services/data/%s/tooling/query?q=%s", f.Credentials.InstanceUrl, apiVersion,
 		url.QueryEscape(fmt.Sprintf("SELECT Id, DeveloperName, NamespacePrefix, ApiVersion, Description FROM AuraDefinitionBundle%s", criteria)))
 
-	fmt.Println(aurl)
 	body, err := f.httpGet(aurl)
 	if err != nil {
 		return
@@ -439,6 +468,34 @@ func (f *Force) GetAuraBundleDefinition(id string) (definitions AuraDefinitionBu
 		return
 	}
 	json.Unmarshal(body, &definitions)
+
+	return
+}
+
+func (f *Force) CreateAuraBundle(bundleName string) (result ForceCreateRecordResult, err error) {
+	aurl := fmt.Sprintf("%s/services/data/%s/tooling/sobjects/AuraDefinitionBundle", f.Credentials.InstanceUrl, apiVersion)
+	attrs := make(map[string]string)
+	attrs["DeveloperName"] = bundleName
+	attrs["Description"] = "An Aura Bundle"
+	attrs["MasterLabel"] = bundleName
+	attrs["ApiVersion"] = apiVersionNumber
+	body, err := f.httpPost(aurl, attrs)
+	if err != nil {
+		return
+	}
+	json.Unmarshal(body, &result)
+
+	return
+}
+
+func (f *Force) CreateAuraComponent(attrs map[string]string) (result ForceCreateRecordResult, err error) {
+	aurl := fmt.Sprintf("%s/services/data/%s/tooling/sobjects/AuraDefinition", f.Credentials.InstanceUrl, apiVersion)
+	body, err := f.httpPost(aurl, attrs)
+	if err != nil {
+		fmt.Println("The error is: ", err.Error())
+		return
+	}
+	json.Unmarshal(body, &result)
 
 	return
 }

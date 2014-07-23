@@ -11,13 +11,13 @@ import (
 
 var cmdAura = &Command{
 	Usage: "aura",
-	Short: "force aura push -e=<filepath>",
+	Short: "force aura push -fileName=<filepath>",
 	Long: `
-	force aura push -e=<fullFilePath>
+	force aura push -f=<fullFilePath>
 
 	force aura create -t=<entity type> <entityName>
 
-	force aura delete -e=<fullFilePath>
+	force aura delete -f=<fullFilePath>
 
 	force aura list
 
@@ -26,10 +26,13 @@ var cmdAura = &Command{
 
 func init() {
 	cmdAura.Run = runAura
+	//cmdAura.Flag.StringVar(fileName, "fileName", "", "fully qualified file name for entity")
+	cmdAura.Flag.StringVar(auraentitytype, "entitytype", "", "fully qualified file name for entity")
+	cmdAura.Flag.StringVar(auraentityname, "entityname", "", "fully qualified file name for entity")
 }
 
 var (
-	auraentity     = cmdAura.Flag.String("e", "", "fully qualified file name for entity")
+	//fileName     = cmdAura.Flag.String("f", "", "fully qualified file name for entity")
 	auraentitytype = cmdAura.Flag.String("t", "", "aura entity type")
 	auraentityname = cmdAura.Flag.String("n", "", "aura entity name")
 )
@@ -61,6 +64,4 @@ func runAura(cmd *Command, args []string) {
 	case "push":
 		runPushAura(cmd, args)
 	}
-	fmt.Println(subcommand)
-	fmt.Println(*auraentity)
 }
