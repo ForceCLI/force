@@ -44,7 +44,7 @@ func runFetchAura(cmd *Command, entityname string) {
 
 	var bundles AuraDefinitionBundleResult
 	var definitions AuraDefinitionBundleResult
-	var err error 
+	var err error
 
 	if entityname == "" {
 		bundles, definitions, err = force.GetAuraBundles()
@@ -57,7 +57,6 @@ func runFetchAura(cmd *Command, entityname string) {
 			ErrorAndExit(err.Error())
 		}
 	}
-
 
 	var bundleMap = make(map[string]string)
 	var bundleRecords = bundles.Records
