@@ -877,14 +877,17 @@ func (fm *ForceMetadata) Deploy(files ForceMetadataFiles, options ForceDeployOpt
 	zipfile := new(bytes.Buffer)
 	zipper := zip.NewWriter(zipfile)
 	for name, data := range files {
-		fname := filepath.Base(name)
-		wr, err := zipper.Create(fmt.Sprintf("unpackaged%s%s", string(os.PathSeparator), fname))
+		name = filepath.ToSlash(name)
+		wr, err := zipper.Create(fmt.Sprintf("unpackaged%s%s", string(os.PathSeparator), name))
 		if err != nil {
 			return nil, nil, err
 		}
 		wr.Write(data)
 	}
 	zipper.Close()
+
+	//ioutil.WriteFile("package.zip", zipfile.Bytes(), 0644)
+
 	encoded := base64.StdEncoding.EncodeToString(zipfile.Bytes())
 	body, err := fm.soapExecute("deploy", fmt.Sprintf(soap, encoded, options.AllowMissingFiles, options.AutoUpdatePackage, options.CheckOnly, options.IgnoreWarnings, options.PurgeOnDelete, options.RollbackOnError, options.RunAllTests))
 	if err != nil {
@@ -951,7 +954,7 @@ func (fm *ForceMetadata) Retrieve(query ForceMetadataQuery) (files ForceMetadata
 	}
 	files = make(ForceMetadataFiles)
 	for raw_name, data := range raw_files {
-		name := strings.Replace(raw_name, fmt.Sprintf("unpackaged%s", string(os.PathSeparator)), "", -1)
+		name := strings.Replace(raw_name, "unpackaged/", "", -1)
 		files[name] = data
 	}
 	return
