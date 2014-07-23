@@ -372,12 +372,9 @@ func ValidateOptionsAndDefaults(typ string, fields map[string]reflect.StructFiel
 		}
 	}
 
-	fmt.Println("The type is " + typ)
 	// validate required attributes
 	s := requiredDefaults
-	fmt.Println(s)
 	tod := s.Type()
-	fmt.Println(tod)
 	for i := 0; i < s.NumField(); i++ {
 		_, ok := options[strings.ToLower(tod.Field(i).Name)]
 		if !ok {
@@ -413,7 +410,6 @@ func (fm *ForceMetadata) ValidateFieldOptions(typ string, options map[string]str
 	var attrs map[string]reflect.StructField
 	var s reflect.Value
 
-	fmt.Println(options)
 	switch typ {
 	case "phone":
 		attrs = getAttributes(&PhoneField{})

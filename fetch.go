@@ -81,6 +81,7 @@ func runFetchAura(cmd *Command, entityname string) {
 		var bundleManifest = BundleManifest{}
 		bundleManifest.Name = value
 		bundleManifest.Files = []ComponentFile{}
+		bundleManifest.Id = key
 
 		for _, def := range defRecords {
 			var did = fmt.Sprintf("%s", def["AuraDefinitionBundleId"])
