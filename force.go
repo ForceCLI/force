@@ -439,6 +439,9 @@ func (f *Force) GetAuraBundlesList() (bundles AuraDefinitionBundleResult, err er
 
 func (f *Force) GetAuraBundle(bundleName string) (bundles AuraDefinitionBundleResult, definitions AuraDefinitionBundleResult, err error) {
 	bundles, err = f.GetAuraBundleByName(bundleName)
+	if len(bundles.Records) == 0 {
+		ErrorAndExit(fmt.Sprintf("There is no Aura bundle named %q", bundleName))
+	}
 	bundle := bundles.Records[0]
 	definitions, err = f.GetAuraBundleDefinition(bundle["Id"].(string))
 	return
@@ -722,6 +725,13 @@ func (f *Force) RetrieveBulkBatchResults(jobId string, batchId string) (results 
 func (f *Force) UpdateAuraComponent(source map[string]string, id string) (err error) {
 	url := fmt.Sprintf("%s/services/data/%s/tooling/sobjects/AuraDefinition/%s", f.Credentials.InstanceUrl, apiVersion, id)
 	_, err = f.httpPatch(url, source)
+	return
+}
+
+func (f *Force) DeleteToolingRecord(objecttype string, id string) (err error) {
+	url := fmt.Sprintf("%s/services/data/%s/tooling/sobjects/%s/%s", f.Credentials.InstanceUrl, apiVersion, objecttype, id)
+	fmt.Println(url)
+	_, err = f.httpDelete(url)
 	return
 }
 
