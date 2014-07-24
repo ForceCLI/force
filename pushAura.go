@@ -34,33 +34,56 @@ var (
 )
 
 func runPushAura(cmd *Command, args []string) {
-	force, _ := ActiveForce()
 
 	if _, err := os.Stat(*fileName); os.IsNotExist(err) {
+		fmt.Println(err.Error())
 		ErrorAndExit("File does not exist\n" + *fileName)
 	}
 
 	// Verify that the file is in an aura bundles folder
-	if !inAuraBundlesFolder() {
+	if !inAuraBundlesFolder(*fileName) {
 		ErrorAndExit("File is not in an aura bundle folder (aurabundles")
 	}
 
-	// Check for manifest file
-	if _, err := os.Stat(filepath.Join(filepath.Dir(*fileName), ".manifest")); os.IsNotExist(err) {
-		// No manifest, but is in aurabundle folder, assume creating a new bundle with this file
-		// as the first artifact.
-		createNewAuraBundleAndDefinition(*force)
+	// See if this is a directory
+	info, _ := os.Stat(*fileName)
+	if info.IsDir() {
+		filepath.Walk(*fileName, func(path string, inf os.FileInfo, err error) error {
+			info, err = os.Stat(filepath.Join(*fileName, inf.Name()))
+			if err != nil {
+				fmt.Println(err.Error())
+			} else {
+				fmt.Println(inf.Name())
+				if info.IsDir() || inf.Name() == ".manifest" {
+					fmt.Println("\nSkip")
+				} else {
+					pushAuraComponent(filepath.Join(*fileName, inf.Name()))
+				}
+			}
+			return nil
+		})
 	} else {
-		// Got the manifest, let's update the artifact
-		updateAuraDefinition(*force)
-		return
+		pushAuraComponent(*fileName)
 	}
-
+	return
 }
 
-func isValidAuraExtension() bool {
-	var ext = strings.Trim(strings.ToLower(filepath.Ext(*fileName)), " ")
-	fmt.Printf("[%s]\n", ext)
+func pushAuraComponent(fname string) {
+	force, _ := ActiveForce()
+	// Check for manifest file
+	if _, err := os.Stat(filepath.Join(filepath.Dir(fname), ".manifest")); os.IsNotExist(err) {
+		// No manifest, but is in aurabundle folder, assume creating a new bundle with this file
+		// as the first artifact.
+		createNewAuraBundleAndDefinition(*force, fname)
+	} else {
+		// Got the manifest, let's update the artifact
+		updateAuraDefinition(*force, fname)
+		return
+	}
+}
+
+func isValidAuraExtension(fname string) bool {
+	var ext = strings.Trim(strings.ToLower(filepath.Ext(fname)), " ")
 	if ext == ".app" || ext == ".cmp" || ext == ".evt" {
 		return true
 	} else {
@@ -69,20 +92,20 @@ func isValidAuraExtension() bool {
 	return false
 }
 
-func createNewAuraBundleAndDefinition(force Force) {
+func createNewAuraBundleAndDefinition(force Force, fname string) {
 	// 	Creating a new bundle. We need
 	// 		the name of the bundle (parent folder of file)
 	//		the type of artifact (based on naming convention)
 	// 		the contents of the file
 	fmt.Println("Creating new bundle")
-	if isValidAuraExtension() {
+	if isValidAuraExtension(fname) {
 		// Need the parent folder name to name the bundle
-		var bundleName = filepath.Base(filepath.Dir(*fileName))
+		var bundleName = filepath.Base(filepath.Dir(fname))
 		// Create the manifext
 		var manifest BundleManifest
 		manifest.Name = bundleName
 
-		_, _ = getFormatByFileName()
+		_, _ = getFormatByFileName(fname)
 
 		// Create a bundle defintion
 		bundle, err := force.CreateAuraBundle(bundleName)
@@ -90,78 +113,78 @@ func createNewAuraBundleAndDefinition(force Force) {
 			ErrorAndExit(err.Error())
 		}
 		manifest.Id = bundle.Id
-		component, err := createBundleEntity(manifest, force)
+		component, err := createBundleEntity(manifest, force, fname)
 		if err != nil {
 			ErrorAndExit(err.Error())
 		}
-		createManifest(manifest, component)
+		createManifest(manifest, component, fname)
 	}
 }
 
-func createBundleEntity(manifest BundleManifest, force Force) (component ForceCreateRecordResult, err error) {
+func createBundleEntity(manifest BundleManifest, force Force, fname string) (component ForceCreateRecordResult, err error) {
 	// create the bundle entity
-	format, deftype := getFormatByFileName()
-	mbody, _ := readFile(*fileName)
+	format, deftype := getFormatByFileName(fname)
+	mbody, _ := readFile(fname)
 	component, err = force.CreateAuraComponent(map[string]string{"AuraDefinitionBundleId": manifest.Id, "DefType": deftype, "Format": format, "Source": mbody})
 	return
 }
 
-func createManifest(manifest BundleManifest, component ForceCreateRecordResult) {
+func createManifest(manifest BundleManifest, component ForceCreateRecordResult, fname string) {
 	cfile := ComponentFile{}
-	cfile.FileName = *fileName
+	cfile.FileName = fname
 	cfile.ComponentId = component.Id
 
 	manifest.Files = append(manifest.Files, cfile)
 	bmBody, _ := json.Marshal(manifest)
 
-	ioutil.WriteFile(filepath.Join(filepath.Dir(*fileName), ".manifest"), bmBody, 0644)
+	ioutil.WriteFile(filepath.Join(filepath.Dir(fname), ".manifest"), bmBody, 0644)
 	return
 }
 
-func updateManifest(manifest BundleManifest, component ForceCreateRecordResult) {
+func updateManifest(manifest BundleManifest, component ForceCreateRecordResult, fname string) {
 	cfile := ComponentFile{}
-	cfile.FileName = *fileName
+	cfile.FileName = fname
 	cfile.ComponentId = component.Id
 
 	manifest.Files = append(manifest.Files, cfile)
 	bmBody, _ := json.Marshal(manifest)
 
-	ioutil.WriteFile(filepath.Join(filepath.Dir(*fileName), ".manifest"), bmBody, 0644)
+	ioutil.WriteFile(filepath.Join(filepath.Dir(fname), ".manifest"), bmBody, 0644)
 	return
 }
 
-func updateAuraDefinition(force Force) {
+func updateAuraDefinition(force Force, fname string) {
 
 	//Get the manifest
-	mbody, _ := readFile(filepath.Join(filepath.Dir(*fileName), ".manifest"))
+	mbody, _ := readFile(filepath.Join(filepath.Dir(fname), ".manifest"))
 
 	var manifest BundleManifest
 	json.Unmarshal([]byte(mbody), &manifest)
 
 	for i := range manifest.Files {
 		component := manifest.Files[i]
-		if filepath.Base(component.FileName) == filepath.Base(*fileName) {
+		if filepath.Base(component.FileName) == filepath.Base(fname) {
 			//Here is where we make the call to send the update
-			mbody, _ = readFile(*fileName)
+			mbody, _ = readFile(fname)
 			err := force.UpdateAuraComponent(map[string]string{"source": mbody}, component.ComponentId)
 			if err != nil {
 				ErrorAndExit(err.Error())
 			}
-			fmt.Printf("Aura definition updated: %s\n", filepath.Base(*fileName))
+			fmt.Printf("Aura definition updated: %s\n", filepath.Base(fname))
 			return
 		}
 	}
 	fmt.Println("Creating new bundle entity")
-	component, err := createBundleEntity(manifest, force)
+	component, err := createBundleEntity(manifest, force, fname)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
-	updateManifest(manifest, component)
+	updateManifest(manifest, component, fname)
 	fmt.Println("New component in the bundle")
 }
 
-func getFormatByFileName() (format string, defType string) {
-	var fname = strings.ToLower(*fileName)
+func getFormatByFileName(filename string) (format string, defType string) {
+	var fname = strings.ToLower(filename)
 	if strings.Contains(fname, "application.app") {
 		format = "XML"
 		defType = "APPLICATION"
@@ -184,7 +207,21 @@ func getFormatByFileName() (format string, defType string) {
 		format = "CSS"
 		defType = "STYLE"
 	} else {
-		ErrorAndExit("Could not determine aura definition type.")
+		if filepath.Ext(fname) == ".app" {
+			format = "XML"
+			defType = "APPLICATION"
+		} else if filepath.Ext(fname) == ".cmp" {
+			format = "XML"
+			defType = "COMPONENT"
+		} else if filepath.Ext(fname) == ".evt" {
+			format = "XML"
+			defType = "EVENT"
+		} else if filepath.Ext(fname) == ".css" {
+			format = "CSS"
+			defType = "STYLE"
+		} else {
+			ErrorAndExit("Could not determine aura definition type.")
+		}
 	}
 	return
 }
@@ -201,8 +238,8 @@ func getDefinitionFormat(deftype string) (result string) {
 	return
 }
 
-func inAuraBundlesFolder() bool {
-	var p = *fileName
+func inAuraBundlesFolder(fname string) bool {
+	var p = fname
 	var maxLoop = 3
 	for filepath.Base(p) != "aurabundles" && maxLoop != 0 {
 		p = filepath.Dir(p)
