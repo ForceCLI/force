@@ -23,13 +23,13 @@ var cmdPushAura = &Command{
 func init() {
 	cmdPushAura.Run = runPushAura
 	cmdPushAura.Flag.StringVar(fileName, "f", "", "fully qualified file name for entity")
-	cmdPushAura.Flag.BoolVar(isBundle, "b", false, "Creating a bundle or not")
+	//	cmdPushAura.Flag.BoolVar(isBundle, "b", false, "Creating a bundle or not")
 	cmdPushAura.Flag.StringVar(createType, "t", "", "Type of entity or bundle to create")
 }
 
 var (
-	fileName   = cmdPushAura.Flag.String("filepath", "", "fully qualified file name for entity")
-	isBundle   = cmdPushAura.Flag.Bool("isBundle", false, "Creating a bundle or not")
+	fileName = cmdPushAura.Flag.String("filepath", "", "fully qualified file name for entity")
+	//	isBundle   = cmdPushAura.Flag.Bool("isBundle", false, "Creating a bundle or not")
 	createType = cmdPushAura.Flag.String("auraType", "", "Type of entity or bundle to create")
 )
 
@@ -41,7 +41,7 @@ func runPushAura(cmd *Command, args []string) {
 	}
 
 	// Verify that the file is in an aura bundles folder
-	if !inAuraBundlesFolder(*fileName) {
+	if !InAuraBundlesFolder(*fileName) {
 		ErrorAndExit("File is not in an aura bundle folder (aurabundles")
 	}
 
@@ -153,19 +153,23 @@ func updateManifest(manifest BundleManifest, component ForceCreateRecordResult, 
 	return
 }
 
+func GetManifest(fname string) (manifest BundleManifest) {
+	mbody, _ := readFile(filepath.Join(filepath.Dir(fname), ".manifest"))
+
+	json.Unmarshal([]byte(mbody), &manifest)
+	return
+}
+
 func updateAuraDefinition(force Force, fname string) {
 
 	//Get the manifest
-	mbody, _ := readFile(filepath.Join(filepath.Dir(fname), ".manifest"))
-
-	var manifest BundleManifest
-	json.Unmarshal([]byte(mbody), &manifest)
+	manifest := GetManifest(fname)
 
 	for i := range manifest.Files {
 		component := manifest.Files[i]
 		if filepath.Base(component.FileName) == filepath.Base(fname) {
 			//Here is where we make the call to send the update
-			mbody, _ = readFile(fname)
+			mbody, _ := readFile(fname)
 			err := force.UpdateAuraComponent(map[string]string{"source": mbody}, component.ComponentId)
 			if err != nil {
 				ErrorAndExit(err.Error())
@@ -238,7 +242,7 @@ func getDefinitionFormat(deftype string) (result string) {
 	return
 }
 
-func inAuraBundlesFolder(fname string) bool {
+func InAuraBundlesFolder(fname string) bool {
 	var p = fname
 	var maxLoop = 3
 	for filepath.Base(p) != "aurabundles" && maxLoop != 0 {
