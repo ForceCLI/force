@@ -922,28 +922,26 @@ func (fm *ForceMetadata) Retrieve(query ForceMetadataQuery) (files ForceMetadata
 			</unpackaged>
 		</retrieveRequest>
 	`
-	soapTypeTemplate := `
+	soapTypesTemplate := `
+		{{range .}}
 		<types>
 			{{range .Members}}
 			<members>{{.}}</members>
 			{{end}}
 			<name>{{.Name}}</name>
 		</types>
+		{{end}}
 	`
-	tmpl, err := template.New("soapType").Parse(soapTypeTemplate)
+	tmpl, err := template.New("soapTypes").Parse(soapTypesTemplate)
 	if err != nil {
-		panic(err)
+		ErrorAndExit(err.Error())
 	}
-	types := ""
-	for _, element := range query {
-		var soapType bytes.Buffer
-		err = tmpl.Execute(&soapType, element)
-		if err != nil {
-			panic(err)
-		}
-		types += soapType.String()
+	var soapTypes bytes.Buffer
+	err = tmpl.Execute(&soapTypes, query)
+	if err != nil {
+		ErrorAndExit("Error executing template: %s", err.Error())
 	}
-	body, err := fm.soapExecute("retrieve", fmt.Sprintf(soap, apiVersionNumber, types))
+	body, err := fm.soapExecute("retrieve", fmt.Sprintf(soap, apiVersionNumber, soapTypes.String()))
 	if err != nil {
 		return
 	}
