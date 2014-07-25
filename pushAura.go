@@ -34,6 +34,8 @@ var (
 )
 
 func runPushAura(cmd *Command, args []string) {
+	absPath, _ := filepath.Abs(*fileName)
+	*fileName = absPath
 
 	if _, err := os.Stat(*fileName); os.IsNotExist(err) {
 		fmt.Println(err.Error())
@@ -153,9 +155,14 @@ func updateManifest(manifest BundleManifest, component ForceCreateRecordResult, 
 	return
 }
 
-func GetManifest(fname string) (manifest BundleManifest) {
-	mbody, _ := readFile(filepath.Join(filepath.Dir(fname), ".manifest"))
+func GetManifest(fname string) (manifest BundleManifest, err error) {
+	manifestname := filepath.Join(filepath.Dir(fname), ".manifest")
 
+	if _, err = os.Stat(manifestname); os.IsNotExist(err) {
+		return
+	}
+
+	mbody, _ := readFile(filepath.Join(filepath.Dir(fname), ".manifest"))
 	json.Unmarshal([]byte(mbody), &manifest)
 	return
 }
@@ -163,7 +170,7 @@ func GetManifest(fname string) (manifest BundleManifest) {
 func updateAuraDefinition(force Force, fname string) {
 
 	//Get the manifest
-	manifest := GetManifest(fname)
+	manifest, err := GetManifest(fname)
 
 	for i := range manifest.Files {
 		component := manifest.Files[i]

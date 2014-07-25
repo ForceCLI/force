@@ -730,7 +730,6 @@ func (f *Force) UpdateAuraComponent(source map[string]string, id string) (err er
 
 func (f *Force) DeleteToolingRecord(objecttype string, id string) (err error) {
 	url := fmt.Sprintf("%s/services/data/%s/tooling/sobjects/%s/%s", f.Credentials.InstanceUrl, apiVersion, objecttype, id)
-	fmt.Println(url)
 	_, err = f.httpDelete(url)
 	return
 }
