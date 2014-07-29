@@ -2,10 +2,10 @@ package main
 
 import (
 	"os"
-	//"encoding/json"
+	"encoding/json"
 	"fmt"
 	"strings"
-	//"io/ioutil"
+	"io/ioutil"
 	"path/filepath"
 )
 
@@ -62,19 +62,31 @@ var (
 )
 
 func runAura(cmd *Command, args []string) {
-	if err := cmd.Flag.Parse(args[1:]); err != nil {
+	if err := cmd.Flag.Parse(args[0:]); err != nil {
 		os.Exit(2)
 	}
+
 	force, _ := ActiveForce()
 
 	subcommand := args[0]
+	// Sublime hack - the way sublime passes parameters seems to 
+	// break the flag parsing by sending a single element array
+	// for the args. ARGH!!!
+	if strings.HasPrefix(subcommand, "delete ") {
+		what := strings.Split(subcommand, " ")
+		if err := cmd.Flag.Parse(what[1:]); err != nil {
+			ErrorAndExit(err.Error())
+		}
+		subcommand = what[0]
+	}
 
 	switch strings.ToLower(subcommand) {
 	case "create":
-		if *auraentitytype == "" || *auraentityname == "" {
+		/*if *auraentitytype == "" || *auraentityname == "" {
 			fmt.Println("Must specify entity type and name")
 			os.Exit(2)
-		}
+		}*/
+		ErrorAndExit("force aura create not yet implemented...")
 
 	case "delete":
 		runDeleteAura()
@@ -96,7 +108,6 @@ func runDeleteAura() {
 	*fileName = absPath
 
 	if InAuraBundlesFolder(*fileName) {
-		fmt.Println("Yup, in aura folder")
 		info, err := os.Stat(*fileName)
 		if err != nil {
 			ErrorAndExit(err.Error())
@@ -149,7 +160,6 @@ func runDeleteAura() {
 				}
 			} else {
 				if mfile == cfile {
-					fmt.Println("Found the manifest entry: ", manifest.Files[key].ComponentId)
 					deleteAuraDefinition(manifest, key)
 					return
 				}
@@ -177,6 +187,9 @@ func deleteAuraDefinition(manifest BundleManifest, key int) {
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
+	fname := manifest.Files[key].FileName
+	os.Remove(fname)
 	manifest.Files = append(manifest.Files[:key], manifest.Files[key+1:]...)
-	os.Remove(*fileName)
+	bmBody, _ := json.Marshal(manifest)
+	ioutil.WriteFile(filepath.Join(filepath.Dir(fname), ".manifest"), bmBody, 0644)
 }
