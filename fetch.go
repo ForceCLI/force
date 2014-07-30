@@ -99,7 +99,7 @@ func runFetchAura(cmd *Command, entityname string) {
 				default:
 					entity += ".js"
 				}
-				var componentFile = ComponentFile{entity, fmt.Sprintf("%s", def["Id"])}
+				var componentFile = ComponentFile{filepath.Join(root, value, entity), fmt.Sprintf("%s", def["Id"])}
 				bundleManifest.Files = append(bundleManifest.Files, componentFile)
 				ioutil.WriteFile(filepath.Join(root, value, entity), []byte(fmt.Sprintf("%s", def["Source"])), 0644)
 			}

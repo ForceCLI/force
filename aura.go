@@ -86,7 +86,7 @@ func runAura(cmd *Command, args []string) {
 			fmt.Println("Must specify entity type and name")
 			os.Exit(2)
 		}*/
-		ErrorAndExit("force aura create not yet implemented...")
+		ErrorAndExit("force aura create not yet implemented")
 
 	case "delete":
 		runDeleteAura()
@@ -108,6 +108,7 @@ func runDeleteAura() {
 	*fileName = absPath
 
 	if InAuraBundlesFolder(*fileName) {
+		fmt.Println("Yup, in aura folder")
 		info, err := os.Stat(*fileName)
 		if err != nil {
 			ErrorAndExit(err.Error())
@@ -115,6 +116,7 @@ func runDeleteAura() {
 		manifest, err := GetManifest(*fileName)
 		isBundle := false
 		if info.IsDir() {
+			fmt.Println("Yes, this is a directory...")
 			manifest, err = GetManifest(filepath.Join(*fileName, ".manifest"))
 			if err != nil {
 				// Try to look up the bundle by name
@@ -156,10 +158,12 @@ func runDeleteAura() {
 					cfile = filepath.Join(*fileName, mfile)
 				} else {
 					cfile = mfile
+					fmt.Println("Sending ", cfile, " to delete function...")
 					deleteAuraDefinition(manifest, key)
 				}
 			} else {
 				if mfile == cfile {
+					fmt.Println("Found the manifest entry: ", manifest.Files[key].ComponentId)
 					deleteAuraDefinition(manifest, key)
 					return
 				}
@@ -188,6 +192,7 @@ func deleteAuraDefinition(manifest BundleManifest, key int) {
 		ErrorAndExit(err.Error())
 	}
 	fname := manifest.Files[key].FileName
+	fmt.Println("Gonna delete the file ", fname, " from the file system...")
 	os.Remove(fname)
 	manifest.Files = append(manifest.Files[:key], manifest.Files[key+1:]...)
 	bmBody, _ := json.Marshal(manifest)
