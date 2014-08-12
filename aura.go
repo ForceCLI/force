@@ -1,12 +1,12 @@
 package main
 
 import (
-	"os"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"io/ioutil"
+	"os"
 	"path/filepath"
+	"strings"
 )
 
 var cmdAura = &Command{
@@ -69,7 +69,7 @@ func runAura(cmd *Command, args []string) {
 	force, _ := ActiveForce()
 
 	subcommand := args[0]
-	// Sublime hack - the way sublime passes parameters seems to 
+	// Sublime hack - the way sublime passes parameters seems to
 	// break the flag parsing by sending a single element array
 	// for the args. ARGH!!!
 	if strings.HasPrefix(subcommand, "delete ") {
@@ -140,9 +140,9 @@ func runDeleteAura() {
 						})
 						os.Remove(*fileName)
 						fmt.Println("Bundle ", filepath.Base(*fileName), " deleted.")
-						return;					
+						return
 					}
-				}	
+				}
 			}
 			isBundle = true
 		}

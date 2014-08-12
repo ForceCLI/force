@@ -83,8 +83,10 @@ func runPasswordChange(args []string) {
 	if err != nil {
 		ErrorAndExit(err.Error())
 	} else {
-		attrs := ParseArgumentAttrs(args[1:])
-		_, err := force.ChangePassword(records.Records[0]["Id"].(string), attrs)
+		fmt.Println(args[1:])
+		newPass := make(map[string]string)
+		newPass["NewPassword"] = args[1]
+		_, err := force.ChangePassword(records.Records[0]["Id"].(string), newPass)
 		if err != nil {
 			ErrorAndExit(err.Error())
 		} else {
