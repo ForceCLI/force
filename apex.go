@@ -7,11 +7,12 @@ import (
 )
 
 var cmdApex = &Command{
-	Run:   runApex,
-	Usage: "apex [file]",
+	Usage: "apex [-q] [file]",
 	Short: "Execute anonymous Apex code",
 	Long: `
 Execute anonymous Apex code
+
+The -q flag enters quiet mode
 
 Examples:
 
@@ -24,7 +25,12 @@ Examples:
 }
 
 func init() {
+	cmdApex.Run = runApex
 }
+
+var (
+	qApexFlag = cmdApex.Flag.Bool("q", false, "enters quiet mode")
+)
 
 func runApex(cmd *Command, args []string) {
 	var code []byte
@@ -34,9 +40,13 @@ func runApex(cmd *Command, args []string) {
 	} else if len(args) > 1 {
 		fmt.Println("Got test indication.")
 	} else {
-		fmt.Println(">> Start typing Apex code; press CTRL-D when finished\n")
+		if !*qApexFlag {
+			fmt.Println(">> Start typing Apex code; press CTRL-D when finished\n")
+		}
 		code, err = ioutil.ReadAll(os.Stdin)
-		fmt.Println("\n\n>> Executing code...\n")
+		if !*qApexFlag {
+			fmt.Println("\n\n>> Executing code...\n")
+		}
 	}
 	if err != nil {
 		ErrorAndExit(err.Error())
