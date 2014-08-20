@@ -37,9 +37,6 @@ The load process involves these steps
 Jobs and batches can be monitored.
 
 bulk command
-force bulk jobs
-
-bulk command
 force bulk job <jobId>
 
 bulk command
@@ -90,11 +87,7 @@ Examples:
 func runBulk(cmd *Command, args []string) {
 
 	if len(args) == 1 {
-		if args[0] == "jobs" {
-			listJobs()
-		} else {
-			ErrorAndExit("Invalid command")
-		}
+		ErrorAndExit("Invalid command")
 	} else if len(args) == 2 {
 		if args[0] == "insert" {
 			ErrorAndExit("Missing argument for insert")
@@ -180,15 +173,6 @@ func retrieveBulkQueryResults(jobId string, batchId string, resultId string) (da
 	force, _ := ActiveForce()
 
 	data, err := force.RetrieveBulkQueryResults(jobId, batchId, resultId)
-	if err != nil {
-		ErrorAndExit(err.Error())
-	}
-	return
-}
-
-func listJobs() (jobs []JobInfo, err error) {
-	force, _ := ActiveForce()
-	jobs, err = force.GetBulkJobs()
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}

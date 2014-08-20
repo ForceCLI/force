@@ -9,12 +9,16 @@ var cmdTest = &Command{
 	Usage: "test (all | classname...)",
 	Short: "Run apex tests",
 	Long: `
-Execute apex -namespace=<namespace> tests 
+Run apex tests
+
+Test Options
+  -namespace=<namespace>     Select namespace to run test from
 
 Examples:
 
-  force tests Test1 Test2 Test3
-  force tests all 
+  force test all
+  force test Test1 Test2 Test3
+  force test -namespace=ns Test4 
 `,
 }
 
@@ -40,9 +44,6 @@ func runTests(cmd *Command, args []string) {
 			fmt.Println("Test classes specified not found")
 		} else {
 			var percent string
-			//fmt.Println(output.Log)
-			//fmt.Println()
-			//fmt.Println()
 			fmt.Println("Coverage:")
 			fmt.Println()
 			for index := range output.NumberLocations {
