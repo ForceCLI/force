@@ -571,7 +571,13 @@ func (f *Force) ChangePassword(id string, attrs map[string]string) (result strin
 }
 
 func (f *Force) GetRecord(sobject, id string) (object ForceRecord, err error) {
-	url := fmt.Sprintf("%s/services/data/%s/sobjects/%s/%s", f.Credentials.InstanceUrl, apiVersion, sobject, id)
+	fields := strings.Split(id, ":")
+	var url string
+	if len(fields) == 1 {
+		url = fmt.Sprintf("%s/services/data/%s/sobjects/%s/%s", f.Credentials.InstanceUrl, apiVersion, sobject, id)
+	} else {
+		url = fmt.Sprintf("%s/services/data/%s/sobjects/%s/%s/%s", f.Credentials.InstanceUrl, apiVersion, sobject, fields[0], fields[1])
+	}
 	body, err := f.httpGet(url)
 	if err != nil {
 		return
@@ -735,7 +741,13 @@ func (f *Force) DeleteToolingRecord(objecttype string, id string) (err error) {
 }
 
 func (f *Force) UpdateRecord(sobject string, id string, attrs map[string]string) (err error) {
-	url := fmt.Sprintf("%s/services/data/%s/sobjects/%s/%s", f.Credentials.InstanceUrl, apiVersion, sobject, id)
+	fields := strings.Split(id, ":")
+	var url string
+	if len(fields) == 1 {
+		url = fmt.Sprintf("%s/services/data/%s/sobjects/%s/%s", f.Credentials.InstanceUrl, apiVersion, sobject, id)
+	} else {
+		url = fmt.Sprintf("%s/services/data/%s/sobjects/%s/%s/%s", f.Credentials.InstanceUrl, apiVersion, sobject, fields[0], fields[1])
+	}
 	_, err = f.httpPatch(url, attrs)
 	return
 }
