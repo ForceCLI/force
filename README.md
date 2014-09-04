@@ -5,6 +5,7 @@ A command-line interface to force.com
 ### Installation
 
 ##### Precompiled Binaries
+If the download does not work, download instead from the [binaries](https://github.com/heroku/force/tree/master/binaries) folder in the repo.
 
 * [Linux 32bit](https://godist.herokuapp.com/projects/heroku/force/releases/current/linux-386/force)
 * [Linux 64bit](https://godist.herokuapp.com/projects/heroku/force/releases/current/linux-amd64/force)
