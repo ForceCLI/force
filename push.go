@@ -122,14 +122,18 @@ func pushByName(objPath string, objName string) {
 
 	// First try for metadata directory
 	root := filepath.Join(wd, "metadata")
+	fmt.Println(root)
 	if _, err := os.Stat(filepath.Join(root, "package.xml")); os.IsNotExist(err) {
 		// If not found, try for src directory
-		root = filepath.Join(wd, "src")
-		if _, err := os.Stat(filepath.Join(root, "package.xml")); os.IsNotExist(err) {
-			ErrorAndExit("Current directory must contain a src or metadata directory")
+		//root = filepath.Join(wd, "src")
+		if _, err := os.Stat(filepath.Join(wd, "src", "package.xml")); os.IsNotExist(err) {
+			//ErrorAndExit("Current directory must contain a src or metadata directory")
+		} else {
+			root = filepath.Join(wd, "src")
 		}
 	}
-
+	fmt.Println("objPath: ", filepath.Join(root, objPath))
+	fmt.Println("objName: ", objName)
 	if _, err := os.Stat(filepath.Join(root, objPath)); os.IsNotExist(err) {
 		ErrorAndExit("Folder " + objPath + " not found, must specify valid metadata")
 	}
@@ -235,7 +239,7 @@ func buildXml(xmlMap map[string][]string) []byte {
 
 	byteXml, _ := xml.MarshalIndent(p, "", "    ")
 	byteXml = append([]byte(xml.Header), byteXml...)
-
+	fmt.Println(string(byteXml))
 	return byteXml
 }
 

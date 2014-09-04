@@ -117,34 +117,39 @@ func runDeleteAura() {
 		isBundle := false
 		if info.IsDir() {
 			fmt.Println("Yes, this is a directory...")
+			force, _ := ActiveForce()
 			manifest, err = GetManifest(filepath.Join(*fileName, ".manifest"))
-			if err != nil {
+			bid := ""
+			if err != nil { // Could not find a manifest, use bundle name
 				// Try to look up the bundle by name
-				force, _ := ActiveForce()
+				fmt.Println("Look up the bundle by name")
 				b, err := force.GetAuraBundleByName(filepath.Base(*fileName))
 				if err != nil {
-					fmt.Println(err.Error())
+					ErrorAndExit(err.Error())
 				} else {
 					if len(b.Records) == 0 {
 						ErrorAndExit(fmt.Sprintf("No bundle definition named %q", filepath.Base(*fileName)))
 					} else {
-						bid := b.Records[0]["Id"].(string)
-						err = force.DeleteToolingRecord("AuraDefinitionBundle", bid)
-						if err != nil {
-							ErrorAndExit(err.Error())
-						}
-						// Now walk the bundle and remove all the atrifacts
-						filepath.Walk(*fileName, func(path string, inf os.FileInfo, err error) error {
-							os.Remove(path)
-							return nil
-						})
-						os.Remove(*fileName)
-						fmt.Println("Bundle ", filepath.Base(*fileName), " deleted.")
-						return
+						bid = b.Records[0]["Id"].(string)
 					}
 				}
+			} else {
+				bid = manifest.Id
 			}
-			isBundle = true
+
+			fmt.Println("Try to delete bundle with id", bid)
+			err = force.DeleteToolingRecord("AuraDefinitionBundle", bid)
+			if err != nil {
+				ErrorAndExit(err.Error())
+			}
+			// Now walk the bundle and remove all the atrifacts
+			filepath.Walk(*fileName, func(path string, inf os.FileInfo, err error) error {
+				os.Remove(path)
+				return nil
+			})
+			os.Remove(*fileName)
+			fmt.Println("Bundle ", filepath.Base(*fileName), " deleted.")
+			return
 		}
 
 		for key := range manifest.Files {
