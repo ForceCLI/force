@@ -14,7 +14,6 @@ var commands = []*Command{
 	cmdField,
 	cmdRecord,
 	cmdBulk,
-	cmdFetch,
 	cmdExport,
 	cmdFetch,
 	cmdImport,
@@ -26,6 +25,8 @@ var commands = []*Command{
 	cmdUpdate,
 	cmdHelp,
 	cmdPush,
+	cmdPushAura,
+	cmdAura,
 	cmdPassword,
 }
 

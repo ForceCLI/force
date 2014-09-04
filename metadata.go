@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"reflect"
 	"strconv"
 	"strings"
@@ -371,12 +372,9 @@ func ValidateOptionsAndDefaults(typ string, fields map[string]reflect.StructFiel
 		}
 	}
 
-	fmt.Println("The type is " + typ)
 	// validate required attributes
 	s := requiredDefaults
-	fmt.Println(s)
 	tod := s.Type()
-	fmt.Println(tod)
 	for i := 0; i < s.NumField(); i++ {
 		_, ok := options[strings.ToLower(tod.Field(i).Name)]
 		if !ok {
@@ -412,7 +410,6 @@ func (fm *ForceMetadata) ValidateFieldOptions(typ string, options map[string]str
 	var attrs map[string]reflect.StructField
 	var s reflect.Value
 
-	fmt.Println(options)
 	switch typ {
 	case "phone":
 		attrs = getAttributes(&PhoneField{})
@@ -497,128 +494,6 @@ func NewForceMetadata(force *Force) (fm *ForceMetadata) {
 	return
 }
 
-// Example of how to use Go's reflection
-// Print the attributes of a Data Model
-/*func getAttributes(m interface{}) map[string]reflect.StructField {
-	typ := reflect.TypeOf(m)
-	// if a pointer to a struct is passed, get the type of the dereferenced object
-	if typ.Kind() == reflect.Ptr {
-		typ = typ.Elem()
-	}
-
-	// create an attribute data structure as a map of types keyed by a string.
-	attrs := make(map[string]reflect.StructField)
-	// Only structs are supported so return an empty result if the passed object
-	// isn't a struct
-	if typ.Kind() != reflect.Struct {
-		fmt.Printf("%v type can't have attributes inspected\n", typ.Kind())
-		return attrs
-	}
-
-	// loop through the struct's fields and set the map
-	for i := 0; i < typ.NumField(); i++ {
-		p := typ.Field(i)
-		if !p.Anonymous {
-			attrs[strings.ToLower(p.Name)] = p
-		}
-	}
-
-	return attrs
-}*/
-
-/*func ValidateOptionsAndDefaults(typ string, fields map[string]reflect.StructField, requiredDefaults reflect.Value, options map[string]string) (newOptions map[string]string, err error) {
-	newOptions = make(map[string]string)
-
-	// validate optional attributes
-	for name, value := range options {
-		field, ok := fields[strings.ToLower(name)]
-		if !ok {
-			ErrorAndExit(fmt.Sprintf("validation error: %s:%s is not a valid option for field type %s", name, value, typ))
-		} else {
-			newOptions[field.Tag.Get("xml")] = options[name]
-		}
-	}
-
-	// validate required attributes
-	s := requiredDefaults
-	tod := s.Type()
-	for i := 0; i < s.NumField(); i++ {
-		_, ok := options[strings.ToLower(tod.Field(i).Name)]
-		if !ok {
-			switch s.Field(i).Type().Name() {
-			case "int":
-				newOptions[tod.Field(i).Tag.Get("xml")] = strconv.Itoa(s.Field(i).Interface().(int))
-				break
-			case "bool":
-				newOptions[tod.Field(i).Tag.Get("xml")] = strconv.FormatBool(s.Field(i).Interface().(bool))
-				break
-			default:
-				newOptions[tod.Field(i).Tag.Get("xml")] = s.Field(i).Interface().(string)
-				break
-			}
-		} else {
-			newOptions[tod.Field(i).Tag.Get("xml")] = options[strings.ToLower(tod.Field(i).Name)]
-		}
-	}
-	return newOptions, err
-}
-
-func (fm *ForceMetadata) ValidateFieldOptions(typ string, options map[string]string) (newOptions map[string]string, err error) {
-
-	newOptions = make(map[string]string)
-	var attrs map[string]reflect.StructField
-	var s reflect.Value
-
-	switch typ {
-	case "string", "text":
-		attrs = getAttributes(&StringField{})
-		s = reflect.ValueOf(&StringFieldRequired{255}).Elem()
-		break
-	case "textarea":
-		attrs = getAttributes(&TextAreaField{})
-		s = reflect.ValueOf(&TextAreaFieldRequired{}).Elem()
-		break
-	case "longtextarea":
-		attrs = getAttributes(&LongTextAreaField{})
-		s = reflect.ValueOf(&LongTextAreaFieldRequired{32768, 5}).Elem()
-		break
-	case "richtextarea":
-		attrs = getAttributes(&RichTextAreaField{})
-		s = reflect.ValueOf(&RichTextAreaFieldRequired{32768, 5}).Elem()
-		break
-	case "bool", "boolean", "checkbox":
-		attrs = getAttributes(&BoolField{})
-		s = reflect.ValueOf(&BoolFieldRequired{false}).Elem()
-		break
-	case "datetime":
-		attrs = getAttributes(&DatetimeField{})
-		s = reflect.ValueOf(&DatetimeFieldRequired{}).Elem()
-		break
-	case "float":
-		attrs = getAttributes(&FloatField{})
-		s = reflect.ValueOf(&FloatFieldRequired{16, 2}).Elem()
-		break
-	case "number", "int":
-		attrs = getAttributes(&NumberField{})
-		s = reflect.ValueOf(&NumberFieldRequired{18, 0}).Elem()
-		break
-	case "autonumber":
-		attrs = getAttributes(&AutoNumberField{})
-		s = reflect.ValueOf(&AutoNumberFieldRequired{0, "AN-{00000}"}).Elem()
-		break
-	case "geolocation":
-		attrs = getAttributes(&GeolocationField{})
-		s = reflect.ValueOf(&GeolocationFieldRequired{true, 5}).Elem()
-		break
-	default:
-		break
-	}
-
-	newOptions, err = ValidateOptionsAndDefaults(typ, attrs, s, options)
-
-	return newOptions, nil
-}*/
-
 func (fm *ForceMetadata) CheckStatus(id string) (err error) {
 	body, err := fm.soapExecute("checkStatus", fmt.Sprintf("<id>%s</id>", id))
 	if err != nil {
@@ -647,8 +522,6 @@ func (fm *ForceMetadata) CheckDeployStatus(id string) (results ForceCheckDeploym
 		return
 	}
 
-	//fmt.Println("CDS: \n" + string(body))
-
 	var deployResult struct {
 		Results ForceCheckDeploymentStatusResult `xml:"Body>checkDeployStatusResponse>result"`
 	}
@@ -657,15 +530,6 @@ func (fm *ForceMetadata) CheckDeployStatus(id string) (results ForceCheckDeploym
 		ErrorAndExit(err.Error())
 	}
 
-	/*if !deployResult.Results.Success {
-		//ErrorAndExit("Push failed, there were %v components with errors\nID: %v", deployResult.Results.NumberComponentErrors, deployResult.Results.Id)
-	}
-	var result struct {
-		Problems []ForceMetadataDeployProblem `xml:"Body>checkDeployStatusResponse>result>messages"`
-	}
-	if err = xml.Unmarshal(body, &result); err != nil {
-		return
-	}*/
 	results = deployResult.Results
 	return
 }
@@ -1009,21 +873,23 @@ func (fm *ForceMetadata) Deploy(files ForceMetadataFiles, options ForceDeployOpt
 	zipfile := new(bytes.Buffer)
 	zipper := zip.NewWriter(zipfile)
 	for name, data := range files {
-		wr, err := zipper.Create(fmt.Sprintf("unpackaged/%s", name))
+		name = filepath.ToSlash(name)
+		wr, err := zipper.Create(fmt.Sprintf("unpackaged%s%s", string(os.PathSeparator), name))
 		if err != nil {
 			return nil, nil, err
 		}
 		wr.Write(data)
 	}
 	zipper.Close()
+
+	//ioutil.WriteFile("package.zip", zipfile.Bytes(), 0644)
+
 	encoded := base64.StdEncoding.EncodeToString(zipfile.Bytes())
 	body, err := fm.soapExecute("deploy", fmt.Sprintf(soap, encoded, options.AllowMissingFiles, options.AutoUpdatePackage, options.CheckOnly, options.IgnoreWarnings, options.PurgeOnDelete, options.RollbackOnError, options.RunAllTests))
 	if err != nil {
 		fmt.Println(err.Error())
 		return
 	}
-
-	//fmt.Println(string(body))
 
 	var status struct {
 		Id string `xml:"Body>deployResponse>result>id"`
@@ -1117,7 +983,7 @@ func (fm *ForceMetadata) RetrievePackage(packageName string) (files ForceMetadat
 	}
 	files = make(ForceMetadataFiles)
 	for raw_name, data := range raw_files {
-		name := strings.Replace(raw_name, "unpackaged/", "", -1)
+		name := strings.Replace(raw_name, fmt.Sprintf("unpackaged%s", string(os.PathSeparator)), "", -1)
 		files[name] = data
 	}
 	return

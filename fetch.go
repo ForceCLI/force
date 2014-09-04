@@ -2,6 +2,7 @@ package main
 
 import (
 	"archive/zip"
+	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"io"
@@ -25,6 +26,8 @@ Examples
 
   force fetch CustomObject
 
+  force fetch Aura [<entity name>]
+
   force fetch package MyPackagedApp
 
   options
@@ -34,6 +37,77 @@ Examples
       	  example: force fetch StaticResource MyResource --unpack
 
 `,
+}
+
+func runFetchAura(cmd *Command, entityname string) {
+	force, _ := ActiveForce()
+
+	var bundles AuraDefinitionBundleResult
+	var definitions AuraDefinitionBundleResult
+	var err error
+
+	if entityname == "" {
+		bundles, definitions, err = force.GetAuraBundles()
+		if err != nil {
+			ErrorAndExit(err.Error())
+		}
+	} else {
+		bundles, definitions, err = force.GetAuraBundle(entityname)
+		if err != nil {
+			ErrorAndExit(err.Error())
+		}
+	}
+
+	var bundleMap = make(map[string]string)
+	var bundleRecords = bundles.Records
+	for _, bundle := range bundleRecords {
+		id := fmt.Sprintf("%s", bundle["Id"])
+		bundleMap[id] = fmt.Sprintf("%s", bundle["DeveloperName"])
+	}
+
+	var defRecords = definitions.Records
+	wd, _ := os.Getwd()
+	root := filepath.Join(wd, "metadata", "aurabundles")
+
+	if err := os.MkdirAll(root, 0755); err != nil {
+		ErrorAndExit(err.Error())
+	}
+
+	for key, value := range bundleMap {
+		if err := os.MkdirAll(filepath.Join(root, value), 0755); err != nil {
+			ErrorAndExit(err.Error())
+		}
+
+		var bundleManifest = BundleManifest{}
+		bundleManifest.Name = value
+		bundleManifest.Files = []ComponentFile{}
+		bundleManifest.Id = key
+
+		for _, def := range defRecords {
+			var did = fmt.Sprintf("%s", def["AuraDefinitionBundleId"])
+			if did == key {
+				var entity = fmt.Sprintf("%s%s", value, strings.Title(strings.ToLower(fmt.Sprintf("%s", def["DefType"]))))
+				switch fmt.Sprintf("%s", def["DefType"]) {
+				case "COMPONENT":
+					entity += ".cmp"
+				case "APPLICATION":
+					entity += ".app"
+				case "EVENT":
+					entity += ".evt"
+				case "STYLE":
+					entity += ".css"
+				default:
+					entity += ".js"
+				}
+				var componentFile = ComponentFile{filepath.Join(root, value, entity), fmt.Sprintf("%s", def["Id"])}
+				bundleManifest.Files = append(bundleManifest.Files, componentFile)
+				ioutil.WriteFile(filepath.Join(root, value, entity), []byte(fmt.Sprintf("%s", def["Source"])), 0644)
+			}
+		}
+		bmBody, _ := json.Marshal(bundleManifest)
+		ioutil.WriteFile(filepath.Join(root, value, ".manifest"), bmBody, 0644)
+	}
+	return
 }
 
 func runFetch(cmd *Command, args []string) {
@@ -49,7 +123,13 @@ func runFetch(cmd *Command, args []string) {
 	var expandResources bool = false
 
 	artifactType := args[0]
-	if artifactType == "package" {
+	if strings.ToLower(artifactType) == "aura" {
+		if len(args) == 2 {
+			runFetchAura(cmd, args[1])
+		} else {
+			runFetchAura(cmd, "")
+		}
+	} else if artifactType == "package" {
 		files, err = force.Metadata.RetrievePackage(args[1])
 		if err != nil {
 			ErrorAndExit(err.Error())
@@ -102,7 +182,7 @@ func runFetch(cmd *Command, args []string) {
 		}
 		//Handle expanding static resources into a "bundle" folder
 		if isResource && expandResources && name != "package.xml" {
-			pathParts := strings.Split(name, "/")
+			pathParts := strings.Split(name, string(os.PathSeparator))
 			resourceName := pathParts[cap(pathParts)-1]
 
 			resourceExt := strings.Split(resourceName, ".")[1]

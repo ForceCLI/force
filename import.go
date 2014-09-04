@@ -4,30 +4,33 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/user"
 	"path/filepath"
 	"strings"
 )
 
 var cmdImport = &Command{
-	Usage: "import [deployment options] [dir]",
+	Usage: "import [deployment options] [-dir=<path>]",
 	Short: "Import metadata from a local directory",
 	Long: `
 Import metadata from a local directory
 
 Deployment Options
-  -rollbackonerror    Indicates whether any failure causes a complete rollback
-  -runalltests        If set all Apex tests defined in the organization are run
-  -checkonly          Indicates whether classes and triggers are saved during deployment
-  -purgeondelete      If set the deleted components are not stored in recycle bin
-  -allowmissingfiles  Specifies whether a deploy succeeds even if files missing
-  -autoupdatepackage  Auto add files to the package if missing
-  -ignorewarnings     Indicates if warnings should fail deployment or not
+  -rollbackonerror, -r    Indicates whether any failure causes a complete rollback
+  -runalltests, -t        If set all Apex tests defined in the organization are run
+  -checkonly, -c          Indicates whether classes and triggers are saved during deployment
+  -purgeondelete, -p      If set the deleted components are not stored in recycle bin
+  -allowmissingfiles, -m  Specifies whether a deploy succeeds even if files missing
+  -autoupdatepackage, -u  Auto add files to the package if missing
+  -ignorewarnings, -i     Indicates if warnings should fail deployment or not
+  -directory, -d 		  Path to the package.xml file to import
+  -verbose, -v 			  Provide detailed feedback on operation
 
 Examples:
 
   force import
 
-  force import org/schema
+  force import -directory=my_metadata -c -r -v
 
   force import -checkonly -runalltests
 `,
@@ -41,33 +44,68 @@ var (
 	allowMissingFilesFlag = cmdImport.Flag.Bool("allowmissingfiles", false, "set allow missing files")
 	autoUpdatePackageFlag = cmdImport.Flag.Bool("autoupdatepackage", false, "set auto update package")
 	ignoreWarningsFlag    = cmdImport.Flag.Bool("ignorewarnings", false, "set ignore warnings")
+	directory             = cmdImport.Flag.String("directory", "metadata", "relative path to package.xml")
+	verbose               = cmdImport.Flag.Bool("verbose", false, "give more verbose output")
 )
 
 func init() {
 	cmdImport.Run = runImport
+	cmdImport.Flag.BoolVar(verbose, "v", false, "give more verbose output")
+	cmdImport.Flag.BoolVar(rollBackOnErrorFlag, "r", false, "set roll back on error")
+	cmdImport.Flag.BoolVar(runAllTestsFlag, "t", false, "set run all tests")
+	cmdImport.Flag.BoolVar(checkOnlyFlag, "c", false, "set check only")
+	cmdImport.Flag.BoolVar(purgeOnDeleteFlag, "p", false, "set purge on delete")
+	cmdImport.Flag.BoolVar(allowMissingFilesFlag, "m", false, "set allow missing files")
+	cmdImport.Flag.BoolVar(autoUpdatePackageFlag, "u", false, "set auto update package")
+	cmdImport.Flag.BoolVar(ignoreWarningsFlag, "i", false, "set ignore warnings")
+	cmdImport.Flag.StringVar(directory, "d", "metadata", "relative path to package.xml")
 }
 
 func runImport(cmd *Command, args []string) {
-	wd, _ := os.Getwd()
-	root := filepath.Join(wd, "metadata")
-	if len(args) >= 1 {
-		root, _ = filepath.Abs(args[0])
+	if len(args) > 0 {
+		ErrorAndExit("Unrecognized argument: " + args[0])
 	}
-	verbose := (len(args) == 2 && args[1] == "-v")
+
+	wd, _ := os.Getwd()
+	usr, err := user.Current()
+	var dir string
+
+	//Manually handle shell expansion short cut
+	if err != nil {
+		if strings.HasPrefix(*directory, "~") {
+			ErrorAndExit("Cannot determine tilde expansion, please use relative or absolute path to directory.")
+		} else {
+			dir = *directory
+		}
+	} else {
+		if strings.HasPrefix(*directory, "~") {
+			dir = strings.Replace(*directory, "~", usr.HomeDir, 1)
+		} else {
+			dir = *directory
+		}
+	}
+
+	root := filepath.Join(wd, dir)
+
+	// Check for absolute path
+	if filepath.IsAbs(dir) {
+		root = dir
+	}
 
 	force, _ := ActiveForce()
 	files := make(ForceMetadataFiles)
 	if _, err := os.Stat(filepath.Join(root, "package.xml")); os.IsNotExist(err) {
-		ErrorAndExit("Must specify a directory that contains metadata files")
+		ErrorAndExit(" \n" + filepath.Join(root, "package.xml") + "\ndoes not exist")
 	}
-	err := filepath.Walk(root, func(path string, f os.FileInfo, err error) error {
+
+	err = filepath.Walk(root, func(path string, f os.FileInfo, err error) error {
 		if f.Mode().IsRegular() {
 			if f.Name() != ".DS_Store" {
 				data, err := ioutil.ReadFile(path)
 				if err != nil {
 					ErrorAndExit(err.Error())
 				}
-				files[strings.Replace(path, fmt.Sprintf("%s/", root), "", -1)] = data
+				files[strings.Replace(path, fmt.Sprintf("%s%s", root, string(os.PathSeparator)), "", -1)] = data
 			}
 		}
 		return nil
@@ -89,7 +127,7 @@ func runImport(cmd *Command, args []string) {
 	}
 
 	fmt.Printf("\nFailures - %d\n", len(problems))
-	if verbose {
+	if *verbose {
 		for _, problem := range problems {
 			if problem.FullName == "" {
 				fmt.Println(problem.Problem)
@@ -100,7 +138,7 @@ func runImport(cmd *Command, args []string) {
 	}
 
 	fmt.Printf("\nSuccesses - %d\n", len(successes))
-	if verbose {
+	if *verbose {
 		for _, success := range successes {
 			if success.FullName != "package.xml" {
 				verb := "unchanged"
