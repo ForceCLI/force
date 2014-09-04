@@ -90,7 +90,7 @@ type ForceMetadataDeployProblem struct {
 
 type ForceMetadataQueryElement struct {
 	Name    string
-	Members string
+	Members []string
 }
 
 type ForceMetadataQuery []ForceMetadataQueryElement
@@ -924,12 +924,17 @@ func (fm *ForceMetadata) Retrieve(query ForceMetadataQuery) (files ForceMetadata
 	soapType := `
 		<types>
 			<name>%s</name>
-			<members>%s</members>
+			%s
 		</types>
 	`
+	soapTypeMembers := `<members>%s</members>`
 	types := ""
 	for _, element := range query {
-		types += fmt.Sprintf(soapType, element.Name, element.Members)
+		members := ""
+		for _, member := range element.Members {
+			members += fmt.Sprintf(soapTypeMembers, member)
+		}
+		types += fmt.Sprintf(soapType, element.Name, members)
 	}
 	fmt.Println("Calling retrieve")
 	body, err := fm.soapExecute("retrieve", fmt.Sprintf(soap, apiVersionNumber, types))
