@@ -36,8 +36,8 @@ const (
 )
 
 const (
-	apiVersion       = "v30.0" // Spring 14
-	apiVersionNumber = "30.0"
+	apiVersion       = "v32.0"
+	apiVersionNumber = "32.0"
 )
 
 var RootCertificates = `
@@ -971,6 +971,7 @@ func httpClient() (client *http.Client) {
 
 func httpRequest(method, url string, body io.Reader) (request *http.Request, err error) {
 	request, err = http.NewRequest(method, url, body)
+	fmt.Println("method", method, "url", url, "\n")
 	if err != nil {
 		return
 	}
