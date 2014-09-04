@@ -13,11 +13,11 @@ var cmdLogin = &Command{
   force login [-i=<instance>] [<-u=username> <-p=password>]
 
   Examples:
-    force login                     
-    force login -i=test             
-    force login -u=un -p=pw         
-    force login -i=test -u=un -p=pw 
-    force login -i=na1-blitz01.soma.salesforce.com -u=un -p=pw 
+    force login
+    force login -i=test
+    force login -u=un -p=pw
+    force login -i=test -u=un -p=pw
+    force login -i=na1-blitz01.soma.salesforce.com -u=un -p=pw
 `,
 }
 
@@ -34,7 +34,17 @@ var (
 func runLogin(cmd *Command, args []string) {
 	var endpoint ForceEndpoint = EndpointProduction
 
+	currentEndpoint, customUrl, err := CurrentEndpoint()
+	if err == nil && &currentEndpoint != nil {
+		endpoint = currentEndpoint
+		if currentEndpoint == EndpointCustom && customUrl != "" {
+			*instance = customUrl
+		}
+	}
+
 	switch *instance {
+	case "login":
+		endpoint = EndpointProduction
 	case "test":
 		endpoint = EndpointTest
 	case "pre":
@@ -56,6 +66,8 @@ func runLogin(cmd *Command, args []string) {
 			}
 			CustomEndpoint = uri.Scheme + "://" + uri.Host
 			endpoint = EndpointCustom
+
+			fmt.Println("Loaded Endpoint: (" + CustomEndpoint + ")")
 		}
 	}
 
@@ -70,6 +82,16 @@ func runLogin(cmd *Command, args []string) {
 			ErrorAndExit(err.Error())
 		}
 	}
+}
+
+func CurrentEndpoint() (endpoint ForceEndpoint, customUrl string, err error) {
+	creds, err := ActiveCredentials()
+	if err != nil {
+		return
+	}
+	endpoint = creds.ForceEndpoint
+	customUrl = creds.InstanceUrl
+	return
 }
 
 func ForceSaveLogin(creds ForceCredentials) (username string, err error) {
