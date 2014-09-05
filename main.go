@@ -27,6 +27,7 @@ var commands = []*Command{
 	cmdHelp,
 	cmdPush,
 	cmdPassword,
+	cmdNotifySet,
 }
 
 func main() {
