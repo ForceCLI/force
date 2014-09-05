@@ -154,13 +154,14 @@ type Force struct {
 }
 
 type ForceCredentials struct {
-	AccessToken string
-	Id          string
-	InstanceUrl string
-	IssuedAt    string
-	Scope       string
-	IsCustomEP  bool
-	Namespace   string
+	AccessToken   string
+	Id            string
+	InstanceUrl   string
+	IssuedAt      string
+	Scope         string
+	IsCustomEP    bool
+	Namespace     string
+	ForceEndpoint ForceEndpoint
 }
 
 type LoginFault struct {
@@ -355,7 +356,7 @@ func ForceSoapLogin(endpoint ForceEndpoint, username string, password string) (c
 	}
 	instanceUrl := u.Scheme + "://" + u.Host
 	identity := u.Scheme + "://" + u.Host + "/id/" + orgid + "/" + result.Id
-	creds = ForceCredentials{result.SessionId, identity, instanceUrl, "", "", endpoint == EndpointCustom, ""}
+	creds = ForceCredentials{result.SessionId, identity, instanceUrl, "", "", endpoint == EndpointCustom, "", endpoint}
 
 	return
 }
@@ -379,6 +380,7 @@ func ForceLogin(endpoint ForceEndpoint) (creds ForceCredentials, err error) {
 
 	err = Open(url)
 	creds = <-ch
+	creds.ForceEndpoint = endpoint
 	return
 }
 
