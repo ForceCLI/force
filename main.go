@@ -28,6 +28,7 @@ var commands = []*Command{
 	cmdPushAura,
 	cmdAura,
 	cmdPassword,
+	cmdNotifySet,
 }
 
 func main() {

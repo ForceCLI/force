@@ -39,6 +39,10 @@
 		{
 			"ImportPath": "github.com/kr/text",
 			"Rev": "6807e777504f54ad073ecef66747de158294b639"
+		},
+		{
+			"ImportPath": "github.com/ViViDboarder/gotifier",
+			"Rev": "0f19f3d7c54cfe25ce8438b0df4c8792b1e5d462"
 		}
 	]
 }
