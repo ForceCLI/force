@@ -16,7 +16,7 @@ List force.com accounts
 
 Examples:
 
-  force accounts
+  force logins
 `,
 }
 
