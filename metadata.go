@@ -568,18 +568,12 @@ func (fm *ForceMetadata) DescribeMetadata() (describe MetadataDescribeResult, er
 	if err != nil {
 		return
 	}
-
-	//fmt.Println("CDS: \n" + string(body))
-
 	var result struct {
 		Data MetadataDescribeResult `xml:"Body>describeMetadataResponse>result"`
 	}
-
-	if err = xml.Unmarshal(body, &result); err != nil {
-		ErrorAndExit(err.Error())
+	if err = xml.Unmarshal(body, &result); err != nil { // Let the calling method handle the error message
+		describe = result.Data
 	}
-
-	describe = result.Data
 	return
 }
 
