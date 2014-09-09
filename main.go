@@ -13,16 +13,22 @@ var commands = []*Command{
 	cmdSobject,
 	cmdField,
 	cmdRecord,
-	cmdFetch,
+	cmdBulk,
 	cmdExport,
+	cmdFetch,
 	cmdImport,
 	cmdQuery,
 	cmdBulk,
 	cmdApex,
 	cmdOauth,
+	cmdTest,
 	cmdVersion,
 	cmdUpdate,
 	cmdHelp,
+	cmdPush,
+	cmdPushAura,
+	cmdAura,
+	cmdPassword,
 }
 
 func main() {

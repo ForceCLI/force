@@ -2,77 +2,77 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/url"
 )
 
 var cmdLogin = &Command{
-	Run:   runLogin,
 	Usage: "login",
-	Short: "Log in to force.com",
+	Short: "force login [-i=<instance>] [<-u=username> <-p=password>]",
 	Long: `
-Log in to force.com
+  force login [-i=<instance>] [<-u=username> <-p=password>]
 
-Examples:
-
-  force login     		 # log in to production or developer org
-
-  force login test 		 # log in to sandbox org
-
-  force login pre  		 # log in to prerelease org
-  
-  force login un pw 	 # log in using SOAP
-
-  force login test un pw # log in using SOAP to sandbox org
-
-  force login na1-blitz01.soma.salesforce.com un pw #internal only
+  Examples:
+    force login
+    force login -i=test
+    force login -u=un -p=pw
+    force login -i=test -u=un -p=pw
+    force login -i=na1-blitz01.soma.salesforce.com -u=un -p=pw
 `,
 }
 
+func init() {
+	cmdLogin.Run = runLogin
+}
+
+var (
+	instance = cmdLogin.Flag.String("i", "", "non-production server to login to (values are 'pre', 'test', or full instance url")
+	userName = cmdLogin.Flag.String("u", "", "Username for Soap Login")
+	password = cmdLogin.Flag.String("p", "", "Password for Soap Login")
+)
+
 func runLogin(cmd *Command, args []string) {
-	var endpoint ForceEndpoint
-	var username, password string
-	endpoint = EndpointProduction
+	var endpoint ForceEndpoint = EndpointProduction
 
-	//username and password option with custom endpoint
-	if len(args) == 3 {
-		username = args[1]
-		password = args[2]
-	}
-
-	//username and password option
-	if len(args) == 2 {
-		username = args[0]
-		password = args[1]
-	}
-
-	if len(args) > 0 {
-		switch args[0] {
-		case "test":
-			endpoint = EndpointTest
-		case "pre":
-			endpoint = EndpointPrerelease
-		default:
-			if len(args) == 1 || len(args) == 3 {
-				//need to determine the form of the endpoint
-				uri, err := url.Parse(args[0])
-				if err != nil {
-					ErrorAndExit("no such endpoint: %s", args[0])
-				}
-				// Could be short hand?
-				if uri.Host == "" {
-					uri, err = url.Parse("https://" + args[0])
-					if err != nil {
-						ErrorAndExit("no such endpoint: %s", args[0])
-					}
-				}
-				CustomEndpoint = uri.Scheme + "://" + uri.Host
-				endpoint = EndpointCustom
-			}
+	currentEndpoint, customUrl, err := CurrentEndpoint()
+	if err == nil && &currentEndpoint != nil {
+		endpoint = currentEndpoint
+		if currentEndpoint == EndpointCustom && customUrl != "" {
+			*instance = customUrl
 		}
 	}
 
-	if len(args) > 1 { // Do SOAP login
-		_, err := ForceLoginAndSaveSoap(endpoint, username, password)
+	switch *instance {
+	case "login":
+		endpoint = EndpointProduction
+	case "test":
+		endpoint = EndpointTest
+	case "pre":
+		endpoint = EndpointPrerelease
+	default:
+		if *instance != "" {
+			//need to determine the form of the endpoint
+			uri, err := url.Parse(*instance)
+			if err != nil {
+				ErrorAndExit("no such endpoint: %s", *instance)
+			}
+			// Could be short hand?
+			if uri.Host == "" {
+				uri, err = url.Parse(fmt.Sprintf("https://%s", *instance))
+				//fmt.Println(uri)
+				if err != nil {
+					ErrorAndExit("no such endpoint: %s", *instance)
+				}
+			}
+			CustomEndpoint = uri.Scheme + "://" + uri.Host
+			endpoint = EndpointCustom
+
+			fmt.Println("Loaded Endpoint: (" + CustomEndpoint + ")")
+		}
+	}
+
+	if *userName != "" && *password != "" { // Do SOAP login
+		_, err := ForceLoginAndSaveSoap(endpoint, *userName, *password)
 		if err != nil {
 			ErrorAndExit(err.Error())
 		}
@@ -84,29 +84,14 @@ func runLogin(cmd *Command, args []string) {
 	}
 }
 
-var cmdLogout = &Command{
-	Run:   runLogout,
-	Usage: "logout <account>",
-	Short: "Log out from force.com",
-	Long: `
-Log out from force.com
-
-Examples:
-
-  force logout user@example.org
-`,
-}
-
-func runLogout(cmd *Command, args []string) {
-	if len(args) != 1 {
-		ErrorAndExit("must specify account to log out")
+func CurrentEndpoint() (endpoint ForceEndpoint, customUrl string, err error) {
+	creds, err := ActiveCredentials()
+	if err != nil {
+		return
 	}
-	account := args[0]
-	Config.Delete("accounts", account)
-	if active, _ := Config.Load("current", "account"); active == account {
-		Config.Delete("current", "account")
-		SetActiveLoginDefault()
-	}
+	endpoint = creds.ForceEndpoint
+	customUrl = creds.InstanceUrl
+	return
 }
 
 func ForceSaveLogin(creds ForceCredentials) (username string, err error) {
@@ -120,6 +105,10 @@ func ForceSaveLogin(creds ForceCredentials) (username string, err error) {
 		return
 	}
 	username = login["username"].(string)
+
+	describe, err := force.Metadata.DescribeMetadata()
+	creds.Namespace = describe.NamespacePrefix
+
 	Config.Save("accounts", username, string(body))
 	Config.Save("current", "account", username)
 	return
@@ -130,6 +119,7 @@ func ForceLoginAndSaveSoap(endpoint ForceEndpoint, user_name string, password st
 	if err != nil {
 		return
 	}
+
 	username, err = ForceSaveLogin(creds)
 	return
 }

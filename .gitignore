@@ -1,7 +1,11 @@
+.DS_Store
+metadata/
+
 # Force CLI specific things
-# force
+force
 metadata
-*.csv
+test 
+
 *.json
-*.txt
+
 *.xml

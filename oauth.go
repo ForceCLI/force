@@ -27,14 +27,14 @@ func runOauth(cmd *Command, args []string) {
 	} else {
 		switch args[0] {
 		case "create", "add":
-			runOauthCreate(args[1:])
+			runOauthCreate(cmd, args[1:])
 		default:
 			ErrorAndExit("no such command: %s", args[0])
 		}
 	}
 }
 
-func runOauthCreate(args []string) {
+func runOauthCreate(cmd *Command, args []string) {
 	if len(args) != 2 {
 		ErrorAndExit("must specify name and callback")
 	}
@@ -47,10 +47,11 @@ func runOauthCreate(args []string) {
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
+	runFetch(cmd, []string{"ConnectedApp", args[0]})
 	for _, app := range apps {
 		if app.Name == args[0] {
-			url := fmt.Sprintf("%s/%s", force.Credentials.InstanceUrl, app.Id)
-			Open(url)
+			//url := fmt.Sprintf("%s/%s", force.Credentials.InstanceUrl, app.Id)
+			//Open(url)
 		}
 	}
 	fmt.Println("OAuth credentials created")

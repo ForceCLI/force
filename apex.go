@@ -29,8 +29,10 @@ func init() {
 func runApex(cmd *Command, args []string) {
 	var code []byte
 	var err error
-	if len(args) > 0 {
+	if len(args) == 1 {
 		code, err = ioutil.ReadFile(args[0])
+	} else if len(args) > 1 {
+		fmt.Println("Got test indication.")
 	} else {
 		fmt.Println(">> Start typing Apex code; press CTRL-D when finished\n")
 		code, err = ioutil.ReadAll(os.Stdin)
@@ -40,9 +42,18 @@ func runApex(cmd *Command, args []string) {
 		ErrorAndExit(err.Error())
 	}
 	force, _ := ActiveForce()
-	output, err := force.Partner.ExecuteAnonymous(string(code))
-	if err != nil {
-		ErrorAndExit(err.Error())
+	if len(args) <= 1 {
+		output, err := force.Partner.ExecuteAnonymous(string(code))
+		if err != nil {
+			ErrorAndExit(err.Error())
+		}
+		fmt.Println(output)
+	} else {
+		apexclass := args[1]
+		fmt.Println(apexclass)
+		err := force.GetCodeCoverage("", apexclass)
+		if err != nil {
+			ErrorAndExit(err.Error())
+		}
 	}
-	fmt.Println(output)
 }
