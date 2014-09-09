@@ -925,7 +925,6 @@ func (fm *ForceMetadata) Retrieve(query ForceMetadataQuery) (files ForceMetadata
 	for _, element := range query {
 		types += fmt.Sprintf(soapType, element.Name, element.Members)
 	}
-	fmt.Println("Calling retrieve")
 	body, err := fm.soapExecute("retrieve", fmt.Sprintf(soap, apiVersionNumber, types))
 	if err != nil {
 		return
@@ -936,11 +935,9 @@ func (fm *ForceMetadata) Retrieve(query ForceMetadataQuery) (files ForceMetadata
 	if err = xml.Unmarshal(body, &status); err != nil {
 		return
 	}
-	fmt.Println("Calling check status")
 	if err = fm.CheckStatus(status.Id); err != nil {
 		return
 	}
-	fmt.Println("Calling retrieve status")
 	raw_files, err := fm.CheckRetrieveStatus(status.Id)
 	if err != nil {
 		return
