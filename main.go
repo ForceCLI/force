@@ -19,7 +19,7 @@ var commands = []*Command{
 	cmdQuery,
 	cmdBulk,
 	cmdApex,
-	/* cmdOauth,*/
+	cmdOauth,
 	cmdVersion,
 	cmdUpdate,
 	cmdHelp,
