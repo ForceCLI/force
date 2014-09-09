@@ -93,7 +93,7 @@ func runAura(cmd *Command, args []string) {
 	case "list":
 		bundles, err := force.GetAuraBundlesList()
 		if err != nil {
-			ErrorAndExit("Ooops")
+			ErrorAndExit(err.Error())
 		}
 		for _, bundle := range bundles.Records {
 			fmt.Println(bundle["DeveloperName"])
@@ -108,7 +108,6 @@ func runDeleteAura() {
 	*fileName = absPath
 
 	if InAuraBundlesFolder(*fileName) {
-		fmt.Println("Yup, in aura folder")
 		info, err := os.Stat(*fileName)
 		if err != nil {
 			ErrorAndExit(err.Error())
@@ -116,13 +115,11 @@ func runDeleteAura() {
 		manifest, err := GetManifest(*fileName)
 		isBundle := false
 		if info.IsDir() {
-			fmt.Println("Yes, this is a directory...")
 			force, _ := ActiveForce()
 			manifest, err = GetManifest(filepath.Join(*fileName, ".manifest"))
 			bid := ""
 			if err != nil { // Could not find a manifest, use bundle name
 				// Try to look up the bundle by name
-				fmt.Println("Look up the bundle by name")
 				b, err := force.GetAuraBundleByName(filepath.Base(*fileName))
 				if err != nil {
 					ErrorAndExit(err.Error())
@@ -137,7 +134,6 @@ func runDeleteAura() {
 				bid = manifest.Id
 			}
 
-			fmt.Println("Try to delete bundle with id", bid)
 			err = force.DeleteToolingRecord("AuraDefinitionBundle", bid)
 			if err != nil {
 				ErrorAndExit(err.Error())
@@ -163,12 +159,10 @@ func runDeleteAura() {
 					cfile = filepath.Join(*fileName, mfile)
 				} else {
 					cfile = mfile
-					fmt.Println("Sending ", cfile, " to delete function...")
 					deleteAuraDefinition(manifest, key)
 				}
 			} else {
 				if mfile == cfile {
-					fmt.Println("Found the manifest entry: ", manifest.Files[key].ComponentId)
 					deleteAuraDefinition(manifest, key)
 					return
 				}
@@ -197,7 +191,6 @@ func deleteAuraDefinition(manifest BundleManifest, key int) {
 		ErrorAndExit(err.Error())
 	}
 	fname := manifest.Files[key].FileName
-	fmt.Println("Gonna delete the file ", fname, " from the file system...")
 	os.Remove(fname)
 	manifest.Files = append(manifest.Files[:key], manifest.Files[key+1:]...)
 	bmBody, _ := json.Marshal(manifest)

@@ -155,7 +155,6 @@ func runFetch(cmd *Command, args []string) {
 			mq := ForceMetadataQueryElement{artifactType, "*"}
 			query = append(query, mq)
 		}
-		fmt.Println("Calling retrieve")
 		files, err = force.Metadata.Retrieve(query)
 		if err != nil {
 			ErrorAndExit(err.Error())

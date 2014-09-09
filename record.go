@@ -17,6 +17,8 @@ Usage:
 
   force record create <object> [<fields>]
 
+  force record create:bulk <object> <file> [<format>]
+
   force record update <object> <id> [<fields>]
 
   force record delete <object> <id>
@@ -42,6 +44,12 @@ func runRecord(cmd *Command, args []string) {
 			runRecordGet(args[1:])
 		case "create", "add":
 			runRecordCreate(args[1:])
+		case "create:bulk":
+			if len(args) == 3 {
+				createBulkInsertJob(args[2], args[1], "CSV")
+			} else if len(args) == 4 {
+				createBulkInsertJob(args[2], args[1], args[3])
+			}
 		case "update":
 			runRecordUpdate(args[1:])
 		case "delete", "remove":
