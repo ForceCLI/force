@@ -106,8 +106,19 @@ func ForceSaveLogin(creds ForceCredentials) (username string, err error) {
 	}
 	username = login["username"].(string)
 
+	me, err := force.Whoami()
+	if err != nil {
+		return
+	}
+	fmt.Printf("Logged in as '%s'\n", me["Username"])
+
 	describe, err := force.Metadata.DescribeMetadata()
-	creds.Namespace = describe.NamespacePrefix
+	if err == nil {
+		creds.Namespace = describe.NamespacePrefix
+	} else {
+		fmt.Printf("Your profile do not have Modify All Data enabled. Functionallity will be limited.\n")
+		err = nil
+	}
 
 	Config.Save("accounts", username, string(body))
 	Config.Save("current", "account", username)

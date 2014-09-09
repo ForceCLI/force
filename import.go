@@ -10,7 +10,7 @@ import (
 )
 
 var cmdImport = &Command{
-	Usage: "import [deployment options] [-dir=<path>]",
+	Usage: "import [deployment options]",
 	Short: "Import metadata from a local directory",
 	Long: `
 Import metadata from a local directory
