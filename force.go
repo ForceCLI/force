@@ -36,8 +36,8 @@ const (
 )
 
 const (
-	apiVersion       = "v32.0"
-	apiVersionNumber = "32.0"
+	apiVersion       = "v31.0"
+	apiVersionNumber = "31.0"
 )
 
 var RootCertificates = `
