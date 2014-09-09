@@ -55,7 +55,6 @@ func runPushAura(cmd *Command, args []string) {
 			if err != nil {
 				fmt.Println(err.Error())
 			} else {
-				fmt.Println(inf.Name())
 				if info.IsDir() || inf.Name() == ".manifest" {
 					fmt.Println("\nSkip")
 				} else {
@@ -99,7 +98,6 @@ func createNewAuraBundleAndDefinition(force Force, fname string) {
 	// 		the name of the bundle (parent folder of file)
 	//		the type of artifact (based on naming convention)
 	// 		the contents of the file
-	fmt.Println("Creating new bundle")
 	if isValidAuraExtension(fname) {
 		// Need the parent folder name to name the bundle
 		var bundleName = filepath.Base(filepath.Dir(fname))
@@ -185,7 +183,6 @@ func updateAuraDefinition(force Force, fname string) {
 			return
 		}
 	}
-	fmt.Println("Creating new bundle entity")
 	component, err := createBundleEntity(manifest, force, fname)
 	if err != nil {
 		ErrorAndExit(err.Error())
