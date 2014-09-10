@@ -8,4 +8,5 @@ install:
   - go get github.com/bmizerany/assert
   - go get github.com/ddollar/dist
   - go get github.com/ddollar/config
+  - go get github.com/ViViDboarder/gotifier
   - go get bitbucket.org/pkg/inflect
