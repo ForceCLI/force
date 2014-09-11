@@ -1,5 +1,5 @@
 {
-	"ImportPath": "github.com/devangel/force",
+	"ImportPath": "github.com/heroku/force",
 	"GoVersion": "go version go1.1.2 darwin/amd64",
 	"Deps": [
 		{
@@ -11,6 +11,10 @@
 			"ImportPath": "bitbucket.org/pkg/inflect",
 			"Comment": "go.r60-12",
 			"Rev": "8961c3750a47b8c0b3e118d52513b97adf85a7e8"
+		},
+		{
+			"ImportPath": "github.com/ViViDboarder/gotifier",
+			"Rev": "0f19f3d7c54cfe25ce8438b0df4c8792b1e5d462"
 		},
 		{
 			"ImportPath": "github.com/bmizerany/assert",
@@ -39,10 +43,6 @@
 		{
 			"ImportPath": "github.com/kr/text",
 			"Rev": "6807e777504f54ad073ecef66747de158294b639"
-		},
-		{
-			"ImportPath": "github.com/ViViDboarder/gotifier",
-			"Rev": "0f19f3d7c54cfe25ce8438b0df4c8792b1e5d462"
 		}
 	]
 }
