@@ -435,8 +435,8 @@ func DisplayFieldTypes() {
   richtextarea           (length = 32768, visibleLines = 5)
   checkbox/bool/boolean  (defaultValue = false)
   datetime               ()
-  float/double/currency  (length = 16, precision = 2)
-  number/int             (length = 18, precision = 0)
+  float/double/currency  (precision = 16, scale = 2)
+  number/int             (precision = 18, scale = 0)
   autonumber             (displayFormat = "AN {00000}", startingNumber = 0)
   geolocation            (displayLocationInDecimal = true, scale = 5)
   lookup                 (will be prompted for Object and label)
@@ -605,10 +605,9 @@ func DisplayDoubleFieldDetails() (message string) {
 
     %s
       label            - defaults to name
-      length           - defaults to 18
       name
-      precision        - decimal places (defaults to 0)
-      scale            - digits left of decimal (defaults to 18)
+      precision        - digits left of decimal (defaults to 18)
+      scale            - decimal places (defaults to 0)
   
     %s
       description
@@ -627,10 +626,9 @@ func DisplayCurrencyFieldDetails() (message string) {
 
     %s
       label            - defaults to name
-      length           - defaults to 18
       name
-      precision        - decimal places (defaults to 0)
-      scale            - digits left of decimal (defaults to 18)
+      precision        - digits left of decimal (defaults to 18)
+      scale            - decimal places (defaults to 0)
   
     %s
       description
