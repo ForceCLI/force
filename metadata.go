@@ -152,7 +152,6 @@ type FloatFieldRequired struct {
 }
 
 type FloatField struct {
-	Length               int    `xml:"length"`
 	Description          string `xml:"description"`
 	HelpText             string `xml:"helpText"`
 	Unique               bool   `xml:"unique"`
@@ -170,7 +169,6 @@ type NumberFieldRequired struct {
 }
 
 type NumberField struct {
-	Length               int    `xml:"length"`
 	Description          string `xml:"description"`
 	HelpText             string `xml:"helpText"`
 	Unique               bool   `xml:"unique"`
@@ -178,6 +176,8 @@ type NumberField struct {
 	DefaultValue         uint   `xml:"defaultValue"`
 	Formula              string `xml:"formula"`
 	FormulaTreatBlanksAs string `xml:"formulaTreatBlanksAs"`
+	Precision            int    `xml:"precision"`
+	Scale                int    `xml:"scale"`
 }
 
 type DatetimeFieldRequired struct {
@@ -361,7 +361,6 @@ func getAttributes(m interface{}) map[string]reflect.StructField {
 
 func ValidateOptionsAndDefaults(typ string, fields map[string]reflect.StructField, requiredDefaults reflect.Value, options map[string]string) (newOptions map[string]string, err error) {
 	newOptions = make(map[string]string)
-
 	// validate optional attributes
 	for name, value := range options {
 		field, ok := fields[strings.ToLower(name)]
