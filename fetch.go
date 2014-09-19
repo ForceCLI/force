@@ -66,8 +66,9 @@ func runFetchAura(cmd *Command, entityname string) {
 	}
 
 	var defRecords = definitions.Records
-	wd, _ := os.Getwd()
-	root := filepath.Join(wd, "metadata", "aura")
+	root, err := GetSourceDir()
+
+	root = filepath.Join(root, "aurabundles")
 
 	if err := os.MkdirAll(root, 0755); err != nil {
 		ErrorAndExit(err.Error())
@@ -111,8 +112,6 @@ func runFetchAura(cmd *Command, entityname string) {
 }
 
 func runFetch(cmd *Command, args []string) {
-	wd, _ := os.Getwd()
-	root := filepath.Join(wd, "metadata")
 	if len(args) < 1 {
 		ErrorAndExit("must specify object type and/or object name")
 	}
@@ -164,42 +163,47 @@ func runFetch(cmd *Command, args []string) {
 	var resourcesMap map[string]string
 	resourcesMap = make(map[string]string)
 
+	root, err := GetSourceDir()
+	existingPackage, _ := pathExists(filepath.Join(root, "package.xml"))
+
 	for name, data := range files {
-		file := filepath.Join(root, name)
-		dir := filepath.Dir(file)
+		if !existingPackage || name != "package.xml" {
+			file := filepath.Join(root, name)
+			dir := filepath.Dir(file)
 
-		if err := os.MkdirAll(dir, 0755); err != nil {
-			ErrorAndExit(err.Error())
-		}
-		if err := ioutil.WriteFile(filepath.Join(root, name), data, 0644); err != nil {
-			ErrorAndExit(err.Error())
-		}
-		var isResource = false
-		if artifactType == "StaticResource" {
-			isResource = true
-		} else if strings.HasSuffix(file, ".resource-meta.xml") {
-			isResource = true
-		}
-		//Handle expanding static resources into a "bundle" folder
-		if isResource && expandResources && name != "package.xml" {
-			pathParts := strings.Split(name, string(os.PathSeparator))
-			resourceName := pathParts[cap(pathParts)-1]
+			if err := os.MkdirAll(dir, 0755); err != nil {
+				ErrorAndExit(err.Error())
+			}
+			if err := ioutil.WriteFile(filepath.Join(root, name), data, 0644); err != nil {
+				ErrorAndExit(err.Error())
+			}
+			var isResource = false
+			if artifactType == "StaticResource" {
+				isResource = true
+			} else if strings.HasSuffix(file, ".resource-meta.xml") {
+				isResource = true
+			}
+			//Handle expanding static resources into a "bundle" folder
+			if isResource && expandResources {
+				pathParts := strings.Split(name, string(os.PathSeparator))
+				resourceName := pathParts[cap(pathParts)-1]
 
-			resourceExt := strings.Split(resourceName, ".")[1]
-			resourceName = strings.Split(resourceName, ".")[0]
-			if resourceExt == "resource-meta" {
-				//Check the xml to determine the mime type of the resource
-				// We are looking for application/zip
-				var meta struct {
-					CacheControl string `xml:"cacheControl"`
-					ContentType  string `xml:"contentType"`
-				}
-				if err = xml.Unmarshal([]byte(data), &meta); err != nil {
-					//return
-				}
-				if meta.ContentType == "application/zip" {
-					// this is the meat for a zip file, so add the map
-					resourcesMap[resourceName] = filepath.Join(filepath.Dir(file), resourceName+".resource")
+				resourceExt := strings.Split(resourceName, ".")[1]
+				resourceName = strings.Split(resourceName, ".")[0]
+				if resourceExt == "resource-meta" {
+					//Check the xml to determine the mime type of the resource
+					// We are looking for application/zip
+					var meta struct {
+						CacheControl string `xml:"cacheControl"`
+						ContentType  string `xml:"contentType"`
+					}
+					if err = xml.Unmarshal([]byte(data), &meta); err != nil {
+						//return
+					}
+					if meta.ContentType == "application/zip" {
+						// this is the meat for a zip file, so add the map
+						resourcesMap[resourceName] = filepath.Join(filepath.Dir(file), resourceName+".resource")
+					}
 				}
 			}
 		}
@@ -252,4 +256,15 @@ func runFetch(cmd *Command, args []string) {
 	}
 
 	fmt.Printf("Exported to %s\n", root)
+}
+
+func pathExists(path string) (bool, error) {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true, nil
+	}
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	return false, err
 }
