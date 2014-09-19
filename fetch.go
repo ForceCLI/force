@@ -67,7 +67,7 @@ func runFetchAura(cmd *Command, entityname string) {
 
 	var defRecords = definitions.Records
 	wd, _ := os.Getwd()
-	root := filepath.Join(wd, "metadata", "aurabundles")
+	root := filepath.Join(wd, "metadata", "aura")
 
 	if err := os.MkdirAll(root, 0755); err != nil {
 		ErrorAndExit(err.Error())

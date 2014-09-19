@@ -44,7 +44,7 @@ func runPushAura(cmd *Command, args []string) {
 
 	// Verify that the file is in an aura bundles folder
 	if !InAuraBundlesFolder(*fileName) {
-		ErrorAndExit("File is not in an aura bundle folder (aurabundles")
+		ErrorAndExit("File is not in an aura bundle folder (aura)")
 	}
 
 	// See if this is a directory
@@ -249,11 +249,11 @@ func getDefinitionFormat(deftype string) (result string) {
 func InAuraBundlesFolder(fname string) bool {
 	var p = fname
 	var maxLoop = 3
-	for filepath.Base(p) != "aurabundles" && maxLoop != 0 {
+	for filepath.Base(p) != "aura" && maxLoop != 0 {
 		p = filepath.Dir(p)
 		maxLoop -= 1
 	}
-	if filepath.Base(p) == "aurabundles" {
+	if filepath.Base(p) == "aura" {
 		return true
 	} else {
 		return false
