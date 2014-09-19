@@ -23,13 +23,13 @@ var cmdAura = &Command{
 	the database. 
 
 	To create a new component (application, evt or component), create a new
-	folder under "aurabundles". Then create a new file in your new folder. You 
+	folder under "aura". Then create a new file in your new folder. You 
 	must follow a naming convention for your files to enable proper definition 
 	of the component type.
 
 	Naming convention <compnentName><artifact type>.<file type extension>
 	Examples: 	metadata
-					aurabundles
+					aura
 						MyApp 
 							MyAppApplication.app
 							MyAppStyle.css
