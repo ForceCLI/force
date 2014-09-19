@@ -17,3 +17,9 @@ func ErrorAndExit(format string, args ...interface{}) {
 	}
 	os.Exit(1)
 }
+
+func ExitIfError(err error, format string, args ...interface{}) {
+	if err != nil {
+		ErrorAndExit(format, args)
+	}
+}
