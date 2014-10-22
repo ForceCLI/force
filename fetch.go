@@ -145,12 +145,12 @@ func runFetch(cmd *Command, args []string) {
 				if newargs[artifactNames] == "--unpack" || newargs[artifactNames] == "-u" {
 					expandResources = true
 				} else {
-					mq := ForceMetadataQueryElement{artifactType, newargs[artifactNames]}
+					mq := ForceMetadataQueryElement{artifactType, []string{newargs[artifactNames]}}
 					query = append(query, mq)
 				}
 			}
 		} else {
-			mq := ForceMetadataQueryElement{artifactType, "*"}
+			mq := ForceMetadataQueryElement{artifactType, []string{"*"}}
 			query = append(query, mq)
 		}
 		files, err = force.Metadata.Retrieve(query)

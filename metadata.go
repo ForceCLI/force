@@ -15,6 +15,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"text/template"
 	"time"
 )
 
@@ -90,7 +91,7 @@ type ForceMetadataDeployProblem struct {
 
 type ForceMetadataQueryElement struct {
 	Name    string
-	Members string
+	Members []string
 }
 
 type ForceMetadataQuery []ForceMetadataQueryElement
@@ -914,17 +915,26 @@ func (fm *ForceMetadata) Retrieve(query ForceMetadataQuery) (files ForceMetadata
 			</unpackaged>
 		</retrieveRequest>
 	`
-	soapType := `
+	soapTypesTemplate := `
+		{{range .}}
 		<types>
-			<name>%s</name>
-			<members>%s</members>
+			{{range .Members}}
+			<members>{{.}}</members>
+			{{end}}
+			<name>{{.Name}}</name>
 		</types>
+		{{end}}
 	`
-	types := ""
-	for _, element := range query {
-		types += fmt.Sprintf(soapType, element.Name, element.Members)
+	tmpl, err := template.New("soapTypes").Parse(soapTypesTemplate)
+	if err != nil {
+		ErrorAndExit(err.Error())
 	}
-	body, err := fm.soapExecute("retrieve", fmt.Sprintf(soap, apiVersionNumber, types))
+	var soapTypes bytes.Buffer
+	err = tmpl.Execute(&soapTypes, query)
+	if err != nil {
+		ErrorAndExit("Error executing template: %s", err.Error())
+	}
+	body, err := fm.soapExecute("retrieve", fmt.Sprintf(soap, apiVersionNumber, soapTypes.String()))
 	if err != nil {
 		return
 	}
