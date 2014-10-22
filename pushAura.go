@@ -211,6 +211,9 @@ func getFormatByFileName(filename string) (format string, defType string) {
 	} else if strings.Contains(fname, "helper.js") {
 		format = "JS"
 		defType = "HELPER"
+	} else if strings.Contains(fname, "renderer.js") {
+		format = "JS"
+		defType = "RENDERER"
 	} else if strings.Contains(fname, "style.css") {
 		format = "CSS"
 		defType = "STYLE"
@@ -227,6 +230,9 @@ func getFormatByFileName(filename string) (format string, defType string) {
 		} else if filepath.Ext(fname) == ".css" {
 			format = "CSS"
 			defType = "STYLE"
+		} else if filepath.Ext(fname) == ".auradoc" {
+			format = "XML"
+			defType = "DOCUMENTATION"
 		} else {
 			ErrorAndExit("Could not determine aura definition type.")
 		}
@@ -236,9 +242,9 @@ func getFormatByFileName(filename string) (format string, defType string) {
 
 func getDefinitionFormat(deftype string) (result string) {
 	switch strings.ToUpper(deftype) {
-	case "APPLICATION", "COMPONENT", "EVENT":
+	case "APPLICATION", "COMPONENT", "EVENT", "DOCUMENTATION":
 		result = "XML"
-	case "CONTROLLER", "MODEL", "HELPER":
+	case "CONTROLLER", "MODEL", "HELPER", "RENDERER":
 		result = "JS"
 	case "STYLE":
 		result = "CSS"
