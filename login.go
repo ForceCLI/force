@@ -71,7 +71,7 @@ func runLogin(cmd *Command, args []string) {
 		}
 	}
 
-	if *userName != "" && *password != "" { // Do SOAP login
+	if len(*userName) != 0 && len(*password) != 0 { // Do SOAP login
 		_, err := ForceLoginAndSaveSoap(endpoint, *userName, *password)
 		if err != nil {
 			ErrorAndExit(err.Error())

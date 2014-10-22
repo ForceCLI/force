@@ -58,9 +58,6 @@ func ActiveLogin() (account string, err error) {
 		accounts, _ := Config.List("accounts")
 		if len(accounts) > 0 {
 			SetActiveLoginDefault()
-		} else {
-			account, err = ForceLoginAndSave(EndpointProduction)
-			SetActiveLogin(account)
 		}
 	}
 	return
