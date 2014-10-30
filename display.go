@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"encoding/json"
 )
 
 var BatchInfoTemplate = `
@@ -85,6 +86,9 @@ func DisplayForceRecordsf(records []ForceRecord, format string) {
 	switch format {
 	case "csv":
 		fmt.Println(RenderForceRecordsCSV(records, format))
+	case "json":
+		recs, _ := json.Marshal(records)
+		fmt.Println(string(recs))
 	default:
 		fmt.Printf("Format %s not supported\n\n", format)
 	}
@@ -507,7 +511,7 @@ func DisplayTextFieldDetails() (message string) {
       label            - defaults to name
       length           - defaults to 255
       name
-  
+
     %s
       description
       helptext
@@ -527,7 +531,7 @@ func DisplayTextAreaFieldDetails() (message string) {
     %s
       label            - defaults to name
       name
-  
+
     %s
       description
       helptext
@@ -544,7 +548,7 @@ func DisplayLongTextAreaFieldDetails() (message string) {
       length           - defaults to 32,768
       name
       visibleLines     - defaults to 3
-  
+
     %s
       description
       helptext
@@ -560,7 +564,7 @@ func DisplayRichTextAreaFieldDetails() (message string) {
       length           - defaults to 32,768
       name
       visibleLines     - defaults to 25
-  
+
     %s
       description
       helptext
@@ -573,7 +577,7 @@ func DisplayCheckboxFieldDetails() (message string) {
     %s
       label            - defaults to name
       name
-  
+
     %s
       description
       helptext
@@ -589,11 +593,11 @@ func DisplayDatetimeFieldDetails() (message string) {
     %s
       label            - defaults to name
       name
-  
+
     %s
       description
       helptext
-      defaultValue     
+      defaultValue
       required         - defaults to false
       formula          - defaultValue must be blask
       formulaTreatBlanksAs  - defaults to "BlankAsZero"
@@ -608,13 +612,13 @@ func DisplayDoubleFieldDetails() (message string) {
       name
       precision        - digits left of decimal (defaults to 18)
       scale            - decimal places (defaults to 0)
-  
+
     %s
       description
       helptext
       required         - defaults to false
       unique           - defaults to false
-      externalId       - defaults to false 
+      externalId       - defaults to false
       defaultValue
       formula          - defaultValue must be blask
       formulaTreatBlanksAs  - defaults to "BlankAsZero"
@@ -629,7 +633,7 @@ func DisplayCurrencyFieldDetails() (message string) {
       name
       precision        - digits left of decimal (defaults to 18)
       scale            - decimal places (defaults to 0)
-  
+
     %s
       description
       helptext
@@ -648,7 +652,7 @@ func DisplayAutonumberFieldDetails() (message string) {
       name
       displayFormat    - defaults to "AN-{00000}"
       startingNumber   - defaults to 0
-  
+
     %s
       description
       helptext
@@ -664,7 +668,7 @@ func DisplayGeolocationFieldDetails() (message string) {
       name
       DisplayLocationInDecimal    - defaults false
       scale                       - defaults to 5 (number of decimals to the right)
-  
+
     %s
       description
       helptext
