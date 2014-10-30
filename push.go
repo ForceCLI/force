@@ -60,7 +60,7 @@ func runPush(cmd *Command, args []string) {
 func pushByName(objPath string, objName string) {
 	byName = true
 
-	root, err := GetSourceDir()
+	root, err := GetSourceDir("")
 	ExitIfNoSourceDir(err)
 
 	if _, err := os.Stat(filepath.Join(root, objPath)); os.IsNotExist(err) {
