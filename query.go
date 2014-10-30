@@ -17,7 +17,7 @@ Examples:
   force query select Id, Name, Account.Name From Contact
 
   force query select Id, Name, Account.Name From Contact --format:csv
-  
+
 `,
 }
 

@@ -3,20 +3,25 @@ package main
 import (
 	"os"
 	"path/filepath"
-
 	"github.com/ddollar/config"
 )
 
 var Config = config.NewConfig("force")
 
-func GetSourceDir() (src string, err error) {
+func GetSourceDir(bdir string) (src string, err error) {
 	// Last element is default
 	var sourceDirs = []string{
 		"src",
 		"metadata",
 	}
 
-	wd, _ := os.Getwd()
+	wd, err := os.Getwd()
+
+	if len(bdir) != 0 {
+		wd = bdir
+		os.Chdir(bdir)
+	}
+
 	for _, src = range sourceDirs {
 		_, err = os.Stat(filepath.Join(wd, src, "package.xml"))
 		// Found a real source dir

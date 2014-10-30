@@ -14,32 +14,62 @@ import (
 )
 
 var cmdFetch = &Command{
-	Run:   runFetch,
-	Usage: "fetch <type> [<artifact name>] [options]",
+	Usage: "fetch -type <metadata type> [metaname <metadata name>] [-d <target directory>] [-unpack]",
 	Short: "Export specified artifact(s) to a local directory",
 	Long: `
 Export specified artifact(s) to a local directory. Use "package" type to retrieve an unmanaged package.
 
 Examples
 
-  force fetch CustomObject Book__c Author__c
+  force fetch -t=CustomObject m Book__c m Author__c
 
   force fetch CustomObject
 
-  force fetch Aura [<entity name>]
+  force fetch Aura m MyComponent /Users/me/Documents/Project/home
 
   force fetch package MyPackagedApp
 
-  options
-      -u, --unpack
-      	  will expand static resources if type is StaticResource
-
-      	  example: force fetch StaticResource MyResource --unpack
+  force fetch StaticResource MyResource -unpack
 
 `,
 }
 
-func runFetchAura(cmd *Command, entityname string) {
+type metaName []string
+
+func (i *metaName) String() string {
+	return fmt.Sprint(*i)
+}
+
+func (i *metaName) Set(value string) error {
+	// That would permit usages such as
+	//	-deltaT 10s -deltaT 15s
+	for _, name := range strings.Split(value, ",") {
+		*i = append(*i, name)
+	}
+	return nil
+}
+
+var (
+	metadataType string
+	targetDirectory string
+	unpack bool
+	metadataName metaName
+)
+
+func init() {
+	cmdFetch.Flag.Var(&metadataName, "metaname", "names of metadata")
+	cmdFetch.Flag.Var(&metadataName, "m", "names of metadata")
+	cmdFetch.Flag.StringVar(&metadataType, "t", "", "Type of metadata to fetch")
+	cmdFetch.Flag.StringVar(&metadataType, "type", "", "Type of metadata to fetch")
+	cmdFetch.Flag.StringVar(&targetDirectory, "d", "", "Use to specify the root directory of your project")
+	cmdFetch.Flag.StringVar(&targetDirectory, "directory", "", "Use to specify the root directory of your project")
+	cmdFetch.Flag.BoolVar(&unpack, "u", false, "Unpage any static resources")
+	cmdFetch.Flag.BoolVar(&unpack, "unpack", false, "Unpage any static resources")
+	cmdFetch.Run = runFetch
+}
+
+
+func runFetchAura2(cmd *Command, entityname string) {
 	force, _ := ActiveForce()
 
 	var bundles AuraDefinitionBundleResult
@@ -66,9 +96,9 @@ func runFetchAura(cmd *Command, entityname string) {
 	}
 
 	var defRecords = definitions.Records
-	root, err := GetSourceDir()
+	root, err := GetSourceDir(targetDirectory)
 
-	root = filepath.Join(root, "aura")
+	root = filepath.Join(targetDirectory, root, "aura")
 	if err := os.MkdirAll(root, 0755); err != nil {
 		ErrorAndExit(err.Error())
 	}
@@ -111,48 +141,44 @@ func runFetchAura(cmd *Command, entityname string) {
 }
 
 func runFetch(cmd *Command, args []string) {
-	if len(args) < 1 {
+	if metadataType == "" {
 		ErrorAndExit("must specify object type and/or object name")
 	}
 
 	force, _ := ActiveForce()
 	var files ForceMetadataFiles
 	var err error
-	var expandResources bool = false
+	var expandResources bool = unpack
 
-	artifactType := args[0]
-	if strings.ToLower(artifactType) == "aura" {
-		if len(args) == 2 {
-			runFetchAura(cmd, args[1])
+	if strings.ToLower(metadataType) == "aura" {
+		if len(metadataName) > 0 {
+			for names := range metadataName {
+				runFetchAura2(cmd, metadataName[names])
+			}
 		} else {
-			runFetchAura(cmd, "")
+			runFetchAura2(cmd, "")
 		}
-	} else if artifactType == "package" {
-		files, err = force.Metadata.RetrievePackage(args[1])
-		if err != nil {
-			ErrorAndExit(err.Error())
-		}
-		for artifactNames := range args[1:] {
-			if args[1:][artifactNames] == "--unpack" || args[1:][artifactNames] == "-u" {
-				expandResources = true
+	} else if metadataType == "package" {
+		if len(metadataName) > 0 {
+			for names := range metadataName {
+				files, err = force.Metadata.RetrievePackage(metadataName[names])
+				if err != nil {
+					ErrorAndExit(err.Error())
+				}
 			}
 		}
 	} else {
 		query := ForceMetadataQuery{}
-		if len(args) >= 2 {
-			newargs := args[1:]
-			for artifactNames := range newargs {
-				if newargs[artifactNames] == "--unpack" || newargs[artifactNames] == "-u" {
-					expandResources = true
-				} else {
-					mq := ForceMetadataQueryElement{artifactType, newargs[artifactNames]}
-					query = append(query, mq)
-				}
+		if len(metadataName) > 0 {
+			for names := range metadataName {
+				mq := ForceMetadataQueryElement{metadataType, metadataName[names]}
+				query = append(query, mq)
 			}
 		} else {
-			mq := ForceMetadataQueryElement{artifactType, "*"}
+			mq := ForceMetadataQueryElement{metadataType, "*"}
 			query = append(query, mq)
 		}
+
 		files, err = force.Metadata.Retrieve(query)
 		if err != nil {
 			ErrorAndExit(err.Error())
@@ -162,7 +188,7 @@ func runFetch(cmd *Command, args []string) {
 	var resourcesMap map[string]string
 	resourcesMap = make(map[string]string)
 
-	root, err := GetSourceDir()
+	root, err := GetSourceDir(targetDirectory)
 	existingPackage, _ := pathExists(filepath.Join(root, "package.xml"))
 
 	for name, data := range files {
@@ -177,7 +203,7 @@ func runFetch(cmd *Command, args []string) {
 				ErrorAndExit(err.Error())
 			}
 			var isResource = false
-			if artifactType == "StaticResource" {
+			if metadataType == "StaticResource" {
 				isResource = true
 			} else if strings.HasSuffix(file, ".resource-meta.xml") {
 				isResource = true
