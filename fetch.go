@@ -116,7 +116,8 @@ func runFetchAura2(cmd *Command, entityname string) {
 		for _, def := range defRecords {
 			var did = fmt.Sprintf("%s", def["AuraDefinitionBundleId"])
 			if did == key {
-				var entity = fmt.Sprintf("%s%s", value, strings.Title(strings.ToLower(fmt.Sprintf("%s", def["DefType"]))))
+				var naming = strings.Title(strings.ToLower(fmt.Sprintf("%s", def["DefType"])));
+				var entity = fmt.Sprintf("%s", value) //, strings.Title(strings.ToLower(fmt.Sprintf("%s", def["DefType"]))))
 				switch fmt.Sprintf("%s", def["DefType"]) {
 				case "COMPONENT":
 					entity += ".cmp"
@@ -125,9 +126,9 @@ func runFetchAura2(cmd *Command, entityname string) {
 				case "EVENT":
 					entity += ".evt"
 				case "STYLE":
-					entity += ".css"
+					entity += fmt.Sprintf("%s.css", naming)
 				default:
-					entity += ".js"
+					entity += fmt.Sprintf("%s.js", naming)
 				}
 				var componentFile = ComponentFile{filepath.Join(root, value, entity), fmt.Sprintf("%s", def["Id"])}
 				bundleManifest.Files = append(bundleManifest.Files, componentFile)

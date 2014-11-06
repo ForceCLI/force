@@ -41,6 +41,7 @@ var metapaths = []metapath{
 	metapath{"components", "ApexComponent"},
 	metapath{"triggers", "ApexTrigger"},
 	metapath{"pages", "ApexPage"},
+	metapath{"staticresources", "StaticResources"},
 }
 
 type PackageBuilder struct {
