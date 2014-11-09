@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 )
 
@@ -35,12 +36,14 @@ var commands = []*Command{
 func main() {
 	args := os.Args[1:]
 	if len(args) < 1 {
+		fmt.Println("Really dood?")
 		usage()
 	}
 
 	for _, cmd := range commands {
 		if cmd.Name() == args[0] && cmd.Run != nil {
 			cmd.Flag.Usage = func() {
+				fmt.Println("WTF?")
 				cmd.printUsage()
 			}
 			if err := cmd.Flag.Parse(args[1:]); err != nil {
@@ -50,5 +53,6 @@ func main() {
 			return
 		}
 	}
+	fmt.Println("Holy shit")
 	usage()
 }

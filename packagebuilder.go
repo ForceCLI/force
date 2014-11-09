@@ -33,15 +33,28 @@ type metapath struct {
 }
 
 var metapaths = []metapath{
+	metapath{"applications", "CustomApplication"},
+	metapath{"assignmentRules", "AssignmentRules"},
+	metapath{"autoResponseRules", "AutoResponseRules"},
 	metapath{"classes", "ApexClass"},
-	metapath{"objects", "CustomObject"},
-	metapath{"tabs", "CustomTab"},
-	metapath{"labels", "CustomLabels"},
-	metapath{"flexipages", "FlexiPage"},
+	metapath{"communities", "Community"},
 	metapath{"components", "ApexComponent"},
-	metapath{"triggers", "ApexTrigger"},
+	metapath{"connectedApps", "ConnectedApp"},
+	metapath{"flexipages", "FlexiPage"},
+	metapath{"homePageLayouts", "HomePageLayout"},
+	metapath{"labels", "CustomLabels"},
+	metapath{"layouts", "Layout"},
+	metapath{"objects", "CustomObject"},
+	metapath{"objectTranslations", "CustomObjectTranslation"},
 	metapath{"pages", "ApexPage"},
-	metapath{"staticresources", "StaticResources"},
+	metapath{"permissionsets", "PermissionSet"},
+	metapath{"profiles", "Profile"},
+	metapath{"quickActions", "QuickAction"},
+	metapath{"remoteSiteSettings", "RemoteSiteSetting"},
+	metapath{"roles", "Role"},
+	metapath{"staticresources", "StaticResource"},
+	metapath{"tabs", "CustomTab"},
+	metapath{"triggers", "ApexTrigger"},
 }
 
 type PackageBuilder struct {
@@ -98,7 +111,9 @@ func (pb *PackageBuilder) AddFile(fpath string) (fname string, err error) {
 	}
 
 	metaName, fname := getMetaTypeFromPath(fpath)
-	pb.AddMetaToPackage(metaName, fname)
+	if len(strings.Split(fname, ".")) == 1 {
+		pb.AddMetaToPackage(metaName, fname)
+	}
 
 	// If it's a push, we want to actually add the files
 	if pb.IsPush {
@@ -153,7 +168,6 @@ func (pb *PackageBuilder) AddMetaToPackage(metaName string, name string) {
 	}
 
 	mt.Members = append(mt.Members, name)
-
 	pb.Metadata[metaName] = mt
 }
 
