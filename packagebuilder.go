@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"fmt"
 )
 
 // Structs for XML building
@@ -115,7 +114,6 @@ func (pb *PackageBuilder) AddFile(fpath string) (fname string, err error) {
 	}
 
 	metaName, fname := getMetaTypeFromPath(fpath)
-	fmt.Println("Metaname: ", metaName)
 	if len(strings.Split(fname, ".")) == 1 {
 		pb.AddMetaToPackage(metaName, fname)
 	}
@@ -158,7 +156,6 @@ func (pb *PackageBuilder) addFileToWorkingDir(metaName string, fpath string) (er
 	if metaName == "AuraDefinitionBundle" {
 		frel = filepath.Join("aura", frel)
 	}
-	fmt.Println("FRel: ", frel)
 	pb.Files[frel] = fdata
 	if hasMeta {
 		fdata, err = ioutil.ReadFile(fmeta)

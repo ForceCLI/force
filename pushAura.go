@@ -23,15 +23,15 @@ var cmdPushAura = &Command{
 func init() {
 	cmdPushAura.Run = runPushAura
 	cmdPushAura.Flag.Var(&resourcepath, "f", "fully qualified file name for entity")
-//	cmdPushAura.Flag.StringVar(&resourcepath, "f", "", "fully qualified file name for entity")
+	//	cmdPushAura.Flag.StringVar(&resourcepath, "f", "", "fully qualified file name for entity")
 	cmdPushAura.Flag.StringVar(&metadataType, "t", "", "Type of entity or bundle to create")
 	cmdPushAura.Flag.StringVar(&metadataType, "type", "", "Type of entity or bundle to create")
 }
 
 var (
-	//resourcepath = cmdPushAura.Flag.String("filepath", "", "fully qualified file name for entity")
-	//	isBundle   = cmdPushAura.Flag.Bool("isBundle", false, "Creating a bundle or not")
-	//createType = cmdPushAura.Flag.String("auraType", "", "Type of entity or bundle to create")
+//resourcepath = cmdPushAura.Flag.String("filepath", "", "fully qualified file name for entity")
+//	isBundle   = cmdPushAura.Flag.Bool("isBundle", false, "Creating a bundle or not")
+//createType = cmdPushAura.Flag.String("auraType", "", "Type of entity or bundle to create")
 )
 
 func runPushAura(cmd *Command, args []string) {
@@ -46,7 +46,6 @@ func runPushAura(cmd *Command, args []string) {
 	if !InAuraBundlesFolder(absPath) {
 		ErrorAndExit("File is not in an aura bundle folder (aura)")
 	}
-
 
 	// See if this is a directory
 	info, _ := os.Stat(absPath)
