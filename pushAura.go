@@ -11,9 +11,9 @@ import (
 
 var cmdPushAura = &Command{
 	Usage: "pushAura",
-	Short: "force pushAura -filename=<filepath>",
+	Short: "force pushAura -resourcepath=<filepath>",
 	Long: `
-	force pushAura -filename <fullFilePath>
+	force pushAura -resourcepath <fullFilePath>
 
 	force pushAura -f=<fullFilePath>
 
@@ -22,49 +22,52 @@ var cmdPushAura = &Command{
 
 func init() {
 	cmdPushAura.Run = runPushAura
-	cmdPushAura.Flag.StringVar(fileName, "f", "", "fully qualified file name for entity")
-	//	cmdPushAura.Flag.BoolVar(isBundle, "b", false, "Creating a bundle or not")
-	cmdPushAura.Flag.StringVar(createType, "t", "", "Type of entity or bundle to create")
+	cmdPushAura.Flag.Var(&resourcepath, "f", "fully qualified file name for entity")
+//	cmdPushAura.Flag.StringVar(&resourcepath, "f", "", "fully qualified file name for entity")
+	cmdPushAura.Flag.StringVar(&metadataType, "t", "", "Type of entity or bundle to create")
+	cmdPushAura.Flag.StringVar(&metadataType, "type", "", "Type of entity or bundle to create")
 }
 
 var (
-	fileName = cmdPushAura.Flag.String("filepath", "", "fully qualified file name for entity")
+	//resourcepath = cmdPushAura.Flag.String("filepath", "", "fully qualified file name for entity")
 	//	isBundle   = cmdPushAura.Flag.Bool("isBundle", false, "Creating a bundle or not")
-	createType = cmdPushAura.Flag.String("auraType", "", "Type of entity or bundle to create")
+	//createType = cmdPushAura.Flag.String("auraType", "", "Type of entity or bundle to create")
 )
 
 func runPushAura(cmd *Command, args []string) {
-	absPath, _ := filepath.Abs(*fileName)
-	*fileName = absPath
+	absPath, _ := filepath.Abs(resourcepath[0])
 
-	if _, err := os.Stat(*fileName); os.IsNotExist(err) {
+	if _, err := os.Stat(absPath); os.IsNotExist(err) {
 		fmt.Println(err.Error())
-		ErrorAndExit("File does not exist\n" + *fileName)
+		ErrorAndExit("File does not exist\n" + absPath)
 	}
 
 	// Verify that the file is in an aura bundles folder
-	if !InAuraBundlesFolder(*fileName) {
+	if !InAuraBundlesFolder(absPath) {
 		ErrorAndExit("File is not in an aura bundle folder (aura)")
 	}
 
+
 	// See if this is a directory
-	info, _ := os.Stat(*fileName)
+	info, _ := os.Stat(absPath)
 	if info.IsDir() {
-		filepath.Walk(*fileName, func(path string, inf os.FileInfo, err error) error {
-			info, err = os.Stat(filepath.Join(*fileName, inf.Name()))
+		// If this is a path, then it is expected be a direct child of "metatdata/aura".
+		// If so, then we are going to push all the definitions in the bundle one at a time.
+		filepath.Walk(absPath, func(path string, inf os.FileInfo, err error) error {
+			info, err = os.Stat(filepath.Join(absPath, inf.Name()))
 			if err != nil {
 				fmt.Println(err.Error())
 			} else {
 				if info.IsDir() || inf.Name() == ".manifest" {
 					fmt.Println("\nSkip")
 				} else {
-					pushAuraComponent(filepath.Join(*fileName, inf.Name()))
+					pushAuraComponent(filepath.Join(absPath, inf.Name()))
 				}
 			}
 			return nil
 		})
 	} else {
-		pushAuraComponent(*fileName)
+		pushAuraComponent(absPath)
 	}
 	return
 }
@@ -78,6 +81,7 @@ func pushAuraComponent(fname string) {
 		createNewAuraBundleAndDefinition(*force, fname)
 	} else {
 		// Got the manifest, let's update the artifact
+		fmt.Println("Updating")
 		updateAuraDefinition(*force, fname)
 		return
 	}
@@ -105,27 +109,40 @@ func createNewAuraBundleAndDefinition(force Force, fname string) {
 		var manifest BundleManifest
 		manifest.Name = bundleName
 
-		_, _ = getFormatByFileName(fname)
+		_, _ = getFormatByresourcepath(fname)
+		targetDirectory = SetTargetDirectory(fname)
 
 		// Create a bundle defintion
-		bundle, err := force.CreateAuraBundle(bundleName)
+		bundle, err, emessages := force.CreateAuraBundle(bundleName)
 		if err != nil {
+			if emessages[0].ErrorCode == "DUPLICATE_VALUE" {
+				// Should look up the bundle and get it's id then update it.
+				FetchManifest(bundleName)
+				updateAuraDefinition(force, fname)
+				return
+			}
 			ErrorAndExit(err.Error())
+		} else {
+			manifest.Id = bundle.Id
+			component, err, emessages := createBundleEntity(manifest, force, fname)
+			if err != nil {
+				ErrorAndExit(err.Error(), emessages[0].ErrorCode)
+			}
+			createManifest(manifest, component, fname)
 		}
-		manifest.Id = bundle.Id
-		component, err := createBundleEntity(manifest, force, fname)
-		if err != nil {
-			ErrorAndExit(err.Error())
-		}
-		createManifest(manifest, component, fname)
 	}
 }
 
-func createBundleEntity(manifest BundleManifest, force Force, fname string) (component ForceCreateRecordResult, err error) {
+func SetTargetDirectory(fname string) string {
+	// Need to get the parent of metadata
+	return strings.Split(fname, "/metadata/aura")[0]
+}
+
+func createBundleEntity(manifest BundleManifest, force Force, fname string) (component ForceCreateRecordResult, err error, emessages []ForceError) {
 	// create the bundle entity
-	format, deftype := getFormatByFileName(fname)
+	format, deftype := getFormatByresourcepath(fname)
 	mbody, _ := readFile(fname)
-	component, err = force.CreateAuraComponent(map[string]string{"AuraDefinitionBundleId": manifest.Id, "DefType": deftype, "Format": format, "Source": mbody})
+	component, err, emessages = force.CreateAuraComponent(map[string]string{"AuraDefinitionBundleId": manifest.Id, "DefType": deftype, "Format": format, "Source": mbody})
 	return
 }
 
@@ -183,16 +200,16 @@ func updateAuraDefinition(force Force, fname string) {
 			return
 		}
 	}
-	component, err := createBundleEntity(manifest, force, fname)
+	component, err, emessages := createBundleEntity(manifest, force, fname)
 	if err != nil {
-		ErrorAndExit(err.Error())
+		ErrorAndExit(err.Error(), emessages[0].ErrorCode)
 	}
 	updateManifest(manifest, component, fname)
 	fmt.Println("New component in the bundle")
 }
 
-func getFormatByFileName(filename string) (format string, defType string) {
-	var fname = strings.ToLower(filename)
+func getFormatByresourcepath(resourcepath string) (format string, defType string) {
+	var fname = strings.ToLower(resourcepath)
 	if strings.Contains(fname, "application.app") {
 		format = "XML"
 		defType = "APPLICATION"
@@ -234,7 +251,7 @@ func getFormatByFileName(filename string) (format string, defType string) {
 			format = "XML"
 			defType = "DOCUMENTATION"
 		} else {
-			ErrorAndExit("Could not determine aura definition type.")
+			ErrorAndExit("Could not determine aura definition type.", fname)
 		}
 	}
 	return
@@ -253,21 +270,16 @@ func getDefinitionFormat(deftype string) (result string) {
 }
 
 func InAuraBundlesFolder(fname string) bool {
-	var p = fname
-	var maxLoop = 3
-	for filepath.Base(p) != "aura" && maxLoop != 0 {
-		p = filepath.Dir(p)
-		maxLoop -= 1
-	}
-	if filepath.Base(p) == "aura" {
-		return true
+	info, _ := os.Stat(fname)
+	if info.IsDir() {
+		return strings.HasSuffix(filepath.Dir(fname), "metadata/aura")
 	} else {
-		return false
+		return strings.HasSuffix(filepath.Dir(filepath.Dir(fname)), "metadata/aura")
 	}
-
 }
-func readFile(filename string) (body string, err error) {
-	data, err := ioutil.ReadFile(filename)
+
+func readFile(resourcepath string) (body string, err error) {
+	data, err := ioutil.ReadFile(resourcepath)
 	if err != nil {
 		return
 	}

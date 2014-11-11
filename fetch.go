@@ -54,6 +54,7 @@ var (
 	targetDirectory string
 	unpack          bool
 	metadataName    metaName
+	makefile				bool
 )
 
 func init() {
@@ -66,6 +67,7 @@ func init() {
 	cmdFetch.Flag.BoolVar(&unpack, "u", false, "Unpage any static resources")
 	cmdFetch.Flag.BoolVar(&unpack, "unpack", false, "Unpage any static resources")
 	cmdFetch.Run = runFetch
+	makefile = true
 }
 
 func runFetchAura2(cmd *Command, entityname string) {
@@ -86,7 +88,35 @@ func runFetchAura2(cmd *Command, entityname string) {
 			ErrorAndExit(err.Error())
 		}
 	}
+	_, err = persistBundles(bundles, definitions)
+	return
+}
 
+func FetchManifest(entityname string) (manifest BundleManifest) {
+	force, _ := ActiveForce()
+
+	var bundles AuraDefinitionBundleResult
+	var definitions AuraDefinitionBundleResult
+	var err error
+
+	if entityname == "" {
+		bundles, definitions, err = force.GetAuraBundles()
+		if err != nil {
+			ErrorAndExit(err.Error())
+		}
+	} else {
+		bundles, definitions, err = force.GetAuraBundle(entityname)
+		if err != nil {
+			ErrorAndExit(err.Error())
+		}
+	}
+	makefile = false
+	_, err = persistBundles(bundles, definitions)
+	return
+
+}
+
+func persistBundles(bundles AuraDefinitionBundleResult, definitions AuraDefinitionBundleResult) (bundleManifest BundleManifest, err error) {
 	var bundleMap = make(map[string]string)
 	var bundleRecords = bundles.Records
 	for _, bundle := range bundleRecords {
@@ -96,7 +126,9 @@ func runFetchAura2(cmd *Command, entityname string) {
 
 	var defRecords = definitions.Records
 	root, err := GetSourceDir(targetDirectory)
-
+	fmt.Println("Root: ", root)
+	wd, _ := os.Getwd()
+	fmt.Println("WD: ", wd)
 	root = filepath.Join(targetDirectory, root, "aura")
 	if err := os.MkdirAll(root, 0755); err != nil {
 		ErrorAndExit(err.Error())
@@ -107,7 +139,7 @@ func runFetchAura2(cmd *Command, entityname string) {
 			ErrorAndExit(err.Error())
 		}
 
-		var bundleManifest = BundleManifest{}
+		bundleManifest = BundleManifest{}
 		bundleManifest.Name = value
 		bundleManifest.Files = []ComponentFile{}
 		bundleManifest.Id = key
@@ -131,7 +163,9 @@ func runFetchAura2(cmd *Command, entityname string) {
 				}
 				var componentFile = ComponentFile{filepath.Join(root, value, entity), fmt.Sprintf("%s", def["Id"])}
 				bundleManifest.Files = append(bundleManifest.Files, componentFile)
-				ioutil.WriteFile(filepath.Join(root, value, entity), []byte(fmt.Sprintf("%s", def["Source"])), 0644)
+				if makefile {
+					ioutil.WriteFile(filepath.Join(root, value, entity), []byte(fmt.Sprintf("%s", def["Source"])), 0644)
+				}
 			}
 		}
 		bmBody, _ := json.Marshal(bundleManifest)
