@@ -14,22 +14,20 @@ import (
 )
 
 var cmdFetch = &Command{
-	Usage: "fetch -type <metadata type> [metaname <metadata name>] [-d <target directory>] [-unpack]",
+	Usage: "fetch -t ApexClass",
 	Short: "Export specified artifact(s) to a local directory",
 	Long: `
+  -t, -type       # type of metadata to retrieve
+  -n, -name       # name of specific metadata to retrieve (must be used with -type)
+  -d, -directory  # override the default target directory
+  -u, -unpack     # unpack any zipped static resources (ignored if type is not StaticResource)
+
 Export specified artifact(s) to a local directory. Use "package" type to retrieve an unmanaged package.
 
 Examples
 
-  force fetch -t=CustomObject m Book__c m Author__c
-
-  force fetch CustomObject
-
-  force fetch Aura m MyComponent /Users/me/Documents/Project/home
-
-  force fetch package MyPackagedApp
-
-  force fetch StaticResource MyResource -unpack
+  force fetch -t=CustomObject n=Book__c n=Author__c
+  force fetch -t Aura -n MyComponent -d /Users/me/Documents/Project/home
 
 `,
 }
@@ -54,12 +52,12 @@ var (
 	targetDirectory string
 	unpack          bool
 	metadataName    metaName
-	makefile				bool
+	makefile        bool
 )
 
 func init() {
-	cmdFetch.Flag.Var(&metadataName, "metaname", "names of metadata")
-	cmdFetch.Flag.Var(&metadataName, "m", "names of metadata")
+	cmdFetch.Flag.Var(&metadataName, "name", "names of metadata")
+	cmdFetch.Flag.Var(&metadataName, "n", "names of metadata")
 	cmdFetch.Flag.StringVar(&metadataType, "t", "", "Type of metadata to fetch")
 	cmdFetch.Flag.StringVar(&metadataType, "type", "", "Type of metadata to fetch")
 	cmdFetch.Flag.StringVar(&targetDirectory, "d", "", "Use to specify the root directory of your project")
@@ -126,9 +124,6 @@ func persistBundles(bundles AuraDefinitionBundleResult, definitions AuraDefiniti
 
 	var defRecords = definitions.Records
 	root, err := GetSourceDir(targetDirectory)
-	fmt.Println("Root: ", root)
-	wd, _ := os.Getwd()
-	fmt.Println("WD: ", wd)
 	root = filepath.Join(targetDirectory, root, "aura")
 	if err := os.MkdirAll(root, 0755); err != nil {
 		ErrorAndExit(err.Error())
@@ -263,7 +258,6 @@ func runFetch(cmd *Command, args []string) {
 					}
 					if meta.ContentType == "application/zip" {
 						// this is the meat for a zip file, so add the map
-						fmt.Println("Add this resource to unpack map: ", filepath.Join(filepath.Dir(file), resourceName+".resource"))
 						resourcesMap[resourceName] = filepath.Join(filepath.Dir(file), resourceName+".resource")
 					}
 				}
@@ -276,14 +270,10 @@ func runFetch(cmd *Command, args []string) {
 		for _, value := range resourcesMap {
 			//resourcefile := filepath.Join(root, "staticresources", value)
 			resourcefile := value
-			fmt.Println("Value: ", value, "\n", filepath.Join(filepath.Dir(value), ""))
 			dest := strings.Split(value, ".")[0]
-			//			dest := filepath.Join(filepath.Base(value), "")
-			fmt.Println("Destination: ", dest)
 			if err := os.MkdirAll(dest, 0755); err != nil {
 				ErrorAndExit(err.Error())
 			}
-			//f, err := os.Open(resourcefile);
 			r, err := zip.OpenReader(resourcefile)
 			if err != nil {
 				log.Fatal(err)
@@ -301,8 +291,6 @@ func runFetch(cmd *Command, args []string) {
 				if !f.FileInfo().IsDir() {
 					path = filepath.Join(path, filepath.Base(f.Name))
 				}
-				fmt.Println("Nother path, I'll be making this path if is a folder\n", path)
-				fmt.Println("This is what i'm unzipping", f.Name)
 				if !strings.HasPrefix(f.Name, "__") {
 					if f.FileInfo().IsDir() {
 						os.MkdirAll(path, f.Mode())
