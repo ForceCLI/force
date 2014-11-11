@@ -1004,7 +1004,7 @@ func startLocalHttpServer(ch chan ForceCredentials) (port int, err error) {
 	port = listener.Addr().(*net.TCPAddr).Port
 	h := http.NewServeMux()
 	h.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "https://force-cli.herokuapp.com")
+		w.Header().Set("Access-Control-Allow-Origin", "https://force-clinext.herokuapp.com")
 		if r.Method == "OPTIONS" {
 			w.Header().Set("Access-Control-Allow-Headers", "X-Requested-With")
 		} else {
@@ -1017,7 +1017,7 @@ func startLocalHttpServer(ch chan ForceCredentials) (port int, err error) {
 			creds.Scope = query.Get("scope")
 			ch <- creds
 			if _, ok := r.Header["X-Requested-With"]; ok == false {
-				http.Redirect(w, r, "https://force-cli.herokuapp.com/auth/complete", http.StatusSeeOther)
+				http.Redirect(w, r, "https://force-clinext.herokuapp.com/auth/complete", http.StatusSeeOther)
 			}
 			listener.Close()
 		}
