@@ -549,7 +549,7 @@ func (fm *ForceMetadata) CheckRetrieveStatus(id string) (files ForceMetadataFile
 		return
 	}
 	zipfiles, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
-	ioutil.WriteFile("inbound.zip", data, 0644)
+	//ioutil.WriteFile("inbound.zip", data, 0644)
 	if err != nil {
 		return
 	}
@@ -893,7 +893,7 @@ func (fm *ForceMetadata) Deploy(files ForceMetadataFiles, options ForceDeployOpt
 }
 
 func (fm *ForceMetadata) DeployZipFile(soap string, zipfile []byte) (successes []ComponentSuccess, problems []ComponentFailure, err error) {
-	ioutil.WriteFile("package.zip", zipfile, 0644)
+	//ioutil.WriteFile("package.zip", zipfile, 0644)
 	encoded := base64.StdEncoding.EncodeToString(zipfile)
 	body, err := fm.soapExecute("deploy", fmt.Sprintf(soap, encoded))
 	if err != nil {
