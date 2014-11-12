@@ -358,6 +358,15 @@ func ForceSoapLogin(endpoint ForceEndpoint, username string, password string) (c
 	identity := u.Scheme + "://" + u.Host + "/id/" + orgid + "/" + result.Id
 	creds = ForceCredentials{result.SessionId, identity, instanceUrl, "", "", endpoint == EndpointCustom, "", endpoint}
 
+	f, _ := ActiveForce()
+	url := fmt.Sprintf("https://force-cli.herokuapp.com/auth/soaplogin/?id=%s&access_token=%s&instance_url=%s", creds.Id, creds.AccessToken, creds.InstanceUrl)
+
+	body, err := f.httpGet(url)
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+	fmt.Println("Save login was ", string(body))
 	return
 }
 
@@ -838,39 +847,6 @@ func (f *Force) httpPostWithContentType(url string, data string, contenttype str
 	return
 }
 
-/*func (f *Force) httpGet(url string) (body []byte, err error) {
-	req, err := httpRequest("GET", url, nil)
-	if err != nil {
-		return
-	}
-	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", f.Credentials.AccessToken))
-	res, err := httpClient().Do(req)
-	if err != nil {
-		return
-	}
-	defer res.Body.Close()
-	if res.StatusCode == 401 {
-		err = errors.New("authorization expired, please run `force login`")
-		return
-	}
-	if res.StatusCode == 403 {
-		err = errors.New("Forbidden; Your authorization may have expired, or you do not have access. Please run `force login` and try again")
-		return
-	}
-	body, err = ioutil.ReadAll(res.Body)
-	if res.StatusCode/100 != 2 {
-		var messages []ForceError
-		json.Unmarshal(body, &messages)
-		if len(messages) > 0 {
-			err = errors.New(messages[0].Message)
-		} else {
-			err = errors.New(string(body))
-		}
-		return
-	}
-	return
-}*/
-
 func (f *Force) httpPost(url string, attrs map[string]string) (body []byte, err error, emessages []ForceError) {
 	rbody, _ := json.Marshal(attrs)
 	req, err := httpRequest("POST", url, bytes.NewReader(rbody))
@@ -1004,7 +980,7 @@ func startLocalHttpServer(ch chan ForceCredentials) (port int, err error) {
 	port = listener.Addr().(*net.TCPAddr).Port
 	h := http.NewServeMux()
 	h.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "https://force-clinext.herokuapp.com")
+		w.Header().Set("Access-Control-Allow-Origin", "https://force-cli.herokuapp.com")
 		if r.Method == "OPTIONS" {
 			w.Header().Set("Access-Control-Allow-Headers", "X-Requested-With")
 		} else {
@@ -1017,7 +993,7 @@ func startLocalHttpServer(ch chan ForceCredentials) (port int, err error) {
 			creds.Scope = query.Get("scope")
 			ch <- creds
 			if _, ok := r.Header["X-Requested-With"]; ok == false {
-				http.Redirect(w, r, "https://force-clinext.herokuapp.com/auth/complete", http.StatusSeeOther)
+				http.Redirect(w, r, "https://force-cli.herokuapp.com/auth/complete", http.StatusSeeOther)
 			}
 			listener.Close()
 		}

@@ -91,7 +91,7 @@ func (pb PackageBuilder) PackageXml() []byte {
 	byteXml, _ := xml.MarshalIndent(p, "", "    ")
 	byteXml = append([]byte(xml.Header), byteXml...)
 	//if err := ioutil.WriteFile("mypackage.xml", byteXml, 0644); err != nil {
-		//ErrorAndExit(err.Error())
+	//ErrorAndExit(err.Error())
 	//}
 	return byteXml
 }
