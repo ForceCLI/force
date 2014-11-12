@@ -549,6 +549,7 @@ func (fm *ForceMetadata) CheckRetrieveStatus(id string) (files ForceMetadataFile
 		return
 	}
 	zipfiles, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
+	//ioutil.WriteFile("inbound.zip", data, 0644)
 	if err != nil {
 		return
 	}
@@ -850,8 +851,8 @@ func (fm *ForceMetadata) DeleteCustomObject(object string) (err error) {
 	return
 }
 
-func (fm *ForceMetadata) Deploy(files ForceMetadataFiles, options ForceDeployOptions) (successes []ComponentSuccess, problems []ComponentFailure, err error) {
-	soap := `
+func (fm *ForceMetadata) MakeDeploySoap(options ForceDeployOptions) (soap string) {
+	soap = fmt.Sprintf(`
 		<zipFile>%s</zipFile>
 		<deployOptions>
 			<allowMissingFiles>%t</allowMissingFiles>
@@ -862,23 +863,39 @@ func (fm *ForceMetadata) Deploy(files ForceMetadataFiles, options ForceDeployOpt
 			<rollbackOnError>%t</rollbackOnError>
 			<runAllTests>%t</runAllTests>
 		</deployOptions>
-	`
+	`, "%s", options.AllowMissingFiles, options.AutoUpdatePackage, options.CheckOnly, options.IgnoreWarnings, options.PurgeOnDelete, options.RollbackOnError, options.RunAllTests)
+	return
+}
+
+func (fm *ForceMetadata) MakeZip(files ForceMetadataFiles) (zipdata []byte, err error) {
 	zipfile := new(bytes.Buffer)
 	zipper := zip.NewWriter(zipfile)
 	for name, data := range files {
 		name = filepath.ToSlash(name)
 		wr, err := zipper.Create(fmt.Sprintf("unpackaged%s%s", string(os.PathSeparator), name))
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		wr.Write(data)
 	}
 	zipper.Close()
+	zipdata = zipfile.Bytes()
+	return
+}
 
-	//ioutil.WriteFile("package.zip", zipfile.Bytes(), 0644)
+func (fm *ForceMetadata) Deploy(files ForceMetadataFiles, options ForceDeployOptions) (successes []ComponentSuccess, problems []ComponentFailure, err error) {
+	soap := fm.MakeDeploySoap(options)
 
-	encoded := base64.StdEncoding.EncodeToString(zipfile.Bytes())
-	body, err := fm.soapExecute("deploy", fmt.Sprintf(soap, encoded, options.AllowMissingFiles, options.AutoUpdatePackage, options.CheckOnly, options.IgnoreWarnings, options.PurgeOnDelete, options.RollbackOnError, options.RunAllTests))
+	zipfile, err := fm.MakeZip(files)
+
+	successes, problems, err = fm.DeployZipFile(soap, zipfile)
+	return
+}
+
+func (fm *ForceMetadata) DeployZipFile(soap string, zipfile []byte) (successes []ComponentSuccess, problems []ComponentFailure, err error) {
+	//ioutil.WriteFile("package.zip", zipfile, 0644)
+	encoded := base64.StdEncoding.EncodeToString(zipfile)
+	body, err := fm.soapExecute("deploy", fmt.Sprintf(soap, encoded))
 	if err != nil {
 		fmt.Println(err.Error())
 		return

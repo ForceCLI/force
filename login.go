@@ -132,6 +132,7 @@ func ForceLoginAndSaveSoap(endpoint ForceEndpoint, user_name string, password st
 	}
 
 	username, err = ForceSaveLogin(creds)
+	//fmt.Printf("Creds %+v", creds)
 	return
 }
 
