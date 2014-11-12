@@ -477,14 +477,14 @@ func (f *Force) GetAuraBundleDefinition(id string) (definitions AuraDefinitionBu
 	return
 }
 
-func (f *Force) CreateAuraBundle(bundleName string) (result ForceCreateRecordResult, err error) {
+func (f *Force) CreateAuraBundle(bundleName string) (result ForceCreateRecordResult, err error, emessages []ForceError) {
 	aurl := fmt.Sprintf("%s/services/data/%s/tooling/sobjects/AuraDefinitionBundle", f.Credentials.InstanceUrl, apiVersion)
 	attrs := make(map[string]string)
 	attrs["DeveloperName"] = bundleName
 	attrs["Description"] = "An Aura Bundle"
 	attrs["MasterLabel"] = bundleName
 	attrs["ApiVersion"] = apiVersionNumber
-	body, err := f.httpPost(aurl, attrs)
+	body, err, emessages := f.httpPost(aurl, attrs)
 	if err != nil {
 		return
 	}
@@ -493,9 +493,9 @@ func (f *Force) CreateAuraBundle(bundleName string) (result ForceCreateRecordRes
 	return
 }
 
-func (f *Force) CreateAuraComponent(attrs map[string]string) (result ForceCreateRecordResult, err error) {
+func (f *Force) CreateAuraComponent(attrs map[string]string) (result ForceCreateRecordResult, err error, emessages []ForceError) {
 	aurl := fmt.Sprintf("%s/services/data/%s/tooling/sobjects/AuraDefinition", f.Credentials.InstanceUrl, apiVersion)
-	body, err := f.httpPost(aurl, attrs)
+	body, err, emessages := f.httpPost(aurl, attrs)
 	if err != nil {
 		fmt.Println("The error is: ", err.Error())
 		return
@@ -566,9 +566,9 @@ func (f *Force) ResetPassword(id string) (result ForcePasswordResetResult, err e
 	return
 }
 
-func (f *Force) ChangePassword(id string, attrs map[string]string) (result string, err error) {
+func (f *Force) ChangePassword(id string, attrs map[string]string) (result string, err error, emessages []ForceError) {
 	url := fmt.Sprintf("%s/services/data/%s/sobjects/User/%s/password", f.Credentials.InstanceUrl, apiVersion, id)
-	_, err = f.httpPost(url, attrs)
+	_, err, emessages = f.httpPost(url, attrs)
 	return
 }
 
@@ -582,9 +582,9 @@ func (f *Force) GetRecord(sobject, id string) (object ForceRecord, err error) {
 	return
 }
 
-func (f *Force) CreateRecord(sobject string, attrs map[string]string) (id string, err error) {
+func (f *Force) CreateRecord(sobject string, attrs map[string]string) (id string, err error, emessages []ForceError) {
 	url := fmt.Sprintf("%s/services/data/%s/sobjects/%s", f.Credentials.InstanceUrl, apiVersion, sobject)
-	body, err := f.httpPost(url, attrs)
+	body, err, emessages := f.httpPost(url, attrs)
 	var result ForceCreateRecordResult
 	json.Unmarshal(body, &result)
 	id = result.Id
@@ -871,7 +871,7 @@ func (f *Force) httpPostWithContentType(url string, data string, contenttype str
 	return
 }*/
 
-func (f *Force) httpPost(url string, attrs map[string]string) (body []byte, err error) {
+func (f *Force) httpPost(url string, attrs map[string]string) (body []byte, err error, emessages []ForceError) {
 	rbody, _ := json.Marshal(attrs)
 	req, err := httpRequest("POST", url, bytes.NewReader(rbody))
 	if err != nil {
@@ -893,6 +893,7 @@ func (f *Force) httpPost(url string, attrs map[string]string) (body []byte, err 
 		var messages []ForceError
 		json.Unmarshal(body, &messages)
 		err = errors.New(messages[0].Message)
+		emessages = messages
 		return
 	}
 	return
@@ -1003,7 +1004,7 @@ func startLocalHttpServer(ch chan ForceCredentials) (port int, err error) {
 	port = listener.Addr().(*net.TCPAddr).Port
 	h := http.NewServeMux()
 	h.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "https://force-cli.herokuapp.com")
+		w.Header().Set("Access-Control-Allow-Origin", "https://force-clinext.herokuapp.com")
 		if r.Method == "OPTIONS" {
 			w.Header().Set("Access-Control-Allow-Headers", "X-Requested-With")
 		} else {
@@ -1016,7 +1017,7 @@ func startLocalHttpServer(ch chan ForceCredentials) (port int, err error) {
 			creds.Scope = query.Get("scope")
 			ch <- creds
 			if _, ok := r.Header["X-Requested-With"]; ok == false {
-				http.Redirect(w, r, "https://force-cli.herokuapp.com/auth/complete", http.StatusSeeOther)
+				http.Redirect(w, r, "https://force-clinext.herokuapp.com/auth/complete", http.StatusSeeOther)
 			}
 			listener.Close()
 		}

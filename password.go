@@ -18,7 +18,7 @@ Examples:
   force password reset joe@org.com
 
   force password change joe@org.com $uP3r$3cure
-  
+
 `,
 }
 
@@ -86,9 +86,9 @@ func runPasswordChange(args []string) {
 		fmt.Println(args[1:])
 		newPass := make(map[string]string)
 		newPass["NewPassword"] = args[1]
-		_, err := force.ChangePassword(records.Records[0]["Id"].(string), newPass)
+		_, err, emessages := force.ChangePassword(records.Records[0]["Id"].(string), newPass)
 		if err != nil {
-			ErrorAndExit(err.Error())
+			ErrorAndExit(err.Error(), emessages[0].ErrorCode)
 		} else {
 			fmt.Println("\nPassword changed\n")
 		}

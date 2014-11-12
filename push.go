@@ -15,7 +15,7 @@ import (
 )
 
 var cmdPush = &Command{
-	Usage: "push -t <metadata type> -n <metadata name> -p <pathtometadata>",
+	Usage: "push -t <metadata type> -n <metadata name> -f <pathtometadata>",
 	Short: "Deploy artifact from a local directory",
 	Long: `
 Deploy artifact from a local directory
@@ -24,7 +24,8 @@ Deploy artifact from a local directory
 Examples:
   force push -t StaticResource -n MyResource
   force push -t ApexClass
-  force push -p src/classes/MyClass.cls
+  force push -f metadata/classes/MyClass.cls
+	force push -n MyApex -n MyObject__c
 `,
 }
 
@@ -34,13 +35,13 @@ var (
 )
 
 var (
-	resourcepath string
+	resourcepath metaName
 	metaFolder   string
 )
 
 func init() {
-	cmdPush.Flag.StringVar(&resourcepath, "p", "", "Path to resource(s)")
-	cmdPush.Flag.StringVar(&resourcepath, "path", "", "Path to resource(s)")
+	cmdPush.Flag.Var(&resourcepath, "f", "Path to resource(s)")
+	cmdPush.Flag.Var(&resourcepath, "filepath", "Path to resource(s)")
 	cmdPush.Flag.StringVar(&metadataType, "t", "", "Metatdata type")
 	cmdPush.Flag.StringVar(&metadataType, "type", "", "Metatdata type")
 	cmdPush.Flag.Var(&metadataName, "name", "name of metadata object")
@@ -67,15 +68,55 @@ func runPush(cmd *Command, args []string) {
 	switch subcommand {
 	case "package":
 		pushPackage()
-	case "folder":
-		pushFolder()
 	default:
-		validatePushByMetadataTypeCommand()
-		pushByMetadataType()
+		if len(resourcepath) != 0 {
+			// It's not a package but does have a path. This could be a path to a file
+			// or to a folder. If it is a folder, we pickup the resources a different
+			// way than if it's a file.
+			validatePushByMetadataTypeCommand()
+			if len(metadataType) != 0 {
+				pushByTypeAndPath()
+			} else {
+				pushByPathOnly()
+			}
+		} else {
+			if len(metadataName) > 0 {
+				if len(metadataType) != 0 {
+					validatePushByMetadataTypeCommand()
+					pushByMetadataType()
+				} else {
+					isValidMetadataType()
+					pushByName()
+				}
+			} else {
+				validatePushByMetadataTypeCommand()
+				pushByMetadataType()
+			}
+		}
 	}
 
 	t1 := time.Now()
 	fmt.Printf("The call took %v to run.\n", t1.Sub(t0))
+}
+
+func pushByPathOnly() {
+	pushByPath(resourcepath)
+}
+
+func pushByTypeAndPath() {
+	for _, name := range resourcepath {
+		fi, err := os.Stat(name)
+		if err != nil {
+			ErrorAndExit(err.Error())
+		}
+		if fi.IsDir() {
+
+		}
+
+		fn := filepath.Base(name)
+		fn = strings.Replace(fn, filepath.Ext(fn), "", -1)
+		metadataName = append(metadataName, fn)
+	}
 }
 
 func isValidMetadataType() {
@@ -85,7 +126,7 @@ func isValidMetadataType() {
 	ExitIfNoSourceDir(err)
 	metaFolder = findMetadataTypeFolder(metadataType, root)
 	if metaFolder == "" {
-		ErrorAndExit("No folders that contain %s metadata could be found.")
+		ErrorAndExit("No folders that contain %s metadata could be found.", metadataType)
 	}
 }
 
@@ -97,7 +138,7 @@ func metadataExists() {
 		message := ""
 		// Go throug the metadata folder to find the named resources
 		for _, name := range metadataName {
-			if !wildCardSearch(metaFolder, name) {
+			if len(wildCardSearch(metaFolder, strings.Split(name, ".")[0])) == 0 {
 				message += fmt.Sprintf("\nINVALID: No resource named %s found in %s", name, metaFolder)
 				valid = false
 			}
@@ -113,7 +154,7 @@ func validatePushByMetadataTypeCommand() {
 	metadataExists()
 }
 
-func wildCardSearch(metaFolder string, name string) bool {
+func wildCardSearch(metaFolder string, name string) []string {
 	cmd := exec.Command("ls", metaFolder)
 	var out bytes.Buffer
 	cmd.Stdout = &out
@@ -122,7 +163,16 @@ func wildCardSearch(metaFolder string, name string) bool {
 		ErrorAndExit(err.Error())
 	}
 	f := strings.Split(out.String(), "\n")
-	return contains(f, name)
+	var ret []string
+	for _, s := range f {
+		ss := filepath.Base(s)
+		ss = strings.Split(ss, ".")[0]
+		if ss == name {
+			ret = append(ret, s)
+		}
+	}
+	return ret
+	//return contains(f, name)
 }
 
 func contains(s []string, e string) bool {
@@ -135,14 +185,10 @@ func contains(s []string, e string) bool {
 }
 
 func pushPackage() {
-	if resourcepath == "" {
-		ErrorAndExit(fmt.Sprintf("Path %s not found", resourcepath))
+	if len(resourcepath) == 0 {
+		ErrorAndExit(fmt.Sprintf("No resource path sepcified."))
 	}
 	deployPackage()
-}
-
-func pushFolder() {
-	ErrorAndExit("Not yet implemented")
 }
 
 // Return the name of the first element of an XML file. We need this
@@ -282,25 +328,25 @@ func zipResource(path string) {
 	return
 }
 
-func pushByName(objPath string, objName string) {
+func pushByName() {
 	byName = true
 
 	root, err := GetSourceDir("")
 	ExitIfNoSourceDir(err)
 
-	if _, err := os.Stat(filepath.Join(root, objPath)); os.IsNotExist(err) {
+	/*if _, err := os.Stat(filepath.Join(root, objPath)); os.IsNotExist(err) {
 		ErrorAndExit("Folder " + objPath + " not found, must specify valid metadata")
-	}
+	}*/
 
 	// Find file by walking directory and ignoring extension
-	found := false
-	var fpath string
-	err = filepath.Walk(filepath.Join(root, objPath), func(path string, f os.FileInfo, err error) error {
+	var paths []string
+	err = filepath.Walk(root, func(path string, f os.FileInfo, err error) error {
 		if f.Mode().IsRegular() {
 			fname := strings.TrimSuffix(f.Name(), filepath.Ext(f.Name()))
-			if strings.EqualFold(fname, objName) {
-				found = true
-				fpath = filepath.Join(root, objPath, f.Name())
+			for _, name := range metadataName {
+				if strings.EqualFold(fname, name) {
+					paths = append(paths, path)
+				}
 			}
 		}
 		return nil
@@ -308,16 +354,18 @@ func pushByName(objPath string, objName string) {
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
-	if !found {
-		ErrorAndExit("Could not find " + objName + " in " + objPath)
+	if len(paths) == 0 {
+		//for _, name := range metadataName {
+		ErrorAndExit("Could not find %#v ", metadataName)
+		//}
 	}
 
-	pushByPath(fpath)
+	pushByPaths(paths)
 }
 
 // Wrapper to handle a single resource path
-func pushByPath(fpath string) {
-	pushByPaths([]string{fpath})
+func pushByPath(fpath []string) {
+	pushByPaths(fpath)
 }
 
 // Creates a package that includes everything in the passed in string slice
@@ -329,6 +377,7 @@ func pushByPaths(fpaths []string) {
 	for _, fpath := range fpaths {
 		name, err := pb.AddFile(fpath)
 		if err != nil {
+			fmt.Println(err.Error())
 			badPaths = append(badPaths, fpath)
 		} else {
 			// Store paths by name for error messages
@@ -353,9 +402,11 @@ func pushByPaths(fpaths []string) {
 func deployPackage() {
 	force, _ := ActiveForce()
 	var DeploymentOptions ForceDeployOptions
-	zipfile, err := ioutil.ReadFile(resourcepath)
-	successes, problems, err := force.Metadata.DeployZipFile(force.Metadata.MakeDeploySoap(DeploymentOptions), zipfile)
-	processDeployResults(successes, problems, err)
+	for _, name := range resourcepath {
+		zipfile, err := ioutil.ReadFile(name)
+		successes, problems, err := force.Metadata.DeployZipFile(force.Metadata.MakeDeploySoap(DeploymentOptions), zipfile)
+		processDeployResults(successes, problems, err)
+	}
 	return
 }
 
@@ -372,35 +423,41 @@ func processDeployResults(successes []ComponentSuccess, problems []ComponentFail
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
-	fmt.Printf("\nFailures - %d\n", len(problems))
-	for _, problem := range problems {
-		if problem.FullName == "" {
-			fmt.Println(problem.Problem)
-		} else {
-			if byName {
-				fmt.Printf("ERROR with %s, line %d\n %s\n", problem.FullName, problem.LineNumber, problem.Problem)
+
+	if len(problems) > 0 {
+		fmt.Printf("\nFailures - %d\n", len(problems))
+		for _, problem := range problems {
+			if problem.FullName == "" {
+				fmt.Println(problem.Problem)
 			} else {
-				fname, found := namePaths[problem.FullName]
-				if !found {
-					fname = problem.FullName
+				if byName {
+					fmt.Printf("ERROR with %s, line %d\n %s\n", problem.FullName, problem.LineNumber, problem.Problem)
+				} else {
+					fname, found := namePaths[problem.FullName]
+					if !found {
+						fname = problem.FullName
+					}
+					fmt.Printf("\"%s\", line %d: %s %s\n", fname, problem.LineNumber, problem.ProblemType, problem.Problem)
 				}
-				fmt.Printf("\"%s\", line %d: %s %s\n", fname, problem.LineNumber, problem.ProblemType, problem.Problem)
 			}
 		}
 	}
 
-	fmt.Printf("\nSuccesses - %d\n", len(successes)-1)
-	for _, success := range successes {
-		if success.FullName != "package.xml" {
-			verb := "unchanged"
-			if success.Changed {
-				verb = "changed"
-			} else if success.Deleted {
-				verb = "deleted"
-			} else if success.Created {
-				verb = "created"
+	if len(successes) > 0 {
+		fmt.Printf("\nSuccesses - %d\n", len(successes))
+		for _, success := range successes {
+			fmt.Println("%s", success.FullName, success.Changed)
+			if success.FullName != "package.xml" {
+				verb := "unchanged"
+				if success.Changed {
+					verb = "changed"
+				} else if success.Deleted {
+					verb = "deleted"
+				} else if success.Created {
+					verb = "created"
+				}
+				fmt.Printf("%s\n\tstatus: %s\n\tid=%s\n", success.FullName, verb, success.Id)
 			}
-			fmt.Printf("%s\n\tstatus: %s\n\tid=%s\n", success.FullName, verb, success.Id)
 		}
 	}
 
