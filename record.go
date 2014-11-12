@@ -79,9 +79,9 @@ func runRecordCreate(args []string) {
 	}
 	force, _ := ActiveForce()
 	attrs := ParseArgumentAttrs(args[1:])
-	id, err := force.CreateRecord(args[0], attrs)
+	id, err, emessages := force.CreateRecord(args[0], attrs)
 	if err != nil {
-		ErrorAndExit(err.Error())
+		ErrorAndExit(err.Error(), emessages[0].ErrorCode)
 	}
 	fmt.Printf("Record created: %s\n", id)
 }

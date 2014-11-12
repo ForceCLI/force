@@ -23,7 +23,7 @@ func GetSourceDir(bdir string) (src string, err error) {
 	}
 
 	for _, src = range sourceDirs {
-		_, err = os.Stat(filepath.Join(wd, src, "package.xml"))
+		_, err = os.Stat(filepath.Join(wd, src)) //, "package.xml"))
 		// Found a real source dir
 		if err == nil {
 			return
