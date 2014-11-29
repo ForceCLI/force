@@ -99,6 +99,19 @@ Field gives you the ability to create, list and delete the fields on an object. 
       force field create Todo__c Due:DateTime required:true
       force field delete Todo__c Due
 
+### push
+Push gives you the ability to push specified resources to force.com.  The resource will be pulled from ./src/{type}/
+
+      force -t(ype) StaticReource -n(ame) MyResource.resource
+	  force -type ApexClass -name MyClass.cls
+	  force -t ApexPage -n MyPage.page
+
+You can also push all of a specific type of resource from a given folder.
+
+      force -t StaticResource -p(ath) src/staticresources/
+      force -t ApexClass -path src/classes/
+      force -t ApexPage -p src/pages/
+
 ### notifications
 Includes notification library, [gotifier](https://github.com/ViViDboarder/gotifier), that will display notifications for using either Using [terminal-notifier](https://github.com/alloy/terminal-notifier) on OSX or [notify-send](http://manpages.ubuntu.com/manpages/saucy/man1/notify-send.1.html) on Ubuntu. Currently, only the `push` and `test` methods are displaying notifications.
 
