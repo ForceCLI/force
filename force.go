@@ -36,8 +36,8 @@ const (
 )
 
 const (
-	apiVersion       = "v31.0"
-	apiVersionNumber = "31.0"
+	apiVersion       = "v32.0"
+	apiVersionNumber = "32.0"
 )
 
 var RootCertificates = `
@@ -358,6 +358,15 @@ func ForceSoapLogin(endpoint ForceEndpoint, username string, password string) (c
 	identity := u.Scheme + "://" + u.Host + "/id/" + orgid + "/" + result.Id
 	creds = ForceCredentials{result.SessionId, identity, instanceUrl, "", "", endpoint == EndpointCustom, "", endpoint}
 
+	f, _ := ActiveForce()
+	url := fmt.Sprintf("https://force-cli.herokuapp.com/auth/soaplogin/?id=%s&access_token=%s&instance_url=%s", creds.Id, creds.AccessToken, creds.InstanceUrl)
+
+	body, err := f.httpGet(url)
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+	fmt.Println("Save login was ", string(body))
 	return
 }
 
@@ -477,14 +486,14 @@ func (f *Force) GetAuraBundleDefinition(id string) (definitions AuraDefinitionBu
 	return
 }
 
-func (f *Force) CreateAuraBundle(bundleName string) (result ForceCreateRecordResult, err error) {
+func (f *Force) CreateAuraBundle(bundleName string) (result ForceCreateRecordResult, err error, emessages []ForceError) {
 	aurl := fmt.Sprintf("%s/services/data/%s/tooling/sobjects/AuraDefinitionBundle", f.Credentials.InstanceUrl, apiVersion)
 	attrs := make(map[string]string)
 	attrs["DeveloperName"] = bundleName
 	attrs["Description"] = "An Aura Bundle"
 	attrs["MasterLabel"] = bundleName
 	attrs["ApiVersion"] = apiVersionNumber
-	body, err := f.httpPost(aurl, attrs)
+	body, err, emessages := f.httpPost(aurl, attrs)
 	if err != nil {
 		return
 	}
@@ -493,9 +502,9 @@ func (f *Force) CreateAuraBundle(bundleName string) (result ForceCreateRecordRes
 	return
 }
 
-func (f *Force) CreateAuraComponent(attrs map[string]string) (result ForceCreateRecordResult, err error) {
+func (f *Force) CreateAuraComponent(attrs map[string]string) (result ForceCreateRecordResult, err error, emessages []ForceError) {
 	aurl := fmt.Sprintf("%s/services/data/%s/tooling/sobjects/AuraDefinition", f.Credentials.InstanceUrl, apiVersion)
-	body, err := f.httpPost(aurl, attrs)
+	body, err, emessages := f.httpPost(aurl, attrs)
 	if err != nil {
 		fmt.Println("The error is: ", err.Error())
 		return
@@ -566,9 +575,9 @@ func (f *Force) ResetPassword(id string) (result ForcePasswordResetResult, err e
 	return
 }
 
-func (f *Force) ChangePassword(id string, attrs map[string]string) (result string, err error) {
+func (f *Force) ChangePassword(id string, attrs map[string]string) (result string, err error, emessages []ForceError) {
 	url := fmt.Sprintf("%s/services/data/%s/sobjects/User/%s/password", f.Credentials.InstanceUrl, apiVersion, id)
-	_, err = f.httpPost(url, attrs)
+	_, err, emessages = f.httpPost(url, attrs)
 	return
 }
 
@@ -582,9 +591,9 @@ func (f *Force) GetRecord(sobject, id string) (object ForceRecord, err error) {
 	return
 }
 
-func (f *Force) CreateRecord(sobject string, attrs map[string]string) (id string, err error) {
+func (f *Force) CreateRecord(sobject string, attrs map[string]string) (id string, err error, emessages []ForceError) {
 	url := fmt.Sprintf("%s/services/data/%s/sobjects/%s", f.Credentials.InstanceUrl, apiVersion, sobject)
-	body, err := f.httpPost(url, attrs)
+	body, err, emessages := f.httpPost(url, attrs)
 	var result ForceCreateRecordResult
 	json.Unmarshal(body, &result)
 	id = result.Id
@@ -838,40 +847,7 @@ func (f *Force) httpPostWithContentType(url string, data string, contenttype str
 	return
 }
 
-/*func (f *Force) httpGet(url string) (body []byte, err error) {
-	req, err := httpRequest("GET", url, nil)
-	if err != nil {
-		return
-	}
-	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", f.Credentials.AccessToken))
-	res, err := httpClient().Do(req)
-	if err != nil {
-		return
-	}
-	defer res.Body.Close()
-	if res.StatusCode == 401 {
-		err = errors.New("authorization expired, please run `force login`")
-		return
-	}
-	if res.StatusCode == 403 {
-		err = errors.New("Forbidden; Your authorization may have expired, or you do not have access. Please run `force login` and try again")
-		return
-	}
-	body, err = ioutil.ReadAll(res.Body)
-	if res.StatusCode/100 != 2 {
-		var messages []ForceError
-		json.Unmarshal(body, &messages)
-		if len(messages) > 0 {
-			err = errors.New(messages[0].Message)
-		} else {
-			err = errors.New(string(body))
-		}
-		return
-	}
-	return
-}*/
-
-func (f *Force) httpPost(url string, attrs map[string]string) (body []byte, err error) {
+func (f *Force) httpPost(url string, attrs map[string]string) (body []byte, err error, emessages []ForceError) {
 	rbody, _ := json.Marshal(attrs)
 	req, err := httpRequest("POST", url, bytes.NewReader(rbody))
 	if err != nil {
@@ -893,6 +869,7 @@ func (f *Force) httpPost(url string, attrs map[string]string) (body []byte, err 
 		var messages []ForceError
 		json.Unmarshal(body, &messages)
 		err = errors.New(messages[0].Message)
+		emessages = messages
 		return
 	}
 	return

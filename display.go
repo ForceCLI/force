@@ -2,10 +2,10 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"sort"
 	"strings"
-	"encoding/json"
 )
 
 var BatchInfoTemplate = `
