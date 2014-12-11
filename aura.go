@@ -8,32 +8,33 @@ import (
 	"path/filepath"
 	"strings"
 )
+// Brief comment to fire commit
 
 var cmdAura = &Command{
 	Usage: "aura",
-	Short: "force aura push -fileName=<filepath>",
+	Short: "force aura push -resourcepath=<filepath>",
 	Long: `
 	The aura command needs context to work. If you execute "aura get"
-	it will create a folder structure that provides the context for 
+	it will create a folder structure that provides the context for
 	aura components on disk.
 
 	The aura components will be created in "metadata/aurabundles/<componentname>"
 	relative to the current working directory and a .manifest file will be
 	created that associates components and their artifacts with their ids in
-	the database. 
+	the database.
 
 	To create a new component (application, evt or component), create a new
-	folder under "aura". Then create a new file in your new folder. You 
-	must follow a naming convention for your files to enable proper definition 
+	folder under "aura". Then create a new file in your new folder. You
+	must follow a naming convention for your files to enable proper definition
 	of the component type.
 
 	Naming convention <compnentName><artifact type>.<file type extension>
 	Examples: 	metadata
 					aura
-						MyApp 
+						MyApp
 							MyAppApplication.app
 							MyAppStyle.css
-						MyList 
+						MyList
 							MyComponent.cmp
 							MyComponentHelper.js
 							MyComponentStyle.css
@@ -51,14 +52,15 @@ var cmdAura = &Command{
 
 func init() {
 	cmdAura.Run = runAura
-	cmdAura.Flag.StringVar(fileName, "f", "", "fully qualified file name for entity")
-	cmdAura.Flag.StringVar(auraentitytype, "entitytype", "", "fully qualified file name for entity")
-	cmdAura.Flag.StringVar(auraentityname, "entityname", "", "fully qualified file name for entity")
+	cmdAura.Flag.Var(&resourcepath, "p", "fully qualified file name for entity")
+	cmdAura.Flag.StringVar(&metadataType, "entitytype", "", "fully qualified file name for entity")
+	cmdAura.Flag.StringVar(&auraentityname, "entityname", "", "fully qualified file name for entity")
+	cmdAura.Flag.StringVar(&metadataType, "t", "", "fully qualified file name for entity")
+	cmdAura.Flag.StringVar(&auraentityname, "n", "", "fully qualified file name for entity")
 }
 
 var (
-	auraentitytype = cmdAura.Flag.String("t", "", "aura entity type")
-	auraentityname = cmdAura.Flag.String("n", "", "aura entity name")
+	auraentityname string
 )
 
 func runAura(cmd *Command, args []string) {
@@ -104,28 +106,28 @@ func runAura(cmd *Command, args []string) {
 }
 
 func runDeleteAura() {
-	absPath, _ := filepath.Abs(*fileName)
-	*fileName = absPath
+	absPath, _ := filepath.Abs(resourcepath[0])
+	//resourcepath = absPath
 
-	if InAuraBundlesFolder(*fileName) {
-		info, err := os.Stat(*fileName)
+	if InAuraBundlesFolder(absPath) {
+		info, err := os.Stat(absPath)
 		if err != nil {
 			ErrorAndExit(err.Error())
 		}
-		manifest, err := GetManifest(*fileName)
+		manifest, err := GetManifest(absPath)
 		isBundle := false
 		if info.IsDir() {
 			force, _ := ActiveForce()
-			manifest, err = GetManifest(filepath.Join(*fileName, ".manifest"))
+			manifest, err = GetManifest(filepath.Join(absPath, ".manifest"))
 			bid := ""
 			if err != nil { // Could not find a manifest, use bundle name
 				// Try to look up the bundle by name
-				b, err := force.GetAuraBundleByName(filepath.Base(*fileName))
+				b, err := force.GetAuraBundleByName(filepath.Base(absPath))
 				if err != nil {
 					ErrorAndExit(err.Error())
 				} else {
 					if len(b.Records) == 0 {
-						ErrorAndExit(fmt.Sprintf("No bundle definition named %q", filepath.Base(*fileName)))
+						ErrorAndExit(fmt.Sprintf("No bundle definition named %q", filepath.Base(absPath)))
 					} else {
 						bid = b.Records[0]["Id"].(string)
 					}
@@ -139,24 +141,24 @@ func runDeleteAura() {
 				ErrorAndExit(err.Error())
 			}
 			// Now walk the bundle and remove all the atrifacts
-			filepath.Walk(*fileName, func(path string, inf os.FileInfo, err error) error {
+			filepath.Walk(absPath, func(path string, inf os.FileInfo, err error) error {
 				os.Remove(path)
 				return nil
 			})
-			os.Remove(*fileName)
-			fmt.Println("Bundle ", filepath.Base(*fileName), " deleted.")
+			os.Remove(absPath)
+			fmt.Println("Bundle ", filepath.Base(absPath), " deleted.")
 			return
 		}
 
 		for key := range manifest.Files {
 			mfile := manifest.Files[key].FileName
-			cfile := *fileName
+			cfile := absPath
 			if !filepath.IsAbs(mfile) {
 				cfile = filepath.Base(cfile)
 			}
 			if isBundle {
 				if !filepath.IsAbs(mfile) {
-					cfile = filepath.Join(*fileName, mfile)
+					cfile = filepath.Join(absPath, mfile)
 				} else {
 					cfile = mfile
 					deleteAuraDefinition(manifest, key)
@@ -180,8 +182,8 @@ func deleteAuraDefinitionBundle(manifest BundleManifest) {
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
-	os.Remove(filepath.Join(*fileName, ".manifest"))
-	os.Remove(*fileName)
+	os.Remove(filepath.Join(resourcepath[0], ".manifest"))
+	os.Remove(resourcepath[0])
 }
 
 func deleteAuraDefinition(manifest BundleManifest, key int) {

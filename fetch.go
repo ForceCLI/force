@@ -14,22 +14,20 @@ import (
 )
 
 var cmdFetch = &Command{
-	Usage: "fetch -type <metadata type> [metaname <metadata name>] [-d <target directory>] [-unpack]",
+	Usage: "fetch -t ApexClass",
 	Short: "Export specified artifact(s) to a local directory",
 	Long: `
+  -t, -type       # type of metadata to retrieve
+  -n, -name       # name of specific metadata to retrieve (must be used with -type)
+  -d, -directory  # override the default target directory
+  -u, -unpack     # unpack any zipped static resources (ignored if type is not StaticResource)
+
 Export specified artifact(s) to a local directory. Use "package" type to retrieve an unmanaged package.
 
 Examples
 
-  force fetch -t=CustomObject m Book__c m Author__c
-
-  force fetch CustomObject
-
-  force fetch Aura m MyComponent /Users/me/Documents/Project/home
-
-  force fetch package MyPackagedApp
-
-  force fetch StaticResource MyResource -unpack
+  force fetch -t=CustomObject n=Book__c n=Author__c
+  force fetch -t Aura -n MyComponent -d /Users/me/Documents/Project/home
 
 `,
 }
@@ -50,15 +48,16 @@ func (i *metaName) Set(value string) error {
 }
 
 var (
-	metadataType string
+	metadataType    string
 	targetDirectory string
-	unpack bool
-	metadataName metaName
+	unpack          bool
+	metadataName    metaName
+	makefile        bool
 )
 
 func init() {
-	cmdFetch.Flag.Var(&metadataName, "metaname", "names of metadata")
-	cmdFetch.Flag.Var(&metadataName, "m", "names of metadata")
+	cmdFetch.Flag.Var(&metadataName, "name", "names of metadata")
+	cmdFetch.Flag.Var(&metadataName, "n", "names of metadata")
 	cmdFetch.Flag.StringVar(&metadataType, "t", "", "Type of metadata to fetch")
 	cmdFetch.Flag.StringVar(&metadataType, "type", "", "Type of metadata to fetch")
 	cmdFetch.Flag.StringVar(&targetDirectory, "d", "", "Use to specify the root directory of your project")
@@ -66,8 +65,8 @@ func init() {
 	cmdFetch.Flag.BoolVar(&unpack, "u", false, "Unpage any static resources")
 	cmdFetch.Flag.BoolVar(&unpack, "unpack", false, "Unpage any static resources")
 	cmdFetch.Run = runFetch
+	makefile = true
 }
-
 
 func runFetchAura2(cmd *Command, entityname string) {
 	force, _ := ActiveForce()
@@ -87,7 +86,35 @@ func runFetchAura2(cmd *Command, entityname string) {
 			ErrorAndExit(err.Error())
 		}
 	}
+	_, err = persistBundles(bundles, definitions)
+	return
+}
 
+func FetchManifest(entityname string) (manifest BundleManifest) {
+	force, _ := ActiveForce()
+
+	var bundles AuraDefinitionBundleResult
+	var definitions AuraDefinitionBundleResult
+	var err error
+
+	if entityname == "" {
+		bundles, definitions, err = force.GetAuraBundles()
+		if err != nil {
+			ErrorAndExit(err.Error())
+		}
+	} else {
+		bundles, definitions, err = force.GetAuraBundle(entityname)
+		if err != nil {
+			ErrorAndExit(err.Error())
+		}
+	}
+	makefile = false
+	_, err = persistBundles(bundles, definitions)
+	return
+
+}
+
+func persistBundles(bundles AuraDefinitionBundleResult, definitions AuraDefinitionBundleResult) (bundleManifest BundleManifest, err error) {
 	var bundleMap = make(map[string]string)
 	var bundleRecords = bundles.Records
 	for _, bundle := range bundleRecords {
@@ -97,7 +124,6 @@ func runFetchAura2(cmd *Command, entityname string) {
 
 	var defRecords = definitions.Records
 	root, err := GetSourceDir(targetDirectory)
-
 	root = filepath.Join(targetDirectory, root, "aura")
 	if err := os.MkdirAll(root, 0755); err != nil {
 		ErrorAndExit(err.Error())
@@ -108,7 +134,7 @@ func runFetchAura2(cmd *Command, entityname string) {
 			ErrorAndExit(err.Error())
 		}
 
-		var bundleManifest = BundleManifest{}
+		bundleManifest = BundleManifest{}
 		bundleManifest.Name = value
 		bundleManifest.Files = []ComponentFile{}
 		bundleManifest.Id = key
@@ -116,7 +142,8 @@ func runFetchAura2(cmd *Command, entityname string) {
 		for _, def := range defRecords {
 			var did = fmt.Sprintf("%s", def["AuraDefinitionBundleId"])
 			if did == key {
-				var entity = fmt.Sprintf("%s%s", value, strings.Title(strings.ToLower(fmt.Sprintf("%s", def["DefType"]))))
+				var naming = strings.Title(strings.ToLower(fmt.Sprintf("%s", def["DefType"])))
+				var entity = fmt.Sprintf("%s", value) //, strings.Title(strings.ToLower(fmt.Sprintf("%s", def["DefType"]))))
 				switch fmt.Sprintf("%s", def["DefType"]) {
 				case "COMPONENT":
 					entity += ".cmp"
@@ -125,13 +152,15 @@ func runFetchAura2(cmd *Command, entityname string) {
 				case "EVENT":
 					entity += ".evt"
 				case "STYLE":
-					entity += ".css"
+					entity += fmt.Sprintf("%s.css", naming)
 				default:
-					entity += ".js"
+					entity += fmt.Sprintf("%s.js", naming)
 				}
 				var componentFile = ComponentFile{filepath.Join(root, value, entity), fmt.Sprintf("%s", def["Id"])}
 				bundleManifest.Files = append(bundleManifest.Files, componentFile)
-				ioutil.WriteFile(filepath.Join(root, value, entity), []byte(fmt.Sprintf("%s", def["Source"])), 0644)
+				if makefile {
+					ioutil.WriteFile(filepath.Join(root, value, entity), []byte(fmt.Sprintf("%s", def["Source"])), 0644)
+				}
 			}
 		}
 		bmBody, _ := json.Marshal(bundleManifest)
@@ -178,7 +207,6 @@ func runFetch(cmd *Command, args []string) {
 			mq := ForceMetadataQueryElement{metadataType, "*"}
 			query = append(query, mq)
 		}
-
 		files, err = force.Metadata.Retrieve(query)
 		if err != nil {
 			ErrorAndExit(err.Error())
@@ -191,6 +219,9 @@ func runFetch(cmd *Command, args []string) {
 	root, err := GetSourceDir(targetDirectory)
 	existingPackage, _ := pathExists(filepath.Join(root, "package.xml"))
 
+	if len(files) == 1 {
+		ErrorAndExit("Could not find any objects for " + metadataType + ". (Is the metadata type correct?)")
+	}
 	for name, data := range files {
 		if !existingPackage || name != "package.xml" {
 			file := filepath.Join(root, name)
@@ -236,14 +267,13 @@ func runFetch(cmd *Command, args []string) {
 
 	// Now we need to see if we have any zips to expand
 	if expandResources && len(resourcesMap) > 0 {
-		for key, value := range resourcesMap {
+		for _, value := range resourcesMap {
 			//resourcefile := filepath.Join(root, "staticresources", value)
 			resourcefile := value
-			dest := filepath.Join(filepath.Dir(value), key)
+			dest := strings.Split(value, ".")[0]
 			if err := os.MkdirAll(dest, 0755); err != nil {
 				ErrorAndExit(err.Error())
 			}
-			//f, err := os.Open(resourcefile);
 			r, err := zip.OpenReader(resourcefile)
 			if err != nil {
 				log.Fatal(err)
@@ -257,7 +287,10 @@ func runFetch(cmd *Command, args []string) {
 				}
 				defer rc.Close()
 
-				path := filepath.Join(dest, f.Name)
+				path := dest
+				if !f.FileInfo().IsDir() {
+					path = filepath.Join(path, filepath.Base(f.Name))
+				}
 				if !strings.HasPrefix(f.Name, "__") {
 					if f.FileInfo().IsDir() {
 						os.MkdirAll(path, f.Mode())

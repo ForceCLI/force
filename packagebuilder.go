@@ -33,14 +33,29 @@ type metapath struct {
 }
 
 var metapaths = []metapath{
+	metapath{"applications", "CustomApplication"},
+	metapath{"assignmentRules", "AssignmentRules"},
+	metapath{"aura", "AuraDefinitionBundle"},
+	metapath{"autoResponseRules", "AutoResponseRules"},
 	metapath{"classes", "ApexClass"},
-	metapath{"objects", "CustomObject"},
-	metapath{"tabs", "CustomTab"},
-	metapath{"labels", "CustomLabels"},
-	metapath{"flexipages", "FlexiPage"},
+	metapath{"communities", "Community"},
 	metapath{"components", "ApexComponent"},
-	metapath{"triggers", "ApexTrigger"},
+	metapath{"connectedApps", "ConnectedApp"},
+	metapath{"flexipages", "FlexiPage"},
+	metapath{"homePageLayouts", "HomePageLayout"},
+	metapath{"labels", "CustomLabels"},
+	metapath{"layouts", "Layout"},
+	metapath{"objects", "CustomObject"},
+	metapath{"objectTranslations", "CustomObjectTranslation"},
 	metapath{"pages", "ApexPage"},
+	metapath{"permissionsets", "PermissionSet"},
+	metapath{"profiles", "Profile"},
+	metapath{"quickActions", "QuickAction"},
+	metapath{"remoteSiteSettings", "RemoteSiteSetting"},
+	metapath{"roles", "Role"},
+	metapath{"staticresources", "StaticResource"},
+	metapath{"tabs", "CustomTab"},
+	metapath{"triggers", "ApexTrigger"},
 }
 
 type PackageBuilder struct {
@@ -75,7 +90,9 @@ func (pb PackageBuilder) PackageXml() []byte {
 
 	byteXml, _ := xml.MarshalIndent(p, "", "    ")
 	byteXml = append([]byte(xml.Header), byteXml...)
-
+	//if err := ioutil.WriteFile("mypackage.xml", byteXml, 0644); err != nil {
+	//ErrorAndExit(err.Error())
+	//}
 	return byteXml
 }
 
@@ -97,18 +114,20 @@ func (pb *PackageBuilder) AddFile(fpath string) (fname string, err error) {
 	}
 
 	metaName, fname := getMetaTypeFromPath(fpath)
-	pb.AddMetaToPackage(metaName, fname)
+	if len(strings.Split(fname, ".")) == 1 {
+		pb.AddMetaToPackage(metaName, fname)
+	}
 
 	// If it's a push, we want to actually add the files
 	if pb.IsPush {
-		err = pb.addFileToWorkingDir(fpath)
+		err = pb.addFileToWorkingDir(metaName, fpath)
 	}
 
 	return
 }
 
 // Adds the file to a temp directory for deploy
-func (pb *PackageBuilder) addFileToWorkingDir(fpath string) (err error) {
+func (pb *PackageBuilder) addFileToWorkingDir(metaName string, fpath string) (err error) {
 	// Get relative dir from source
 	srcDir := filepath.Dir(filepath.Dir(fpath))
 	frel, _ := filepath.Rel(srcDir, fpath)
@@ -134,6 +153,9 @@ func (pb *PackageBuilder) addFileToWorkingDir(fpath string) (err error) {
 		return
 	}
 
+	if metaName == "AuraDefinitionBundle" {
+		frel = filepath.Join("aura", frel)
+	}
 	pb.Files[frel] = fdata
 	if hasMeta {
 		fdata, err = ioutil.ReadFile(fmeta)
@@ -152,7 +174,6 @@ func (pb *PackageBuilder) AddMetaToPackage(metaName string, name string) {
 	}
 
 	mt.Members = append(mt.Members, name)
-
 	pb.Metadata[metaName] = mt
 }
 
@@ -172,11 +193,9 @@ func getMetaTypeFromPath(fpath string) (metaName string, name string) {
 
 	// Get the directory containing the file
 	fdir := filepath.Dir(fpath)
-	typePath := filepath.Base(fdir)
 
 	// Get the meta type for that directory
-	metaName = getMetaForPath(typePath)
-
+	metaName = getMetaForPath(fdir)
 	return
 }
 
@@ -194,12 +213,17 @@ func getPathForMeta(metaname string) string {
 
 // Gets meta type name based on a partial path
 func getMetaForPath(path string) string {
+	mpath := filepath.Base(path)
 	for _, mp := range metapaths {
-		if mp.path == path {
+		if mp.path == mpath {
 			return mp.name
 		}
 	}
 
+	// Check to see if this is aura/lightning
+	if strings.HasSuffix(filepath.Dir(path), "metadata/aura") {
+		return "AuraDefinitionBundle"
+	}
 	// Unknown, so use path
-	return path
+	return mpath
 }
