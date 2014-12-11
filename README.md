@@ -5,15 +5,15 @@ A command-line interface to force.com
 ### Installation
 
 ##### Precompiled Binaries
-If the download does not work, download instead from the [binaries](https://github.com/heroku/force/tree/master/binaries) folder in the repo.
 
-* [Linux 32bit](https://s3-us-west-2.amazonaws.com/force-cli/binaries/linux-386/force)
-* [Linux 64bit](https://s3-us-west-2.amazonaws.com/force-cli/binaries/linux-amd64/force)
-* [Linux Arm](https://s3-us-west-2.amazonaws.com/force-cli/binaries/linux-arm/force)
-* [OS X 32bit](https://s3-us-west-2.amazonaws.com/force-cli/binaries/darwin-386/force)
-* [OS X 64bit](https://s3-us-west-2.amazonaws.com/force-cli/binaries/darwin-386/force)
-* [Windows 32bit](https://s3-us-west-2.amazonaws.com/force-cli/binaries/windows-386/force.exe)
-* [Windows 64bit](https://s3-us-west-2.amazonaws.com/force-cli/binaries/windows-amd64/force.exe)
+* [Linux 32bit](https://godist-new.herokuapp.com/projects/devangel/force/releases/current/linux-386/force)
+* [Linux 64bit](https://godist-new.herokuapp.com/projects/devangel/force/releases/current/linux-amd64/force)
+* [Linux Arm](https://github.com/heroku/force/raw/master/binaries/linux-arm/force)
+* [OS X 32bit](https://godist-new.herokuapp.com/projects/devangel/force/releases/current/darwin-386/force)
+* [OS X 64bit](https://godist-new.herokuapp.com/projects/devangel/force/releases/current/darwin-amd64/force)
+* [Windows 32bit](https://godist-new.herokuapp.com/projects/devangel/force/releases/current/windows-386/force.exe)
+* [Windows 64bit](https://godist-new.herokuapp.com/projects/devangel/force/releases/current/windows-amd64/force.exe)
+>>>>>>> master
 
 ##### Compile from Source
 
