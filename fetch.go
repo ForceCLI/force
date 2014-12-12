@@ -199,12 +199,10 @@ func runFetch(cmd *Command, args []string) {
 	} else {
 		query := ForceMetadataQuery{}
 		if len(metadataName) > 0 {
-			for names := range metadataName {
-				mq := ForceMetadataQueryElement{metadataType, metadataName[names]}
-				query = append(query, mq)
-			}
+			mq := ForceMetadataQueryElement{metadataType, metadataName}
+			query = append(query, mq)
 		} else {
-			mq := ForceMetadataQueryElement{metadataType, "*"}
+			mq := ForceMetadataQueryElement{metadataType, []string{"*"}}
 			query = append(query, mq)
 		}
 		files, err = force.Metadata.Retrieve(query)
