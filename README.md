@@ -9,15 +9,10 @@ A command-line interface to force.com
 * [Linux 32bit](https://godist-new.herokuapp.com/projects/devangel/force/releases/current/linux-386/force)
 * [Linux 64bit](https://godist-new.herokuapp.com/projects/devangel/force/releases/current/linux-amd64/force)
 * [Linux Arm](https://github.com/heroku/force/raw/master/binaries/linux-arm/force)
->>>>>>> 54eb9aa6c481f2bf151b6c8882b143bc52966e8d
 * [OS X 32bit](https://godist-new.herokuapp.com/projects/devangel/force/releases/current/darwin-386/force)
 * [OS X 64bit](https://godist-new.herokuapp.com/projects/devangel/force/releases/current/darwin-amd64/force)
 * [Windows 32bit](https://godist-new.herokuapp.com/projects/devangel/force/releases/current/windows-386/force.exe)
 * [Windows 64bit](https://godist-new.herokuapp.com/projects/devangel/force/releases/current/windows-amd64/force.exe)
-<<<<<<< HEAD
-=======
->>>>>>> master
->>>>>>> 54eb9aa6c481f2bf151b6c8882b143bc52966e8d
 
 ##### Compile from Source
 
