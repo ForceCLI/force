@@ -92,17 +92,15 @@ func (partner *ForcePartner) soapExecuteCore(action, query string) (response []b
 	return
 }
 
-func (partner *ForcePartner) RunTests(tests []string, namespace string) (output TestCoverage, err error) {
+func (partner *ForcePartner) RunTests(tests string) (output TestCoverage, err error) {
+	test_names := strings.Split(tests, " ")
 	soap := "<RunTestsRequest>\n"
-	if strings.EqualFold(tests[0], "all") {
+	if strings.EqualFold(test_names[0], "all") {
 		soap += "<allTests>True</allTests>\n"
 	} else {
-		for _, element := range tests {
+		for _, element := range test_names {
 			soap += "<classes>" + element + "</classes>\n"
 		}
-	}
-	if namespace != "" {
-		soap += "<namespace>" + namespace + "</namespace>\n"
 	}
 	soap += "</RunTestsRequest>"
 	body, err := partner.soapExecute("runTests", soap)
