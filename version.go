@@ -7,7 +7,7 @@ import (
 const (
 	Version = "dev"
 )
-
+//Dood, what
 var cmdVersion = &Command{
 	Run:   runVersion,
 	Usage: "version",
