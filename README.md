@@ -13,7 +13,6 @@ A command-line interface to force.com
 * [OS X 64bit](https://godist-new.herokuapp.com/projects/devangel/force/releases/current/darwin-amd64/force)
 * [Windows 32bit](https://godist-new.herokuapp.com/projects/devangel/force/releases/current/windows-386/force.exe)
 * [Windows 64bit](https://godist-new.herokuapp.com/projects/devangel/force/releases/current/windows-amd64/force.exe)
->>>>>>> master
 
 ##### Compile from Source
 
