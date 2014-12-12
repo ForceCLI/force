@@ -85,8 +85,11 @@ func runPush(cmd *Command, args []string) {
 					validatePushByMetadataTypeCommand()
 					pushByMetadataType()
 				} else {
-					isValidMetadataType()
-					pushByName()
+					ErrorAndExit("The -type (-t) parameter is required.")
+					//isValidMetadataType()
+					//pushByName()
+					//validatePushByMetadataTypeCommand()
+					//pushByMetadataType()
 				}
 			} else {
 				validatePushByMetadataTypeCommand()
@@ -125,6 +128,7 @@ func isValidMetadataType() {
 	root, err := GetSourceDir("")
 	ExitIfNoSourceDir(err)
 	metaFolder = findMetadataTypeFolder(metadataType, root)
+	//fmt.Println("Metafolder is: ", metaFolder)
 	if metaFolder == "" {
 		ErrorAndExit("No folders that contain %s metadata could be found.", metadataType)
 	}
@@ -295,6 +299,7 @@ func pushByMetadataType() {
 	})
 
 	// Push these files to the package maker/sender
+	//fmt.Println("%v", files)
 	pushByPaths(files)
 }
 
@@ -329,6 +334,7 @@ func zipResource(path string) {
 }
 
 func pushByName() {
+
 	byName = true
 
 	root, err := GetSourceDir("")
@@ -337,14 +343,43 @@ func pushByName() {
 	/*if _, err := os.Stat(filepath.Join(root, objPath)); os.IsNotExist(err) {
 		ErrorAndExit("Folder " + objPath + " not found, must specify valid metadata")
 	}*/
-
+	//fmt.Println("Root is: ", root)
 	// Find file by walking directory and ignoring extension
 	var paths []string
 	err = filepath.Walk(root, func(path string, f os.FileInfo, err error) error {
+		if f.IsDir() {
+			// Check to see if any names where specified in the -name flag
+			if len(metadataName) == 0 {
+				// Take all
+				zipResource(path)
+			} else {
+				for _, name := range metadataName {
+					fname := filepath.Base(path)
+					// Check to see if the resource name matches the one of the ones passed on the -name flag
+					if fname == name {
+						//fmt.Println("Zipping: ", filepath.Dir(path))
+						metadataType = filepath.Base(filepath.Dir(path))
+						if metadataType == "staticresources" {
+							metadataType = "StaticResource"
+						}
+						zipResource(path)
+					}
+				}
+			}
+			return nil
+		}
+
 		if f.Mode().IsRegular() {
 			fname := strings.TrimSuffix(f.Name(), filepath.Ext(f.Name()))
 			for _, name := range metadataName {
 				if strings.EqualFold(fname, name) {
+					//fmt.Println("appending: ", filepath.Dir(path))
+					if len(metadataType) == 0 {
+						metadataType = filepath.Base(filepath.Dir(path))
+						if metadataType == "staticresources" {
+							metadataType = "StaticResource"
+						}
+					}
 					paths = append(paths, path)
 				}
 			}
@@ -360,7 +395,9 @@ func pushByName() {
 		//}
 	}
 
-	pushByPaths(paths)
+	//fmt.Println("metadata type - ", metadataType)
+	//pushByMetadataType()
+	//pushByPaths(paths)
 }
 
 // Wrapper to handle a single resource path
