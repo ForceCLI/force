@@ -8,7 +8,7 @@ A command-line interface to force.com
 
 * [Linux 32bit](https://godist-new.herokuapp.com/projects/heroku/force/releases/current/linux-386/force)
 * [Linux 64bit](https://godist-new.herokuapp.com/projects/heroku/force/releases/current/linux-amd64/force)
-* [Linux Arm](https://godist-new.herokuapp.com/project/heroku/force/releases/current/linux-arm/force)
+* [Linux Arm](https://godist-new.herokuapp.com/projects/heroku/force/releases/current/linux-arm/force)
 * [OS X 32bit](https://godist-new.herokuapp.com/projects/heroku/force/releases/current/darwin-386/force)
 * [OS X 64bit](https://godist-new.herokuapp.com/projects/heroku/force/releases/current/darwin-amd64/force)
 * [Windows 32bit](https://godist-new.herokuapp.com/projects/heroku/force/releases/current/windows-386/force.exe)
