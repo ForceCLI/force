@@ -15,11 +15,15 @@ Usage:
 
   force record get <object> <id>
 
+  force record get <object> <extid>:<value>
+
   force record create <object> [<fields>]
 
   force record create:bulk <object> <file> [<format>]
 
   force record update <object> <id> [<fields>]
+
+  force record update <object> <extid>:<value> [<fields>]
 
   force record delete <object> <id>
 
@@ -27,9 +31,13 @@ Examples:
 
   force record get User 00Ei0000000000
 
+  force record get User username:user@name.org
+
   force record create User Name:"David Dollar" Phone:0000000000
 
   force record update User 00Ei0000000000 State:GA
+
+  force record update User username:user@name.org State:GA
 
   force record delete User 00Ei0000000000
 `,
