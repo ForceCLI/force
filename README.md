@@ -90,7 +90,7 @@ Sobject command gives you access to creating and deleting schema objects. The li
       force sobject delete <object>
 
 ![](https://raw.githubusercontent.com/dcarroll/dcarroll.github.io/master/images/force/screenshot-192.png)
-
+  
 ### field
 Field gives you the ability to create, list and delete the fields on an object. Fields need to be created one at a time. You can also set required and optional attributes for the type of field. All defaultable field attributes will be defaulted based on the defaults in the web UI.
 
