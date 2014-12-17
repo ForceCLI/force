@@ -271,9 +271,9 @@ func getDefinitionFormat(deftype string) (result string) {
 func InAuraBundlesFolder(fname string) bool {
 	info, _ := os.Stat(fname)
 	if info.IsDir() {
-		return strings.HasSuffix(filepath.Dir(fname), "metadata/aura")
+		return strings.HasSuffix(filepath.Dir(fname), filepath.FromSlash("metadata/aura"))
 	} else {
-		return strings.HasSuffix(filepath.Dir(filepath.Dir(fname)), "metadata/aura")
+		return strings.HasSuffix(filepath.Dir(filepath.Dir(fname)), filepath.FromSlash("metadata/aura"))
 	}
 }
 

@@ -6,13 +6,13 @@ A command-line interface to force.com
 
 ##### Precompiled Binaries
 
-* [Linux 32bit](https://godist-new.herokuapp.com/projects/devangel/force/releases/current/linux-386/force)
-* [Linux 64bit](https://godist-new.herokuapp.com/projects/devangel/force/releases/current/linux-amd64/force)
-* [Linux Arm](https://github.com/heroku/force/raw/master/binaries/linux-arm/force)
-* [OS X 32bit](https://godist-new.herokuapp.com/projects/devangel/force/releases/current/darwin-386/force)
-* [OS X 64bit](https://godist-new.herokuapp.com/projects/devangel/force/releases/current/darwin-amd64/force)
-* [Windows 32bit](https://godist-new.herokuapp.com/projects/devangel/force/releases/current/windows-386/force.exe)
-* [Windows 64bit](https://godist-new.herokuapp.com/projects/devangel/force/releases/current/windows-amd64/force.exe)
+* [Linux 32bit](https://godist-new.herokuapp.com/projects/heroku/force/releases/current/linux-386/force)
+* [Linux 64bit](https://godist-new.herokuapp.com/projects/heroku/force/releases/current/linux-amd64/force)
+* [Linux Arm](https://godist-new.herokuapp.com/projects/heroku/force/releases/current/linux-arm/force)
+* [OS X 32bit](https://godist-new.herokuapp.com/projects/heroku/force/releases/current/darwin-386/force)
+* [OS X 64bit](https://godist-new.herokuapp.com/projects/heroku/force/releases/current/darwin-amd64/force)
+* [Windows 32bit](https://godist-new.herokuapp.com/projects/heroku/force/releases/current/windows-386/force.exe)
+* [Windows 64bit](https://godist-new.herokuapp.com/projects/heroku/force/releases/current/windows-amd64/force.exe)
 
 ##### Compile from Source
 
@@ -90,13 +90,26 @@ Sobject command gives you access to creating and deleting schema objects. The li
       force sobject delete <object>
 
 ![](https://raw.githubusercontent.com/dcarroll/dcarroll.github.io/master/images/force/screenshot-192.png)
-
+  
 ### field
 Field gives you the ability to create, list and delete the fields on an object. Fields need to be created one at a time. You can also set required and optional attributes for the type of field. All defaultable field attributes will be defaulted based on the defaults in the web UI.
 
       force field list Todo__c
       force field create Todo__c Due:DateTime required:true
       force field delete Todo__c Due
+
+### push
+Push gives you the ability to push specified resources to force.com.  The resource will be pulled from ./src/{type}/
+
+      force -t(ype) StaticReource -n(ame) MyResource.resource
+	  force -type ApexClass -name MyClass.cls
+	  force -t ApexPage -n MyPage.page
+
+You can also push all of a specific type of resource from a given folder.
+
+      force -t StaticResource -p(ath) src/staticresources/
+      force -t ApexClass -path src/classes/
+      force -t ApexPage -p src/pages/
 
 ### notifications
 Includes notification library, [gotifier](https://github.com/ViViDboarder/gotifier), that will display notifications for using either Using [terminal-notifier](https://github.com/alloy/terminal-notifier) on OSX or [notify-send](http://manpages.ubuntu.com/manpages/saucy/man1/notify-send.1.html) on Ubuntu. Currently, only the `push` and `test` methods are displaying notifications.
