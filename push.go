@@ -57,12 +57,6 @@ func argIsFile(fpath string) bool {
 }
 
 func runPush(cmd *Command, args []string) {
-	/*if len(args) == 0 {
-		cmd.printUsage()
-		return
-	}*/
-	t0 := time.Now()
-
 	var subcommand = metadataType
 
 	switch subcommand {
@@ -97,9 +91,6 @@ func runPush(cmd *Command, args []string) {
 			}
 		}
 	}
-
-	t1 := time.Now()
-	fmt.Printf("The call took %v to run.\n", t1.Sub(t0))
 }
 
 func pushByPathOnly() {
@@ -481,9 +472,8 @@ func processDeployResults(successes []ComponentSuccess, problems []ComponentFail
 	}
 
 	if len(successes) > 0 {
-		fmt.Printf("\nSuccesses - %d\n", len(successes))
+		fmt.Printf("\nSuccesses - %d\n", len(successes)-1)
 		for _, success := range successes {
-			fmt.Println("%s", success.FullName, success.Changed)
 			if success.FullName != "package.xml" {
 				verb := "unchanged"
 				if success.Changed {
@@ -493,7 +483,7 @@ func processDeployResults(successes []ComponentSuccess, problems []ComponentFail
 				} else if success.Created {
 					verb = "created"
 				}
-				fmt.Printf("%s\n\tstatus: %s\n\tid=%s\n", success.FullName, verb, success.Id)
+				fmt.Printf("\t%s: %s\n", success.FullName, verb)
 			}
 		}
 	}
