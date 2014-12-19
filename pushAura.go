@@ -243,6 +243,9 @@ func getFormatByresourcepath(resourcepath string) (format string, defType string
 		} else if filepath.Ext(fname) == ".evt" {
 			format = "XML"
 			defType = "EVENT"
+		} else if filepath.Ext(fname) == ".svg" {
+			format = "SVG"
+			defType = "SVG"
 		} else if filepath.Ext(fname) == ".css" {
 			format = "CSS"
 			defType = "STYLE"

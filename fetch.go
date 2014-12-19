@@ -153,6 +153,8 @@ func persistBundles(bundles AuraDefinitionBundleResult, definitions AuraDefiniti
 					entity += ".evt"
 				case "STYLE":
 					entity += fmt.Sprintf("%s.css", naming)
+				case "DOCUMENTATION":
+					entity += ".auradoc"
 				default:
 					entity += fmt.Sprintf("%s.js", naming)
 				}
