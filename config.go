@@ -4,6 +4,7 @@ import (
 	"github.com/ddollar/config"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 var Config = config.NewConfig("force")
@@ -11,7 +12,7 @@ var Config = config.NewConfig("force")
 func GetSourceDir(bdir string) (src string, err error) {
 	// Last element is default
 	var sourceDirs = []string{
-		"src",
+		//"src",
 		"metadata",
 	}
 
@@ -21,12 +22,24 @@ func GetSourceDir(bdir string) (src string, err error) {
 		wd = bdir
 		os.Chdir(bdir)
 	}
-
+	err = nil
 	for _, src = range sourceDirs {
-		_, err = os.Stat(filepath.Join(wd, src)) //, "package.xml"))
-		// Found a real source dir
-		if err == nil {
-			return
+		if strings.Contains(wd, src) {
+			// our working directory contains a src dir above us, we need to move up the file syste
+			nsrc := wd
+			for {
+				nsrc = filepath.Dir(nsrc)
+				if filepath.Base(nsrc) == src {
+					src = nsrc
+					return
+				}
+			}
+		} else {
+			_, err = os.Stat(filepath.Join(wd, src)) //, "package.xml"))
+			// Found a real source dir
+			if err == nil {
+				return
+			}
 		}
 	}
 
