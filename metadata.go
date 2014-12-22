@@ -571,9 +571,15 @@ func (fm *ForceMetadata) DescribeMetadata() (describe MetadataDescribeResult, er
 	var result struct {
 		Data MetadataDescribeResult `xml:"Body>describeMetadataResponse>result"`
 	}
-	if err = xml.Unmarshal(body, &result); err != nil { // Let the calling method handle the error message
-		describe = result.Data
-	}
+
+	err = xml.Unmarshal([]byte(body), &result)
+
+	if err != nil {
+		fmt.Println(err.Error())
+		} else {
+			describe = result.Data
+		}
+
 	return
 }
 
