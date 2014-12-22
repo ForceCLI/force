@@ -116,10 +116,14 @@ func ForceSaveLogin(creds ForceCredentials) (username string, err error) {
 	if err == nil {
 		creds.Namespace = describe.NamespacePrefix
 	} else {
-		fmt.Printf("Your profile do not have Modify All Data enabled. Functionallity will be limited.\n")
+		fmt.Printf("Your profile does not have Modify All Data enabled. Functionallity will be limited.\n")
 		err = nil
 	}
 
+	body, err = json.Marshal(creds)
+	if err != nil {
+		return
+	}
 	Config.Save("accounts", username, string(body))
 	Config.Save("current", "account", username)
 	return
