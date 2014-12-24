@@ -83,7 +83,7 @@ Whoami will display detailed user information about the currently active logged 
 ![](https://raw.githubusercontent.com/dcarroll/dcarroll.github.io/master/images/force/screenshot-191%20copy.png)
 
 ### sobject
-Sobject command gives you access to creating and deleting schema objects. The list argumenet will list ALL of the objects, both standard and custom, in your org.
+Sobject command gives you access to creating and deleting schema objects. The list argument will list ALL of the objects, both standard and custom, in your org.
 
       force sobject list
       force sobject create <object> [<field>:<type>]...
