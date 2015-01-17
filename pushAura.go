@@ -35,7 +35,7 @@ var (
 )
 
 func runPushAura(cmd *Command, args []string) {
-	absPath, _ := filepath.Abs(resourcepath[0])
+	absPath, _ := filepath.Abs(args[0])
 
 	if _, err := os.Stat(absPath); os.IsNotExist(err) {
 		fmt.Println(err.Error())

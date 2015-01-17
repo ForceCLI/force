@@ -54,6 +54,7 @@ var cmdAura = &Command{
 func init() {
 	cmdAura.Run = runAura
 	cmdAura.Flag.Var(&resourcepath, "p", "fully qualified file name for entity")
+	cmdAura.Flag.Var(&resourcepath, "f", "fully qualified file name for entity")
 	cmdAura.Flag.StringVar(&metadataType, "entitytype", "", "fully qualified file name for entity")
 	cmdAura.Flag.StringVar(&auraentityname, "entityname", "", "fully qualified file name for entity")
 	cmdAura.Flag.StringVar(&metadataType, "t", "", "fully qualified file name for entity")
@@ -75,12 +76,16 @@ func runAura(cmd *Command, args []string) {
 	// Sublime hack - the way sublime passes parameters seems to
 	// break the flag parsing by sending a single element array
 	// for the args. ARGH!!!
-	if strings.HasPrefix(subcommand, "delete ") {
+	if strings.HasPrefix(subcommand, "delete ") || strings.HasPrefix(subcommand, "push ") {
 		what := strings.Split(subcommand, " ")
 		if err := cmd.Flag.Parse(what[1:]); err != nil {
 			ErrorAndExit(err.Error())
 		}
 		subcommand = what[0]
+	} else {
+		if err := cmd.Flag.Parse(args[1:]); err != nil {
+			ErrorAndExit(err.Error())
+		}
 	}
 
 	switch strings.ToLower(subcommand) {
@@ -102,7 +107,8 @@ func runAura(cmd *Command, args []string) {
 			fmt.Println(bundle["DeveloperName"])
 		}
 	case "push":
-		runPushAura(cmd, args)
+//		absPath, _ := filepath.Abs(resourcepath[0])
+		runPushAura(cmd, resourcepath)
 	}
 }
 
