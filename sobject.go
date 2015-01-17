@@ -21,12 +21,12 @@ Usage:
 
   force sobject list
 
-  force sobject create <object> [<field>:<type> [<option>:<value>]] 
+  force sobject create <object> [<field>:<type> [<option>:<value>]]
 
   force sobject delete <object>
 
   force sobject import
-  
+
 Examples:
 
   force sobject list
@@ -56,26 +56,27 @@ func runSobject(cmd *Command, args []string) {
 	}
 }
 
-func runSobjectList(args []string) {
+func getSobjectList(args []string) (l []ForceSobject) {
 	force, _ := ActiveForce()
 	sobjects, err := force.ListSobjects()
+	if err != nil {
+		ErrorAndExit(fmt.Sprintf("ERROR: %s\n", err))
+	}
 
-	l := make([]ForceSobject, 0)
 	for _, sobject := range sobjects {
 		if len(args) == 1 {
 			if strings.Contains(sobject["name"].(string), args[0]) {
 				l = append(l, sobject)
 			}
 		} else {
-			l = append(l, sobject)
+				l = append(l, sobject)
 		}
 	}
-
-	if err != nil {
-		ErrorAndExit(fmt.Sprintf("ERROR: %s\n", err))
-	} else {
-		DisplayForceSobjects(l)
-	}
+	return
+}
+func runSobjectList(args []string) {
+	l := getSobjectList(args)
+	DisplayForceSobjects(l)
 }
 
 func runSobjectCreate(args []string) {
@@ -107,7 +108,7 @@ func runSobjectDelete(args []string) {
 
 func runSobjectImport(args []string) {
 	var objectDef = `
-<cmd:sObjects> 
+<cmd:sObjects>
 	<cmd:type>%s</cmd:type>
 %s</cmd:sObjects>`
 

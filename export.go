@@ -129,6 +129,7 @@ func runExport(cmd *Command, args []string) {
 	}
 	files, err := force.Metadata.Retrieve(query)
 	if err != nil {
+		fmt.Printf("Encountered and error with retrieve...\n")
 		ErrorAndExit(err.Error())
 	}
 	for name, data := range files {
