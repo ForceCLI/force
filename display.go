@@ -17,6 +17,64 @@ SystemModstamp 		%s
 NumberRecordsProcessed  %d
 `
 
+type ByXmlName []DescribeMetadataObject
+func (a ByXmlName) Len() int           { return len(a) }
+func (a ByXmlName) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a ByXmlName) Less(i, j int) bool { return a[i].XmlName < a[j].XmlName }
+
+type ByFullName []MDFileProperties
+func (a ByFullName) Len() int           { return len(a) }
+func (a ByFullName) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a ByFullName) Less(i, j int) bool { return a[i].FullName < a[j].FullName }
+
+func DisplayListMetadataResponse(resp ListMetadataResponse) {
+	sort.Sort(ByFullName(resp.Result))
+	for _, result := range resp.Result {
+		fmt.Println(result.FullName + " - " + result.Type)
+	}
+}
+
+func DisplayListMetadataResponseJson(resp ListMetadataResponse) {
+	sort.Sort(ByFullName(resp.Result))
+	b, err := json.MarshalIndent(resp.Result, "", "   ")
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
+	fmt.Printf("%s\n", string(b))
+}
+
+func DisplayMetadataList(metadataObjects []DescribeMetadataObject) {
+
+	sort.Sort(ByXmlName(metadataObjects))
+
+	for _, obj := range metadataObjects {
+		fmt.Printf("%s ==> %s\n", obj.XmlName, obj.DirectoryName)
+		if len(obj.ChildXmlNames) > 0 {
+			sort.Strings(obj.ChildXmlNames)
+			for _, child := range obj.ChildXmlNames {
+				fmt.Printf("\t%s\n", child)
+			}
+		}
+	}
+}
+
+func DisplayMetadataListJson(metadataObjects []DescribeMetadataObject) {
+
+	sort.Sort(ByXmlName(metadataObjects))
+
+	for _, obj := range metadataObjects {
+		if len(obj.ChildXmlNames) > 0 {
+			sort.Strings(obj.ChildXmlNames)
+		}
+	}
+
+	b, err := json.MarshalIndent(metadataObjects, "", "   ")
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
+	fmt.Printf("%s\n", string(b))
+}
+
 func DisplayBatchList(batchInfos []BatchInfo) {
 
 	for i, batchInfo := range batchInfos {
@@ -71,6 +129,17 @@ Apex Processing Time 		%d
 		jobInfo.ApiActiveProcessingTime, jobInfo.ApexProcessingTime)
 }
 
+func DisplayForceSobjectDescribe(sobject string) {
+	var d interface{}
+	b := []byte(sobject)
+	err := json.Unmarshal(b, &d)
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
+	out, err := json.MarshalIndent(d, "", "    ")
+	fmt.Println(string(out))
+}
+
 func DisplayForceSobjects(sobjects []ForceSobject) {
 	names := make([]string, len(sobjects))
 	for i, sobject := range sobjects {
@@ -80,6 +149,19 @@ func DisplayForceSobjects(sobjects []ForceSobject) {
 	for _, name := range names {
 		fmt.Println(name)
 	}
+}
+
+func DisplayForceSobjectsJson(sobjects []ForceSobject) {
+	names := make([]string, len(sobjects))
+	for i, sobject := range sobjects {
+		names[i] = sobject["name"].(string)
+		fmt.Println(sobject)
+	}
+	b, err := json.MarshalIndent(names, "", "   ")
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
+	fmt.Printf("%s\n", string(b))
 }
 
 func DisplayForceRecordsf(records []ForceRecord, format string) {

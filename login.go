@@ -26,7 +26,7 @@ func init() {
 }
 
 var (
-	instance = cmdLogin.Flag.String("i", "", "non-production server to login to (values are 'pre', 'test', or full instance url")
+	instance = cmdLogin.Flag.String("i", "login", "non-production server to login to (values are 'pre', 'test', or full instance url")
 	userName = cmdLogin.Flag.String("u", "", "Username for Soap Login")
 	password = cmdLogin.Flag.String("p", "", "Password for Soap Login")
 )
@@ -34,13 +34,13 @@ var (
 func runLogin(cmd *Command, args []string) {
 	var endpoint ForceEndpoint = EndpointProduction
 
-	currentEndpoint, customUrl, err := CurrentEndpoint()
+	/*currentEndpoint, customUrl, err := CurrentEndpoint()
 	if err == nil && &currentEndpoint != nil {
 		endpoint = currentEndpoint
 		if currentEndpoint == EndpointCustom && customUrl != "" {
 			*instance = customUrl
 		}
-	}
+	}*/
 
 	switch *instance {
 	case "login":
@@ -113,6 +113,7 @@ func ForceSaveLogin(creds ForceCredentials) (username string, err error) {
 	fmt.Printf("Logged in as '%s'\n", me["Username"])
 
 	describe, err := force.Metadata.DescribeMetadata()
+
 	if err == nil {
 		creds.Namespace = describe.NamespacePrefix
 	} else {

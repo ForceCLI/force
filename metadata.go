@@ -220,6 +220,25 @@ type MetadataDescribeResult struct {
 	MetadataObjects    []DescribeMetadataObject `xml:"metadataObjects"`
 }
 
+type MDFileProperties struct {
+	CreatedById 				string		`xml:"createdById"`
+	CreateByName				string		`xml:"createdByName"`
+	CreateDate					time.Time	`xml:"createdDate"`
+	FileName						string		`xml:"fileName"`
+	FullName						string		`xml:"fullName"`
+	Id									string		`xml:"id"`
+	LastModifiedById		string		`xml:"lastModifiedById"`
+	LastModifiedByName	string		`xml:"lastModifiedByName"`
+	LastModifedByDate		time.Time	`xml:"lastModifiedByDate"`
+	ManageableState			string		`xml:"manageableState"`
+	NamespacePrefix			string		`xml:"namespacePrefix"`
+	Type								string		`xml:"type"`
+}
+
+type ListMetadataResponse struct {
+	Result		[]MDFileProperties	`xml:"result"`
+}
+
 type EncryptedFieldRequired struct {
 	Length   int    `xml:"length"`
 	MaskType string `xml:"maskType"`
@@ -508,6 +527,9 @@ func (fm *ForceMetadata) CheckStatus(id string) (err error) {
 	}
 	switch {
 	case !status.Done:
+		//Should probably sleep here, getting a lot of API calls.
+		fmt.Printf("Gonna do this agin\n")
+		time.Sleep(5000 * time.Millisecond)
 		return fm.CheckStatus(id)
 	case status.State == "Error":
 		return errors.New(status.Message)
@@ -536,6 +558,7 @@ func (fm *ForceMetadata) CheckDeployStatus(id string) (results ForceCheckDeploym
 func (fm *ForceMetadata) CheckRetrieveStatus(id string) (files ForceMetadataFiles, err error) {
 	body, err := fm.soapExecute("checkRetrieveStatus", fmt.Sprintf("<id>%s</id>", id))
 	if err != nil {
+		fmt.Printf("Hrm... will probably try again\n")
 		return
 	}
 	var status struct {
@@ -962,6 +985,7 @@ func (fm *ForceMetadata) Retrieve(query ForceMetadataQuery) (files ForceMetadata
 	if err = xml.Unmarshal(body, &status); err != nil {
 		return
 	}
+
 	if err = fm.CheckStatus(status.Id); err != nil {
 		return
 	}
@@ -1012,6 +1036,11 @@ func (fm *ForceMetadata) RetrievePackage(packageName string) (files ForceMetadat
 
 func (fm *ForceMetadata) ListMetadata(query string) (res []byte, err error) {
 	return fm.soapExecute("listMetadata", fmt.Sprintf("<queries><type>%s</type></queries>", query))
+}
+
+func (fm *ForceMetadata) ListAllMetadata() (describe MetadataDescribeResult, err error) {
+	describe, err = fm.DescribeMetadata()
+	return
 }
 
 func (fm *ForceMetadata) ListConnectedApps() (apps ForceConnectedApps, err error) {
