@@ -21,6 +21,7 @@ var cmdFetch = &Command{
   -n, -name       # name of specific metadata to retrieve (must be used with -type)
   -d, -directory  # override the default target directory
   -u, -unpack     # unpack any zipped static resources (ignored if type is not StaticResource)
+	-p, -preserve   # preserve the zip file
 
 Export specified artifact(s) to a local directory. Use "package" type to retrieve an unmanaged package.
 
@@ -53,6 +54,8 @@ var (
 	unpack          bool
 	metadataName    metaName
 	makefile        bool
+	preserveZip     bool
+	mdbase          string
 )
 
 func init() {
@@ -62,8 +65,10 @@ func init() {
 	cmdFetch.Flag.StringVar(&metadataType, "type", "", "Type of metadata to fetch")
 	cmdFetch.Flag.StringVar(&targetDirectory, "d", "", "Use to specify the root directory of your project")
 	cmdFetch.Flag.StringVar(&targetDirectory, "directory", "", "Use to specify the root directory of your project")
-	cmdFetch.Flag.BoolVar(&unpack, "u", false, "Unpage any static resources")
-	cmdFetch.Flag.BoolVar(&unpack, "unpack", false, "Unpage any static resources")
+	cmdFetch.Flag.BoolVar(&unpack, "u", false, "Unpack any static resources")
+	cmdFetch.Flag.BoolVar(&unpack, "unpack", false, "Unpack any static resources")
+	cmdFetch.Flag.BoolVar(&preserveZip, "p", false, "keep zip file on disk")
+	cmdFetch.Flag.BoolVar(&preserveZip, "preserve", false, "keep zip file on disk")
 	cmdFetch.Run = runFetch
 	makefile = true
 }
@@ -124,7 +129,11 @@ func persistBundles(bundles AuraDefinitionBundleResult, definitions AuraDefiniti
 
 	var defRecords = definitions.Records
 	root, err := GetSourceDir(targetDirectory)
-	root = filepath.Join(targetDirectory, root, "aura")
+	if mdbase == "aura" {
+		root = filepath.Join(targetDirectory, root, "aura")
+	} else {
+		root = filepath.Join(targetDirectory, root, mdbase, "aura")
+	}
 	if err := os.MkdirAll(root, 0755); err != nil {
 		ErrorAndExit(err.Error())
 	}
@@ -195,6 +204,9 @@ func runFetch(cmd *Command, args []string) {
 				files, err = force.Metadata.RetrievePackage(metadataName[names])
 				if err != nil {
 					ErrorAndExit(err.Error())
+				}
+				if preserveZip == true {
+					os.Rename("inbound.zip", fmt.Sprintf("%s.zip", metadataName[names]))
 				}
 			}
 		}

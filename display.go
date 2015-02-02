@@ -18,11 +18,13 @@ NumberRecordsProcessed  %d
 `
 
 type ByXmlName []DescribeMetadataObject
+
 func (a ByXmlName) Len() int           { return len(a) }
 func (a ByXmlName) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a ByXmlName) Less(i, j int) bool { return a[i].XmlName < a[j].XmlName }
 
 type ByFullName []MDFileProperties
+
 func (a ByFullName) Len() int           { return len(a) }
 func (a ByFullName) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a ByFullName) Less(i, j int) bool { return a[i].FullName < a[j].FullName }
@@ -515,6 +517,8 @@ func DisplayForceSobject(sobject ForceSobject) {
 
 func DisplayFieldTypes() {
 	var msg = `
+	FIELD									 DEFAULTS
+	=========================================================================
   text/string            (length = 255)
   textarea               (length = 255)
   longtextarea           (length = 32768, visibleLines = 5)
@@ -527,6 +531,7 @@ func DisplayFieldTypes() {
   geolocation            (displayLocationInDecimal = true, scale = 5)
   lookup                 (will be prompted for Object and label)
   masterdetail           (will be prompted for Object and label)
+  picklist               ()
 
   *To create a formula field add a formula argument to the command.
   force field create <objectname> <fieldName>:text formula:'LOWER("HEY MAN")'
@@ -537,6 +542,9 @@ func DisplayFieldTypes() {
 func DisplayFieldDetails(fieldType string) {
 	var msg = ``
 	switch fieldType {
+	case "picklist":
+		msg = DisplayPicklistFieldDetails()
+		break
 	case "text", "string":
 		msg = DisplayTextFieldDetails()
 		break
@@ -606,6 +614,24 @@ func DisplayTextFieldDetails() (message string) {
       formulaTreatBlanksAs  - defaults to "BlankAsZero"
 `, "\x1b[31;1mrequired attributes\x1b[0m", "\x1b[31;1moptional attributes\x1b[0m")
 }
+
+func DisplayPicklistFieldDetails() (message string) {
+	return fmt.Sprintf(`
+   List of options to coose from
+
+    %s
+     label            - defaults to name
+     name
+
+    %s
+     description
+     helptext
+     required         - defaults to false
+     defaultValue
+     picklist         - comma separated list of values
+    `, "\x1b[31;1mrequired attributes\x1b[0m", "\x1b[31;1moptional attributes\x1b[0m")
+}
+
 func DisplayTextAreaFieldDetails() (message string) {
 	return fmt.Sprintf(`
   Allows users to enter up to 255 characters on separate lines.
