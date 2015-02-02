@@ -107,7 +107,7 @@ func runAura(cmd *Command, args []string) {
 			fmt.Println(bundle["DeveloperName"])
 		}
 	case "push":
-//		absPath, _ := filepath.Abs(resourcepath[0])
+		//		absPath, _ := filepath.Abs(resourcepath[0])
 		runPushAura(cmd, resourcepath)
 	}
 }

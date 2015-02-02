@@ -69,7 +69,7 @@ func getSobjectList(args []string) (l []ForceSobject) {
 				l = append(l, sobject)
 			}
 		} else {
-				l = append(l, sobject)
+			l = append(l, sobject)
 		}
 	}
 	return

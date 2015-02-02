@@ -121,6 +121,7 @@ func runImport(cmd *Command, args []string) {
 	DeploymentOptions.PurgeOnDelete = *purgeOnDeleteFlag
 	DeploymentOptions.RollbackOnError = *rollBackOnErrorFlag
 	DeploymentOptions.RunAllTests = *runAllTestsFlag
+
 	successes, problems, err := force.Metadata.Deploy(files, DeploymentOptions)
 	if err != nil {
 		ErrorAndExit(err.Error())

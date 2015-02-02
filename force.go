@@ -753,7 +753,6 @@ func (f *Force) DeleteToolingRecord(objecttype string, id string) (err error) {
 
 func (f *Force) DescribeSObject(objecttype string) (result string, err error) {
 	url := fmt.Sprintf("%s/services/data/%s/sobjects/%s/describe", f.Credentials.InstanceUrl, apiVersion, objecttype)
-	fmt.Println(url)
 	body, err := f.httpGet(url)
 	if err != nil {
 		return
