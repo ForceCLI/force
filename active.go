@@ -1,9 +1,9 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"sort"
-	"encoding/json"
 )
 
 var cmdActive = &Command{
@@ -19,7 +19,7 @@ Examples:
 `,
 }
 var (
-	tojson 		bool
+	tojson  bool
 	account string
 )
 
