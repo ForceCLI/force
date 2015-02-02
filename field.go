@@ -15,27 +15,20 @@ Manage sobject fields
 Usage:
 
   force field list <object>
-
   force field create <object> <field>:<type> [<option>:<value>]
-
   force field delete <object> <field>
-
-  force field type 
-
+  force field type
   force field type <fieldtype>
 
 Examples:
 
   force field list Todo__c
-
+	force field create Inspection__c "Final Outcome":picklist picklist:"Pass, Fail, Redo"
   force field create Todo__c Due:DateTime required:true
-
   force field delete Todo__c Due
-
-  force field type     #displays all the supported field types 
-
+  force field type     #displays all the supported field types
   force field type email   #displays the required and optional attributes
-  
+
 `,
 }
 

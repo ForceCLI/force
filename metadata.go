@@ -192,6 +192,19 @@ type DatetimeField struct {
 	FormulaTreatBlanksAs string    `xml:"formulaTreatBlanksAs"`
 }
 
+type PicklistValue struct {
+	FullName string `xml:"fullName"`
+	Default  bool   `xml:"default"`
+}
+
+type PicklistFieldRequired struct {
+	Picklist []PicklistValue `xml:"picklist>picklistValues"`
+}
+
+type PicklistField struct {
+	Picklist []PicklistValue `xml:"picklist>picklistValues"`
+}
+
 type BoolFieldRequired struct {
 	DefaultValue bool `xml:"defaultValue"`
 }
@@ -220,23 +233,37 @@ type MetadataDescribeResult struct {
 	MetadataObjects    []DescribeMetadataObject `xml:"metadataObjects"`
 }
 
+type MetadataDescribeValueTypeResult struct {
+	ValueTypeFields []MetadataValueTypeField `xml:"result"`
+}
+
+type MetadataValueTypeField struct {
+	//Fields 						MetadataValueTypeField
+	ForeignKeyDomain string
+	IsForeignKey     bool
+	IsNameField      bool
+	MinOccurs        int
+	Name             string
+	SoapType         string
+}
+
 type MDFileProperties struct {
-	CreatedById 				string		`xml:"createdById"`
-	CreateByName				string		`xml:"createdByName"`
-	CreateDate					time.Time	`xml:"createdDate"`
-	FileName						string		`xml:"fileName"`
-	FullName						string		`xml:"fullName"`
-	Id									string		`xml:"id"`
-	LastModifiedById		string		`xml:"lastModifiedById"`
-	LastModifiedByName	string		`xml:"lastModifiedByName"`
-	LastModifedByDate		time.Time	`xml:"lastModifiedByDate"`
-	ManageableState			string		`xml:"manageableState"`
-	NamespacePrefix			string		`xml:"namespacePrefix"`
-	Type								string		`xml:"type"`
+	CreatedById        string    `xml:"createdById"`
+	CreateByName       string    `xml:"createdByName"`
+	CreateDate         time.Time `xml:"createdDate"`
+	FileName           string    `xml:"fileName"`
+	FullName           string    `xml:"fullName"`
+	Id                 string    `xml:"id"`
+	LastModifiedById   string    `xml:"lastModifiedById"`
+	LastModifiedByName string    `xml:"lastModifiedByName"`
+	LastModifedByDate  time.Time `xml:"lastModifiedByDate"`
+	ManageableState    string    `xml:"manageableState"`
+	NamespacePrefix    string    `xml:"namespacePrefix"`
+	Type               string    `xml:"type"`
 }
 
 type ListMetadataResponse struct {
-	Result		[]MDFileProperties	`xml:"result"`
+	Result []MDFileProperties `xml:"result"`
 }
 
 type EncryptedFieldRequired struct {
@@ -382,6 +409,7 @@ func ValidateOptionsAndDefaults(typ string, fields map[string]reflect.StructFiel
 	newOptions = make(map[string]string)
 	// validate optional attributes
 	for name, value := range options {
+		fmt.Printf("%-v", fields)
 		field, ok := fields[strings.ToLower(name)]
 		if !ok {
 			ErrorAndExit(fmt.Sprintf("validation error: %s:%s is not a valid option for field type %s", name, value, typ))
@@ -429,6 +457,9 @@ func (fm *ForceMetadata) ValidateFieldOptions(typ string, options map[string]str
 	var s reflect.Value
 
 	switch typ {
+	case "picklist":
+		attrs = getAttributes(&PicklistField{})
+		s = reflect.ValueOf(&PicklistFieldRequired{}).Elem()
 	case "phone":
 		attrs = getAttributes(&PhoneField{})
 		s = reflect.ValueOf(&PhoneFieldRequired{}).Elem()
@@ -502,6 +533,7 @@ func (fm *ForceMetadata) ValidateFieldOptions(typ string, options map[string]str
 		break
 	}
 
+	fmt.Println("Attrs: ", s)
 	newOptions, err = ValidateOptionsAndDefaults(typ, attrs, s, options)
 
 	return newOptions, nil
@@ -571,8 +603,11 @@ func (fm *ForceMetadata) CheckRetrieveStatus(id string) (files ForceMetadataFile
 	if err != nil {
 		return
 	}
+
 	zipfiles, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
-	//ioutil.WriteFile("inbound.zip", data, 0644)
+	if preserveZip == true {
+		ioutil.WriteFile("inbound.zip", data, 0644)
+	}
 	if err != nil {
 		return
 	}
@@ -599,12 +634,32 @@ func (fm *ForceMetadata) DescribeMetadata() (describe MetadataDescribeResult, er
 
 	if err != nil {
 		fmt.Println(err.Error())
-		} else {
-			describe = result.Data
-		}
-
+	} else {
+		describe = result.Data
+	}
+	//fm.DescribeMetadataValue("{http://soap.sforce.com/2006/04/metadata}EmailTemplate")
 	return
 }
+
+//func (fm *ForceMetadata) DescribeMetadataValue(entitytype string) (describe MetadataDescribeValueTypeResult, err error) {
+//	body, err := fm.soapExecute("describeValueType", fmt.Sprintf("<type>%s</type>", entitytype))
+//	if err != nil {
+//		return
+//	}
+/*var result struct {
+	Data MetadataDescribeResult `xml:"Body>describeMetadataResponse>result"`
+}
+
+err = xml.Unmarshal([]byte(body), &result)
+
+if err != nil {
+	fmt.Println(err.Error())
+	} else {
+		describe = result.Data
+	}
+*/
+//		return
+//	}
 
 func (fm *ForceMetadata) CreateConnectedApp(name, callback string) (err error) {
 	soap := `
@@ -667,6 +722,21 @@ func (fm *ForceMetadata) CreateCustomField(object, field, typ string, options ma
 		soapField = "<type>Text</type>"
 		for key, value := range options {
 			soapField += fmt.Sprintf("<%s>%s</%s>", key, value, key)
+		}
+	case "picklist":
+		soapField = "<type>Picklist</type>\n"
+		for key, value := range options {
+			fmt.Println("Options: ", options)
+			fmt.Println("Key %s", key)
+			if key == "picklist>picklistValues" {
+				soapField += "<picklist>\n"
+				for _, k := range strings.Split(value, ",") {
+					soapField += fmt.Sprintf("<picklistValues>\n<fullName>%s</fullName>\n<default>false</default>\n</picklistValues>\n", strings.Trim(k, " "))
+				}
+				soapField += "</picklist>\n"
+			} else {
+				soapField += fmt.Sprintf("<%s>%s</%s>", key, value, key)
+			}
 		}
 	case "email":
 		soapField = "<type>Email</type>"
@@ -785,6 +855,7 @@ func (fm *ForceMetadata) CreateCustomField(object, field, typ string, options ma
 		ErrorAndExit("unable to create field type: %s", typ)
 	}
 
+	fmt.Println(fmt.Sprintf(soap, object, field, label, soapField))
 	body, err := fm.soapExecute("create", fmt.Sprintf(soap, object, field, label, soapField))
 	if err != nil {
 		return err
@@ -1035,7 +1106,12 @@ func (fm *ForceMetadata) RetrievePackage(packageName string) (files ForceMetadat
 }
 
 func (fm *ForceMetadata) ListMetadata(query string) (res []byte, err error) {
-	return fm.soapExecute("listMetadata", fmt.Sprintf("<queries><type>%s</type></queries>", query))
+	if strings.Contains(query, ":") {
+		newquery := strings.Split(query, ":")
+		return fm.soapExecute("listMetadata", fmt.Sprintf("<queries><type>%s</type><folder>%s</folder></queries>", newquery[0], newquery[1]))
+	} else {
+		return fm.soapExecute("listMetadata", fmt.Sprintf("<queries><type>%s</type></queries>", query))
+	}
 }
 
 func (fm *ForceMetadata) ListAllMetadata() (describe MetadataDescribeResult, err error) {
