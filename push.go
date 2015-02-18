@@ -57,7 +57,7 @@ func argIsFile(fpath string) bool {
 }
 
 func runPush(cmd *Command, args []string) {
-	var subcommand = metadataType
+	var subcommand = strings.ToLower(metadataType)
 
 	switch subcommand {
 	case "package":
@@ -349,7 +349,7 @@ func pushByName() {
 					// Check to see if the resource name matches the one of the ones passed on the -name flag
 					if fname == name {
 						//fmt.Println("Zipping: ", filepath.Dir(path))
-						metadataType = filepath.Base(filepath.Dir(path))
+						metadataType = strings.ToLower(filepath.Base(filepath.Dir(path)))
 						if metadataType == "staticresources" {
 							metadataType = "StaticResource"
 						}
@@ -366,7 +366,7 @@ func pushByName() {
 				if strings.EqualFold(fname, name) {
 					//fmt.Println("appending: ", filepath.Dir(path))
 					if len(metadataType) == 0 {
-						metadataType = filepath.Base(filepath.Dir(path))
+						metadataType = strings.ToLower(filepath.Base(filepath.Dir(path)))
 						if metadataType == "staticresources" {
 							metadataType = "StaticResource"
 						}
