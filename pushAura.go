@@ -35,7 +35,7 @@ var (
 )
 
 func runPushAura(cmd *Command, args []string) {
-	absPath, _ := filepath.Abs(resourcepath[0])
+	absPath, _ := filepath.Abs(args[0])
 
 	if _, err := os.Stat(absPath); os.IsNotExist(err) {
 		fmt.Println(err.Error())
@@ -109,8 +109,7 @@ func createNewAuraBundleAndDefinition(force Force, fname string) {
 		manifest.Name = bundleName
 
 		_, _ = getFormatByresourcepath(fname)
-		targetDirectory = SetTargetDirectory(fname)
-
+		targetDirectory, mdbase = SetTargetDirectory(fname)
 		// Create a bundle defintion
 		bundle, err, emessages := force.CreateAuraBundle(bundleName)
 		if err != nil {
@@ -132,9 +131,19 @@ func createNewAuraBundleAndDefinition(force Force, fname string) {
 	}
 }
 
-func SetTargetDirectory(fname string) string {
-	// Need to get the parent of metadata
-	return strings.Split(fname, "/metadata/aura")[0]
+func SetTargetDirectory(fname string) (dir string, base string) {
+	// Need to get the parent of metadata, do this by walking up the path
+	done := false
+	for done == false {
+		base = filepath.Base(fname)
+		fname = filepath.Dir(fname)
+		if filepath.Base(fname) == "metadata" {
+			dir = filepath.Dir(fname)
+			done = true
+		}
+	}
+	//return strings.Split(fname, "/metadata/aura")[0]
+	return
 }
 
 func createBundleEntity(manifest BundleManifest, force Force, fname string) (component ForceCreateRecordResult, err error, emessages []ForceError) {
@@ -243,6 +252,9 @@ func getFormatByresourcepath(resourcepath string) (format string, defType string
 		} else if filepath.Ext(fname) == ".evt" {
 			format = "XML"
 			defType = "EVENT"
+		} else if filepath.Ext(fname) == ".design" {
+			format = "XML"
+			defType = "DESIGN"
 		} else if filepath.Ext(fname) == ".svg" {
 			format = "SVG"
 			defType = "SVG"
@@ -261,7 +273,7 @@ func getFormatByresourcepath(resourcepath string) (format string, defType string
 
 func getDefinitionFormat(deftype string) (result string) {
 	switch strings.ToUpper(deftype) {
-	case "APPLICATION", "COMPONENT", "EVENT", "DOCUMENTATION":
+	case "APPLICATION", "COMPONENT", "EVENT", "DOCUMENTATION", "DESIGN":
 		result = "XML"
 	case "CONTROLLER", "MODEL", "HELPER", "RENDERER":
 		result = "JS"
@@ -274,9 +286,9 @@ func getDefinitionFormat(deftype string) (result string) {
 func InAuraBundlesFolder(fname string) bool {
 	info, _ := os.Stat(fname)
 	if info.IsDir() {
-		return strings.HasSuffix(filepath.Dir(fname), filepath.FromSlash("metadata/aura"))
+		return strings.HasSuffix(filepath.Dir(fname), filepath.FromSlash("aura"))
 	} else {
-		return strings.HasSuffix(filepath.Dir(filepath.Dir(fname)), filepath.FromSlash("metadata/aura"))
+		return strings.HasSuffix(filepath.Dir(filepath.Dir(fname)), filepath.FromSlash("aura"))
 	}
 }
 
