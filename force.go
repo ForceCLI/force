@@ -751,6 +751,16 @@ func (f *Force) DeleteToolingRecord(objecttype string, id string) (err error) {
 	return
 }
 
+func (f *Force) DescribeSObject(objecttype string) (result string, err error) {
+	url := fmt.Sprintf("%s/services/data/%s/sobjects/%s/describe", f.Credentials.InstanceUrl, apiVersion, objecttype)
+	body, err := f.httpGet(url)
+	if err != nil {
+		return
+	}
+	result = string(body)
+	return
+}
+
 func (f *Force) UpdateRecord(sobject string, id string, attrs map[string]string) (err error) {
 	fields := strings.Split(id, ":")
 	var url string
