@@ -13,21 +13,25 @@ Run apex tests
 
 Test Options
   -namespace=<namespace>     Select namespace to run test from
+  -v                         Verbose logging
 
 Examples:
 
   force test all
   force test Test1 Test2 Test3
   force test -namespace=ns Test4 
+  force test -v Test1
 `,
 }
 
 func init() {
+	cmdTest.Flag.BoolVar(&verboselogging, "v", false, "set verbose logging")
 	cmdTest.Run = runTests
 }
 
 var (
 	namespaceTestFlag = cmdTest.Flag.String("namespace", "", "namespace to run tests in")
+	verboselogging    bool
 )
 
 func runTests(cmd *Command, args []string) {
@@ -40,6 +44,11 @@ func runTests(cmd *Command, args []string) {
 	if err != nil {
 		ErrorAndExit(err.Error())
 	} else {
+
+		if verboselogging {
+			fmt.Println(output)
+			fmt.Println()
+		}
 		//working on a better way to do this - catches when no class are found and ran
 		if output.NumberRun == 0 {
 			fmt.Println("Test classes specified not found")
