@@ -111,6 +111,8 @@ func ForceSaveLogin(creds ForceCredentials) (username string, err error) {
 		return
 	}
 	fmt.Printf("Logged in as '%s'\n", me["Username"])
+	title := fmt.Sprintf("\033];%s\007", me["Username"])
+	fmt.Printf(title)
 
 	describe, err := force.Metadata.DescribeMetadata()
 

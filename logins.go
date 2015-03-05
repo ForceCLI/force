@@ -40,7 +40,7 @@ func runLogins(cmd *Command, args []string) {
 
 			var banner = fmt.Sprintf("\t%s", creds.InstanceUrl)
 			if account == active {
-				account = fmt.Sprintf("%s \x1b[31;1m(active)\x1b[0m", account)
+				account = fmt.Sprintf("\x1b[31;1m%s (active)\x1b[0m", account)
 			} else {
 				account = fmt.Sprintf("%s \x1b[31;1m\x1b[0m", account)
 			}
