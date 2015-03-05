@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"runtime"
+	"os/exec"
 )
 
 var cmdLogout = &Command{
@@ -33,5 +35,12 @@ func runLogout(cmd *Command, args []string) {
 	if active, _ := Config.Load("current", "account"); active == *userName1 {
 		Config.Delete("current", "account")
 		SetActiveLoginDefault()
+	}
+	if runtime.GOOS == "windows" {
+		cmd := exec.Command("title", account)
+		cmd.Run()
+	} else {
+		title := fmt.Sprintf("\033];%s\007", "")
+		fmt.Printf(title)
 	}
 }
