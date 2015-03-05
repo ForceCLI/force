@@ -198,7 +198,7 @@ func runFetch(cmd *Command, args []string) {
 		} else {
 			runFetchAura2(cmd, "")
 		}
-	} else if metadataType == "package" {
+	} else if strings.ToLower(metadataType) == "package" {
 		if len(metadataName) > 0 {
 			for names := range metadataName {
 				files, err = force.Metadata.RetrievePackage(metadataName[names])
@@ -246,7 +246,7 @@ func runFetch(cmd *Command, args []string) {
 				ErrorAndExit(err.Error())
 			}
 			var isResource = false
-			if metadataType == "StaticResource" {
+			if strings.ToLower(metadataType) == "staticresource" {
 				isResource = true
 			} else if strings.HasSuffix(file, ".resource-meta.xml") {
 				isResource = true
