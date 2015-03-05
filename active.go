@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
+	"os/exec"
+	"runtime"
 )
 
 var cmdActive = &Command{
@@ -47,8 +49,13 @@ func runActive(cmd *Command, args []string) {
 		accounts, _ := Config.List("accounts")
 		i := sort.SearchStrings(accounts, account)
 		if i < len(accounts) && accounts[i] == account {
-			title := fmt.Sprintf("\033];%s\007", account)
-			fmt.Printf(title)
+			if runtime.GOOS == "windows" {
+				cmd := exec.Command("title", account)
+				cmd.Run()
+			} else {
+				title := fmt.Sprintf("\033];%s\007", account)
+				fmt.Printf(title)
+			}
 			fmt.Printf("%s now active", account)
 			Config.Save("current", "account", account)
 		} else {
