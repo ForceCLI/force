@@ -30,6 +30,7 @@ func runLogout(cmd *Command, args []string) {
 	if *userName1 == "" {
 		fmt.Println("Missing required argument...")
 		cmd.Flag.Usage()
+		return
 	}
 	Config.Delete("accounts", *userName1)
 	if active, _ := Config.Load("current", "account"); active == *userName1 {
