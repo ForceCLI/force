@@ -30,6 +30,7 @@ var commands = []*Command{
 	cmdAura,
 	cmdPassword,
 	cmdNotifySet,
+	cmdLimits,
 }
 
 func main() {
