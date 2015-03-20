@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"text/tabwriter"
+	"strings"
 )
 
 var cmdLogins = &Command{
@@ -30,21 +31,23 @@ func runLogins(cmd *Command, args []string) {
 		w.Init(os.Stdout, 1, 0, 1, ' ', 0)
 
 		for _, account := range accounts {
-			var creds ForceCredentials
-			data, err := Config.Load("accounts", account)
-			json.Unmarshal([]byte(data), &creds)
+			if !strings.HasPrefix(account, "."){
+				var creds ForceCredentials
+				data, err := Config.Load("accounts", account)
+				json.Unmarshal([]byte(data), &creds)
 
-			if err != nil {
-				return
-			}
+				if err != nil {
+					return
+				}
 
-			var banner = fmt.Sprintf("\t%s", creds.InstanceUrl)
-			if account == active {
-				account = fmt.Sprintf("\x1b[31;1m%s (active)\x1b[0m", account)
-			} else {
-				account = fmt.Sprintf("%s \x1b[31;1m\x1b[0m", account)
+				var banner = fmt.Sprintf("\t%s", creds.InstanceUrl)
+				if account == active {
+					account = fmt.Sprintf("\x1b[31;1m%s (active)\x1b[0m", account)
+				} else {
+					account = fmt.Sprintf("%s \x1b[31;1m\x1b[0m", account)
+				}
+				fmt.Fprintln(w, fmt.Sprintf("%s%s", account, banner))
 			}
-			fmt.Fprintln(w, fmt.Sprintf("%s%s", account, banner))
 		}
 		fmt.Fprintln(w)
 		w.Flush()
