@@ -3,9 +3,9 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"sort"
 	"os/exec"
 	"runtime"
+	"sort"
 )
 
 var cmdActive = &Command{
