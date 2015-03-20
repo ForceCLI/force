@@ -300,15 +300,17 @@ func runFetch(cmd *Command, args []string) {
 				defer rc.Close()
 
 				path := dest
-				if !f.FileInfo().IsDir() {
-					path = filepath.Join(path, filepath.Base(f.Name))
-				}
 				if !strings.HasPrefix(f.Name, "__") {
 					if f.FileInfo().IsDir() {
+						path = filepath.Join(path, filepath.Base(f.Name))
+					}
+					fmt.Println("File %s", f.Name)
+					if f.FileInfo().IsDir() {
+						fmt.Println("This is a dir? ", path)
 						os.MkdirAll(path, f.Mode())
 					} else {
 						zf, err := os.OpenFile(
-							path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
+							filepath.Join(path, f.Name), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
 						if err != nil {
 							fmt.Println(err)
 						}
