@@ -197,6 +197,14 @@ type ForceCreateRecordResult struct {
 	Success bool
 }
 
+type ForceLimits map[string]ForceLimit
+
+type ForceLimit struct {
+	Name string
+	Remaining int64
+	Max       int64
+}
+
 type ForcePasswordStatusResult struct {
 	IsExpired bool
 }
@@ -553,6 +561,18 @@ func (f *Force) Get(url string) (object ForceRecord, err error) {
 	}
 	err = json.Unmarshal(body, &object)
 	return
+}
+
+func (f *Force) GetLimits() (result map[string]ForceLimit, err error) {
+
+	url := fmt.Sprintf("%s/services/data/%s/limits", f.Credentials.InstanceUrl, apiVersion)
+	body, err := f.httpGet(url)
+	if err != nil {
+		return
+	}
+	err = json.Unmarshal([]byte(body), &result)
+	return
+
 }
 
 func (f *Force) GetPasswordStatus(id string) (result ForcePasswordStatusResult, err error) {
