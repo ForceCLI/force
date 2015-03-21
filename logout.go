@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"runtime"
 	"os/exec"
+	"runtime"
 )
 
 var cmdLogout = &Command{

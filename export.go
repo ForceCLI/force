@@ -126,6 +126,7 @@ func runExport(cmd *Command, args []string) {
 		{Name: "Territory", Members: []string{"*"}},
 		{Name: "Translations", Members: []string{"*"}},
 		{Name: "ValidationRule", Members: []string{"*"}},
+		{Name: "Workflow", Members: []string{"*"}},
 	}
 	files, err := force.Metadata.Retrieve(query)
 	if err != nil {

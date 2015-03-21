@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"text/tabwriter"
 	"strings"
+	"text/tabwriter"
 )
 
 var cmdLogins = &Command{
@@ -31,7 +31,7 @@ func runLogins(cmd *Command, args []string) {
 		w.Init(os.Stdout, 1, 0, 1, ' ', 0)
 
 		for _, account := range accounts {
-			if !strings.HasPrefix(account, "."){
+			if !strings.HasPrefix(account, ".") {
 				var creds ForceCredentials
 				data, err := Config.Load("accounts", account)
 				json.Unmarshal([]byte(data), &creds)
