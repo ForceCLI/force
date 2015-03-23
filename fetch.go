@@ -242,7 +242,6 @@ func runFetch(cmd *Command, args []string) {
 		if !existingPackage || name != "package.xml" {
 			file := filepath.Join(root, name)
 			dir := filepath.Dir(file)
-
 			if err := os.MkdirAll(dir, 0755); err != nil {
 				ErrorAndExit(err.Error())
 			}
@@ -257,11 +256,19 @@ func runFetch(cmd *Command, args []string) {
 			}
 			//Handle expanding static resources into a "bundle" folder
 			if isResource && expandResources {
+				if string(os.PathSeparator) != "/" {
+					name = strings.Replace(name, "/", string(os.PathSeparator), -1)
+				}
 				pathParts := strings.Split(name, string(os.PathSeparator))
+				fmt.Println("OS Separator ", string(os.PathSeparator))
 				resourceName := pathParts[cap(pathParts)-1]
-
+				fmt.Println("name ", name)
+				fmt.Printf("Path pathParts %v\n", pathParts)
+				fmt.Println("resourceName ", resourceName)
 				resourceExt := strings.Split(resourceName, ".")[1]
+				fmt.Println("resourceExt ", resourceExt)
 				resourceName = strings.Split(resourceName, ".")[0]
+				fmt.Println("resourceName ", resourceName)
 				if resourceExt == "resource-meta" {
 					//Check the xml to determine the mime type of the resource
 					// We are looking for application/zip
@@ -274,6 +281,7 @@ func runFetch(cmd *Command, args []string) {
 					}
 					if meta.ContentType == "application/zip" {
 						// this is the meat for a zip file, so add the map
+						fmt.Printf("Joining \n%s\n%s\n", filepath.Dir(file), resourceName+".resource")
 						resourcesMap[resourceName] = filepath.Join(filepath.Dir(file), resourceName+".resource")
 					}
 				}
@@ -286,6 +294,7 @@ func runFetch(cmd *Command, args []string) {
 		for _, value := range resourcesMap {
 			//resourcefile := filepath.Join(root, "staticresources", value)
 			resourcefile := value
+			fmt.Println("Resourcefile: ", resourcefile)
 			dest := strings.Split(value, ".")[0]
 			if err := os.MkdirAll(dest, 0755); err != nil {
 				ErrorAndExit(err.Error())
@@ -297,6 +306,7 @@ func runFetch(cmd *Command, args []string) {
 			defer r.Close()
 
 			for _, f := range r.File {
+				fmt.Println("ZIPPED FILE: ", f)
 				rc, err := f.Open()
 				if err != nil {
 					fmt.Println(err)
@@ -314,7 +324,7 @@ func runFetch(cmd *Command, args []string) {
 						os.MkdirAll(path, f.Mode())
 					} else {
 						zf, err := os.OpenFile(
-							filepath.Join(path, f.Name), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
+							filepath.Join(path, filepath.Base(f.Name)), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
 						if err != nil {
 							fmt.Println(err)
 						}
