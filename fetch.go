@@ -276,7 +276,6 @@ func runFetch(cmd *Command, args []string) {
 					}
 					if meta.ContentType == "application/zip" {
 						// this is the meat for a zip file, so add the map
-						fmt.Printf("Joining \n%s\n%s\n", filepath.Dir(file), resourceName+".resource")
 						resourcesMap[resourceName] = filepath.Join(filepath.Dir(file), resourceName+".resource")
 					}
 				}
