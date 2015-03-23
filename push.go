@@ -119,7 +119,6 @@ func isValidMetadataType() {
 	root, err := GetSourceDir("")
 	ExitIfNoSourceDir(err)
 	metaFolder = findMetadataTypeFolder(metadataType, root)
-	//fmt.Println("Metafolder is: ", metaFolder)
 	if metaFolder == "" {
 		ErrorAndExit("No folders that contain %s metadata could be found.", metadataType)
 	}
@@ -290,7 +289,6 @@ func pushByMetadataType() {
 	})
 
 	// Push these files to the package maker/sender
-	//fmt.Println("%v", files)
 	pushByPaths(files)
 }
 
@@ -298,7 +296,9 @@ func pushByMetadataType() {
 func zipResource(path string) {
 	zipfile := new(bytes.Buffer)
 	zipper := zip.NewWriter(zipfile)
+	startPath := path
 	filepath.Walk(path, func(path string, f os.FileInfo, err error) error {
+
 		// Can skip dirs since the dirs will be created when the files are added
 		if !f.IsDir() {
 			file, err := ioutil.ReadFile(path)
@@ -306,7 +306,7 @@ func zipResource(path string) {
 				return err
 			}
 
-			fl, err := zipper.Create(path)
+			fl, err := zipper.Create(strings.Replace(path, startPath, "", -1))
 			if err != nil {
 				ErrorAndExit(err.Error())
 			}
@@ -331,10 +331,6 @@ func pushByName() {
 	root, err := GetSourceDir("")
 	ExitIfNoSourceDir(err)
 
-	/*if _, err := os.Stat(filepath.Join(root, objPath)); os.IsNotExist(err) {
-		ErrorAndExit("Folder " + objPath + " not found, must specify valid metadata")
-	}*/
-	//fmt.Println("Root is: ", root)
 	// Find file by walking directory and ignoring extension
 	var paths []string
 	err = filepath.Walk(root, func(path string, f os.FileInfo, err error) error {
@@ -348,7 +344,6 @@ func pushByName() {
 					fname := filepath.Base(path)
 					// Check to see if the resource name matches the one of the ones passed on the -name flag
 					if fname == name {
-						//fmt.Println("Zipping: ", filepath.Dir(path))
 						metadataType = strings.ToLower(filepath.Base(filepath.Dir(path)))
 						if metadataType == "staticresources" {
 							metadataType = "StaticResource"
@@ -364,7 +359,6 @@ func pushByName() {
 			fname := strings.TrimSuffix(f.Name(), filepath.Ext(f.Name()))
 			for _, name := range metadataName {
 				if strings.EqualFold(fname, name) {
-					//fmt.Println("appending: ", filepath.Dir(path))
 					if len(metadataType) == 0 {
 						metadataType = strings.ToLower(filepath.Base(filepath.Dir(path)))
 						if metadataType == "staticresources" {
@@ -381,14 +375,9 @@ func pushByName() {
 		ErrorAndExit(err.Error())
 	}
 	if len(paths) == 0 {
-		//for _, name := range metadataName {
 		ErrorAndExit("Could not find %#v ", metadataName)
-		//}
 	}
 
-	//fmt.Println("metadata type - ", metadataType)
-	//pushByMetadataType()
-	//pushByPaths(paths)
 }
 
 // Wrapper to handle a single resource path
