@@ -164,6 +164,10 @@ func persistBundles(bundles AuraDefinitionBundleResult, definitions AuraDefiniti
 					entity += fmt.Sprintf("%s.css", naming)
 				case "DOCUMENTATION":
 					entity += ".auradoc"
+				case "SVG":
+					entity += ".svg"
+				case "DESIGN":
+					entity += ".design"
 				default:
 					entity += fmt.Sprintf("%s.js", naming)
 				}
@@ -238,7 +242,6 @@ func runFetch(cmd *Command, args []string) {
 		if !existingPackage || name != "package.xml" {
 			file := filepath.Join(root, name)
 			dir := filepath.Dir(file)
-
 			if err := os.MkdirAll(dir, 0755); err != nil {
 				ErrorAndExit(err.Error())
 			}
@@ -253,11 +256,14 @@ func runFetch(cmd *Command, args []string) {
 			}
 			//Handle expanding static resources into a "bundle" folder
 			if isResource && expandResources {
+				if string(os.PathSeparator) != "/" {
+					name = strings.Replace(name, "/", string(os.PathSeparator), -1)
+				}
 				pathParts := strings.Split(name, string(os.PathSeparator))
 				resourceName := pathParts[cap(pathParts)-1]
-
 				resourceExt := strings.Split(resourceName, ".")[1]
 				resourceName = strings.Split(resourceName, ".")[0]
+
 				if resourceExt == "resource-meta" {
 					//Check the xml to determine the mime type of the resource
 					// We are looking for application/zip
@@ -291,7 +297,6 @@ func runFetch(cmd *Command, args []string) {
 				log.Fatal(err)
 			}
 			defer r.Close()
-
 			for _, f := range r.File {
 				rc, err := f.Open()
 				if err != nil {
@@ -302,17 +307,14 @@ func runFetch(cmd *Command, args []string) {
 				path := dest
 				if !strings.HasPrefix(f.Name, "__") {
 					if f.FileInfo().IsDir() {
-						path = filepath.Join(path, filepath.Base(f.Name))
-					}
-					fmt.Println("File %s", f.Name)
-					if f.FileInfo().IsDir() {
-						fmt.Println("This is a dir? ", path)
+						path = filepath.Join(dest, f.Name)
 						os.MkdirAll(path, f.Mode())
 					} else {
+						os.MkdirAll(filepath.Join(dest, filepath.Dir(f.Name)), 0777)
 						zf, err := os.OpenFile(
-							filepath.Join(path, f.Name), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
+							filepath.Join(dest, f.Name), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
 						if err != nil {
-							fmt.Println(err)
+							fmt.Println("OpenFile: ", err)
 						}
 
 						_, err = io.Copy(zf, rc)
