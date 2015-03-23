@@ -164,6 +164,10 @@ func persistBundles(bundles AuraDefinitionBundleResult, definitions AuraDefiniti
 					entity += fmt.Sprintf("%s.css", naming)
 				case "DOCUMENTATION":
 					entity += ".auradoc"
+				case "SVG":
+					entity += ".svg"
+				case "DESIGN":
+					entity += ".design"
 				default:
 					entity += fmt.Sprintf("%s.js", naming)
 				}
