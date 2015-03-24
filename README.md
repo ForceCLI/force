@@ -114,8 +114,17 @@ You can also push all of a specific type of resource from a given folder.
       force -t ApexClass -path src/classes/
       force -t ApexPage -p src/pages/
 
-### notifications
+### notify
 Includes notification library, [gotifier](https://github.com/ViViDboarder/gotifier), that will display notifications for using either Using [terminal-notifier](https://github.com/alloy/terminal-notifier) on OSX or [notify-send](http://manpages.ubuntu.com/manpages/saucy/man1/notify-send.1.html) on Ubuntu. Currently, only the `push` and `test` methods are displaying notifications.
+
+### limits
+Limits will display limits information for your organization.
+- Max is the limit total for the organization
+- Remaining is the total number of calls or events left for the organization
+
+The list is limited to those exposed by the REST API.
+	
+      force limits
 
 ### Hacking
 
