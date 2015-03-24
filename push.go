@@ -296,23 +296,24 @@ func pushByMetadataType() {
 func zipResource(path string) {
 	zipfile := new(bytes.Buffer)
 	zipper := zip.NewWriter(zipfile)
-	startPath := path
+	startPath := path + "/"
 	filepath.Walk(path, func(path string, f os.FileInfo, err error) error {
-
-		// Can skip dirs since the dirs will be created when the files are added
-		if !f.IsDir() {
-			file, err := ioutil.ReadFile(path)
-			if err != nil {
-				return err
-			}
-
-			fl, err := zipper.Create(strings.Replace(path, startPath, "", -1))
-			if err != nil {
-				ErrorAndExit(err.Error())
-			}
-			_, err = fl.Write([]byte(file))
-			if err != nil {
-				ErrorAndExit(err.Error())
+		if filepath.Base(path) != ".DS_Store" {
+			// Can skip dirs since the dirs will be created when the files are added
+			if !f.IsDir() {
+				file, err := ioutil.ReadFile(path)
+				if err != nil {
+					return err
+				}
+				fmt.Println("zipping path: ", strings.Replace(path, startPath, "", -1))
+				fl, err := zipper.Create(strings.Replace(path, startPath, "", -1))
+				if err != nil {
+					ErrorAndExit(err.Error())
+				}
+				_, err = fl.Write([]byte(file))
+				if err != nil {
+					ErrorAndExit(err.Error())
+				}
 			}
 		}
 		return nil
