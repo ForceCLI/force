@@ -305,7 +305,6 @@ func zipResource(path string) {
 				if err != nil {
 					return err
 				}
-				fmt.Println("zipping path: ", strings.Replace(path, startPath, "", -1))
 				fl, err := zipper.Create(strings.Replace(path, startPath, "", -1))
 				if err != nil {
 					ErrorAndExit(err.Error())
