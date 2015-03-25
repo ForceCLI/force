@@ -25,12 +25,12 @@ var commands = []*Command{
 	cmdSecurity,
 	cmdVersion,
 	cmdUpdate,
-	cmdHelp,
 	cmdPush,
 	cmdAura,
 	cmdPassword,
 	cmdNotifySet,
 	cmdLimits,
+	cmdHelp,
 }
 
 func main() {
