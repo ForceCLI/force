@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -1041,8 +1042,23 @@ func (fm *ForceMetadata) Retrieve(query ForceMetadataQuery) (files ForceMetadata
 	types := ""
 	for _, element := range query {
 		members := ""
-		for _, member := range element.Members {
-			members += fmt.Sprintf(soapTypeMembers, member)
+		folderTypeName := fm.GetFolderTypeName(element.Name)
+		if folderTypeName != "" {
+			//get folder names for this metadata type
+			var folderNames []string
+			folderNames, err = fm.ListFolderNames(folderTypeName)
+			//get items in folders
+			var folderItems []string
+			for _, flN := range folderNames {
+				folderItems, err = fm.ListFolderItems(element.Name, flN)
+				for _, flI := range folderItems {
+					members += fmt.Sprintf(soapTypeMembers, flI)
+				}
+			}
+		} else {
+			for _, member := range element.Members {
+				members += fmt.Sprintf(soapTypeMembers, member)
+			}
 		}
 		types += fmt.Sprintf(soapType, element.Name, members)
 	}
@@ -1146,4 +1162,55 @@ func (fm *ForceMetadata) soapExecute(action, query string) (response []byte, err
 	soap := NewSoap(url, "http://soap.sforce.com/2006/04/metadata", fm.Force.Credentials.AccessToken)
 	response, err = soap.Execute(action, query)
 	return
+}
+
+func (fm *ForceMetadata) ListFolderNames(folderTypeName string) (folderNames []string, err error) {
+
+	body, err := fm.ListMetadata(folderTypeName)
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
+	var res struct {
+		Response ListMetadataResponse `xml:"Body>listMetadataResponse"`
+	}
+	if err = xml.Unmarshal(body, &res); err != nil {
+		ErrorAndExit(err.Error())
+	}
+	sort.Sort(ByFullName(res.Response.Result))
+	for _, result := range res.Response.Result {
+		folderNames = append(folderNames, result.FullName)
+	}
+	return
+}
+
+func (fm *ForceMetadata) ListFolderItems(folderTypeName string, folderName string) (folderItems []string, err error) {
+	body, err := fm.ListMetadata(folderTypeName + ":" + folderName)
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
+	var res struct {
+		Response ListMetadataResponse `xml:"Body>listMetadataResponse"`
+	}
+	if err = xml.Unmarshal(body, &res); err != nil {
+		ErrorAndExit(err.Error())
+	}
+	sort.Sort(ByFullName(res.Response.Result))
+	for _, result := range res.Response.Result {
+		folderItems = append(folderItems, result.FullName)
+	}
+	return
+}
+
+func (fm *ForceMetadata) GetFolderTypeName(typeName string) string {
+	switch typeName {
+	case "Dashboard":
+		return "DashboardFolder"
+	case "Document":
+		return "DocumentFolder"
+	case "EmailTemplate":
+		return "EmailFolder"
+	case "Report":
+		return "ReportFolder"
+	}
+	return ""
 }
