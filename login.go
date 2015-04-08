@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/bgentry/speakeasy"
 	"net/url"
 )
 
@@ -71,7 +72,14 @@ func runLogin(cmd *Command, args []string) {
 		}
 	}
 
-	if len(*userName) != 0 && len(*password) != 0 { // Do SOAP login
+	if len(*userName) != 0 { // Do SOAP login
+		if len(*password) == 0 {
+			var err error
+			*password, err = speakeasy.Ask("Password: ")
+			if err != nil {
+				ErrorAndExit(err.Error())
+			}
+		}
 		_, err := ForceLoginAndSaveSoap(endpoint, *userName, *password)
 		if err != nil {
 			ErrorAndExit(err.Error())
