@@ -37,7 +37,6 @@ A command-line interface to force.com
        bulk      Load csv file use Bulk API
        fetch     Export specified artifact(s) to a local directory
        export    Export metadata to a local directory
-       fetch     Export specified artifact(s) to a local directory
        import    Import metadata from a local directory
        query     Execute a SOQL statement
        apex      Execute anonymous Apex code
