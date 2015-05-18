@@ -121,6 +121,7 @@ func runExport(cmd *Command, args []string) {
 		{Name: "Scontrol", Members: []string{"*"}},
 		{Name: "SecuritySettings", Members: []string{"*"}},
 		{Name: "SharingReason", Members: []string{"*"}},
+		{Name: "SharingRules", Members: []string{"*"}},
 		{Name: "Skill", Members: []string{"*"}},
 		{Name: "StaticResource", Members: []string{"*"}},
 		{Name: "Territory", Members: []string{"*"}},
