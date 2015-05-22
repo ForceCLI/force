@@ -37,7 +37,6 @@ A command-line interface to force.com
        bulk      Load csv file use Bulk API
        fetch     Export specified artifact(s) to a local directory
        export    Export metadata to a local directory
-       fetch     Export specified artifact(s) to a local directory
        import    Import metadata from a local directory
        query     Execute a SOQL statement
        apex      Execute anonymous Apex code
@@ -104,15 +103,15 @@ Field gives you the ability to create, list and delete the fields on an object. 
 ### push
 Push gives you the ability to push specified resources to force.com.  The resource will be pulled from ./src/{type}/
 
-      force -t(ype) StaticReource -n(ame) MyResource.resource
+      force push -t(ype) StaticReource -n(ame) MyResource.resource
 	  force -type ApexClass -name MyClass.cls
 	  force -t ApexPage -n MyPage.page
 
 You can also push all of a specific type of resource from a given folder.
 
-      force -t StaticResource -p(ath) src/staticresources/
-      force -t ApexClass -path src/classes/
-      force -t ApexPage -p src/pages/
+      force push -t StaticResource -p(ath) src/staticresources/
+      force push -t ApexClass -path src/classes/
+      force push -t ApexPage -p src/pages/
 
 ### notify
 Includes notification library, [gotifier](https://github.com/ViViDboarder/gotifier), that will display notifications for using either Using [terminal-notifier](https://github.com/alloy/terminal-notifier) on OSX or [notify-send](http://manpages.ubuntu.com/manpages/saucy/man1/notify-send.1.html) on Ubuntu. Currently, only the `push` and `test` methods are displaying notifications.
