@@ -147,12 +147,25 @@ func doBulkQuery(objectType string, soql string, contenttype string) {
 }
 
 func getBulkQueryResults(jobId string, batchId string) (data []byte) {
-	resultId := retrieveBulkQuery(jobId, batchId)
-	data = retrieveBulkQueryResults(jobId, batchId, resultId)
+	resultIds := retrieveBulkQuery(jobId, batchId)
+	hasMultipleResultFiles := len(resultIds) > 1
+
+	for _, resultId := range resultIds {
+		//since this is going to stdOut, simply add header to separate "files"
+		//if it's all in the same file, don't print this separator.
+		if (hasMultipleResultFiles){
+			resultHeader := fmt.Sprint("ResultId: ", resultId, "\n")
+			data = append(data[:], []byte(resultHeader)...)
+		}
+		//get next file, and append
+		var newData []byte = retrieveBulkQueryResults(jobId, batchId, resultId)
+		data = append(data[:], newData...)
+	}
+
 	return
 }
 
-func retrieveBulkQuery(jobId string, batchId string) (resultId string) {
+func retrieveBulkQuery(jobId string, batchId string) (resultIds []string) {
 	force, _ := ActiveForce()
 
 	jobInfo, err := force.RetrieveBulkQuery(jobId, batchId)
@@ -160,12 +173,12 @@ func retrieveBulkQuery(jobId string, batchId string) (resultId string) {
 		ErrorAndExit(err.Error())
 	}
 
-	var result struct {
-		Result string `xml:"result"`
+	var resultList struct {
+		results []string `xml:"result"`
 	}
 
-	xml.Unmarshal(jobInfo, &result)
-	resultId = result.Result
+	xml.Unmarshal(jobInfo, &resultList)
+	resultIds = resultList.results
 	return
 }
 
