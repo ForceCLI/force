@@ -214,9 +214,10 @@ type ForcePasswordResetResult struct {
 }
 
 type ForceQueryResult struct {
-	Done      bool
-	Records   []ForceRecord
-	TotalSize int
+	Done           bool
+	Records        []ForceRecord
+	TotalSize      int
+	NextRecordsUrl string
 }
 
 type ForceSobjectsResult struct {
@@ -551,6 +552,20 @@ func (f *Force) Query(query string) (result ForceQueryResult, err error) {
 		return
 	}
 	json.Unmarshal(body, &result)
+	if result.Done == false {
+		var nextResult ForceQueryResult
+		nextResult.NextRecordsUrl = result.NextRecordsUrl
+		for nextResult.Done == false {
+			nextUrl := fmt.Sprintf("%s%s", f.Credentials.InstanceUrl, nextResult.NextRecordsUrl)
+			nextBody, nextErr := f.httpGet(nextUrl)
+			if nextErr != nil {
+				return
+			}
+			json.Unmarshal(nextBody, &nextResult)
+
+			result.Records = append(result.Records, nextResult.Records...)
+		}
+	}
 	return
 }
 
