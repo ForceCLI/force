@@ -88,7 +88,7 @@ func pushAuraComponent(fname string) {
 
 func isValidAuraExtension(fname string) bool {
 	var ext = strings.Trim(strings.ToLower(filepath.Ext(fname)), " ")
-	if ext == ".app" || ext == ".cmp" || ext == ".evt" {
+	if ext == ".app" || ext == ".cmp" || ext == ".evt" || ext == ".intf" {
 		return true
 	} else {
 		ErrorAndExit("You need to create an application (.app) or component (.cmp) or and event (.evt) as the first item in your bundle.")
@@ -221,6 +221,9 @@ func getFormatByresourcepath(resourcepath string) (format string, defType string
 	if strings.Contains(fname, "application.app") {
 		format = "XML"
 		defType = "APPLICATION"
+	} else if strings.Contains(fname, ".intf") {
+		format = "XML"
+		defType = "INTERFACE"
 	} else if strings.Contains(fname, "component.cmp") {
 		format = "XML"
 		defType = "COMPONENT"
@@ -261,6 +264,9 @@ func getFormatByresourcepath(resourcepath string) (format string, defType string
 		} else if filepath.Ext(fname) == ".css" {
 			format = "CSS"
 			defType = "STYLE"
+		} else if filepath.Ext(fname) == ".intf" {
+			format = "XML"
+			defType = "INTERFACE"
 		} else if filepath.Ext(fname) == ".auradoc" {
 			format = "XML"
 			defType = "DOCUMENTATION"
@@ -273,12 +279,14 @@ func getFormatByresourcepath(resourcepath string) (format string, defType string
 
 func getDefinitionFormat(deftype string) (result string) {
 	switch strings.ToUpper(deftype) {
-	case "APPLICATION", "COMPONENT", "EVENT", "DOCUMENTATION", "DESIGN":
+	case "APPLICATION", "COMPONENT", "EVENT", "INTERFACE", "DOCUMENTATION", "DESIGN":
 		result = "XML"
 	case "CONTROLLER", "MODEL", "HELPER", "RENDERER":
 		result = "JS"
 	case "STYLE":
 		result = "CSS"
+	case "SVG":
+		result = "SVG"
 	}
 	return
 }
