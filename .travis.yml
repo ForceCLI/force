@@ -5,10 +5,10 @@ go:
   - 1.2
   - 1.3
   
-install:
+install: 
   - go get github.com/bmizerany/assert
   - go get github.com/ddollar/dist
-  - go get github.com/ddollar/config 
+  - go get github.com/ddollar/config
   - go get github.com/ddollar/go-update
   - go get github.com/ViViDboarder/gotifier
   - go get github.com/bgentry/speakeasy
