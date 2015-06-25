@@ -3,8 +3,6 @@
 A command-line interface to force.com
 ![](https://travis-ci.org/devangel/force.svg?branch=master)
 
-![](https://travis-ci.org/devangel/force.svg?branch=master)
-
 ### Installation
 
 ##### Precompiled Binaries
@@ -31,20 +29,26 @@ A command-line interface to force.com
        logins    List force.com logins used
        active    Show or set the active force.com account
        whoami    Show information about the active account
+       describe  Describe the object or list of available objects
        sobject   Manage standard & custom objects
        field     Manage sobject fields
        record    Create, modify, or view records
        bulk      Load csv file use Bulk API
        fetch     Export specified artifact(s) to a local directory
-       export    Export metadata to a local directory
        import    Import metadata from a local directory
+       export    Export metadata to a local directory
        query     Execute a SOQL statement
        apex      Execute anonymous Apex code
        oauth     Manage ConnectedApp credentials
+       test      Run apex tests
+       security  Displays the OLS and FLS for a given SObject
        version   Display current version
        update    Update to the latest version
        push      Deploy single artifact from a local directory
+       aura      Retrieve or deploy Aura components
        password  See password status or reset password
+       notify    Should notifications be used
+       limits    Display current limits
        help      Show this help
 
     Run 'force help [command]' for details.
