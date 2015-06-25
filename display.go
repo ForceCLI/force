@@ -497,7 +497,7 @@ func DisplayForceSobject(sobject ForceSobject) {
 	for _, f := range fields {
 		field := f.(map[string]interface{})
 		switch field["type"] {
-		case "picklist","multipicklist":
+		case "picklist", "multipicklist":
 			var values []string
 			for _, value := range field["picklistValues"].([]interface{}) {
 				values = append(values, value.(map[string]interface{})["value"].(string))

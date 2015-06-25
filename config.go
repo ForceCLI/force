@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	//"fmt"
 )
 
 var Config = config.NewConfig("force")
@@ -18,10 +19,11 @@ func GetSourceDir(bdir string) (src string, err error) {
 
 	wd, err := os.Getwd()
 
-	if len(bdir) != 0 {
+	/*if len(bdir) != 0 {
 		wd = bdir
+		fmt.Println("BDir: ", bdir)
 		os.Chdir(bdir)
-	}
+	}*/
 	err = nil
 	for _, src = range sourceDirs {
 		if strings.Contains(wd, src) {
