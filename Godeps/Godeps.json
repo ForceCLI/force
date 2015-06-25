@@ -1,6 +1,6 @@
 {
 	"ImportPath": "github.com/heroku/force",
-	"GoVersion": "go version go1.1.2 darwin/amd64",
+	"GoVersion": "go1.3.3",
 	"Deps": [
 		{
 			"ImportPath": "bitbucket.org/kardianos/osext",
@@ -15,6 +15,10 @@
 		{
 			"ImportPath": "github.com/ViViDboarder/gotifier",
 			"Rev": "0f19f3d7c54cfe25ce8438b0df4c8792b1e5d462"
+		},
+		{
+			"ImportPath": "github.com/bgentry/speakeasy",
+			"Rev": "bc4d2c24c846d7c64dbaffc5cf9a85f964430ff8"
 		},
 		{
 			"ImportPath": "github.com/bmizerany/assert",
