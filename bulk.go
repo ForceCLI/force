@@ -153,7 +153,7 @@ func getBulkQueryResults(jobId string, batchId string) (data []byte) {
 	for _, resultId := range resultIds {
 		//since this is going to stdOut, simply add header to separate "files"
 		//if it's all in the same file, don't print this separator.
-		if (hasMultipleResultFiles){
+		if hasMultipleResultFiles {
 			resultHeader := fmt.Sprint("ResultId: ", resultId, "\n")
 			data = append(data[:], []byte(resultHeader)...)
 		}
