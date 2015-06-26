@@ -128,7 +128,7 @@ func persistBundles(bundles AuraDefinitionBundleResult, definitions AuraDefiniti
 	}
 
 	var defRecords = definitions.Records
-	root, err := GetSourceDir(targetDirectory)
+	root, err := GetSourceDir()
 	fmt.Println("Root: ", root)
 	if mdbase == "aura" {
 		root = filepath.Join(targetDirectory, root, "aura")
@@ -236,7 +236,7 @@ func runFetch(cmd *Command, args []string) {
 	var resourcesMap map[string]string
 	resourcesMap = make(map[string]string)
 
-	root, err := GetSourceDir(targetDirectory)
+	root, err := GetSourceDir()
 	fmt.Println("Root4: ", root)
 	existingPackage, _ := pathExists(filepath.Join(root, "package.xml"))
 
@@ -258,7 +258,7 @@ func runFetch(cmd *Command, args []string) {
 				isResource = true
 			} else if strings.HasSuffix(file, ".resource-meta.xml") {
 				isResource = true
-			}
+			} 
 			//Handle expanding static resources into a "bundle" folder
 			if isResource && expandResources {
 				if string(os.PathSeparator) != "/" {
