@@ -26,7 +26,7 @@ Examples:
   force push -t ApexClass
   force push -f metadata/classes/MyClass.cls
 	force push -n MyApex -n MyObject__c
-
+ 
 Deployment Options
   -rollbackonerror, -r    Indicates whether any failure causes a complete rollback
   -runalltests, -at        If set all Apex tests defined in the organization are run
@@ -140,7 +140,7 @@ func pushByTypeAndPath() {
 func isValidMetadataType() {
 	fmt.Printf("Validating and deploying push...\n")
 	// Look to see if we can find any resource for that metadata type
-	root, err := GetSourceDir("")
+	root, err := GetSourceDir()
 	ExitIfNoSourceDir(err)
 	metaFolder = findMetadataTypeFolder(metadataType, root)
 	if metaFolder == "" {
@@ -352,7 +352,7 @@ func pushByName() {
 
 	byName = true
 
-	root, err := GetSourceDir("")
+	root, err := GetSourceDir()
 	ExitIfNoSourceDir(err)
 
 	// Find file by walking directory and ignoring extension

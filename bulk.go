@@ -1,6 +1,6 @@
 package main
 
-/*
+/* 
 
 bulk command
 force bulk insert mydata.csv

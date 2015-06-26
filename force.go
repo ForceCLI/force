@@ -36,8 +36,8 @@ const (
 )
 
 const (
-	apiVersion       = "v33.0"
-	apiVersionNumber = "33.0"
+	apiVersion       = "v34.0"
+	apiVersionNumber = "34.0"
 )
 
 var RootCertificates = `
@@ -424,6 +424,99 @@ func (f *Force) GetCodeCoverage(classId string, className string) (err error) {
 	json.Unmarshal(body, &result)
 	fmt.Printf("\n%d lines covered\n%d lines not covered\n", int(result.Records[0]["NumLinesCovered"].(float64)), int(result.Records[0]["NumLinesUncovered"].(float64)))
 	return
+}
+
+func (f *Force) DeleteDataPipeline(id string) (err error) {
+	url := fmt.Sprintf("%s/services/data/%s/tooling/sobjects/DataPipeline/%s", f.Credentials.InstanceUrl, apiVersion, id)
+	_, err = f.httpDelete(url)
+	return
+}
+
+func (f *Force) UpdateDataPipeline(id string, masterLabel string, scriptContent string) (err error) {
+	url := fmt.Sprintf("%s/services/data/%s/tooling/sobjects/DataPipeline/%s", f.Credentials.InstanceUrl, apiVersion, id)
+	attrs := make(map[string]string)
+	attrs["MasterLabel"] = masterLabel
+	attrs["ScriptContent"] = scriptContent
+
+	_, err = f.httpPatch(url, attrs)
+	return
+}
+
+func (f *Force) CreateDataPipeline(name string, masterLabel string, apiVersionNumber string, scriptContent string, scriptType string) (result ForceCreateRecordResult, err error, emessages []ForceError) {
+	aurl := fmt.Sprintf("%s/services/data/%s/tooling/sobjects/DataPipeline", f.Credentials.InstanceUrl, apiVersion)
+
+	attrs := make(map[string]string)
+	attrs["DeveloperName"] = name
+	attrs["ScriptType"] = scriptType
+	attrs["MasterLabel"] = masterLabel
+	attrs["ApiVersion"] = apiVersionNumber
+	attrs["ScriptContent"] = scriptContent
+
+	fmt.Println(aurl)
+
+	body, err, emessages := f.httpPost(aurl, attrs)
+	if err != nil {
+		return
+	}
+	json.Unmarshal(body, &result)
+
+	return
+
+}
+
+func (f *Force) CreateDataPipelineJob(id string) (result ForceCreateRecordResult, err error, emessages []ForceError) {
+	aurl := fmt.Sprintf("%s/services/data/%s/tooling/sobjects/DataPipelineJob", f.Credentials.InstanceUrl, apiVersion)
+
+	attrs := make(map[string]string)
+	attrs["DataPipelineId"] = id
+
+	fmt.Println(aurl)
+ 
+	body, err, emessages := f.httpPost(aurl, attrs)
+	if err != nil {
+		return
+	}
+	json.Unmarshal(body, &result)
+
+	return
+
+}
+
+func (f *Force) GetDataPipeline(name string) (results ForceQueryResult, err error) {
+
+	query := fmt.Sprintf("SELECT Id, MasterLabel, DeveloperName, ScriptContent, ScriptType FROM DataPipeline Where DeveloperName = '%s'", name)
+	results, err = f.QueryDataPipeline(query)
+
+	return
+
+}
+
+func (f *Force) QueryDataPipeline(soql string) (results ForceQueryResult, err error) {
+	aurl := fmt.Sprintf("%s/services/data/%s/tooling/query?q=%s", f.Credentials.InstanceUrl, apiVersion,
+		url.QueryEscape(soql))
+
+	body, err := f.httpGet(aurl)
+	if err != nil {
+		return
+	}
+	json.Unmarshal(body, &results)
+
+	return
+
+}
+
+func (f *Force) QueryDataPipelineJob(soql string) (results ForceQueryResult, err error) {
+	aurl := fmt.Sprintf("%s/services/data/%s/tooling/query?q=%s", f.Credentials.InstanceUrl, apiVersion,
+		url.QueryEscape(soql))
+
+	body, err := f.httpGet(aurl)
+	if err != nil {
+		return
+	}
+	json.Unmarshal(body, &results)
+
+	return
+
 }
 
 func (f *Force) GetAuraBundles() (bundles AuraDefinitionBundleResult, definitions AuraDefinitionBundleResult, err error) {
