@@ -12,7 +12,7 @@ var commands = []*Command{
 	cmdWhoami,
 	cmdDescribe,
 	cmdSobject,
-	cmdBigObject,
+	cmdBigObject, 
 	cmdField,
 	cmdRecord,
 	cmdBulk,

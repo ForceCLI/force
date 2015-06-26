@@ -26,7 +26,7 @@ Examples:
   force push -t ApexClass
   force push -f metadata/classes/MyClass.cls
 	force push -n MyApex -n MyObject__c
-
+ 
 Deployment Options
   -rollbackonerror, -r    Indicates whether any failure causes a complete rollback
   -runalltests, -at        If set all Apex tests defined in the organization are run
