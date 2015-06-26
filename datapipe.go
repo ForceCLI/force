@@ -169,7 +169,7 @@ func runDataPipelineCreate() {
 }
 
 func runDataPipelineUpdate() {
-	if len(dpname) == 0 {
+	if len(dpname) == 0 { 
 		ErrorAndExit("You must specify a name for the datapipeline using the -n flag.")
 	}
 	if len(masterlabel) == 0 && len(scriptcontent) == 0 {

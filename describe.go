@@ -18,7 +18,6 @@ var cmdDescribe = &Command{
   force describe sobject -n=Account
   force describe metata
   force describe sobject
-
   `,
 }
 

@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 	//"fmt"
-)
+) 
 
 var Config = config.NewConfig("force")
 
