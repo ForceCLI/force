@@ -12,6 +12,7 @@ var commands = []*Command{
 	cmdWhoami,
 	cmdDescribe,
 	cmdSobject,
+	cmdBigObject,
 	cmdField,
 	cmdRecord,
 	cmdBulk,
@@ -31,6 +32,7 @@ var commands = []*Command{
 	cmdPassword,
 	cmdNotifySet,
 	cmdLimits,
+	cmdDataPipe,
 }
 
 func main() {

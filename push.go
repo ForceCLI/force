@@ -15,7 +15,7 @@ import (
 )
 
 var cmdPush = &Command{
-	Usage: "push -t <metadata type> -n <metadata name> -f <pathtometadata>",
+	Usage: "push -t <metadata type> -n <metadata name> -f <pathtometadata> [deployment options]",
 	Short: "Deploy artifact from a local directory",
 	Long: `
 Deploy artifact from a local directory
@@ -26,6 +26,15 @@ Examples:
   force push -t ApexClass
   force push -f metadata/classes/MyClass.cls
 	force push -n MyApex -n MyObject__c
+
+Deployment Options
+  -rollbackonerror, -r    Indicates whether any failure causes a complete rollback
+  -runalltests, -at        If set all Apex tests defined in the organization are run
+  -checkonly, -c          Indicates whether classes and triggers are saved during deployment
+  -purgeondelete, -p      If set the deleted components are not stored in recycle bin
+  -allowmissingfiles, -m  Specifies whether a deploy succeeds even if files missing
+  -autoupdatepackage, -u  Auto add files to the package if missing
+  -ignorewarnings, -i     Indicates if warnings should fail deployment or not
 `,
 }
 
@@ -40,6 +49,21 @@ var (
 )
 
 func init() {
+	cmdPush.Flag.BoolVar(rollBackOnErrorFlag, "rollbackonerror", false, "set roll back on error")
+	cmdPush.Flag.BoolVar(rollBackOnErrorFlag, "r", false, "set roll back on error")
+	cmdPush.Flag.BoolVar(runAllTestsFlag, "runalltests", false, "set run all tests")
+	cmdPush.Flag.BoolVar(runAllTestsFlag, "at", false, "set run all tests")
+	cmdPush.Flag.BoolVar(checkOnlyFlag, "checkonly", false, "set check only")
+	cmdPush.Flag.BoolVar(checkOnlyFlag, "c", false, "set check only")
+	cmdPush.Flag.BoolVar(purgeOnDeleteFlag, "purgeondelete", false, "set purge on delete")
+	cmdPush.Flag.BoolVar(purgeOnDeleteFlag, "p", false, "set purge on delete")
+	cmdPush.Flag.BoolVar(allowMissingFilesFlag, "allowmissingfiles", false, "set allow missing files")
+	cmdPush.Flag.BoolVar(allowMissingFilesFlag, "m", false, "set allow missing files")
+	cmdPush.Flag.BoolVar(autoUpdatePackageFlag, "autoupdatepackage", false, "set auto update package")
+	cmdPush.Flag.BoolVar(autoUpdatePackageFlag, "u", false, "set auto update package")
+	cmdPush.Flag.BoolVar(ignoreWarningsFlag, "ignorewarnings", false, "set ignore warnings")
+	cmdPush.Flag.BoolVar(ignoreWarningsFlag, "i", false, "set ignore warnings")
+
 	cmdPush.Flag.Var(&resourcepath, "f", "Path to resource(s)")
 	cmdPush.Flag.Var(&resourcepath, "filepath", "Path to resource(s)")
 	cmdPush.Flag.StringVar(&metadataType, "t", "", "Metatdata type")
@@ -116,7 +140,7 @@ func pushByTypeAndPath() {
 func isValidMetadataType() {
 	fmt.Printf("Validating and deploying push...\n")
 	// Look to see if we can find any resource for that metadata type
-	root, err := GetSourceDir("")
+	root, err := GetSourceDir()
 	ExitIfNoSourceDir(err)
 	metaFolder = findMetadataTypeFolder(metadataType, root)
 	if metaFolder == "" {
@@ -328,7 +352,7 @@ func pushByName() {
 
 	byName = true
 
-	root, err := GetSourceDir("")
+	root, err := GetSourceDir()
 	ExitIfNoSourceDir(err)
 
 	// Find file by walking directory and ignoring extension
@@ -418,10 +442,10 @@ func pushByPaths(fpaths []string) {
 // org altogether
 func deployPackage() {
 	force, _ := ActiveForce()
-	var DeploymentOptions ForceDeployOptions
+	DeploymentOptions := deployOpts()
 	for _, name := range resourcepath {
 		zipfile, err := ioutil.ReadFile(name)
-		successes, problems, err := force.Metadata.DeployZipFile(force.Metadata.MakeDeploySoap(DeploymentOptions), zipfile)
+		successes, problems, err := force.Metadata.DeployZipFile(force.Metadata.MakeDeploySoap(*DeploymentOptions), zipfile)
 		processDeployResults(successes, problems, err)
 	}
 	return
@@ -429,10 +453,22 @@ func deployPackage() {
 
 func deployFiles(files ForceMetadataFiles) {
 	force, _ := ActiveForce()
-	var DeploymentOptions ForceDeployOptions
-	successes, problems, err := force.Metadata.Deploy(files, DeploymentOptions)
+	var DeploymentOptions = deployOpts()
+	successes, problems, err := force.Metadata.Deploy(files, *DeploymentOptions)
 	processDeployResults(successes, problems, err)
 	return
+}
+
+func deployOpts() *ForceDeployOptions {
+	var opts ForceDeployOptions
+	opts.AllowMissingFiles = *allowMissingFilesFlag
+	opts.AutoUpdatePackage = *autoUpdatePackageFlag
+	opts.CheckOnly = *checkOnlyFlag
+	opts.IgnoreWarnings = *ignoreWarningsFlag
+	opts.PurgeOnDelete = *purgeOnDeleteFlag
+	opts.RollbackOnError = *rollBackOnErrorFlag
+	opts.RunAllTests = *runAllTestsFlag
+	return &opts
 }
 
 // Process and display the result of the push operation
