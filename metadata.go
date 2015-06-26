@@ -11,12 +11,76 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
 )
+
+type BigObject struct {
+	DeploymentStatus string
+	Label            string
+	PluralLabel      string
+	Fields           []BigObjectField
+}
+
+func (bo *BigObject) ToXml() string {
+	soap := `<?xml version="1.0" encoding="UTF-8"?>
+		<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+			<deploymentStatus>%s</deploymentStatus>
+			<label>%s</label>
+			<pluralLabel>%s</pluralLabel>
+			%s
+		</CustomObject>
+	`
+	textfieldsoap := `
+			<fields>
+				<fullName>%s__c</fullName>
+				<label>%s</label>
+				<length>%d</length>
+				<type>Text</type>
+			</fields>
+	`
+	datetimefieldsoap := `
+			<fields>
+				<fullName>%s__c</fullName>
+				<label>%s</label>
+				<type>DateTime</type>
+			</fields>
+	`
+	lookupfieldsoap := `
+			<fields>
+				<fullName>%s__c</fullName>
+				<label>%s</label>
+				<referenceTo>%s</referenceTo>
+				<relationshipName>%s</relationshipName>
+				<type>Lookup</type>
+			</fields>
+	`
+	fieldsoap := ``
+	for _, field := range bo.Fields {
+		switch strings.ToLower(field.Type) {
+		case "datetime":
+			fieldsoap += fmt.Sprintf(datetimefieldsoap, field.FullName, field.Label)
+		case "text":
+			fieldsoap += fmt.Sprintf(textfieldsoap, field.FullName, field.Label, field.Length)
+		case "lookup":
+			fieldsoap += fmt.Sprintf(lookupfieldsoap, field.FullName, field.Label, field.ReferenceTo, field.RelationshipName)
+		}
+	}
+	return fmt.Sprintf(soap, bo.DeploymentStatus, bo.Label, bo.PluralLabel, fieldsoap)
+}
+
+type BigObjectField struct {
+	FullName         string
+	Label            string
+	Length           int
+	ReferenceTo      string
+	RelationshipName string
+	Type             string
+}
 
 type ForceConnectedApps []ForceConnectedApp
 
@@ -231,7 +295,7 @@ type MetadataDescribeResult struct {
 	PartialSaveAllowed bool                     `xml:"partialSaveAllowed"`
 	TestRequired       bool                     `xml:"testRequired"`
 	MetadataObjects    []DescribeMetadataObject `xml:"metadataObjects"`
-}
+} 
 
 type MetadataDescribeValueTypeResult struct {
 	ValueTypeFields []MetadataValueTypeField `xml:"result"`
@@ -889,6 +953,21 @@ func (fm *ForceMetadata) DeleteCustomField(object, field string) (err error) {
 	}
 	if err = fm.CheckStatus(status.Id); err != nil {
 		return
+	}
+	return
+}
+
+func (fm *ForceMetadata) CreateBigObject(object BigObject) (err error) {
+	soap := object.ToXml()
+
+	ioutil.WriteFile(filepath.Join("metadata/objects", fmt.Sprintf("%s__b.object", object.Label)), []byte(soap), 0644)
+	path, _ := filepath.Abs(filepath.Join("metadata/objects", fmt.Sprintf("%s__b.object", object.Label)))
+	cmd := exec.Command("force", "push",
+		fmt.Sprintf("-f=%s", path))
+	cmd.Stdout = os.Stdout
+	err = cmd.Run()
+	if err != nil {
+		ErrorAndExit(err.Error())
 	}
 	return
 }
