@@ -66,6 +66,7 @@ var (
 	scripttype    string
 	query         string
 	format        string
+	jobid		  string
 )
 
 func init() {
@@ -83,6 +84,8 @@ func init() {
 	cmdDataPipe.Flag.StringVar(&query, "query", "", "SOQL query string on DataPipeline object")
 	cmdDataPipe.Flag.StringVar(&format, "f", "json", "format for listing datapipelines (csv or json)")
 	cmdDataPipe.Flag.StringVar(&format, "format", "json", "format for listing datapipelines (csv or json)")
+	cmdDataPipe.Flag.StringVar(&jobid, "j", "json", "Id of data pipline job to retrieve")
+	cmdDataPipe.Flag.StringVar(&jobid, "jobid", "json", "Id of data pipline job to retrieve")
 	cmdDataPipe.Run = runDataPipe
 }
 
@@ -108,6 +111,8 @@ func runDataPipe(cmd *Command, args []string) {
 			runDataPipelineJob()
 		case "listjobs":
 			runDataPipelineListJobs()
+		case "queryjob":
+			runDataPipelineQueryJob()
 		default:
 			ErrorAndExit("no such command: %s", args[0])
 		}
@@ -129,7 +134,19 @@ func runDataPipelineJob() {
 
 func runDataPipelineListJobs() {
 	//query = "SELECT Id, DataPipeline.DeveloperName, Status, FailureState, LastModifiedDate, CreatedDate, CreatedById, DataPipelineId, JobErrorMessage FROM DataPipelineJob"
-	query = "SELECT DataPipeline.DeveloperName, Status, FailureState FROM DataPipelineJob"
+	query = "SELECT Id, DataPipeline.DeveloperName, Status, FailureState FROM DataPipelineJob"
+	force, _ := ActiveForce()
+	result, err := force.QueryDataPipelineJob(query)
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
+
+	DisplayForceRecordsf(result.Records, "csv")
+} 
+
+func runDataPipelineQueryJob() {
+	//query = "SELECT Id, DataPipeline.DeveloperName, Status, FailureState, LastModifiedDate, CreatedDate, CreatedById, DataPipelineId, JobErrorMessage FROM DataPipelineJob"
+	query = fmt.Sprintf("SELECT Id, DataPipeline.DeveloperName, Status, FailureState, JobErrorMessage FROM DataPipelineJob Where id = '%s'", jobid)
 	force, _ := ActiveForce()
 	result, err := force.QueryDataPipelineJob(query)
 	if err != nil {
