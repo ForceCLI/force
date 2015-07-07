@@ -1050,7 +1050,7 @@ func (fm *ForceMetadata) MakeZip(files ForceMetadataFiles) (zipdata []byte, err 
 	zipper := zip.NewWriter(zipfile)
 	for name, data := range files {
 		name = filepath.ToSlash(name)
-		wr, err := zipper.Create(fmt.Sprintf("unpackaged%s%s", string(os.PathSeparator), name))
+		wr, err := zipper.Create(fmt.Sprintf("unpackaged/%s", name))
 		if err != nil {
 			return nil, err
 		}
