@@ -174,11 +174,11 @@ func retrieveBulkQuery(jobId string, batchId string) (resultIds []string) {
 	}
 
 	var resultList struct {
-		results []string `xml:"result"`
+		Results []string `xml:"result"`
 	}
 
 	xml.Unmarshal(jobInfo, &resultList)
-	resultIds = resultList.results
+	resultIds = resultList.Results
 	return
 }
 
