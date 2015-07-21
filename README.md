@@ -39,6 +39,7 @@ A command-line interface to force.com
        export    Export metadata to a local directory
        query     Execute a SOQL statement
        apex      Execute anonymous Apex code
+       log       Fetch debug logs
        oauth     Manage ConnectedApp credentials
        test      Run apex tests
        security  Displays the OLS and FLS for a given SObject
