@@ -156,6 +156,7 @@ type Force struct {
 type ForceCredentials struct {
 	AccessToken   string
 	Id            string
+	UserId        string
 	InstanceUrl   string
 	IssuedAt      string
 	Scope         string
@@ -365,7 +366,7 @@ func ForceSoapLogin(endpoint ForceEndpoint, username string, password string) (c
 	}
 	instanceUrl := u.Scheme + "://" + u.Host
 	identity := u.Scheme + "://" + u.Host + "/id/" + orgid + "/" + result.Id
-	creds = ForceCredentials{result.SessionId, identity, instanceUrl, "", "", endpoint == EndpointCustom, "", endpoint}
+	creds = ForceCredentials{result.SessionId, identity, result.Id, instanceUrl, "", "", endpoint == EndpointCustom, "", endpoint}
 
 	f := NewForce(creds)
 	url := fmt.Sprintf("https://force-cli.herokuapp.com/auth/soaplogin/?id=%s&access_token=%s&instance_url=%s", creds.Id, creds.AccessToken, creds.InstanceUrl)
@@ -864,6 +865,41 @@ func (f *Force) RetrieveBulkBatchResults(jobId string, batchId string) (results 
 		err = errors.New(fmt.Sprintf("%s: %s", fault.ExceptionCode, fault.ExceptionMessage))
 	}
 	//	sreader = Reader.NewReader(result);
+	return
+}
+
+func (f *Force) QueryTraceFlags() (results ForceQueryResult, err error) {
+	url := fmt.Sprintf("%s/services/data/%s/tooling/query/?q=Select+Id,+ApexCode,+ApexProfiling,+Callout,+CreatedDate,+Database,+ExpirationDate,+Scope.Name,+System,+TracedEntity.Name,+Validation,+Visualforce,+Workflow+From+TraceFlag+Order+By+ExpirationDate,TracedEntity.Name,Scope.Name", f.Credentials.InstanceUrl, apiVersion)
+	body, err := f.httpGet(url)
+	if err != nil {
+		return
+	}
+	json.Unmarshal(body, &results)
+	return
+}
+
+func (f *Force) StartTrace() (result ForceCreateRecordResult, err error, emessages []ForceError) {
+	url := fmt.Sprintf("%s/services/data/%s/tooling/sobjects/TraceFlag", f.Credentials.InstanceUrl, apiVersion)
+
+	// The log levels are currently hard-coded to a useful level of logging
+	// without hitting the maximum log size of 2MB in most cases, hopefully.
+	attrs := make(map[string]string)
+	attrs["ApexCode"] = "Debug"
+	attrs["ApexProfiling"] = "Error"
+	attrs["Callout"] = "Info"
+	attrs["Database"] = "Info"
+	attrs["System"] = "Info"
+	attrs["Validation"] = "Warn"
+	attrs["Visualforce"] = "Info"
+	attrs["Workflow"] = "Info"
+	attrs["TracedEntityId"] = f.Credentials.UserId
+
+	body, err, emessages := f.httpPost(url, attrs)
+	if err != nil {
+		return
+	}
+	json.Unmarshal(body, &result)
+
 	return
 }
 
