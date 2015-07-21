@@ -867,6 +867,23 @@ func (f *Force) RetrieveBulkBatchResults(jobId string, batchId string) (results 
 	return
 }
 
+func (f *Force) RetrieveLog(logId string) (result string, err error) {
+	url := fmt.Sprintf("%s/services/data/%s/tooling/sobjects/ApexLog/%s/Body", f.Credentials.InstanceUrl, apiVersion, logId)
+	body, err := f.httpGet(url)
+	result = string(body)
+	return
+}
+
+func (f *Force) QueryLogs() (results ForceQueryResult, err error) {
+	url := fmt.Sprintf("%s/services/data/%s/tooling/query/?q=Select+Id,+Application,+DurationMilliseconds,+Location,+LogLength,+LogUser.Name,+Operation,+Request,StartTime,+Status+From+ApexLog+Order+By+StartTime", f.Credentials.InstanceUrl, apiVersion)
+	body, err := f.httpGet(url)
+	if err != nil {
+		return
+	}
+	json.Unmarshal(body, &results)
+	return
+}
+
 func (f *Force) UpdateAuraComponent(source map[string]string, id string) (err error) {
 	url := fmt.Sprintf("%s/services/data/%s/tooling/sobjects/AuraDefinition/%s", f.Credentials.InstanceUrl, apiVersion, id)
 	_, err = f.httpPatch(url, source)
