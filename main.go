@@ -21,6 +21,7 @@ var commands = []*Command{
 	cmdExport,
 	cmdQuery,
 	cmdApex,
+	cmdTrace,
 	cmdLog,
 	cmdOauth,
 	cmdTest,
