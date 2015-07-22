@@ -50,7 +50,7 @@ func runQueryTrace() {
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
-	DisplayForceRecords(result)
+	DisplayForceRecordsf(result.Records, "json-pretty")
 }
 
 func runStartTrace() {
