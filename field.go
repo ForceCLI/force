@@ -96,7 +96,6 @@ func runFieldCreate(args []string) {
 		ErrorAndExit(err.Error())
 	}
 	if err := force.Metadata.CreateCustomField(args[0], parts[0], parts[1], newOptions); err != nil {
-		fmt.Println("Got an error")
 		ErrorAndExit(err.Error())
 	}
 	fmt.Println("Custom field created")
