@@ -129,13 +129,10 @@ func persistBundles(bundles AuraDefinitionBundleResult, definitions AuraDefiniti
 
 	var defRecords = definitions.Records
 	root, err := GetSourceDir()
-	fmt.Println("Root: ", root)
 	if mdbase == "aura" {
 		root = filepath.Join(targetDirectory, root, "aura")
-		fmt.Println("Root2: ", root)
 	} else {
 		root = filepath.Join(targetDirectory, root, mdbase, "aura")
-		fmt.Println("Root3: ", root)
 	}
 	if err := os.MkdirAll(root, 0755); err != nil {
 		ErrorAndExit(err.Error())
@@ -237,7 +234,6 @@ func runFetch(cmd *Command, args []string) {
 	resourcesMap = make(map[string]string)
 
 	root, err := GetSourceDir()
-	fmt.Println("Root4: ", root)
 	existingPackage, _ := pathExists(filepath.Join(root, "package.xml"))
 
 	if len(files) == 1 {
