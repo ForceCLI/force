@@ -579,7 +579,6 @@ func ValidateOptionsAndDefaults(typ string, fields map[string]reflect.StructFiel
 	newOptions = make(map[string]string)
 	// validate optional attributes
 	for name, value := range options {
-		fmt.Printf("%-v", fields)
 		field, ok := fields[strings.ToLower(name)]
 		if !ok {
 			ErrorAndExit(fmt.Sprintf("validation error: %s:%s is not a valid option for field type %s", name, value, typ))
@@ -703,7 +702,6 @@ func (fm *ForceMetadata) ValidateFieldOptions(typ string, options map[string]str
 		break
 	}
 
-	fmt.Println("Attrs: ", s)
 	newOptions, err = ValidateOptionsAndDefaults(typ, attrs, s, options)
 
 	return newOptions, nil
