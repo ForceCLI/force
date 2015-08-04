@@ -453,8 +453,6 @@ func (f *Force) CreateDataPipeline(name string, masterLabel string, apiVersionNu
 	attrs["ApiVersion"] = apiVersionNumber
 	attrs["ScriptContent"] = scriptContent
 
-	fmt.Println(aurl)
-
 	body, err, emessages := f.httpPost(aurl, attrs)
 	if err != nil {
 		return
@@ -471,8 +469,6 @@ func (f *Force) CreateDataPipelineJob(id string) (result ForceCreateRecordResult
 	attrs := make(map[string]string)
 	attrs["DataPipelineId"] = id
 
-	fmt.Println(aurl)
- 
 	body, err, emessages := f.httpPost(aurl, attrs)
 	if err != nil {
 		return
