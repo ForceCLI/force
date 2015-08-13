@@ -278,6 +278,7 @@ type AuraDefinitionBundleResult struct {
 	QueryLocator   string
 	Size           int
 	EntityTypeName string
+	NextRecordsUrl string
 }
 
 type AuraDefinitionBundle struct {
@@ -532,6 +533,39 @@ func (f *Force) GetAuraBundleDefinitions() (definitions AuraDefinitionBundleResu
 	}
 	json.Unmarshal(body, &definitions)
 
+	if (!definitions.Done) {
+		f.GetMoreAuraBundleDefinitions(&definitions)	
+	}
+
+	return
+}
+
+func (f *Force) GetMoreAuraBundleDefinitions(definitions *AuraDefinitionBundleResult) (err error) {
+
+	isDone := definitions.Done
+	nextRecordsUrl := definitions.NextRecordsUrl
+	
+	for !isDone {
+	
+		moreDefs := new (AuraDefinitionBundleResult)
+		aurl := fmt.Sprintf("%s%s", f.Credentials.InstanceUrl, nextRecordsUrl)
+		
+		body, err := f.httpGet(aurl)
+		if err != nil {
+			return err
+		}
+		json.Unmarshal(body, &moreDefs)
+		
+		definitions.Done = moreDefs.Done
+		definitions.Records = append(definitions.Records, moreDefs.Records...)
+		
+		isDone = moreDefs.Done
+		
+		if (!isDone) {
+			nextRecordsUrl = moreDefs.NextRecordsUrl
+		}        
+	}
+	
 	return
 }
 
@@ -574,7 +608,7 @@ func (f *Force) GetAuraBundleByName(bundleName string) (bundles AuraDefinitionBu
 
 func (f *Force) GetAuraBundleDefinition(id string) (definitions AuraDefinitionBundleResult, err error) {
 	aurl := fmt.Sprintf("%s/services/data/%s/tooling/query?q=%s", f.Credentials.InstanceUrl, apiVersion,
-		url.QueryEscape("SELECT Id, Source, AuraDefinitionBundleId, DefType, Format FROM AuraDefinition"))
+		url.QueryEscape(fmt.Sprintf("SELECT Id, Source, AuraDefinitionBundleId, DefType, Format FROM AuraDefinition WHERE AuraDefinitionBundleId = '%s'", id)))		
 
 	body, err := f.httpGet(aurl)
 	if err != nil {
