@@ -452,8 +452,6 @@ func (f *Force) CreateDataPipeline(name string, masterLabel string, apiVersionNu
 	attrs["ApiVersion"] = apiVersionNumber
 	attrs["ScriptContent"] = scriptContent
 
-	fmt.Println(aurl)
-
 	body, err, emessages := f.httpPost(aurl, attrs)
 	if err != nil {
 		return
@@ -470,8 +468,6 @@ func (f *Force) CreateDataPipelineJob(id string) (result ForceCreateRecordResult
 	attrs := make(map[string]string)
 	attrs["DataPipelineId"] = id
 
-	fmt.Println(aurl)
- 
 	body, err, emessages := f.httpPost(aurl, attrs)
 	if err != nil {
 		return
@@ -608,7 +604,6 @@ func (f *Force) CreateAuraComponent(attrs map[string]string) (result ForceCreate
 	aurl := fmt.Sprintf("%s/services/data/%s/tooling/sobjects/AuraDefinition", f.Credentials.InstanceUrl, apiVersion)
 	body, err, emessages := f.httpPost(aurl, attrs)
 	if err != nil {
-		fmt.Println("The error is: ", err.Error())
 		return
 	}
 	json.Unmarshal(body, &result)
@@ -717,6 +712,7 @@ func (f *Force) GetRecord(sobject, id string) (object ForceRecord, err error) {
 	} else {
 		url = fmt.Sprintf("%s/services/data/%s/sobjects/%s/%s/%s", f.Credentials.InstanceUrl, apiVersion, sobject, fields[0], fields[1])
 	}
+
 	body, err := f.httpGet(url)
 	if err != nil {
 		return
