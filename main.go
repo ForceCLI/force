@@ -23,6 +23,7 @@ var commands = []*Command{
 	cmdApex,
 	cmdTrace,
 	cmdLog,
+	cmdEventLogFile,
 	cmdOauth,
 	cmdTest,
 	cmdSecurity,
