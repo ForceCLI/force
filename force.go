@@ -950,6 +950,26 @@ func (f *Force) QueryLogs() (results ForceQueryResult, err error) {
 	return
 }
 
+func (f *Force) RetrieveEventLogFile(elfId string) (result string, err error) {
+	url := fmt.Sprintf("%s/services/data/%s/sobjects/EventLogFile/%s/LogFile", f.Credentials.InstanceUrl, apiVersion, elfId)
+	body, err := f.httpGet(url)
+	if err != nil {
+		return
+	}
+	result = string(body)
+	return
+}
+
+func (f *Force) QueryEventLogFiles() (results ForceQueryResult, err error) {
+	url := fmt.Sprintf("%s/services/data/%s/query/?q=Select+Id,+LogDate,+EventType,+LogFileLength+FROM+EventLogFile+ORDER+BY+LogDate+DESC,+EventType", f.Credentials.InstanceUrl, apiVersion)
+	body, err := f.httpGet(url)
+	if err != nil {
+		return
+	}
+	json.Unmarshal(body, &results)
+	return
+}
+
 func (f *Force) UpdateAuraComponent(source map[string]string, id string) (err error) {
 	url := fmt.Sprintf("%s/services/data/%s/tooling/sobjects/AuraDefinition/%s", f.Credentials.InstanceUrl, apiVersion, id)
 	_, err = f.httpPatch(url, source)
