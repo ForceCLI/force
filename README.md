@@ -106,17 +106,17 @@ Field gives you the ability to create, list and delete the fields on an object. 
       force field delete Todo__c Due
 
 ### push
-Push gives you the ability to push specified resources to force.com.  The resource will be pulled from ./src/{type}/
+Push gives you the ability to push specified resources to force.com.  The resource will be pulled from ./metatdata/{type}/
 
-      force push -t(ype) StaticReource -n(ame) MyResource.resource
-	  force -type ApexClass -name MyClass.cls
-	  force -t ApexPage -n MyPage.page
+      force push -t(ype) StaticResource -n(ame) MyResource.resource
+      force -type ApexClass -name MyClass.cls
+      force -t ApexPage -n MyPage.page
 
 You can also push all of a specific type of resource from a given folder.
 
-      force push -t StaticResource -p(ath) src/staticresources/
-      force push -t ApexClass -path src/classes/
-      force push -t ApexPage -p src/pages/
+      force push -t StaticResource -p(ath) metadata/staticresources/
+      force push -t ApexClass -path metadata/classes/
+      force push -t ApexPage -p metadata/pages/
 
 ### notify
 Includes notification library, [gotifier](https://github.com/ViViDboarder/gotifier), that will display notifications for using either Using [terminal-notifier](https://github.com/alloy/terminal-notifier) on OSX or [notify-send](http://manpages.ubuntu.com/manpages/saucy/man1/notify-send.1.html) on Ubuntu. Currently, only the `push` and `test` methods are displaying notifications.
