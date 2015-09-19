@@ -155,7 +155,7 @@ func getBigObjectList(args []string) (l []ForceSobject) {
 	sobjects, err := force.ListSobjects()
 	if err != nil {
 		ErrorAndExit(fmt.Sprintf("ERROR: %s\n", err))
-	} 
+	}
 
 	for _, sobject := range sobjects {
 		if len(args) == 1 {
