@@ -39,4 +39,3 @@ func getLog(cmd *Command, args []string) {
 		fmt.Println(log)
 	}
 }
-

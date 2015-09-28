@@ -295,7 +295,7 @@ type MetadataDescribeResult struct {
 	PartialSaveAllowed bool                     `xml:"partialSaveAllowed"`
 	TestRequired       bool                     `xml:"testRequired"`
 	MetadataObjects    []DescribeMetadataObject `xml:"metadataObjects"`
-} 
+}
 
 type MetadataDescribeValueTypeResult struct {
 	ValueTypeFields []MetadataValueTypeField `xml:"result"`
