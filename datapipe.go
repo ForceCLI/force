@@ -66,7 +66,7 @@ var (
 	scripttype    string
 	query         string
 	format        string
-	jobid		  string
+	jobid         string
 )
 
 func init() {
@@ -142,7 +142,7 @@ func runDataPipelineListJobs() {
 	}
 
 	DisplayForceRecordsf(result.Records, "csv")
-} 
+}
 
 func runDataPipelineQueryJob() {
 	//query = "SELECT Id, DataPipeline.DeveloperName, Status, FailureState, LastModifiedDate, CreatedDate, CreatedById, DataPipelineId, JobErrorMessage FROM DataPipelineJob"
@@ -186,7 +186,7 @@ func runDataPipelineCreate() {
 }
 
 func runDataPipelineUpdate() {
-	if len(dpname) == 0 { 
+	if len(dpname) == 0 {
 		ErrorAndExit("You must specify a name for the datapipeline using the -n flag.")
 	}
 	if len(masterlabel) == 0 && len(scriptcontent) == 0 {

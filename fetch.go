@@ -254,7 +254,7 @@ func runFetch(cmd *Command, args []string) {
 				isResource = true
 			} else if strings.HasSuffix(file, ".resource-meta.xml") {
 				isResource = true
-			} 
+			}
 			//Handle expanding static resources into a "bundle" folder
 			if isResource && expandResources {
 				if string(os.PathSeparator) != "/" {

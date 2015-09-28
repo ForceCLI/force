@@ -319,7 +319,7 @@ func StringSlicePos(slice []string, value string) int {
 		}
 	}
 	return -1
-} 
+}
 
 // returns true if a slice contains given string
 func StringSliceContains(slice []string, value string) bool {
