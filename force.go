@@ -685,6 +685,7 @@ func (f *Force) Query(query string) (result ForceQueryResult, err error) {
 			if nextErr != nil {
 				return
 			}
+			nextResult.Records = []ForceRecord{}
 			json.Unmarshal(nextBody, &nextResult)
 
 			result.Records = append(result.Records, nextResult.Records...)
