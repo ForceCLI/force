@@ -21,7 +21,7 @@ var cmdFetch = &Command{
   -n, -name       # name of specific metadata to retrieve (must be used with -type)
   -d, -directory  # override the default target directory
   -u, -unpack     # unpack any zipped static resources (ignored if type is not StaticResource)
-	-p, -preserve   # preserve the zip file
+  -p, -preserve   # preserve the zip file
 
 Export specified artifact(s) to a local directory. Use "package" type to retrieve an unmanaged package.
 
@@ -137,8 +137,7 @@ func persistBundles(bundles AuraDefinitionBundleResult, definitions AuraDefiniti
 	if err := os.MkdirAll(root, 0755); err != nil {
 		ErrorAndExit(err.Error())
 	}
-	var wd, _ = os.Getwd()
-	fmt.Println("Working Dir: ", wd)
+
 	for key, value := range bundleMap {
 		if err := os.MkdirAll(filepath.Join(root, value), 0755); err != nil {
 			ErrorAndExit(err.Error())
