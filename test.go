@@ -46,7 +46,7 @@ func runTests(cmd *Command, args []string) {
 	} else {
 
 		if verboselogging {
-			fmt.Println(output)
+			fmt.Println(output.Log)
 			fmt.Println()
 		}
 		//working on a better way to do this - catches when no class are found and ran
