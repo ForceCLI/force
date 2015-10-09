@@ -110,15 +110,18 @@ func ForceSaveLogin(creds ForceCredentials) (username string, err error) {
 	if err != nil {
 		return
 	}
+
 	body, err := json.Marshal(creds)
 	if err != nil {
 		return
 	}
+
 	username = login["username"].(string)
 
 	me, err := force.Whoami()
 	if err != nil {
-		return
+		fmt.Println("Problem getting user data, continuing...")
+		//return
 	}
 	fmt.Printf("Logged in as '%s'\n", me["Username"])
 	title := fmt.Sprintf("\033];%s\007", me["Username"])
