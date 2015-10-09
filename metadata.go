@@ -295,7 +295,7 @@ type MetadataDescribeResult struct {
 	PartialSaveAllowed bool                     `xml:"partialSaveAllowed"`
 	TestRequired       bool                     `xml:"testRequired"`
 	MetadataObjects    []DescribeMetadataObject `xml:"metadataObjects"`
-} 
+}
 
 type MetadataDescribeValueTypeResult struct {
 	ValueTypeFields []MetadataValueTypeField `xml:"result"`
@@ -473,7 +473,6 @@ func ValidateOptionsAndDefaults(typ string, fields map[string]reflect.StructFiel
 	newOptions = make(map[string]string)
 	// validate optional attributes
 	for name, value := range options {
-		fmt.Printf("%-v", fields)
 		field, ok := fields[strings.ToLower(name)]
 		if !ok {
 			ErrorAndExit(fmt.Sprintf("validation error: %s:%s is not a valid option for field type %s", name, value, typ))
@@ -486,7 +485,7 @@ func ValidateOptionsAndDefaults(typ string, fields map[string]reflect.StructFiel
 	s := requiredDefaults
 	tod := s.Type()
 	for i := 0; i < s.NumField(); i++ {
-		_, ok := options[strings.ToLower(tod.Field(i).Name)]
+		_, ok := options[inflect.CamelizeDownFirst(tod.Field(i).Name)]
 		if !ok {
 			switch s.Field(i).Type().Name() {
 			case "int":
@@ -508,7 +507,7 @@ func ValidateOptionsAndDefaults(typ string, fields map[string]reflect.StructFiel
 				break
 			}
 		} else {
-			newOptions[tod.Field(i).Tag.Get("xml")] = options[strings.ToLower(tod.Field(i).Name)]
+			newOptions[tod.Field(i).Tag.Get("xml")] = options[inflect.CamelizeDownFirst(tod.Field(i).Name)]
 		}
 	}
 	return newOptions, err
@@ -597,7 +596,6 @@ func (fm *ForceMetadata) ValidateFieldOptions(typ string, options map[string]str
 		break
 	}
 
-	fmt.Println("Attrs: ", s)
 	newOptions, err = ValidateOptionsAndDefaults(typ, attrs, s, options)
 
 	return newOptions, nil
@@ -918,7 +916,7 @@ func (fm *ForceMetadata) CreateCustomField(object, field, typ string, options ma
 		ErrorAndExit("unable to create field type: %s", typ)
 	}
 
-	fmt.Println(fmt.Sprintf(soap, object, field, label, soapField))
+	//fmt.Println(fmt.Sprintf(soap, object, field, label, soapField))
 	body, err := fm.soapExecute("create", fmt.Sprintf(soap, object, field, label, soapField))
 	if err != nil {
 		return err
@@ -1050,7 +1048,7 @@ func (fm *ForceMetadata) MakeZip(files ForceMetadataFiles) (zipdata []byte, err 
 	zipper := zip.NewWriter(zipfile)
 	for name, data := range files {
 		name = filepath.ToSlash(name)
-		wr, err := zipper.Create(fmt.Sprintf("unpackaged%s%s", string(os.PathSeparator), name))
+		wr, err := zipper.Create(fmt.Sprintf("unpackaged/%s", name))
 		if err != nil {
 			return nil, err
 		}

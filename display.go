@@ -173,6 +173,9 @@ func DisplayForceRecordsf(records []ForceRecord, format string) {
 	case "json":
 		recs, _ := json.Marshal(records)
 		fmt.Println(string(recs))
+	case "json-pretty":
+		recs, _ := json.MarshalIndent(records, "", "  ")
+		fmt.Println(string(recs))
 	default:
 		fmt.Printf("Format %s not supported\n\n", format)
 	}
@@ -316,7 +319,7 @@ func StringSlicePos(slice []string, value string) int {
 		}
 	}
 	return -1
-} 
+}
 
 // returns true if a slice contains given string
 func StringSliceContains(slice []string, value string) bool {

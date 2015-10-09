@@ -18,17 +18,22 @@ Usage:
 
   force bigobject list
 
-  force bigobject create <name> [<field>:<type> [<option>:<value>]]
+  force bigobject create -n=<name> [-f=<field> ...]
+  		A field is defined as a "+" separated list of attributes
+  		Attributes depend on the type of the field.
+  		
+  		Type = text: name, label, length
+  		Type = datetime: name, label
+  		Type = lookup: name, label, referenceTo, relationshipName
 
-  force bigobject create -n=MyObject -l="My Object" -p="My Objects" \
-  -f=name:Field1+label:"Field 1"+type:Text+length:120 \
-  -f=name:MyDate+type=dateTime
 
 Examples:
 
   force bigobject list
 
-  force bigobject create Todo Description:string
+  force bigobject create -n=MyObject -l="My Object" -p="My Objects" \
+  -f=name:Field1+label:"Field 1"+type:Text+length:120 \
+  -f=name:MyDate+type=dateTime
 
 `,
 }
@@ -150,7 +155,7 @@ func getBigObjectList(args []string) (l []ForceSobject) {
 	sobjects, err := force.ListSobjects()
 	if err != nil {
 		ErrorAndExit(fmt.Sprintf("ERROR: %s\n", err))
-	} 
+	}
 
 	for _, sobject := range sobjects {
 		if len(args) == 1 {
