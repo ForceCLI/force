@@ -668,9 +668,14 @@ func (f *Force) GetSobject(name string) (sobject ForceSobject, err error) {
 	return
 }
 
-func (f *Force) Query(query string) (result ForceQueryResult, err error) {
-	url := fmt.Sprintf("%s/services/data/%s/query?q=%s", f.Credentials.InstanceUrl, apiVersion, url.QueryEscape(query))
-	body, err := f.httpGet(url)
+func (f *Force) Query(query string, isTooling bool) (result ForceQueryResult, err error) {
+	vurl := ""
+	if isTooling == true {
+		vurl = fmt.Sprintf("%s/services/data/%s/tooling/query?q=%s", f.Credentials.InstanceUrl, apiVersion, url.QueryEscape(query))
+	} else {
+		vurl = fmt.Sprintf("%s/services/data/%s/query?q=%s", f.Credentials.InstanceUrl, apiVersion, url.QueryEscape(query))
+	}
+	body, err := f.httpGet(vurl)
 	if err != nil {
 		return
 	}
