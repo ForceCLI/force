@@ -18,7 +18,7 @@ Examples:
 
   force query "select Id, Name, Account.Name From Contact" --format:csv
 
-	force query "select Id, Name From Account Where MailingState IN ('CA', 'NY')"
+  force query "select Id, Name From Account Where MailingState IN ('CA', 'NY')"
 `,
 }
 
@@ -28,15 +28,26 @@ func runQuery(cmd *Command, args []string) {
 		cmd.printUsage()
 	} else {
 		format := "console"
-		formatArg := args[len(args)-1]
+		var formatArg = ""
+		var isTooling = false
+		var formatIndex = 1
+		if len(args) == 2 {
+			formatArg = args[len(args)-formatIndex]
+		} else if len(args) == 3 {
+			formatIndex = 2
+			formatArg = args[len(args)-formatIndex]
+			isTooling = true
+		}
 
 		if strings.Contains(formatArg, "format:") {
-			args = args[:len(args)-1]
+			args = args[:len(args)-formatIndex]
 			format = strings.SplitN(formatArg, ":", 2)[1]
 		}
 
 		soql := strings.Join(args, " ")
-		records, err := force.Query(fmt.Sprintf("%s", soql))
+
+		records, err := force.Query(fmt.Sprintf("%s", soql), isTooling)
+
 		if err != nil {
 			ErrorAndExit(err.Error())
 		} else {
