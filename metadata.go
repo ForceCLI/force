@@ -378,6 +378,20 @@ type PhoneField struct {
 	DefaultValue string `xml:"defaultValue"`
 }
 
+type UrlFieldRequired struct {
+}
+
+type UrlField struct {
+	Label                string `xml:"label"`
+	Name                 string `xml:"fullName"`
+	Required             bool   `xml:"required"`
+	Description          string `xml:"description"`
+	HelpText             string `xml:"helpText"`
+	DefaultValue         string `xml:"defaultValue"`
+	Formula              string `xml:"formula"`
+	FormulaTreatBlanksAs string `xml:"formulaTreatBlanksAs"`
+}
+
 type EmailFieldRequired struct {
 }
 
@@ -527,9 +541,13 @@ func (fm *ForceMetadata) ValidateFieldOptions(typ string, options map[string]str
 		attrs = getAttributes(&PhoneField{})
 		s = reflect.ValueOf(&PhoneFieldRequired{}).Elem()
 		break
-	case "email", "url":
+	case "email":
 		attrs = getAttributes(&StringField{})
 		s = reflect.ValueOf(&EmailFieldRequired{}).Elem()
+		break
+	case "url":
+		attrs = getAttributes(&UrlField{})
+		s = reflect.ValueOf(&UrlFieldRequired{}).Elem()
 		break
 	case "encryptedtext":
 		attrs = getAttributes(&EncryptedField{})
