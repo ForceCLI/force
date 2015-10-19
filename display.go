@@ -528,6 +528,8 @@ func DisplayFieldTypes() {
   richtextarea           (length = 32768, visibleLines = 5)
   checkbox/bool/boolean  (defaultValue = false)
   datetime               ()
+  email                  ()
+  url                    ()
   float/double/currency  (precision = 16, scale = 2)
   number/int             (precision = 18, scale = 0)
   autonumber             (displayFormat = "AN {00000}", startingNumber = 0)
