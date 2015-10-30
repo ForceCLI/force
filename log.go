@@ -33,7 +33,7 @@ type CodeNode struct {
 	Line string
 	CodeUnit string
 	ClassId string
-	Level uint16
+//	Level uint16
 }
 
 type DMLNode struct {
