@@ -153,6 +153,17 @@ type Force struct {
 	Partner     *ForcePartner
 }
 
+type TraceFlag struct {
+	ApexCode string
+	ApexProfiling string
+	Callout string
+	Database string
+	System string
+	Validation string
+	Visualforce string
+	Workflow string
+	TracedEntityId string  
+}
 type ForceCredentials struct {
 	AccessToken   string
 	Id            string
@@ -914,21 +925,22 @@ func (f *Force) QueryTraceFlags() (results ForceQueryResult, err error) {
 	return
 }
 
-func (f *Force) StartTrace() (result ForceCreateRecordResult, err error, emessages []ForceError) {
+func ( f *Force) StartTracet( traceFlags *TraceFlag ) (result ForceCreateRecordResult, err error, emessages []ForceError) {
 	url := fmt.Sprintf("%s/services/data/%s/tooling/sobjects/TraceFlag", f.Credentials.InstanceUrl, apiVersion)
 
 	// The log levels are currently hard-coded to a useful level of logging
 	// without hitting the maximum log size of 2MB in most cases, hopefully.
 	attrs := make(map[string]string)
-	attrs["ApexCode"] = "Debug"
-	attrs["ApexProfiling"] = "Error"
-	attrs["Callout"] = "Info"
-	attrs["Database"] = "Info"
-	attrs["System"] = "Info"
-	attrs["Validation"] = "Warn"
-	attrs["Visualforce"] = "Info"
-	attrs["Workflow"] = "Info"
-	attrs["TracedEntityId"] = f.Credentials.UserId
+
+	attrs["ApexCode"] = traceFlags.ApexCode 
+	attrs["ApexProfiling"] = traceFlags.ApexProfiling 
+	attrs["Callout"] =  traceFlags.Callout 
+	attrs["Database"] =  traceFlags.Database 
+	attrs["System"] =  traceFlags.System 
+	attrs["Validation"] =  traceFlags.Validation 
+	attrs["Visualforce"] =  traceFlags.Visualforce 
+	attrs["Workflow"] =  traceFlags.Workflow 
+	attrs["TracedEntityId"] = traceFlags.TracedEntityId 
 
 	body, err, emessages := f.httpPost(url, attrs)
 	if err != nil {
@@ -938,6 +950,24 @@ func (f *Force) StartTrace() (result ForceCreateRecordResult, err error, emessag
 
 	return
 }
+func (f *Force) StartTrace( ) (result ForceCreateRecordResult, err error, emessages []ForceError) {
+	var traceFlags = new(TraceFlag)
+	traceFlags.ApexCode = "Debug"
+	traceFlags.ApexProfiling = "Error"
+	traceFlags.Callout = "Info"
+	traceFlags.Database = "Info"
+	traceFlags.System = "Info"
+	traceFlags.Validation = "Warn"
+	traceFlags.Visualforce = "Info"
+	traceFlags.Workflow = "Info"
+	traceFlags.TracedEntityId = f.Credentials.UserId
+
+	f.StartTracet(traceFlags)
+
+	return
+}
+
+
 
 func (f *Force) RetrieveLog(logId string) (result string, err error) {
 	url := fmt.Sprintf("%s/services/data/%s/tooling/sobjects/ApexLog/%s/Body", f.Credentials.InstanceUrl, apiVersion, logId)

@@ -176,6 +176,8 @@ func DisplayForceRecordsf(records []ForceRecord, format string) {
 	case "json-pretty":
 		recs, _ := json.MarshalIndent(records, "", "  ")
 		fmt.Println(string(recs))
+	case "text":
+		fmt.Print(RenderForceRecords(records));
 	default:
 		fmt.Printf("Format %s not supported\n\n", format)
 	}
