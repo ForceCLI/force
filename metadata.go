@@ -537,6 +537,7 @@ func (fm *ForceMetadata) ValidateFieldOptions(typ string, options map[string]str
 	case "picklist":
 		attrs = getAttributes(&PicklistField{})
 		s = reflect.ValueOf(&PicklistFieldRequired{}).Elem()
+		break
 	case "phone":
 		attrs = getAttributes(&PhoneField{})
 		s = reflect.ValueOf(&PhoneFieldRequired{}).Elem()
