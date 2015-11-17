@@ -13,7 +13,7 @@ Manage trace flags
 
 Examples:
 
-  force trace start
+  force trace start [user id]
 
   force trace list
 
@@ -33,7 +33,11 @@ func runTrace(cmd *Command, args []string) {
 	case "list":
 		runQueryTrace()
 	case "start":
-		runStartTrace()
+		if len(args) == 2 {
+			runStartTrace(args[1])
+		} else {
+			runStartTrace()
+		}
 	case "delete":
 		if len(args) != 2 {
 			ErrorAndExit("You need to provide the id of a TraceFlag to delete.")
@@ -53,9 +57,9 @@ func runQueryTrace() {
 	DisplayForceRecordsf(result.Records, "json-pretty")
 }
 
-func runStartTrace() {
+func runStartTrace(userId ...string) {
 	force, _ := ActiveForce()
-	_, err, _ := force.StartTrace()
+	_, err, _ := force.StartTrace(userId...)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
