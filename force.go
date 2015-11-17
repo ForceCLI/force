@@ -914,7 +914,7 @@ func (f *Force) QueryTraceFlags() (results ForceQueryResult, err error) {
 	return
 }
 
-func (f *Force) StartTrace() (result ForceCreateRecordResult, err error, emessages []ForceError) {
+func (f *Force) StartTrace(userId ...string) (result ForceCreateRecordResult, err error, emessages []ForceError) {
 	url := fmt.Sprintf("%s/services/data/%s/tooling/sobjects/TraceFlag", f.Credentials.InstanceUrl, apiVersion)
 
 	// The log levels are currently hard-coded to a useful level of logging
@@ -928,7 +928,11 @@ func (f *Force) StartTrace() (result ForceCreateRecordResult, err error, emessag
 	attrs["Validation"] = "Warn"
 	attrs["Visualforce"] = "Info"
 	attrs["Workflow"] = "Info"
-	attrs["TracedEntityId"] = f.Credentials.UserId
+	if len(userId) == 1 {
+		attrs["TracedEntityId"] = userId[0]
+	} else {
+		attrs["TracedEntityId"] = f.Credentials.UserId
+	}
 
 	body, err, emessages := f.httpPost(url, attrs)
 	if err != nil {
