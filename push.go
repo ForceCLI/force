@@ -31,11 +31,13 @@ Examples:
 
 Deployment Options
   -rollbackonerror, -r    Indicates whether any failure causes a complete rollback
-  -runalltests, -at        If set all Apex tests defined in the organization are run
+  -runalltests, -at       If set all Apex tests defined in the organization are run (equivalent to -l RunAllTestsInOrg)
   -checkonly, -c          Indicates whether classes and triggers are saved during deployment
   -purgeondelete, -p      If set the deleted components are not stored in recycle bin
   -allowmissingfiles, -m  Specifies whether a deploy succeeds even if files missing
   -autoupdatepackage, -u  Auto add files to the package if missing
+  -test                   Run tests in class (implies -l RunSpecifiedTests)
+  -testlevel, -l          Set test level (NoTestRun, RunSpecifiedTests, RunLocalTests, RunAllTestsInOrg)
   -ignorewarnings, -i     Indicates if warnings should fail deployment or not
 `,
 }
@@ -55,6 +57,8 @@ func init() {
 	cmdPush.Flag.BoolVar(rollBackOnErrorFlag, "r", false, "set roll back on error")
 	cmdPush.Flag.BoolVar(runAllTestsFlag, "runalltests", false, "set run all tests")
 	cmdPush.Flag.BoolVar(runAllTestsFlag, "at", false, "set run all tests")
+	cmdPush.Flag.StringVar(testLevelFlag, "testlevel", "NoTestRun", "set test level")
+	cmdPush.Flag.StringVar(testLevelFlag, "l", "NoTestRun", "set test level")
 	cmdPush.Flag.BoolVar(checkOnlyFlag, "checkonly", false, "set check only")
 	cmdPush.Flag.BoolVar(checkOnlyFlag, "c", false, "set check only")
 	cmdPush.Flag.BoolVar(purgeOnDeleteFlag, "purgeondelete", false, "set purge on delete")
@@ -68,6 +72,7 @@ func init() {
 
 	cmdPush.Flag.Var(&resourcepath, "f", "Path to resource(s)")
 	cmdPush.Flag.Var(&resourcepath, "filepath", "Path to resource(s)")
+	cmdPush.Flag.Var(&testsToRun, "test", "Test(s) to run")
 	cmdPush.Flag.StringVar(&metadataType, "t", "", "Metatdata type")
 	cmdPush.Flag.StringVar(&metadataType, "type", "", "Metatdata type")
 	cmdPush.Flag.Var(&metadataName, "name", "name of metadata object")
@@ -518,7 +523,11 @@ func deployOpts() *ForceDeployOptions {
 	opts.IgnoreWarnings = *ignoreWarningsFlag
 	opts.PurgeOnDelete = *purgeOnDeleteFlag
 	opts.RollbackOnError = *rollBackOnErrorFlag
-	opts.RunAllTests = *runAllTestsFlag
+	opts.TestLevel = *testLevelFlag
+	if *runAllTestsFlag {
+		opts.TestLevel = "RunAllTestsInOrg"
+	}
+	opts.RunTests = testsToRun
 	return &opts
 }
 
