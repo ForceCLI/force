@@ -42,6 +42,7 @@ Examples:
   force trace start [TraceFlag]
 
   force trace list [Format] [Filter Criteria]
+  force trace start [user id]
 
   force trace delete <id> 
 
@@ -60,19 +61,19 @@ func runTrace(cmd *Command, args []string) {
 	switch args[0] {
 	case "list":
 		var format = "json-pretty"
-		if len(args) >= 2  {
+		if len(args) >= 2 {
 			format = args[1]
-		}		
+		}
 		where := getWhereCondition(args[2:])
 		runQueryTrace(format, where)
 	case "start":
 		var traceFlags TraceFlag
 		if len(args) == 0 {
-			traceFlags = getTraceFlags( []string{ "log:general" } )
+			traceFlags = getTraceFlags([]string{"log:general"})
 		} else {
 			traceFlags = getTraceFlags(args[1:])
 		}
-		runStartTrace( traceFlags )
+		runStartTrace(traceFlags)
 	case "delete":
 		if len(args) < 2 {
 			ErrorAndExit("You need to provide the id of a TraceFlag to delete or the Filter Fields Criteria.")
@@ -82,7 +83,7 @@ func runTrace(cmd *Command, args []string) {
 			where := getWhereCondition(args[2:])
 			runDeleteTraces(where)
 		}
-		
+
 	default:
 		ErrorAndExit("no such command: %s", args[0])
 	}
@@ -97,100 +98,116 @@ func runQueryTrace(format string, where string) {
 	DisplayForceRecordsf(result.Records, format)
 }
 
-func getTraceFlags( args []string ) TraceFlag {
+func getTraceFlags(args []string) TraceFlag {
 	force, _ := ActiveForce()
-	debugLevelId := "7dlj000000000y1"
-	
-	var traceFlags = TraceFlag{ TracedEntityId: force.Credentials.UserId, ApexCode:"None", ApexProfiling:"None", Callout:"None", Database:"None", System:"None", Validation:"None", Visualforce:"None", Workflow:"None", DebugLevelId: debugLevelId, LogType: "USER_DEBUG" }
 
-	debugLevels := map[string]int{ "none": 0, "error": 1, "warn": 2, "info": 3, "debug": 4, "fine": 5,"finer": 6, "finest": 7 }	
-	debugLogs := map[string]map[string]string {
-		"general" : { "apexcode":"debug",  "apexprofiling":"error", "callout":"info", "database":"info", "system":"info", "validation":"warn", "visualforce":"info", "workflow":"info" }, 
-		"heap" : { "apexcode":"finer",  "apexprofiling":"none", "callout":"none", "database":"none", "system":"none", "validation":"none", "visualforce":"none", "workflow":"none" }, 
-		"soql" : { "apexcode":"debug",  "apexprofiling":"none", "callout":"none", "database":"info", "system":"none", "validation":"none", "visualforce":"none", "workflow":"none" }, 
-		"code" : { "apexcode":"debug",  "apexprofiling":"none", "callout":"none", "database":"none", "system":"none", "validation":"none", "visualforce":"none", "workflow":"none" }, 
-		"dml"  : { "apexcode":"debug",  "apexprofiling":"none", "callout":"none", "database":"info", "system":"none", "validation":"none", "visualforce":"none", "workflow":"none" }, 
+	result, err := force.Query("SELECT Id FROM DebugLevel LIMIT 1", true)
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
+	if len(result.Records) == 0 {
+		ErrorAndExit("You need to create and/or define a DebugLevel")
+	}
+	debugLevelId := result.Records[0]["Id"].(string)
+
+	var traceFlags = TraceFlag{TracedEntityId: force.Credentials.UserId, ApexCode: "None", ApexProfiling: "None", Callout: "None", Database: "None", System: "None", Validation: "None", Visualforce: "None", Workflow: "None", DebugLevelId: debugLevelId, LogType: "USER_DEBUG"}
+
+	debugLevels := map[string]int{"none": 0, "error": 1, "warn": 2, "info": 3, "debug": 4, "fine": 5, "finer": 6, "finest": 7}
+	debugLogs := map[string]map[string]string{
+		"general": {"apexcode": "debug", "apexprofiling": "error", "callout": "info", "database": "info", "system": "info", "validation": "warn", "visualforce": "info", "workflow": "info"},
+		"heap":    {"apexcode": "finer", "apexprofiling": "none", "callout": "none", "database": "none", "system": "none", "validation": "none", "visualforce": "none", "workflow": "none"},
+		"soql":    {"apexcode": "debug", "apexprofiling": "none", "callout": "none", "database": "info", "system": "none", "validation": "none", "visualforce": "none", "workflow": "none"},
+		"code":    {"apexcode": "debug", "apexprofiling": "none", "callout": "none", "database": "none", "system": "none", "validation": "none", "visualforce": "none", "workflow": "none"},
+		"dml":     {"apexcode": "debug", "apexprofiling": "none", "callout": "none", "database": "info", "system": "none", "validation": "none", "visualforce": "none", "workflow": "none"},
 	}
 
-	for _, value := range args {
-		options := strings.Split(value, ":")
+	for _, optionValue := range args {
+		options := strings.Split(optionValue, ":")
+		var key, value string
 		if len(options) != 2 {
-			fmt.Sprintf("Missing value for trace flag %s", value)
+			// If is only the userId
+			if options[0][:3] == "005" {
+				key = "tracedentityid"
+				value = options[0]
+			} else {
+				fmt.Printf("Missing value for trace flag %s", optionValue)
+			}
+		} else {
+			key = strings.ToLower(options[0])
+			value = options[1]
 		}
-		
-		key := strings.ToLower(options[0])
-		value := options[1]
-		if key != "tracedentityid"  {
+
+		if key != "tracedentityid" {
 			value = strings.ToLower(value)
 		}
 		var levels map[string]string
 		if key == "log" {
 			levels = debugLogs[value]
 		} else {
-			levels = map[string]string { key: value }
+			levels = map[string]string{key: value}
 		}
 
 		for key, value := range levels {
-			switch ( key )  {
-				case "apexcode": 
-					if debugLevels[value] > debugLevels[traceFlags.ApexCode] {
-						traceFlags.ApexCode = value
-					}
-				case "apexprofiling": 
-					if debugLevels[value] > debugLevels[traceFlags.ApexProfiling] {
-						traceFlags.ApexProfiling = value
-					}
-				case "callout": 
-					if debugLevels[value] > debugLevels[traceFlags.Callout] {
-						traceFlags.Callout = value
-					}
-				case "database": 
-					if debugLevels[value] > debugLevels[traceFlags.Database] {
-						traceFlags.Database = value
-					}
-				case "system": 
-					if debugLevels[value] > debugLevels[traceFlags.System] {
-						traceFlags.System = value
-					}
-				case "validation": 
-					if debugLevels[value] > debugLevels[traceFlags.Validation] {
-						traceFlags.Validation = value
-					}
-				case "visualforce": 
-					if debugLevels[value] > debugLevels[traceFlags.Visualforce] {
-						traceFlags.Visualforce = value
-					}
-				case "workflow": 
-					if debugLevels[value] > debugLevels[traceFlags.Workflow] {
-						traceFlags.Workflow = value
-					}
-				case "tracedentityid": 
-					traceFlags.TracedEntityId = value
-				default:
-					fmt.Printf("Format %s not supported\n\n", key )
+			switch key {
+			case "apexcode":
+				if debugLevels[value] > debugLevels[traceFlags.ApexCode] {
+					traceFlags.ApexCode = value
+				}
+			case "apexprofiling":
+				if debugLevels[value] > debugLevels[traceFlags.ApexProfiling] {
+					traceFlags.ApexProfiling = value
+				}
+			case "callout":
+				if debugLevels[value] > debugLevels[traceFlags.Callout] {
+					traceFlags.Callout = value
+				}
+			case "database":
+				if debugLevels[value] > debugLevels[traceFlags.Database] {
+					traceFlags.Database = value
+				}
+			case "system":
+				if debugLevels[value] > debugLevels[traceFlags.System] {
+					traceFlags.System = value
+				}
+			case "validation":
+				if debugLevels[value] > debugLevels[traceFlags.Validation] {
+					traceFlags.Validation = value
+				}
+			case "visualforce":
+				if debugLevels[value] > debugLevels[traceFlags.Visualforce] {
+					traceFlags.Visualforce = value
+				}
+			case "workflow":
+				if debugLevels[value] > debugLevels[traceFlags.Workflow] {
+					traceFlags.Workflow = value
+				}
+			case "tracedentityid":
+				traceFlags.TracedEntityId = value
+			default:
+				fmt.Printf("Format %s not supported\n\n", key)
 			}
-		}		
+		}
 	}
 	return traceFlags
 }
 
-func runStartTrace( traceFlags TraceFlag) {
+func runStartTrace(traceFlags TraceFlag) {
 	force, _ := ActiveForce()
-	_, err, _ := force.StartTracet( &traceFlags )
+	_, err, _ := force.StartTracet(&traceFlags)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
 	fmt.Printf("Tracing Enabled\n")
 }
 
-func getWhereCondition ( args []string ) string {
+func getWhereCondition(args []string) string {
 	where := ""
 
 	for _, value := range args {
 		options := strings.Split(value, ":")
 		if len(options) != 2 {
-			fmt.Sprintf("Missing value for trace field filter criteria %s", options[0] )
-		} else {			
+			fmt.Printf("Missing value for trace field filter criteria %s", options[0])
+		} else {
 			where += " AND " + strings.Trim(options[0], " ") + "='" + strings.Trim(options[1], " ") + "'"
 		}
 	}
@@ -199,24 +216,24 @@ func getWhereCondition ( args []string ) string {
 	}
 	return where
 }
-func runDeleteTraces( where string) {
+func runDeleteTraces(where string) {
 	force, _ := ActiveForce()
 
-	result, err := force.Query("SELECT Id FROM TraceFlag " + where, true )
+	result, err := force.Query("SELECT Id FROM TraceFlag "+where, true)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
 
 	for _, record := range result.Records {
-		err := force.DeleteToolingRecord("TraceFlag", record["Id"].(string) )
+		err := force.DeleteToolingRecord("TraceFlag", record["Id"].(string))
 		if err != nil {
 			ErrorAndExit(err.Error())
 		}
-	}	
+	}
 	fmt.Printf("Trace Flags deleted\n")
 }
 
-func runDeleteTrace( id string ) {
+func runDeleteTrace(id string) {
 	force, _ := ActiveForce()
 
 	err := force.DeleteToolingRecord("TraceFlag", id)
