@@ -25,8 +25,9 @@ Examples:
   force push -t StaticResource -n MyResource
   force push -t ApexClass
   force push -f metadata/classes/MyClass.cls
-	force push -n MyApex -n MyObject__c
- 
+  force push -checkonly -test MyClass_Test metadata/classes/MyClass.cls
+  force push -n MyApex -n MyObject__c
+
 Deployment Options
   -rollbackonerror, -r    Indicates whether any failure causes a complete rollback
   -runalltests, -at        If set all Apex tests defined in the organization are run
@@ -87,6 +88,7 @@ func runPush(cmd *Command, args []string) {
 	case "package":
 		pushPackage()
 	default:
+		resourcepath = append(resourcepath, args...)
 		if len(resourcepath) != 0 {
 			// It's not a package but does have a path. This could be a path to a file
 			// or to a folder. If it is a folder, we pickup the resources a different
