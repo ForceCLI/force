@@ -9,9 +9,9 @@ import (
 
 var cmdRest = &Command{
 	Usage: "rest",
-	Short: "force rest -s=<service> [-m=<method>] [-b=<body>] [-f=<format>]",
+	Short: "force rest -s=<service> [-m=<method>] [-b=<body>]",
 	Long: `
-Usage: force rest -s=<service> [-m=<method>] [-b=<body>] [-f=<format>]
+Usage: force rest -s=<service> [-m=<method>] [-b=<body>]
 
 Call the RestApi Service of the <service> using the <action> and sending the define <body>
 
