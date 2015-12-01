@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
 
@@ -113,14 +114,23 @@ func (pb *PackageBuilder) AddFile(fpath string) (fname string, err error) {
 		return
 	}
 
+	isDestructiveChanges, err := regexp.MatchString("destructiveChanges(Pre|Post)?"+regexp.QuoteMeta(".")+"xml", fpath)
+	if err != nil {
+		return
+	}
+
 	metaName, fname := getMetaTypeFromPath(fpath)
-	if len(strings.Split(fname, ".")) == 1 {
+	if !isDestructiveChanges && len(strings.Split(fname, ".")) == 1 {
 		pb.AddMetaToPackage(metaName, fname)
 	}
 
 	// If it's a push, we want to actually add the files
 	if pb.IsPush {
-		err = pb.addFileToWorkingDir(metaName, fpath)
+		if isDestructiveChanges {
+			err = pb.addDestructiveChanges(fpath)
+		} else {
+			err = pb.addFileToWorkingDir(metaName, fpath)
+		}
 	}
 
 	return
@@ -162,6 +172,18 @@ func (pb *PackageBuilder) addFileToWorkingDir(metaName string, fpath string) (er
 		pb.Files[fmetarel] = fdata
 		return
 	}
+
+	return
+}
+
+func (pb *PackageBuilder) addDestructiveChanges(fpath string) (err error) {
+	fdata, err := ioutil.ReadFile(fpath)
+	if err != nil {
+		return
+	}
+
+	frel, _ := filepath.Rel(filepath.Dir(fpath), fpath)
+	pb.Files[frel] = fdata
 
 	return
 }
