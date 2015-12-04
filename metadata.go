@@ -640,7 +640,7 @@ func (fm *ForceMetadata) CheckStatus(id string) (err error) {
 	}
 	switch {
 	case !status.Done:
-		fmt.Printf("Not done yet.  Will check again in five seconds.\n")
+		fmt.Printf("Not done yet: %s  Will check again in five seconds.\n", status.State)
 		time.Sleep(5000 * time.Millisecond)
 		return fm.CheckStatus(id)
 	case status.State == "Error":
