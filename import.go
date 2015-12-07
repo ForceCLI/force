@@ -122,7 +122,9 @@ func runImport(cmd *Command, args []string) {
 	DeploymentOptions.RollbackOnError = *rollBackOnErrorFlag
 	DeploymentOptions.RunAllTests = *runAllTestsFlag
 
-	successes, problems, err := force.Metadata.Deploy(files, DeploymentOptions)
+	result, err := force.Metadata.Deploy(files, DeploymentOptions)
+	problems := result.Details.ComponentFailures
+	successes := result.Details.ComponentSuccesses
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}

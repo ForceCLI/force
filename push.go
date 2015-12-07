@@ -484,8 +484,8 @@ func deployPackage() {
 	DeploymentOptions := deployOpts()
 	for _, name := range resourcepath {
 		zipfile, err := ioutil.ReadFile(name)
-		successes, problems, err := force.Metadata.DeployZipFile(force.Metadata.MakeDeploySoap(*DeploymentOptions), zipfile)
-		processDeployResults(successes, problems, err)
+		result, err := force.Metadata.DeployZipFile(force.Metadata.MakeDeploySoap(*DeploymentOptions), zipfile)
+		processDeployResults(result, err)
 	}
 	return
 }
@@ -493,8 +493,8 @@ func deployPackage() {
 func deployFiles(files ForceMetadataFiles) {
 	force, _ := ActiveForce()
 	var DeploymentOptions = deployOpts()
-	successes, problems, err := force.Metadata.Deploy(files, *DeploymentOptions)
-	processDeployResults(successes, problems, err)
+	result, err := force.Metadata.Deploy(files, *DeploymentOptions)
+	processDeployResults(result, err)
 	return
 }
 
@@ -511,10 +511,15 @@ func deployOpts() *ForceDeployOptions {
 }
 
 // Process and display the result of the push operation
-func processDeployResults(successes []ComponentSuccess, problems []ComponentFailure, err error) {
+func processDeployResults(result ForceCheckDeploymentStatusResult, err error) {
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
+
+	problems := result.Details.ComponentFailures
+	successes := result.Details.ComponentSuccesses
+	testFailures := result.Details.RunTestResult.TestFailures
+	testSuccesses := result.Details.RunTestResult.TestSuccesses
 
 	if len(problems) > 0 {
 		fmt.Printf("\nFailures - %d\n", len(problems))
@@ -550,6 +555,17 @@ func processDeployResults(successes []ComponentSuccess, problems []ComponentFail
 				fmt.Printf("\t%s: %s\n", success.FullName, verb)
 			}
 		}
+	}
+
+	fmt.Printf("\nTest Successes - %d\n", len(testSuccesses))
+	for _, failure := range testSuccesses {
+		fmt.Printf("  [PASS]  %s::%s\n", failure.Name, failure.MethodName)
+	}
+
+	fmt.Printf("\nTest Failures - %d\n", len(testFailures))
+	for _, failure := range testFailures {
+		fmt.Printf("\n  [FAIL]  %s::%s: %s\n", failure.Name, failure.MethodName, failure.Message)
+		fmt.Println(failure.StackTrace)
 	}
 
 	// Handle notifications

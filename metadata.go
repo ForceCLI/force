@@ -112,15 +112,32 @@ type ComponentSuccess struct {
 	Success  bool   `xml:"success"`
 }
 
+type TestFailure struct {
+	Message    string  `xml:"message"`
+	Name       string  `xml:"name"`
+	MethodName string  `xml:"methodName"`
+	StackTrace string  `xml:"stackTrace"`
+	Time       float32 `xml:"time"`
+}
+
+type TestSuccess struct {
+	Name       string  `xml:"name"`
+	MethodName string  `xml:"methodName"`
+	Time       float32 `xml:"time"`
+}
+
 type RunTestResult struct {
-	NumberOfFailures int `xml:"numFailures"`
-	NumberOfTestsRun int `xml:"numTestsRun"`
-	TotalTime        int `xml:"totalTime"`
+	NumberOfFailures int           `xml:"numFailures"`
+	NumberOfTestsRun int           `xml:"numTestsRun"`
+	TotalTime        float32       `xml:"totalTime"`
+	TestFailures     []TestFailure `xml:"failures"`
+	TestSuccesses    []TestSuccess `xml:"successes"`
 }
 
 type ComponentDetails struct {
 	ComponentSuccesses []ComponentSuccess `xml:"componentSuccesses"`
 	ComponentFailures  []ComponentFailure `xml:"componentFailures"`
+	RunTestResult      RunTestResult      `xml:"runTestResult"`
 }
 
 type ForceCheckDeploymentStatusResult struct {
@@ -1078,16 +1095,16 @@ func (fm *ForceMetadata) MakeZip(files ForceMetadataFiles) (zipdata []byte, err 
 	return
 }
 
-func (fm *ForceMetadata) Deploy(files ForceMetadataFiles, options ForceDeployOptions) (successes []ComponentSuccess, problems []ComponentFailure, err error) {
+func (fm *ForceMetadata) Deploy(files ForceMetadataFiles, options ForceDeployOptions) (results ForceCheckDeploymentStatusResult, err error) {
 	soap := fm.MakeDeploySoap(options)
 
 	zipfile, err := fm.MakeZip(files)
 
-	successes, problems, err = fm.DeployZipFile(soap, zipfile)
+	results, err = fm.DeployZipFile(soap, zipfile)
 	return
 }
 
-func (fm *ForceMetadata) DeployZipFile(soap string, zipfile []byte) (successes []ComponentSuccess, problems []ComponentFailure, err error) {
+func (fm *ForceMetadata) DeployZipFile(soap string, zipfile []byte) (results ForceCheckDeploymentStatusResult, err error) {
 	//ioutil.WriteFile("package.zip", zipfile, 0644)
 	encoded := base64.StdEncoding.EncodeToString(zipfile)
 	body, err := fm.soapExecute("deploy", fmt.Sprintf(soap, encoded))
@@ -1105,14 +1122,8 @@ func (fm *ForceMetadata) DeployZipFile(soap string, zipfile []byte) (successes [
 	if err = fm.CheckStatus(status.Id); err != nil {
 		return
 	}
-	results, err := fm.CheckDeployStatus(status.Id)
+	results, err = fm.CheckDeployStatus(status.Id)
 
-	for _, problem := range results.Details.ComponentFailures {
-		problems = append(problems, problem)
-	}
-	for _, success := range results.Details.ComponentSuccesses {
-		successes = append(successes, success)
-	}
 	return
 }
 
