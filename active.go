@@ -56,7 +56,7 @@ func runActive(cmd *Command, args []string) {
 				title := fmt.Sprintf("\033];%s\007", account)
 				fmt.Printf(title)
 			}
-			fmt.Printf("%s now active", account)
+			fmt.Printf("%s now active\n", account)
 			Config.Save("current", "account", account)
 		} else {
 			ErrorAndExit(fmt.Sprintf("no such account %s\n", account))
