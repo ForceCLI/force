@@ -62,6 +62,7 @@ var metapaths = []metapath{
 	metapath{path: "reports", name: "Report", hasFolder: true},
 	metapath{path: "roles", name: "Role"},
 	metapath{path: "settings", name: "Settings"},
+	metapath{path: "sharingRules", name: "SharingRules"},
 	metapath{path: "staticresources", name: "StaticResource"},
 	metapath{path: "tabs", name: "CustomTab"},
 	metapath{path: "triggers", name: "ApexTrigger"},
