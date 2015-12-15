@@ -60,6 +60,7 @@ var metapaths = []metapath{
 	metapath{path: "quickActions", name: "QuickAction"},
 	metapath{path: "remoteSiteSettings", name: "RemoteSiteSetting"},
 	metapath{path: "reports", name: "Report", hasFolder: true},
+	metapath{path: "reportTypes", name: "ReportType"},
 	metapath{path: "roles", name: "Role"},
 	metapath{path: "settings", name: "Settings"},
 	metapath{path: "staticresources", name: "StaticResource"},
