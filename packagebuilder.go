@@ -47,6 +47,7 @@ var metapaths = []metapath{
 	metapath{path: "documents", name: "Document", hasFolder: true},
 	metapath{path: "email", name: "EmailTemplate", hasFolder: true},
 	metapath{path: "flexipages", name: "FlexiPage"},
+	metapath{path: "groups", name: "Group"},
 	metapath{path: "homePageLayouts", name: "HomePageLayout"},
 	metapath{path: "labels", name: "CustomLabels"},
 	metapath{path: "layouts", name: "Layout"},
