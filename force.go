@@ -36,8 +36,8 @@ const (
 )
 
 const (
-	apiVersion       = "v34.0"
-	apiVersionNumber = "34.0"
+	apiVersion       = "v35.0"
+	apiVersionNumber = "35.0"
 )
 
 var RootCertificates = `
@@ -153,6 +153,19 @@ type Force struct {
 	Partner     *ForcePartner
 }
 
+type TraceFlag struct {
+	ApexCode       string
+	ApexProfiling  string
+	Callout        string
+	Database       string
+	System         string
+	Validation     string
+	Visualforce    string
+	Workflow       string
+	TracedEntityId string
+	DebugLevelId   string
+	LogType        string
+}
 type ForceCredentials struct {
 	AccessToken   string
 	Id            string
@@ -904,13 +917,44 @@ func (f *Force) RetrieveBulkBatchResults(jobId string, batchId string) (results 
 	return
 }
 
-func (f *Force) QueryTraceFlags() (results ForceQueryResult, err error) {
-	url := fmt.Sprintf("%s/services/data/%s/tooling/query/?q=Select+Id,+ApexCode,+ApexProfiling,+Callout,+CreatedDate,+Database,+ExpirationDate,+Scope.Name,+System,+TracedEntity.Name,+Validation,+Visualforce,+Workflow+From+TraceFlag+Order+By+ExpirationDate,TracedEntity.Name,Scope.Name", f.Credentials.InstanceUrl, apiVersion)
-	body, err := f.httpGet(url)
+func (f *Force) QueryTraceFlags(where string) (results ForceQueryResult, err error) {
+	vurl := fmt.Sprintf("%s/services/data/%s/tooling/query/?q=Select+Id,+ApexCode,+ApexProfiling,+Callout,+CreatedDate,+Database,+ExpirationDate,+Scope.Name,+System,+TracedEntity.Name,+Validation,+Visualforce,+Workflow+From+TraceFlag", f.Credentials.InstanceUrl, apiVersion)
+	vurl += url.QueryEscape(where) + "+Order+By+ExpirationDate,TracedEntity.Name,Scope.Name"
+
+	body, err := f.httpGet(vurl)
 	if err != nil {
 		return
 	}
 	json.Unmarshal(body, &results)
+	return
+}
+
+func (f *Force) StartTracet(traceFlags *TraceFlag) (result ForceCreateRecordResult, err error, emessages []ForceError) {
+	url := fmt.Sprintf("%s/services/data/%s/tooling/sobjects/TraceFlag", f.Credentials.InstanceUrl, apiVersion)
+
+	// The log levels are currently hard-coded to a useful level of logging
+	// without hitting the maximum log size of 2MB in most cases, hopefully.
+	attrs := make(map[string]string)
+
+	attrs["ApexCode"] = traceFlags.ApexCode
+	attrs["ApexProfiling"] = traceFlags.ApexProfiling
+	attrs["Callout"] = traceFlags.Callout
+	attrs["Database"] = traceFlags.Database
+	attrs["System"] = traceFlags.System
+	attrs["Validation"] = traceFlags.Validation
+	attrs["Visualforce"] = traceFlags.Visualforce
+	attrs["Workflow"] = traceFlags.Workflow
+	attrs["TracedEntityId"] = traceFlags.TracedEntityId
+	//attrs["StartDate"] = "2015-11-05T01:16:19.000+0000"
+	attrs["DebugLevelId"] = traceFlags.DebugLevelId
+	attrs["LogType"] = traceFlags.LogType
+
+	body, err, emessages := f.httpPost(url, attrs)
+	if err != nil {
+		return
+	}
+	json.Unmarshal(body, &result)
+
 	return
 }
 
@@ -950,9 +994,10 @@ func (f *Force) RetrieveLog(logId string) (result string, err error) {
 	return
 }
 
-func (f *Force) QueryLogs() (results ForceQueryResult, err error) {
-	url := fmt.Sprintf("%s/services/data/%s/tooling/query/?q=Select+Id,+Application,+DurationMilliseconds,+Location,+LogLength,+LogUser.Name,+Operation,+Request,StartTime,+Status+From+ApexLog+Order+By+StartTime", f.Credentials.InstanceUrl, apiVersion)
-	body, err := f.httpGet(url)
+func (f *Force) QueryLogs(where string) (results ForceQueryResult, err error) {
+	vurl := fmt.Sprintf("%s/services/data/%s/tooling/query/?q=Select+Id,+Application,+DurationMilliseconds,+Location,+LogLength,+LogUser.Name,+Operation,+Request,StartTime,+Status+From+ApexLog", f.Credentials.InstanceUrl, apiVersion)
+	vurl += url.QueryEscape(where) + "+Order+By+StartTime"
+	body, err := f.httpGet(vurl)
 	if err != nil {
 		return
 	}
