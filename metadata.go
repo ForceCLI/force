@@ -11,12 +11,76 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
 )
+
+type BigObject struct {
+	DeploymentStatus string
+	Label            string
+	PluralLabel      string
+	Fields           []BigObjectField
+}
+
+func (bo *BigObject) ToXml() string {
+	soap := `<?xml version="1.0" encoding="UTF-8"?>
+		<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+			<deploymentStatus>%s</deploymentStatus>
+			<label>%s</label>
+			<pluralLabel>%s</pluralLabel>
+			%s
+		</CustomObject>
+	`
+	textfieldsoap := `
+			<fields>
+				<fullName>%s__c</fullName>
+				<label>%s</label>
+				<length>%d</length>
+				<type>Text</type>
+			</fields>
+	`
+	datetimefieldsoap := `
+			<fields>
+				<fullName>%s__c</fullName>
+				<label>%s</label>
+				<type>DateTime</type>
+			</fields>
+	`
+	lookupfieldsoap := `
+			<fields>
+				<fullName>%s__c</fullName>
+				<label>%s</label>
+				<referenceTo>%s</referenceTo>
+				<relationshipName>%s</relationshipName>
+				<type>Lookup</type>
+			</fields>
+	`
+	fieldsoap := ``
+	for _, field := range bo.Fields {
+		switch strings.ToLower(field.Type) {
+		case "datetime":
+			fieldsoap += fmt.Sprintf(datetimefieldsoap, field.FullName, field.Label)
+		case "text":
+			fieldsoap += fmt.Sprintf(textfieldsoap, field.FullName, field.Label, field.Length)
+		case "lookup":
+			fieldsoap += fmt.Sprintf(lookupfieldsoap, field.FullName, field.Label, field.ReferenceTo, field.RelationshipName)
+		}
+	}
+	return fmt.Sprintf(soap, bo.DeploymentStatus, bo.Label, bo.PluralLabel, fieldsoap)
+}
+
+type BigObjectField struct {
+	FullName         string
+	Label            string
+	Length           int
+	ReferenceTo      string
+	RelationshipName string
+	Type             string
+}
 
 type ForceConnectedApps []ForceConnectedApp
 
@@ -48,15 +112,32 @@ type ComponentSuccess struct {
 	Success  bool   `xml:"success"`
 }
 
+type TestFailure struct {
+	Message    string  `xml:"message"`
+	Name       string  `xml:"name"`
+	MethodName string  `xml:"methodName"`
+	StackTrace string  `xml:"stackTrace"`
+	Time       float32 `xml:"time"`
+}
+
+type TestSuccess struct {
+	Name       string  `xml:"name"`
+	MethodName string  `xml:"methodName"`
+	Time       float32 `xml:"time"`
+}
+
 type RunTestResult struct {
-	NumberOfFailures int `xml:"numFailures"`
-	NumberOfTestsRun int `xml:"numTestsRun"`
-	TotalTime        int `xml:"totalTime"`
+	NumberOfFailures int           `xml:"numFailures"`
+	NumberOfTestsRun int           `xml:"numTestsRun"`
+	TotalTime        float32       `xml:"totalTime"`
+	TestFailures     []TestFailure `xml:"failures"`
+	TestSuccesses    []TestSuccess `xml:"successes"`
 }
 
 type ComponentDetails struct {
 	ComponentSuccesses []ComponentSuccess `xml:"componentSuccesses"`
 	ComponentFailures  []ComponentFailure `xml:"componentFailures"`
+	RunTestResult      RunTestResult      `xml:"runTestResult"`
 }
 
 type ForceCheckDeploymentStatusResult struct {
@@ -314,6 +395,20 @@ type PhoneField struct {
 	DefaultValue string `xml:"defaultValue"`
 }
 
+type UrlFieldRequired struct {
+}
+
+type UrlField struct {
+	Label                string `xml:"label"`
+	Name                 string `xml:"fullName"`
+	Required             bool   `xml:"required"`
+	Description          string `xml:"description"`
+	HelpText             string `xml:"helpText"`
+	DefaultValue         string `xml:"defaultValue"`
+	Formula              string `xml:"formula"`
+	FormulaTreatBlanksAs string `xml:"formulaTreatBlanksAs"`
+}
+
 type EmailFieldRequired struct {
 }
 
@@ -409,7 +504,6 @@ func ValidateOptionsAndDefaults(typ string, fields map[string]reflect.StructFiel
 	newOptions = make(map[string]string)
 	// validate optional attributes
 	for name, value := range options {
-		fmt.Printf("%-v", fields)
 		field, ok := fields[strings.ToLower(name)]
 		if !ok {
 			ErrorAndExit(fmt.Sprintf("validation error: %s:%s is not a valid option for field type %s", name, value, typ))
@@ -422,7 +516,7 @@ func ValidateOptionsAndDefaults(typ string, fields map[string]reflect.StructFiel
 	s := requiredDefaults
 	tod := s.Type()
 	for i := 0; i < s.NumField(); i++ {
-		_, ok := options[strings.ToLower(tod.Field(i).Name)]
+		_, ok := options[inflect.CamelizeDownFirst(tod.Field(i).Name)]
 		if !ok {
 			switch s.Field(i).Type().Name() {
 			case "int":
@@ -444,7 +538,7 @@ func ValidateOptionsAndDefaults(typ string, fields map[string]reflect.StructFiel
 				break
 			}
 		} else {
-			newOptions[tod.Field(i).Tag.Get("xml")] = options[strings.ToLower(tod.Field(i).Name)]
+			newOptions[tod.Field(i).Tag.Get("xml")] = options[inflect.CamelizeDownFirst(tod.Field(i).Name)]
 		}
 	}
 	return newOptions, err
@@ -460,13 +554,18 @@ func (fm *ForceMetadata) ValidateFieldOptions(typ string, options map[string]str
 	case "picklist":
 		attrs = getAttributes(&PicklistField{})
 		s = reflect.ValueOf(&PicklistFieldRequired{}).Elem()
+		break
 	case "phone":
 		attrs = getAttributes(&PhoneField{})
 		s = reflect.ValueOf(&PhoneFieldRequired{}).Elem()
 		break
-	case "email", "url":
+	case "email":
 		attrs = getAttributes(&StringField{})
 		s = reflect.ValueOf(&EmailFieldRequired{}).Elem()
+		break
+	case "url":
+		attrs = getAttributes(&UrlField{})
+		s = reflect.ValueOf(&UrlFieldRequired{}).Elem()
 		break
 	case "encryptedtext":
 		attrs = getAttributes(&EncryptedField{})
@@ -533,7 +632,6 @@ func (fm *ForceMetadata) ValidateFieldOptions(typ string, options map[string]str
 		break
 	}
 
-	fmt.Println("Attrs: ", s)
 	newOptions, err = ValidateOptionsAndDefaults(typ, attrs, s, options)
 
 	return newOptions, nil
@@ -559,7 +657,7 @@ func (fm *ForceMetadata) CheckStatus(id string) (err error) {
 	}
 	switch {
 	case !status.Done:
-		fmt.Printf("Not done yet.  Will check again in five seconds.\n")
+		fmt.Printf("Not done yet: %s  Will check again in five seconds.\n", status.State)
 		time.Sleep(5000 * time.Millisecond)
 		return fm.CheckStatus(id)
 	case status.State == "Error":
@@ -854,7 +952,7 @@ func (fm *ForceMetadata) CreateCustomField(object, field, typ string, options ma
 		ErrorAndExit("unable to create field type: %s", typ)
 	}
 
-	fmt.Println(fmt.Sprintf(soap, object, field, label, soapField))
+	//fmt.Println(fmt.Sprintf(soap, object, field, label, soapField))
 	body, err := fm.soapExecute("create", fmt.Sprintf(soap, object, field, label, soapField))
 	if err != nil {
 		return err
@@ -889,6 +987,21 @@ func (fm *ForceMetadata) DeleteCustomField(object, field string) (err error) {
 	}
 	if err = fm.CheckStatus(status.Id); err != nil {
 		return
+	}
+	return
+}
+
+func (fm *ForceMetadata) CreateBigObject(object BigObject) (err error) {
+	soap := object.ToXml()
+
+	ioutil.WriteFile(filepath.Join("metadata/objects", fmt.Sprintf("%s__b.object", object.Label)), []byte(soap), 0644)
+	path, _ := filepath.Abs(filepath.Join("metadata/objects", fmt.Sprintf("%s__b.object", object.Label)))
+	cmd := exec.Command("force", "push",
+		fmt.Sprintf("-f=%s", path))
+	cmd.Stdout = os.Stdout
+	err = cmd.Run()
+	if err != nil {
+		ErrorAndExit(err.Error())
 	}
 	return
 }
@@ -971,7 +1084,7 @@ func (fm *ForceMetadata) MakeZip(files ForceMetadataFiles) (zipdata []byte, err 
 	zipper := zip.NewWriter(zipfile)
 	for name, data := range files {
 		name = filepath.ToSlash(name)
-		wr, err := zipper.Create(fmt.Sprintf("unpackaged%s%s", string(os.PathSeparator), name))
+		wr, err := zipper.Create(fmt.Sprintf("unpackaged/%s", name))
 		if err != nil {
 			return nil, err
 		}
@@ -982,16 +1095,16 @@ func (fm *ForceMetadata) MakeZip(files ForceMetadataFiles) (zipdata []byte, err 
 	return
 }
 
-func (fm *ForceMetadata) Deploy(files ForceMetadataFiles, options ForceDeployOptions) (successes []ComponentSuccess, problems []ComponentFailure, err error) {
+func (fm *ForceMetadata) Deploy(files ForceMetadataFiles, options ForceDeployOptions) (results ForceCheckDeploymentStatusResult, err error) {
 	soap := fm.MakeDeploySoap(options)
 
 	zipfile, err := fm.MakeZip(files)
 
-	successes, problems, err = fm.DeployZipFile(soap, zipfile)
+	results, err = fm.DeployZipFile(soap, zipfile)
 	return
 }
 
-func (fm *ForceMetadata) DeployZipFile(soap string, zipfile []byte) (successes []ComponentSuccess, problems []ComponentFailure, err error) {
+func (fm *ForceMetadata) DeployZipFile(soap string, zipfile []byte) (results ForceCheckDeploymentStatusResult, err error) {
 	//ioutil.WriteFile("package.zip", zipfile, 0644)
 	encoded := base64.StdEncoding.EncodeToString(zipfile)
 	body, err := fm.soapExecute("deploy", fmt.Sprintf(soap, encoded))
@@ -1009,14 +1122,8 @@ func (fm *ForceMetadata) DeployZipFile(soap string, zipfile []byte) (successes [
 	if err = fm.CheckStatus(status.Id); err != nil {
 		return
 	}
-	results, err := fm.CheckDeployStatus(status.Id)
+	results, err = fm.CheckDeployStatus(status.Id)
 
-	for _, problem := range results.Details.ComponentFailures {
-		problems = append(problems, problem)
-	}
-	for _, success := range results.Details.ComponentSuccesses {
-		successes = append(successes, success)
-	}
 	return
 }
 

@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/bgentry/speakeasy"
 	"net/url"
 )
 
@@ -26,7 +27,9 @@ func init() {
 }
 
 var (
-	instance = cmdLogin.Flag.String("i", "login", "non-production server to login to (values are 'pre', 'test', or full instance url")
+	instance = cmdLogin.Flag.String("i", "", `Defaults to 'login' or last
+		logged in system. non-production server to login to (values are 'pre',
+		'test', or full instance url`)
 	userName = cmdLogin.Flag.String("u", "", "Username for Soap Login")
 	password = cmdLogin.Flag.String("p", "", "Password for Soap Login")
 )
@@ -34,13 +37,13 @@ var (
 func runLogin(cmd *Command, args []string) {
 	var endpoint ForceEndpoint = EndpointProduction
 
-	/*currentEndpoint, customUrl, err := CurrentEndpoint()
+	currentEndpoint, customUrl, err := CurrentEndpoint()
 	if err == nil && &currentEndpoint != nil {
 		endpoint = currentEndpoint
 		if currentEndpoint == EndpointCustom && customUrl != "" {
 			*instance = customUrl
 		}
-	}*/
+	}
 
 	switch *instance {
 	case "login":
@@ -71,7 +74,14 @@ func runLogin(cmd *Command, args []string) {
 		}
 	}
 
-	if len(*userName) != 0 && len(*password) != 0 { // Do SOAP login
+	if len(*userName) != 0 { // Do SOAP login
+		if len(*password) == 0 {
+			var err error
+			*password, err = speakeasy.Ask("Password: ")
+			if err != nil {
+				ErrorAndExit(err.Error())
+			}
+		}
 		_, err := ForceLoginAndSaveSoap(endpoint, *userName, *password)
 		if err != nil {
 			ErrorAndExit(err.Error())
@@ -100,15 +110,18 @@ func ForceSaveLogin(creds ForceCredentials) (username string, err error) {
 	if err != nil {
 		return
 	}
+
 	body, err := json.Marshal(creds)
 	if err != nil {
 		return
 	}
+
 	username = login["username"].(string)
 
 	me, err := force.Whoami()
 	if err != nil {
-		return
+		fmt.Println("Problem getting user data, continuing...")
+		//return
 	}
 	fmt.Printf("Logged in as '%s'\n", me["Username"])
 	title := fmt.Sprintf("\033];%s\007", me["Username"])

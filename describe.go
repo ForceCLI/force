@@ -18,7 +18,6 @@ var cmdDescribe = &Command{
   force describe sobject -n=Account
   force describe metata
   force describe sobject
-
   `,
 }
 
@@ -39,7 +38,7 @@ func init() {
 
 func runDescribe(cmd *Command, args []string) {
 	if len(metadataType) == 0 {
-		ErrorAndExit("You must specify metadata or sobject for description\nexample: force describe metadata")
+		ErrorAndExit("You must specify metadata or sobject for description\nexample: force describe -t metadata")
 	}
 	if metadataType != "metadata" && metadataType != "sobject" {
 		ErrorAndExit("Only metadata and sobject can be described")

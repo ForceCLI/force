@@ -173,6 +173,9 @@ func DisplayForceRecordsf(records []ForceRecord, format string) {
 	case "json":
 		recs, _ := json.Marshal(records)
 		fmt.Println(string(recs))
+	case "json-pretty":
+		recs, _ := json.MarshalIndent(records, "", "  ")
+		fmt.Println(string(recs))
 	default:
 		fmt.Printf("Format %s not supported\n\n", format)
 	}
@@ -497,7 +500,7 @@ func DisplayForceSobject(sobject ForceSobject) {
 	for _, f := range fields {
 		field := f.(map[string]interface{})
 		switch field["type"] {
-		case "picklist","multipicklist":
+		case "picklist", "multipicklist":
 			var values []string
 			for _, value := range field["picklistValues"].([]interface{}) {
 				values = append(values, value.(map[string]interface{})["value"].(string))
@@ -525,6 +528,8 @@ func DisplayFieldTypes() {
   richtextarea           (length = 32768, visibleLines = 5)
   checkbox/bool/boolean  (defaultValue = false)
   datetime               ()
+  email                  ()
+  url                    ()
   float/double/currency  (precision = 16, scale = 2)
   number/int             (precision = 18, scale = 0)
   autonumber             (displayFormat = "AN {00000}", startingNumber = 0)

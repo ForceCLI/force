@@ -25,7 +25,8 @@ Examples:
   force push -t StaticResource -n MyResource
   force push -t ApexClass
   force push -f metadata/classes/MyClass.cls
-	force push -n MyApex -n MyObject__c
+  force push -checkonly -test MyClass_Test metadata/classes/MyClass.cls
+  force push -n MyApex -n MyObject__c
 
 Deployment Options
   -rollbackonerror, -r    Indicates whether any failure causes a complete rollback
@@ -87,6 +88,7 @@ func runPush(cmd *Command, args []string) {
 	case "package":
 		pushPackage()
 	default:
+		resourcepath = append(resourcepath, args...)
 		if len(resourcepath) != 0 {
 			// It's not a package but does have a path. This could be a path to a file
 			// or to a folder. If it is a folder, we pickup the resources a different
@@ -140,7 +142,7 @@ func pushByTypeAndPath() {
 func isValidMetadataType() {
 	fmt.Printf("Validating and deploying push...\n")
 	// Look to see if we can find any resource for that metadata type
-	root, err := GetSourceDir("")
+	root, err := GetSourceDir()
 	ExitIfNoSourceDir(err)
 	metaFolder = findMetadataTypeFolder(metadataType, root)
 	if metaFolder == "" {
@@ -204,7 +206,11 @@ func contains(s []string, e string) bool {
 
 func pushPackage() {
 	if len(resourcepath) == 0 {
-		ErrorAndExit(fmt.Sprintf("No resource path sepcified."))
+		var packageFolder = findPackageFolder(metadataName[0])
+		zipResource(packageFolder, metadataName[0])
+		resourcepath.Set(packageFolder + ".resource")
+		//var dir, _ = os.Getwd();
+		//ErrorAndExit(fmt.Sprintf("No resource path sepcified. %s, %s", metadataName[0], dir))
 	}
 	deployPackage()
 }
@@ -255,6 +261,41 @@ func findMetadataTypeFolder(mdtype string, root string) (folder string) {
 	return
 }
 
+func findPackageFolder(packageName string) (folder string) {
+	var wd, _ = os.Getwd()
+	// We need to start at the metadata folder, go down first
+	folder = findMetadataFolder(wd)
+	if len(folder) == 0 {
+		// Didn't find it, error out
+		fmt.Println("Could not find metadata folder.")
+	}
+	if _, err := os.Stat(filepath.Join(folder, packageName)); err == nil {
+		folder = filepath.Join(folder, packageName)
+	}
+	return
+}
+
+func findMetadataFolder(dir string) (folderPath string) {
+	filepath.Walk(dir, func(path string, f os.FileInfo, err error) error {
+		if filepath.Base(path) == "metadata" {
+			folderPath = path
+			return errors.New("walk cancelled")
+		}
+		return nil
+	})
+	if len(folderPath) == 0 {
+		// not down, so, go up
+		for dir != string(os.PathSeparator) {
+			dir = filepath.Dir(dir)
+			if filepath.Base(dir) == "metadata" {
+				folderPath = dir
+				return
+			}
+		}
+	}
+	return
+}
+
 // This method will use the type that is passed to the -type flag to find all
 // metadata that matches that type.  It will also filter on the metadata
 // name(s) passed on the -name flag(s). This method also looks for unpacked
@@ -274,13 +315,13 @@ func pushByMetadataType() {
 			// Check to see if any names where specified in the -name flag
 			if len(metadataName) == 0 {
 				// Take all
-				zipResource(path)
+				zipResource(path, "")
 			} else {
 				for _, name := range metadataName {
 					fname := filepath.Base(path)
 					// Check to see if the resource name matches the one of the ones passed on the -name flag
 					if fname == name {
-						zipResource(path)
+						zipResource(path, "")
 					}
 				}
 			}
@@ -317,7 +358,7 @@ func pushByMetadataType() {
 }
 
 // Just zip up what ever is in the path
-func zipResource(path string) {
+func zipResource(path string, topLevelFolder string) {
 	zipfile := new(bytes.Buffer)
 	zipper := zip.NewWriter(zipfile)
 	startPath := path + "/"
@@ -329,7 +370,7 @@ func zipResource(path string) {
 				if err != nil {
 					return err
 				}
-				fl, err := zipper.Create(strings.Replace(path, startPath, "", -1))
+				fl, err := zipper.Create(filepath.Join(topLevelFolder, strings.Replace(path, startPath, "", -1)))
 				if err != nil {
 					ErrorAndExit(err.Error())
 				}
@@ -352,7 +393,7 @@ func pushByName() {
 
 	byName = true
 
-	root, err := GetSourceDir("")
+	root, err := GetSourceDir()
 	ExitIfNoSourceDir(err)
 
 	// Find file by walking directory and ignoring extension
@@ -362,7 +403,7 @@ func pushByName() {
 			// Check to see if any names where specified in the -name flag
 			if len(metadataName) == 0 {
 				// Take all
-				zipResource(path)
+				zipResource(path, "")
 			} else {
 				for _, name := range metadataName {
 					fname := filepath.Base(path)
@@ -372,7 +413,7 @@ func pushByName() {
 						if metadataType == "staticresources" {
 							metadataType = "StaticResource"
 						}
-						zipResource(path)
+						zipResource(path, "")
 					}
 				}
 			}
@@ -445,8 +486,8 @@ func deployPackage() {
 	DeploymentOptions := deployOpts()
 	for _, name := range resourcepath {
 		zipfile, err := ioutil.ReadFile(name)
-		successes, problems, err := force.Metadata.DeployZipFile(force.Metadata.MakeDeploySoap(*DeploymentOptions), zipfile)
-		processDeployResults(successes, problems, err)
+		result, err := force.Metadata.DeployZipFile(force.Metadata.MakeDeploySoap(*DeploymentOptions), zipfile)
+		processDeployResults(result, err)
 	}
 	return
 }
@@ -454,8 +495,8 @@ func deployPackage() {
 func deployFiles(files ForceMetadataFiles) {
 	force, _ := ActiveForce()
 	var DeploymentOptions = deployOpts()
-	successes, problems, err := force.Metadata.Deploy(files, *DeploymentOptions)
-	processDeployResults(successes, problems, err)
+	result, err := force.Metadata.Deploy(files, *DeploymentOptions)
+	processDeployResults(result, err)
 	return
 }
 
@@ -472,10 +513,15 @@ func deployOpts() *ForceDeployOptions {
 }
 
 // Process and display the result of the push operation
-func processDeployResults(successes []ComponentSuccess, problems []ComponentFailure, err error) {
+func processDeployResults(result ForceCheckDeploymentStatusResult, err error) {
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
+
+	problems := result.Details.ComponentFailures
+	successes := result.Details.ComponentSuccesses
+	testFailures := result.Details.RunTestResult.TestFailures
+	testSuccesses := result.Details.RunTestResult.TestSuccesses
 
 	if len(problems) > 0 {
 		fmt.Printf("\nFailures - %d\n", len(problems))
@@ -511,6 +557,17 @@ func processDeployResults(successes []ComponentSuccess, problems []ComponentFail
 				fmt.Printf("\t%s: %s\n", success.FullName, verb)
 			}
 		}
+	}
+
+	fmt.Printf("\nTest Successes - %d\n", len(testSuccesses))
+	for _, failure := range testSuccesses {
+		fmt.Printf("  [PASS]  %s::%s\n", failure.Name, failure.MethodName)
+	}
+
+	fmt.Printf("\nTest Failures - %d\n", len(testFailures))
+	for _, failure := range testFailures {
+		fmt.Printf("\n  [FAIL]  %s::%s: %s\n", failure.Name, failure.MethodName, failure.Message)
+		fmt.Println(failure.StackTrace)
 	}
 
 	// Handle notifications

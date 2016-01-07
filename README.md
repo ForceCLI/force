@@ -3,8 +3,6 @@
 A command-line interface to force.com
 ![](https://travis-ci.org/devangel/force.svg?branch=master)
 
-![](https://travis-ci.org/devangel/force.svg?branch=master)
-
 ### Installation
 
 ##### Precompiled Binaries
@@ -31,20 +29,27 @@ A command-line interface to force.com
        logins    List force.com logins used
        active    Show or set the active force.com account
        whoami    Show information about the active account
+       describe  Describe the object or list of available objects
        sobject   Manage standard & custom objects
        field     Manage sobject fields
        record    Create, modify, or view records
        bulk      Load csv file use Bulk API
        fetch     Export specified artifact(s) to a local directory
-       export    Export metadata to a local directory
        import    Import metadata from a local directory
+       export    Export metadata to a local directory
        query     Execute a SOQL statement
        apex      Execute anonymous Apex code
+       log       Fetch debug logs
        oauth     Manage ConnectedApp credentials
+       test      Run apex tests
+       security  Displays the OLS and FLS for a given SObject
        version   Display current version
        update    Update to the latest version
        push      Deploy single artifact from a local directory
+       aura      Retrieve or deploy Aura components
        password  See password status or reset password
+       notify    Should notifications be used
+       limits    Display current limits
        help      Show this help
 
     Run 'force help [command]' for details.
@@ -75,7 +80,7 @@ Logins will list all the user names that you have used to authenticate with the 
 Active without any arguments will display the currently acctive login that you are using. You can also supply a username argument that will set the active login to the one corresponding to the username argument. Note, just because you set a login as active, does not mean that the token is necessarily valid.
 
       force active
-      force active dave@demo.1
+      force active -a dave@demo.1
 
 ### whoami
 Whoami will display detailed user information about the currently active logged in user.  This is Force.com specific information.
@@ -101,17 +106,17 @@ Field gives you the ability to create, list and delete the fields on an object. 
       force field delete Todo__c Due
 
 ### push
-Push gives you the ability to push specified resources to force.com.  The resource will be pulled from ./src/{type}/
+Push gives you the ability to push specified resources to force.com.  The resource will be pulled from ./metatdata/{type}/
 
-      force push -t(ype) StaticReource -n(ame) MyResource.resource
-	  force -type ApexClass -name MyClass.cls
-	  force -t ApexPage -n MyPage.page
+      force push -t(ype) StaticResource -n(ame) MyResource.resource
+      force -type ApexClass -name MyClass.cls
+      force -t ApexPage -n MyPage.page
 
 You can also push all of a specific type of resource from a given folder.
 
-      force push -t StaticResource -p(ath) src/staticresources/
-      force push -t ApexClass -path src/classes/
-      force push -t ApexPage -p src/pages/
+      force push -t StaticResource -p(ath) metadata/staticresources/
+      force push -t ApexClass -path metadata/classes/
+      force push -t ApexPage -p metadata/pages/
 
 ### notify
 Includes notification library, [gotifier](https://github.com/ViViDboarder/gotifier), that will display notifications for using either Using [terminal-notifier](https://github.com/alloy/terminal-notifier) on OSX or [notify-send](http://manpages.ubuntu.com/manpages/saucy/man1/notify-send.1.html) on Ubuntu. Currently, only the `push` and `test` methods are displaying notifications.
