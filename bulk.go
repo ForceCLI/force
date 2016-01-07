@@ -55,6 +55,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io/ioutil"
+	"strings"
 )
 
 var cmdBulk = &Command{
@@ -74,7 +75,7 @@ Examples:
 
   force bulk batches [job id]
 
-  force bulk batch [job id] [batch id]
+  force Bulk batch [job id] [batch id]
 
   force bulk batch retrieve [job id] [batch id]
 
@@ -85,12 +86,15 @@ Examples:
 }
 
 func runBulk(cmd *Command, args []string) {
-
-	if len(args) == 1 {
+	if len(args) == 0 {
+		cmd.printUsage()
+	} else if len(args) == 1 {
 		ErrorAndExit("Invalid command")
 	} else if len(args) == 2 {
 		if args[0] == "insert" {
 			ErrorAndExit("Missing argument for insert")
+		} else if args[0] == "update" {
+			ErrorAndExit("Missing argument for update")
 		} else if args[0] == "job" {
 			showJobDetails(args[1])
 		} else if args[0] == "batches" {
@@ -153,7 +157,7 @@ func getBulkQueryResults(jobId string, batchId string) (data []byte) {
 	for _, resultId := range resultIds {
 		//since this is going to stdOut, simply add header to separate "files"
 		//if it's all in the same file, don't print this separator.
-		if (hasMultipleResultFiles){
+		if hasMultipleResultFiles {
 			resultHeader := fmt.Sprint("ResultId: ", resultId, "\n")
 			data = append(data[:], []byte(resultHeader)...)
 		}
@@ -174,11 +178,11 @@ func retrieveBulkQuery(jobId string, batchId string) (resultIds []string) {
 	}
 
 	var resultList struct {
-		Results []string `xml:"result"`
+		results []string `xml:"result"`
 	}
 
 	xml.Unmarshal(jobInfo, &resultList)
-	resultIds = resultList.Results
+	resultIds = resultList.results
 	return
 }
 
@@ -272,12 +276,13 @@ func createBulkUpdateJob(csvFilePath string, objectType string, format string) {
 	if err != nil {
 		ErrorAndExit(err.Error())
 	} else {
-		_, err := addBatchToJob(csvFilePath, jobInfo.Id)
+		batchInfo, err := addBatchToJob(csvFilePath, jobInfo.Id)
 		if err != nil {
 			closeBulkJob(jobInfo.Id)
 			ErrorAndExit(err.Error())
 		} else {
 			closeBulkJob(jobInfo.Id)
+			fmt.Printf("Job created ( %s ) - for job status use\n force bulk batch %s %s\n", jobInfo.Id, jobInfo.Id, batchInfo.Id)
 		}
 	}
 }
@@ -287,8 +292,31 @@ func addBatchToJob(csvFilePath string, jobId string) (result BatchInfo, err erro
 	force, _ := ActiveForce()
 
 	filedata, err := ioutil.ReadFile(csvFilePath)
+	batches := splitFileIntoBatches(filedata)
+	for b := range batches {
+		result, err = force.AddBatchToJob(batches[b], jobId)
+		if err != nil {
+			break
+		} else {
+			fmt.Printf("Batch %d of %d added with Id %s \n", b+1, len(batches), result.Id)
+		}
+	}
+	return
+}
 
-	result, err = force.AddBatchToJob(string(filedata), jobId)
+func splitFileIntoBatches(filedata []byte) (batches []string) {
+	batchsize := 10000
+	rows := strings.Split(string(filedata), "\n")
+	headerRow, rows := rows[0], rows[1:]
+	for len(rows) > 1 {
+		if len(rows) < batchsize {
+			batchsize = len(rows)
+		}
+		batch := []string{headerRow}
+		batch = append(batch, rows[0:batchsize]...)
+		batches = append(batches, strings.Join(batch, "\n"))
+		rows = rows[batchsize:]
+	}
 	return
 }
 

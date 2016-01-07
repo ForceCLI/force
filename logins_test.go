@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/bmizerany/assert"
-	"github.com/ddollar/config"
+	"github.com/devangel/config"
 	"testing"
 )
 

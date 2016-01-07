@@ -9,7 +9,7 @@ import (
 )
 
 var cmdActive = &Command{
-	Usage: "active [account]",
+	Usage: "active -a [account]",
 	Short: "Show or set the active force.com account",
 	Long: `
 Set the active force.com account
@@ -17,7 +17,7 @@ Set the active force.com account
 Examples:
 
   force active
-  force active user@example.org
+  force active -a user@example.org
 `,
 }
 var (
@@ -56,7 +56,7 @@ func runActive(cmd *Command, args []string) {
 				title := fmt.Sprintf("\033];%s\007", account)
 				fmt.Printf(title)
 			}
-			fmt.Printf("%s now active", account)
+			fmt.Printf("%s now active\n", account)
 			Config.Save("current", "account", account)
 		} else {
 			ErrorAndExit(fmt.Sprintf("no such account %s\n", account))

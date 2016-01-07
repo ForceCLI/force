@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
 
@@ -30,32 +31,41 @@ func createPackage() Package {
 type metapath struct {
 	path string
 	name string
+	hasFolder bool
+	onlyFolder bool
 }
 
 var metapaths = []metapath{
-	metapath{"applications", "CustomApplication"},
-	metapath{"assignmentRules", "AssignmentRules"},
-	metapath{"aura", "AuraDefinitionBundle"},
-	metapath{"autoResponseRules", "AutoResponseRules"},
-	metapath{"classes", "ApexClass"},
-	metapath{"communities", "Community"},
-	metapath{"components", "ApexComponent"},
-	metapath{"connectedApps", "ConnectedApp"},
-	metapath{"flexipages", "FlexiPage"},
-	metapath{"homePageLayouts", "HomePageLayout"},
-	metapath{"labels", "CustomLabels"},
-	metapath{"layouts", "Layout"},
-	metapath{"objects", "CustomObject"},
-	metapath{"objectTranslations", "CustomObjectTranslation"},
-	metapath{"pages", "ApexPage"},
-	metapath{"permissionsets", "PermissionSet"},
-	metapath{"profiles", "Profile"},
-	metapath{"quickActions", "QuickAction"},
-	metapath{"remoteSiteSettings", "RemoteSiteSetting"},
-	metapath{"roles", "Role"},
-	metapath{"staticresources", "StaticResource"},
-	metapath{"tabs", "CustomTab"},
-	metapath{"triggers", "ApexTrigger"},
+	metapath{path: "applications", name: "CustomApplication"},
+	metapath{path: "assignmentRules", name: "AssignmentRules"},
+	metapath{path: "aura", name: "AuraDefinitionBundle", hasFolder: true, onlyFolder: true},
+	metapath{path: "autoResponseRules", name: "AutoResponseRules"},
+	metapath{path: "classes", name: "ApexClass"},
+	metapath{path: "communities", name: "Community"},
+	metapath{path: "components", name: "ApexComponent"},
+	metapath{path: "connectedApps", name: "ConnectedApp"},
+	metapath{path: "dashboards", name: "Dashboard", hasFolder: true},
+	metapath{path: "documents", name: "Document", hasFolder: true},
+	metapath{path: "email", name: "EmailTemplate", hasFolder: true},
+	metapath{path: "flexipages", name: "FlexiPage"},
+	metapath{path: "groups", name: "Group"},
+	metapath{path: "homePageLayouts", name: "HomePageLayout"},
+	metapath{path: "labels", name: "CustomLabels"},
+	metapath{path: "layouts", name: "Layout"},
+	metapath{path: "objects", name: "CustomObject"},
+	metapath{path: "objectTranslations", name: "CustomObjectTranslation"},
+	metapath{path: "pages", name: "ApexPage"},
+	metapath{path: "permissionsets", name: "PermissionSet"},
+	metapath{path: "profiles", name: "Profile"},
+	metapath{path: "quickActions", name: "QuickAction"},
+	metapath{path: "remoteSiteSettings", name: "RemoteSiteSetting"},
+	metapath{path: "reports", name: "Report", hasFolder: true},
+	metapath{path: "roles", name: "Role"},
+	metapath{path: "settings", name: "Settings"},
+	metapath{path: "staticresources", name: "StaticResource"},
+	metapath{path: "tabs", name: "CustomTab"},
+	metapath{path: "triggers", name: "ApexTrigger"},
+	metapath{path: "workflows", name: "Workflow"},
 }
 
 type PackageBuilder struct {
@@ -113,14 +123,23 @@ func (pb *PackageBuilder) AddFile(fpath string) (fname string, err error) {
 		return
 	}
 
+	isDestructiveChanges, err := regexp.MatchString("destructiveChanges(Pre|Post)?"+regexp.QuoteMeta(".")+"xml", fpath)
+	if err != nil {
+		return
+	}
+
 	metaName, fname := getMetaTypeFromPath(fpath)
-	if len(strings.Split(fname, ".")) == 1 {
+	if !isDestructiveChanges && len(strings.Split(fname, ".")) == 1 {
 		pb.AddMetaToPackage(metaName, fname)
 	}
 
 	// If it's a push, we want to actually add the files
 	if pb.IsPush {
-		err = pb.addFileToWorkingDir(metaName, fpath)
+		if isDestructiveChanges {
+			err = pb.addDestructiveChanges(fpath)
+		} else {
+			err = pb.addFileToWorkingDir(metaName, fpath)
+		}
 	}
 
 	return
@@ -130,6 +149,11 @@ func (pb *PackageBuilder) AddFile(fpath string) (fname string, err error) {
 func (pb *PackageBuilder) addFileToWorkingDir(metaName string, fpath string) (err error) {
 	// Get relative dir from source
 	srcDir := filepath.Dir(filepath.Dir(fpath))
+	for _, mp := range metapaths {
+		if metaName == mp.name && mp.hasFolder {
+			srcDir = filepath.Dir(srcDir)
+		}
+	}
 	frel, _ := filepath.Rel(srcDir, fpath)
 
 	// Try to find meta file
@@ -153,15 +177,24 @@ func (pb *PackageBuilder) addFileToWorkingDir(metaName string, fpath string) (er
 		return
 	}
 
-	if metaName == "AuraDefinitionBundle" {
-		frel = filepath.Join("aura", frel)
-	}
 	pb.Files[frel] = fdata
 	if hasMeta {
 		fdata, err = ioutil.ReadFile(fmeta)
 		pb.Files[fmetarel] = fdata
 		return
 	}
+
+	return
+}
+
+func (pb *PackageBuilder) addDestructiveChanges(fpath string) (err error) {
+	fdata, err := ioutil.ReadFile(fpath)
+	if err != nil {
+		return
+	}
+
+	frel, _ := filepath.Rel(filepath.Dir(fpath), fpath)
+	pb.Files[frel] = fdata
 
 	return
 }
@@ -187,15 +220,9 @@ func getMetaTypeFromPath(fpath string) (metaName string, name string) {
 		ErrorAndExit("Cound not open " + fpath)
 	}
 
-	// Get name of file
-	name = filepath.Base(fpath)
-	name = strings.TrimSuffix(name, filepath.Ext(name))
-
-	// Get the directory containing the file
-	fdir := filepath.Dir(fpath)
-
-	// Get the meta type for that directory
-	metaName = getMetaForPath(fdir)
+	// Get the metadata type and name for the file
+	metaName, fileName := getMetaForPath(fpath)
+	name = strings.TrimSuffix(fileName, filepath.Ext(fileName))
 	return
 }
 
@@ -211,19 +238,32 @@ func getPathForMeta(metaname string) string {
 	return metaname
 }
 
-// Gets meta type name based on a partial path
-func getMetaForPath(path string) string {
-	mpath := filepath.Base(path)
+// Gets meta type and name based on a path
+func getMetaForPath(path string) (metaName string, objectName string) {
+	parentDir := filepath.Dir(path)
+	parentName := filepath.Base(parentDir)
+	grandparentName := filepath.Base(filepath.Dir(parentDir))
+	fileName := filepath.Base(path)
+
 	for _, mp := range metapaths {
-		if mp.path == mpath {
-			return mp.name
+		if mp.hasFolder && grandparentName == mp.path {
+			metaName = mp.name
+			if mp.onlyFolder {
+				objectName = parentName
+			} else {
+				objectName = parentName + "/" + fileName
+			}
+			return
+		}
+		if mp.path == parentName {
+			metaName = mp.name
+			objectName = fileName
+			return
 		}
 	}
 
-	// Check to see if this is aura/lightning
-	if strings.HasSuffix(filepath.Dir(path), "metadata/aura") {
-		return "AuraDefinitionBundle"
-	}
 	// Unknown, so use path
-	return mpath
+	metaName = parentName
+	objectName = fileName
+	return
 }

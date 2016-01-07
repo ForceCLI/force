@@ -36,8 +36,8 @@ const (
 )
 
 const (
-	apiVersion       = "v33.0"
-	apiVersionNumber = "33.0"
+	apiVersion       = "v34.0"
+	apiVersionNumber = "34.0"
 )
 
 var RootCertificates = `
@@ -156,6 +156,7 @@ type Force struct {
 type ForceCredentials struct {
 	AccessToken   string
 	Id            string
+	UserId        string
 	InstanceUrl   string
 	IssuedAt      string
 	Scope         string
@@ -214,9 +215,10 @@ type ForcePasswordResetResult struct {
 }
 
 type ForceQueryResult struct {
-	Done      bool
-	Records   []ForceRecord
-	TotalSize int
+	Done           bool
+	Records        []ForceRecord
+	TotalSize      int
+	NextRecordsUrl string
 }
 
 type ForceSobjectsResult struct {
@@ -276,6 +278,7 @@ type AuraDefinitionBundleResult struct {
 	QueryLocator   string
 	Size           int
 	EntityTypeName string
+	NextRecordsUrl string
 }
 
 type AuraDefinitionBundle struct {
@@ -364,7 +367,7 @@ func ForceSoapLogin(endpoint ForceEndpoint, username string, password string) (c
 	}
 	instanceUrl := u.Scheme + "://" + u.Host
 	identity := u.Scheme + "://" + u.Host + "/id/" + orgid + "/" + result.Id
-	creds = ForceCredentials{result.SessionId, identity, instanceUrl, "", "", endpoint == EndpointCustom, "", endpoint}
+	creds = ForceCredentials{result.SessionId, identity, result.Id, instanceUrl, "", "", endpoint == EndpointCustom, "", endpoint}
 
 	f := NewForce(creds)
 	url := fmt.Sprintf("https://force-cli.herokuapp.com/auth/soaplogin/?id=%s&access_token=%s&instance_url=%s", creds.Id, creds.AccessToken, creds.InstanceUrl)
@@ -425,6 +428,95 @@ func (f *Force) GetCodeCoverage(classId string, className string) (err error) {
 	return
 }
 
+func (f *Force) DeleteDataPipeline(id string) (err error) {
+	url := fmt.Sprintf("%s/services/data/%s/tooling/sobjects/DataPipeline/%s", f.Credentials.InstanceUrl, apiVersion, id)
+	_, err = f.httpDelete(url)
+	return
+}
+
+func (f *Force) UpdateDataPipeline(id string, masterLabel string, scriptContent string) (err error) {
+	url := fmt.Sprintf("%s/services/data/%s/tooling/sobjects/DataPipeline/%s", f.Credentials.InstanceUrl, apiVersion, id)
+	attrs := make(map[string]string)
+	attrs["MasterLabel"] = masterLabel
+	attrs["ScriptContent"] = scriptContent
+
+	_, err = f.httpPatch(url, attrs)
+	return
+}
+
+func (f *Force) CreateDataPipeline(name string, masterLabel string, apiVersionNumber string, scriptContent string, scriptType string) (result ForceCreateRecordResult, err error, emessages []ForceError) {
+	aurl := fmt.Sprintf("%s/services/data/%s/tooling/sobjects/DataPipeline", f.Credentials.InstanceUrl, apiVersion)
+
+	attrs := make(map[string]string)
+	attrs["DeveloperName"] = name
+	attrs["ScriptType"] = scriptType
+	attrs["MasterLabel"] = masterLabel
+	attrs["ApiVersion"] = apiVersionNumber
+	attrs["ScriptContent"] = scriptContent
+
+	body, err, emessages := f.httpPost(aurl, attrs)
+	if err != nil {
+		return
+	}
+	json.Unmarshal(body, &result)
+
+	return
+
+}
+
+func (f *Force) CreateDataPipelineJob(id string) (result ForceCreateRecordResult, err error, emessages []ForceError) {
+	aurl := fmt.Sprintf("%s/services/data/%s/tooling/sobjects/DataPipelineJob", f.Credentials.InstanceUrl, apiVersion)
+
+	attrs := make(map[string]string)
+	attrs["DataPipelineId"] = id
+
+	body, err, emessages := f.httpPost(aurl, attrs)
+	if err != nil {
+		return
+	}
+	json.Unmarshal(body, &result)
+
+	return
+
+}
+
+func (f *Force) GetDataPipeline(name string) (results ForceQueryResult, err error) {
+
+	query := fmt.Sprintf("SELECT Id, MasterLabel, DeveloperName, ScriptContent, ScriptType FROM DataPipeline Where DeveloperName = '%s'", name)
+	results, err = f.QueryDataPipeline(query)
+
+	return
+
+}
+
+func (f *Force) QueryDataPipeline(soql string) (results ForceQueryResult, err error) {
+	aurl := fmt.Sprintf("%s/services/data/%s/tooling/query?q=%s", f.Credentials.InstanceUrl, apiVersion,
+		url.QueryEscape(soql))
+
+	body, err := f.httpGet(aurl)
+	if err != nil {
+		return
+	}
+	json.Unmarshal(body, &results)
+
+	return
+
+}
+
+func (f *Force) QueryDataPipelineJob(soql string) (results ForceQueryResult, err error) {
+	aurl := fmt.Sprintf("%s/services/data/%s/tooling/query?q=%s", f.Credentials.InstanceUrl, apiVersion,
+		url.QueryEscape(soql))
+
+	body, err := f.httpGet(aurl)
+	if err != nil {
+		return
+	}
+	json.Unmarshal(body, &results)
+
+	return
+
+}
+
 func (f *Force) GetAuraBundles() (bundles AuraDefinitionBundleResult, definitions AuraDefinitionBundleResult, err error) {
 	bundles, err = f.GetAuraBundlesList()
 	definitions, err = f.GetAuraBundleDefinitions()
@@ -440,6 +532,39 @@ func (f *Force) GetAuraBundleDefinitions() (definitions AuraDefinitionBundleResu
 		return
 	}
 	json.Unmarshal(body, &definitions)
+
+	if !definitions.Done {
+		f.GetMoreAuraBundleDefinitions(&definitions)
+	}
+
+	return
+}
+
+func (f *Force) GetMoreAuraBundleDefinitions(definitions *AuraDefinitionBundleResult) (err error) {
+
+	isDone := definitions.Done
+	nextRecordsUrl := definitions.NextRecordsUrl
+
+	for !isDone {
+
+		moreDefs := new(AuraDefinitionBundleResult)
+		aurl := fmt.Sprintf("%s%s", f.Credentials.InstanceUrl, nextRecordsUrl)
+
+		body, err := f.httpGet(aurl)
+		if err != nil {
+			return err
+		}
+		json.Unmarshal(body, &moreDefs)
+
+		definitions.Done = moreDefs.Done
+		definitions.Records = append(definitions.Records, moreDefs.Records...)
+
+		isDone = moreDefs.Done
+
+		if !isDone {
+			nextRecordsUrl = moreDefs.NextRecordsUrl
+		}
+	}
 
 	return
 }
@@ -483,7 +608,7 @@ func (f *Force) GetAuraBundleByName(bundleName string) (bundles AuraDefinitionBu
 
 func (f *Force) GetAuraBundleDefinition(id string) (definitions AuraDefinitionBundleResult, err error) {
 	aurl := fmt.Sprintf("%s/services/data/%s/tooling/query?q=%s", f.Credentials.InstanceUrl, apiVersion,
-		url.QueryEscape("SELECT Id, Source, AuraDefinitionBundleId, DefType, Format FROM AuraDefinition"))
+		url.QueryEscape(fmt.Sprintf("SELECT Id, Source, AuraDefinitionBundleId, DefType, Format FROM AuraDefinition WHERE AuraDefinitionBundleId = '%s'", id)))
 
 	body, err := f.httpGet(aurl)
 	if err != nil {
@@ -514,7 +639,6 @@ func (f *Force) CreateAuraComponent(attrs map[string]string) (result ForceCreate
 	aurl := fmt.Sprintf("%s/services/data/%s/tooling/sobjects/AuraDefinition", f.Credentials.InstanceUrl, apiVersion)
 	body, err, emessages := f.httpPost(aurl, attrs)
 	if err != nil {
-		fmt.Println("The error is: ", err.Error())
 		return
 	}
 	json.Unmarshal(body, &result)
@@ -544,13 +668,33 @@ func (f *Force) GetSobject(name string) (sobject ForceSobject, err error) {
 	return
 }
 
-func (f *Force) Query(query string) (result ForceQueryResult, err error) {
-	url := fmt.Sprintf("%s/services/data/%s/query?q=%s", f.Credentials.InstanceUrl, apiVersion, url.QueryEscape(query))
-	body, err := f.httpGet(url)
+func (f *Force) Query(query string, isTooling bool) (result ForceQueryResult, err error) {
+	vurl := ""
+	if isTooling == true {
+		vurl = fmt.Sprintf("%s/services/data/%s/tooling/query?q=%s", f.Credentials.InstanceUrl, apiVersion, url.QueryEscape(query))
+	} else {
+		vurl = fmt.Sprintf("%s/services/data/%s/query?q=%s", f.Credentials.InstanceUrl, apiVersion, url.QueryEscape(query))
+	}
+	body, err := f.httpGet(vurl)
 	if err != nil {
 		return
 	}
 	json.Unmarshal(body, &result)
+	if result.Done == false {
+		var nextResult ForceQueryResult
+		nextResult.NextRecordsUrl = result.NextRecordsUrl
+		for nextResult.Done == false {
+			nextUrl := fmt.Sprintf("%s%s", f.Credentials.InstanceUrl, nextResult.NextRecordsUrl)
+			nextBody, nextErr := f.httpGet(nextUrl)
+			if nextErr != nil {
+				return
+			}
+			nextResult.Records = []ForceRecord{}
+			json.Unmarshal(nextBody, &nextResult)
+
+			result.Records = append(result.Records, nextResult.Records...)
+		}
+	}
 	return
 }
 
@@ -609,6 +753,7 @@ func (f *Force) GetRecord(sobject, id string) (object ForceRecord, err error) {
 	} else {
 		url = fmt.Sprintf("%s/services/data/%s/sobjects/%s/%s/%s", f.Credentials.InstanceUrl, apiVersion, sobject, fields[0], fields[1])
 	}
+
 	body, err := f.httpGet(url)
 	if err != nil {
 		return
@@ -756,6 +901,82 @@ func (f *Force) RetrieveBulkBatchResults(jobId string, batchId string) (results 
 		err = errors.New(fmt.Sprintf("%s: %s", fault.ExceptionCode, fault.ExceptionMessage))
 	}
 	//	sreader = Reader.NewReader(result);
+	return
+}
+
+func (f *Force) QueryTraceFlags() (results ForceQueryResult, err error) {
+	url := fmt.Sprintf("%s/services/data/%s/tooling/query/?q=Select+Id,+ApexCode,+ApexProfiling,+Callout,+CreatedDate,+Database,+ExpirationDate,+Scope.Name,+System,+TracedEntity.Name,+Validation,+Visualforce,+Workflow+From+TraceFlag+Order+By+ExpirationDate,TracedEntity.Name,Scope.Name", f.Credentials.InstanceUrl, apiVersion)
+	body, err := f.httpGet(url)
+	if err != nil {
+		return
+	}
+	json.Unmarshal(body, &results)
+	return
+}
+
+func (f *Force) StartTrace(userId ...string) (result ForceCreateRecordResult, err error, emessages []ForceError) {
+	url := fmt.Sprintf("%s/services/data/%s/tooling/sobjects/TraceFlag", f.Credentials.InstanceUrl, apiVersion)
+
+	// The log levels are currently hard-coded to a useful level of logging
+	// without hitting the maximum log size of 2MB in most cases, hopefully.
+	attrs := make(map[string]string)
+	attrs["ApexCode"] = "Debug"
+	attrs["ApexProfiling"] = "Error"
+	attrs["Callout"] = "Info"
+	attrs["Database"] = "Info"
+	attrs["System"] = "Info"
+	attrs["Validation"] = "Warn"
+	attrs["Visualforce"] = "Info"
+	attrs["Workflow"] = "Info"
+	if len(userId) == 1 {
+		attrs["TracedEntityId"] = userId[0]
+	} else {
+		attrs["TracedEntityId"] = f.Credentials.UserId
+	}
+
+	body, err, emessages := f.httpPost(url, attrs)
+	if err != nil {
+		return
+	}
+	json.Unmarshal(body, &result)
+
+	return
+}
+
+func (f *Force) RetrieveLog(logId string) (result string, err error) {
+	url := fmt.Sprintf("%s/services/data/%s/tooling/sobjects/ApexLog/%s/Body", f.Credentials.InstanceUrl, apiVersion, logId)
+	body, err := f.httpGet(url)
+	result = string(body)
+	return
+}
+
+func (f *Force) QueryLogs() (results ForceQueryResult, err error) {
+	url := fmt.Sprintf("%s/services/data/%s/tooling/query/?q=Select+Id,+Application,+DurationMilliseconds,+Location,+LogLength,+LogUser.Name,+Operation,+Request,StartTime,+Status+From+ApexLog+Order+By+StartTime", f.Credentials.InstanceUrl, apiVersion)
+	body, err := f.httpGet(url)
+	if err != nil {
+		return
+	}
+	json.Unmarshal(body, &results)
+	return
+}
+
+func (f *Force) RetrieveEventLogFile(elfId string) (result string, err error) {
+	url := fmt.Sprintf("%s/services/data/%s/sobjects/EventLogFile/%s/LogFile", f.Credentials.InstanceUrl, apiVersion, elfId)
+	body, err := f.httpGet(url)
+	if err != nil {
+		return
+	}
+	result = string(body)
+	return
+}
+
+func (f *Force) QueryEventLogFiles() (results ForceQueryResult, err error) {
+	url := fmt.Sprintf("%s/services/data/%s/query/?q=Select+Id,+LogDate,+EventType,+LogFileLength+FROM+EventLogFile+ORDER+BY+LogDate+DESC,+EventType", f.Credentials.InstanceUrl, apiVersion)
+	body, err := f.httpGet(url)
+	if err != nil {
+		return
+	}
+	json.Unmarshal(body, &results)
 	return
 }
 

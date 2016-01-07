@@ -21,7 +21,7 @@ var cmdFetch = &Command{
   -n, -name       # name of specific metadata to retrieve (must be used with -type)
   -d, -directory  # override the default target directory
   -u, -unpack     # unpack any zipped static resources (ignored if type is not StaticResource)
-	-p, -preserve   # preserve the zip file
+  -p, -preserve   # preserve the zip file
 
 Export specified artifact(s) to a local directory. Use "package" type to retrieve an unmanaged package.
 
@@ -128,7 +128,7 @@ func persistBundles(bundles AuraDefinitionBundleResult, definitions AuraDefiniti
 	}
 
 	var defRecords = definitions.Records
-	root, err := GetSourceDir(targetDirectory)
+	root, err := GetSourceDir()
 	if mdbase == "aura" {
 		root = filepath.Join(targetDirectory, root, "aura")
 	} else {
@@ -232,7 +232,7 @@ func runFetch(cmd *Command, args []string) {
 	var resourcesMap map[string]string
 	resourcesMap = make(map[string]string)
 
-	root, err := GetSourceDir(targetDirectory)
+	root, err := GetSourceDir()
 	existingPackage, _ := pathExists(filepath.Join(root, "package.xml"))
 
 	if len(files) == 1 {
