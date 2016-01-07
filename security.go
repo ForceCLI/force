@@ -185,7 +185,7 @@ func (co *CustomObject) getProfileFootprint(p Profile) string {
 }
 
 func parseCustomObjectXML(objectName string, text string) CustomObject {
-	obj := CustomObject{objectName: objectName, nbFields: 0, fieldNames: make([]string, 512, 512)}
+	obj := CustomObject{objectName: objectName, nbFields: 0, fieldNames: make([]string, 900, 900)}
 	r := strings.NewReader(text)
 	parser := xml.NewDecoder(r)
 	depth := 0
