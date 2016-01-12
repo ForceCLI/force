@@ -57,6 +57,7 @@ var metapaths = []metapath{
 	metapath{path: "pages", name: "ApexPage"},
 	metapath{path: "permissionsets", name: "PermissionSet"},
 	metapath{path: "profiles", name: "Profile"},
+	metapath{path: "queues", name: "Queue"},
 	metapath{path: "quickActions", name: "QuickAction"},
 	metapath{path: "remoteSiteSettings", name: "RemoteSiteSetting"},
 	metapath{path: "reports", name: "Report", hasFolder: true},
