@@ -73,6 +73,7 @@ func runExport(cmd *Command, args []string) {
 		{Name: "CustomObject", Members: stdObjects},
 		{Name: "CustomObjectTranslation", Members: []string{"*"}},
 		{Name: "CustomPageWebLink", Members: []string{"*"}},
+		{Name: "CustomPermission", Members: []string{"*"}},
 		{Name: "CustomSite", Members: []string{"*"}},
 		{Name: "CustomTab", Members: []string{"*"}},
 		{Name: "Dashboard", Members: []string{"*"}},
