@@ -1,7 +1,7 @@
 ## force CLI v0.22.39
 
 A command-line interface to force.com
-![](https://travis-ci.org/devangel/force.svg?branch=master)
+![](https://travis-ci.org/heroku/force.svg?branch=master)
 
 ### Installation
 
