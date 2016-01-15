@@ -11,9 +11,14 @@ type ForcePartner struct {
 	Force *Force
 }
 
+type TestRunner interface {
+	RunTests(tests []string, namespace string) (output TestCoverage, err error)
+}
+
 type TestCoverage struct {
 	Log                       string   `xml:"Header>DebuggingInfo>debugLog"`
 	NumberRun                 int      `xml:"Body>runTestsResponse>result>numTestsRun"`
+	NumberFailures            int      `xml:"Body>runTestsResponse>result>numFailures"`
 	NumberLocations           []int    `xml:"Body>runTestsResponse>result>codeCoverage>numLocations"`
 	NumberLocationsNotCovered []int    `xml:"Body>runTestsResponse>result>codeCoverage>numLocationsNotCovered"`
 	Name                      []string `xml:"Body>runTestsResponse>result>codeCoverage>name"`
