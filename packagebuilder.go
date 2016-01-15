@@ -44,6 +44,7 @@ var metapaths = []metapath{
 	metapath{path: "communities", name: "Community"},
 	metapath{path: "components", name: "ApexComponent"},
 	metapath{path: "connectedApps", name: "ConnectedApp"},
+	metapath{path: "customPermissions", name: "CustomPermission"},
 	metapath{path: "dashboards", name: "Dashboard", hasFolder: true},
 	metapath{path: "documents", name: "Document", hasFolder: true},
 	metapath{path: "email", name: "EmailTemplate", hasFolder: true},
