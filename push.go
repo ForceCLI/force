@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -296,6 +297,14 @@ func findMetadataFolder(dir string) (folderPath string) {
 	return
 }
 
+func FilenameMatchesMetadataName(filename string, metadataName string) bool {
+	// Strip off the extension, plus "-meta.xml" if it's appended to the
+	// extension
+	re := regexp.MustCompile(`\.[^.]+(-meta\.xml)?$`)
+	trimmed := re.ReplaceAllString(filename, "")
+	return trimmed == metadataName;
+}
+
 // This method will use the type that is passed to the -type flag to find all
 // metadata that matches that type.  It will also filter on the metadata
 // name(s) passed on the -name flag(s). This method also looks for unpacked
@@ -339,12 +348,13 @@ func pushByMetadataType() {
 		} else {
 			// iterate the -name flag values looking for the ones specified
 			for _, name := range metadataName {
-				// We want to remove any ".", some files have extensions like:
-				//    MyClass.cls-meta.xml
-				// So we only want the leftmost part
-				fname := strings.Split(filepath.Base(path), ".")[0]
-				name = strings.Split(name, ".")[0]
-				if fname == name {
+				// Check if the file matches the metadata named.  For example, for
+				// custom objects, the Account.object file matches the metadata
+				// name Account.  For metadata types stored with separate -meta.xml
+				// files, both files should match, e.g. HelloWorld.cls and
+				// HelloWorld.cls-meta.xml.  For custom metadata named
+				// My_Type.My_Object, the file My_Type.My_Object.md will match.
+				if FilenameMatchesMetadataName(filepath.Base(path), name) {
 					files = append(files, path)
 				}
 			}
