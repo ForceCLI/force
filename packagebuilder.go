@@ -44,6 +44,7 @@ var metapaths = []metapath{
 	metapath{path: "communities", name: "Community"},
 	metapath{path: "components", name: "ApexComponent"},
 	metapath{path: "connectedApps", name: "ConnectedApp"},
+	metapath{path: "customMetadata", name: "CustomMetadata"},
 	metapath{path: "customPermissions", name: "CustomPermission"},
 	metapath{path: "dashboards", name: "Dashboard", hasFolder: true},
 	metapath{path: "documents", name: "Document", hasFolder: true},
@@ -134,7 +135,7 @@ func (pb *PackageBuilder) AddFile(fpath string) (fname string, err error) {
 	}
 
 	metaName, fname := getMetaTypeFromPath(fpath)
-	if !isDestructiveChanges && len(strings.Split(fname, ".")) == 1 {
+	if !isDestructiveChanges && !strings.HasSuffix(fname, "-meta.xml") {
 		pb.AddMetaToPackage(metaName, fname)
 	}
 

@@ -54,6 +54,28 @@ var _ = Describe("Packagebuilder", func() {
 			})
 		})
 
+		Context("when adding a CustomMetadata file", func() {
+			var customMetadataPath string
+
+			BeforeEach(func() {
+				os.MkdirAll(tempDir+"/src/customMetadata", 0755)
+				customMetadataPath = tempDir + "/src/customMetadata/My_Type.My_Object.md"
+				customMetadataContents := `<?xml version="1.0" encoding="UTF-8"?>`
+				ioutil.WriteFile(customMetadataPath, []byte(customMetadataContents), 0644)
+			})
+
+			It("should add the file to package", func() {
+				_, err := pb.AddFile(customMetadataPath)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(pb.Files).To(HaveKey("customMetadata/My_Type.My_Object.md"))
+			})
+			It("should add the file to the package.xml", func() {
+				pb.AddFile(customMetadataPath)
+				Expect(pb.Metadata).To(HaveKey("CustomMetadata"))
+				Expect(pb.Metadata["CustomMetadata"].Members[0]).To(Equal("My_Type.My_Object"))
+			})
+		})
+
 		Context("when adding a non-existent file", func() {
 			It("should not add the file to package", func() {
 				_, err := pb.AddFile(tempDir + "/no/such/file")
