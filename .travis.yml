@@ -41,4 +41,3 @@ deploy:
     - force_windows_386.exe
   on:
     repo: heroku/force
-    branch: testing
