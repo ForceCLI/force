@@ -348,7 +348,7 @@ func RenderForceRecordsCSV(records []ForceRecord, format string) string {
 		for i, key := range keys {
 			lengths[i] = len(key)
 			if strings.HasSuffix(key, "__c") && f.Namespace != "" {
-				outKeys[i] = fmt.Sprintf(`%%%`, f.Namespace, "__", key)
+				outKeys[i] = fmt.Sprintf(`%s%s%s`, f.Namespace, "__", key)
 			} else {
 				outKeys[i] = key
 			}
@@ -387,7 +387,6 @@ func RenderForceRecordsCSV(records []ForceRecord, format string) string {
 		}
 	}
 	return out.String()
-	return ""
 }
 
 func flattenForceRecord(record ForceRecord) (flattened ForceRecord) {

@@ -34,9 +34,9 @@ func runApex(cmd *Command, args []string) {
 	} else if len(args) > 1 {
 		fmt.Println("Got test indication.")
 	} else {
-		fmt.Println(">> Start typing Apex code; press CTRL-D when finished\n")
+		fmt.Println(">> Start typing Apex code; press CTRL-D when finished")
 		code, err = ioutil.ReadAll(os.Stdin)
-		fmt.Println("\n\n>> Executing code...\n")
+		fmt.Println("\n\n>> Executing code...")
 	}
 	if err != nil {
 		ErrorAndExit(err.Error())

@@ -192,7 +192,7 @@ type ForceDeployOptions struct {
 	PurgeOnDelete     bool     `xml:"purgeOnDelete"`
 	RollbackOnError   bool     `xml:"rollbackOnError"`
 	RunAllTests       bool     `xml:"runAllTests"`
-	runTests          []string `xml:"runTests"`
+	RunTests          []string `xml:"runTests"`
 	SinglePackage     bool     `xml:"singlePackage"`
 }
 
@@ -824,7 +824,7 @@ func (fm *ForceMetadata) CreateCustomField(object, field, typ string, options ma
 		soapField = "<type>Picklist</type>\n"
 		for key, value := range options {
 			fmt.Println("Options: ", options)
-			fmt.Println("Key %s", key)
+			fmt.Println(fmt.Sprintf("Key %s", key))
 			if key == "picklist>picklistValues" {
 				soapField += "<picklist>\n"
 				for _, k := range strings.Split(value, ",") {

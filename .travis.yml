@@ -1,14 +1,39 @@
 language: go
-
-go: 
-  - 1.5
-  
-install: 
-  - go get github.com/bmizerany/assert
-  - go get github.com/ddollar/dist
-  - go get github.com/devangel/config
-  - go get github.com/ViViDboarder/gotifier
-  - go get github.com/bgentry/speakeasy
-  - go get bitbucket.org/pkg/inflect
-  - go get github.com/onsi/ginkgo
-  - go get github.com/onsi/gomega
+go:
+- 1.5
+script:
+- git config --global user.email "you@example.com"
+- git config --global user.name "Your Name"
+- test -z "$(go fmt)"
+- go vet
+- go test -v
+- go test -v -race
+- test -z "$(goimports -l .)"
+before_install:
+- go get golang.org/x/tools/cmd/vet golang.org/x/tools/cmd/goimports
+install:
+- go get github.com/bmizerany/assert
+- go get github.com/ddollar/dist
+- go get github.com/devangel/config
+- go get github.com/ViViDboarder/gotifier
+- go get github.com/bgentry/speakeasy
+- go get bitbucket.org/pkg/inflect
+- go get github.com/onsi/ginkgo
+- go get github.com/onsi/gomega
+before_deploy:
+- export OS_TARGETS="linux darwin windows"
+- export ARCH_TARGETS="386 amd64"
+- export GO_LINKER_VALUE=$(git describe --tags --always)
+- export GO_LINKER_SYMBOL="main.Version"
+- go get github.com/mitchellh/gox
+- gox -os "$OS_TARGETS" -arch="$ARCH_TARGETS" -build-toolchain
+- gox -os "$OS_TARGETS" -arch="$ARCH_TARGETS" -ldflags "-X $GO_LINKER_SYMBOL $GO_LINKER_VALUE"
+deploy:
+  skip_cleanup: true
+  provider: releases
+  api_key:
+    secure: kBDxEINRdjsBlgV3EGEuTH61E5zmL+jSqMMQaXErsU0ae1mawI/cZdW+RZ/gacgIhBc2clYPMNOvFhIou+amsoqXCgwrp35sAXKQHkUdlrpTC63n633MvJJqujN90EdctJGrh0reV/laJSGGcipYwuaW5oIOuD/a8KtqP2UmUnk=
+  file: ''
+  on:
+    repo: heroku/force
+    branch: testing

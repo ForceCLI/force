@@ -302,7 +302,7 @@ func FilenameMatchesMetadataName(filename string, metadataName string) bool {
 	// extension
 	re := regexp.MustCompile(`\.[^.]+(-meta\.xml)?$`)
 	trimmed := re.ReplaceAllString(filename, "")
-	return trimmed == metadataName;
+	return trimmed == metadataName
 }
 
 // This method will use the type that is passed to the -type flag to find all
