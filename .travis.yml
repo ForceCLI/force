@@ -26,7 +26,6 @@ before_deploy:
 - export GO_LINKER_VALUE=$(git describe --tags --always)
 - export GO_LINKER_SYMBOL="main.Version"
 - go get github.com/mitchellh/gox
-- gox -os "$OS_TARGETS" -arch="$ARCH_TARGETS" -build-toolchain
 - gox -os "$OS_TARGETS" -arch="$ARCH_TARGETS" -ldflags "-X $GO_LINKER_SYMBOL $GO_LINKER_VALUE"
 deploy:
   skip_cleanup: true
