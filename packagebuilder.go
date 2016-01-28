@@ -52,6 +52,7 @@ var metapaths = []metapath{
 	metapath{path: "flexipages", name: "FlexiPage"},
 	metapath{path: "groups", name: "Group"},
 	metapath{path: "homePageLayouts", name: "HomePageLayout"},
+	metapath{path: "installedPackages", name: "InstalledPackage"},
 	metapath{path: "labels", name: "CustomLabels"},
 	metapath{path: "layouts", name: "Layout"},
 	metapath{path: "objects", name: "CustomObject"},
