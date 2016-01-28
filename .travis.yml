@@ -8,7 +8,7 @@ script:
 - go vet
 - go test -v
 - go test -v -race
-- test -z "$(goimports -l .)"
+
 before_install:
 - go get golang.org/x/tools/cmd/vet golang.org/x/tools/cmd/goimports
 install:
