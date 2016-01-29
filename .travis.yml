@@ -31,8 +31,8 @@ deploy:
   skip_cleanup: true
   provider: releases
   api_key:
-    secure: kBDxEINRdjsBlgV3EGEuTH61E5zmL+jSqMMQaXErsU0ae1mawI/cZdW+RZ/gacgIhBc2clYPMNOvFhIou+amsoqXCgwrp35sAXKQHkUdlrpTC63n633MvJJqujN90EdctJGrh0reV/laJSGGcipYwuaW5oIOuD/a8KtqP2UmUnk=
-  file: 
+    secure: W+4pJY7DjLNMU91i3LAOqr6FV+PUnoqCoY1kM9IZ391MCot6EAHkYAdlhSJ2+qllIWmamp7Dtv7Ul4AAfhnAbKJY+J2w5/HczctvjGvcER/QIiWgPfZaNkAqBcWu8XXjdJ876J6sfzWVudK/onnPgpKvtVX0WRZEBXgUl0QJp2g=
+  file:
     - force_darwin_amd64
     - force_darwin_386
     - force_linux_amd64
