@@ -4,9 +4,7 @@ import (
 	"fmt"
 )
 
-const (
-	Version = "dev"
-)
+var Version = "dev"
 
 //Dood, what
 var cmdVersion = &Command{

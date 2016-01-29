@@ -90,7 +90,7 @@ func runPasswordChange(args []string) {
 		if err != nil {
 			ErrorAndExit(err.Error(), emessages[0].ErrorCode)
 		} else {
-			fmt.Println("\nPassword changed\n")
+			fmt.Println("\nPassword changed\n ")
 		}
 	}
 }

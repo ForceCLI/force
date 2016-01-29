@@ -29,9 +29,9 @@ func createPackage() Package {
 }
 
 type metapath struct {
-	path string
-	name string
-	hasFolder bool
+	path       string
+	name       string
+	hasFolder  bool
 	onlyFolder bool
 }
 
