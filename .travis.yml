@@ -1,16 +1,10 @@
 language: go
 go:
 - 1.5
-script:
-- git config --global user.email "you@example.com"
-- git config --global user.name "Your Name"
-- test -z "$(go fmt)"
-- go vet
-- go test -v
-- go test -v -race
-
 before_install:
 - go get golang.org/x/tools/cmd/vet golang.org/x/tools/cmd/goimports
+- go get github.com/mitchellh/gox
+
 install:
 - go get github.com/bmizerany/assert
 - go get github.com/ddollar/dist
@@ -20,19 +14,28 @@ install:
 - go get bitbucket.org/pkg/inflect
 - go get github.com/onsi/ginkgo
 - go get github.com/onsi/gomega
-before_deploy:
+
+script:
+- git config --global user.email "you@example.com"
+- git config --global user.name "Your Name"
+- test -z "$(go fmt)"
+- go vet
+- go test -v
+- go test -v -race
 - export OS_TARGETS="linux darwin windows"
 - export ARCH_TARGETS="386 amd64"
 - export GO_LINKER_VALUE=$(git describe --tags --always)
 - export GO_LINKER_SYMBOL="main.Version"
-- go get github.com/mitchellh/gox
+- gox -os "$OS_TARGETS" -arch="$ARCH_TARGETS" -ldflags "-X $GO_LINKER_SYMBOL $GO_LINKER_VALUE"
+
+before_deploy:
 - gox -os "$OS_TARGETS" -arch="$ARCH_TARGETS" -ldflags "-X $GO_LINKER_SYMBOL $GO_LINKER_VALUE"
 deploy:
   skip_cleanup: true
   provider: releases
   api_key:
-    secure: kBDxEINRdjsBlgV3EGEuTH61E5zmL+jSqMMQaXErsU0ae1mawI/cZdW+RZ/gacgIhBc2clYPMNOvFhIou+amsoqXCgwrp35sAXKQHkUdlrpTC63n633MvJJqujN90EdctJGrh0reV/laJSGGcipYwuaW5oIOuD/a8KtqP2UmUnk=
-  file: 
+    secure: W+4pJY7DjLNMU91i3LAOqr6FV+PUnoqCoY1kM9IZ391MCot6EAHkYAdlhSJ2+qllIWmamp7Dtv7Ul4AAfhnAbKJY+J2w5/HczctvjGvcER/QIiWgPfZaNkAqBcWu8XXjdJ876J6sfzWVudK/onnPgpKvtVX0WRZEBXgUl0QJp2g=
+  file:
     - force_darwin_amd64
     - force_darwin_386
     - force_linux_amd64
@@ -40,5 +43,5 @@ deploy:
     - force_windows_amd64.exe
     - force_windows_386.exe
   on:
-  	tags: true
+    tags: true
     repo: heroku/force
