@@ -40,5 +40,5 @@ deploy:
     - force_windows_amd64.exe
     - force_windows_386.exe
   on:
-  	tags: true
+    tags: true
     repo: heroku/force
