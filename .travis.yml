@@ -25,12 +25,12 @@ script:
 - export GO_LINKER_VALUE=$(git describe --tags --always)
 - export GO_LINKER_SYMBOL="main.Version"
 - gox -os "$OS_TARGETS" -arch="$ARCH_TARGETS" -ldflags "-X $GO_LINKER_SYMBOL $GO_LINKER_VALUE"
-- mkdir -p darwin/amd64 && mv force_darwin_amd64 darwin/amd64/force
-- mkdir -p darwin/386 && mv force_darwin_386 darwin/386/force
-- mkdir -p windows/amd64 && mv force_windows_amd64.exe windows/amd64/force.exe
-- mkdir -p windows/386 && mv force_windows_386.exe windows/386/force.exe
-- mkdir -p linux/amd64 && mv force_linux_amd64 linux/amd64/force
-- mkdir -p linux/386 && mv force_linux_386 linux/386/force
+- mkdir -p darwin/amd64 && cp force_darwin_amd64 darwin/amd64/force
+- mkdir -p darwin/386 && cp force_darwin_386 darwin/386/force
+- mkdir -p windows/amd64 && cp force_windows_amd64.exe windows/amd64/force.exe
+- mkdir -p windows/386 && cp force_windows_386.exe windows/386/force.exe
+- mkdir -p linux/amd64 && cp force_linux_amd64 linux/amd64/force
+- mkdir -p linux/386 && cp force_linux_386 linux/386/force
 deploy:
 - provider: releases
   skip_cleanup: true
