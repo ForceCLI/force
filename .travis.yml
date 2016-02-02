@@ -33,7 +33,7 @@ script:
 - mkdir -p linux/386 && mv force_linux_386 linux/386/force
 deploy:
 - provider: releases
-  skipcleanup: true
+  skip_cleanup: true
   api_key:
     secure: W+4pJY7DjLNMU91i3LAOqr6FV+PUnoqCoY1kM9IZ391MCot6EAHkYAdlhSJ2+qllIWmamp7Dtv7Ul4AAfhnAbKJY+J2w5/HczctvjGvcER/QIiWgPfZaNkAqBcWu8XXjdJ876J6sfzWVudK/onnPgpKvtVX0WRZEBXgUl0QJp2g=
   file:
@@ -47,7 +47,7 @@ deploy:
     tags: true
     repo: heroku/force
 - provider: s3
-  skipcleanup: true
+  skip_cleanup: true
   access_key_id: AKIAITTRSYTRTVZLGNQQ
   secret_access_key:
     secure: bAiAyCQKHlEiIA3Uz1yOE+kPieydEoXMlJX5gkdOImiH2oyDXPtmZJzqogl2mMqPO1g6Syjb+W5z3FARmp8gg/Yz9OELvUGKoMdPB7m3Z7oZ3+CR/uj3OSGzwK2Yoa7StjPIZrUHvxGQ+rMpcOfEcR2dJC/coDefvzxzrBHzDf8=
@@ -59,7 +59,7 @@ deploy:
     tags: true
     repo: heroku/force
 - provider: s3
-  skipcleanup: true
+  skip_cleanup: true
   access_key_id: AKIAITTRSYTRTVZLGNQQ
   secret_access_key:
     secure: bAiAyCQKHlEiIA3Uz1yOE+kPieydEoXMlJX5gkdOImiH2oyDXPtmZJzqogl2mMqPO1g6Syjb+W5z3FARmp8gg/Yz9OELvUGKoMdPB7m3Z7oZ3+CR/uj3OSGzwK2Yoa7StjPIZrUHvxGQ+rMpcOfEcR2dJC/coDefvzxzrBHzDf8=
@@ -71,7 +71,7 @@ deploy:
     tags: true
     repo: heroku/force
 - provider: s3
-  skipcleanup: true
+  skip_cleanup: true
   access_key_id: AKIAITTRSYTRTVZLGNQQ
   secret_access_key:
     secure: bAiAyCQKHlEiIA3Uz1yOE+kPieydEoXMlJX5gkdOImiH2oyDXPtmZJzqogl2mMqPO1g6Syjb+W5z3FARmp8gg/Yz9OELvUGKoMdPB7m3Z7oZ3+CR/uj3OSGzwK2Yoa7StjPIZrUHvxGQ+rMpcOfEcR2dJC/coDefvzxzrBHzDf8=
@@ -83,7 +83,7 @@ deploy:
     tags: true
     repo: heroku/force
 - provider: s3
-  skipcleanup: true
+  skip_cleanup: true
   access_key_id: AKIAITTRSYTRTVZLGNQQ
   secret_access_key:
     secure: bAiAyCQKHlEiIA3Uz1yOE+kPieydEoXMlJX5gkdOImiH2oyDXPtmZJzqogl2mMqPO1g6Syjb+W5z3FARmp8gg/Yz9OELvUGKoMdPB7m3Z7oZ3+CR/uj3OSGzwK2Yoa7StjPIZrUHvxGQ+rMpcOfEcR2dJC/coDefvzxzrBHzDf8=
@@ -95,7 +95,7 @@ deploy:
     tags: true
     repo: heroku/force
 - provider: s3
-  skipcleanup: true
+  skip_cleanup: true
   access_key_id: AKIAITTRSYTRTVZLGNQQ
   secret_access_key:
     secure: bAiAyCQKHlEiIA3Uz1yOE+kPieydEoXMlJX5gkdOImiH2oyDXPtmZJzqogl2mMqPO1g6Syjb+W5z3FARmp8gg/Yz9OELvUGKoMdPB7m3Z7oZ3+CR/uj3OSGzwK2Yoa7StjPIZrUHvxGQ+rMpcOfEcR2dJC/coDefvzxzrBHzDf8=
@@ -107,7 +107,7 @@ deploy:
     tags: true
     repo: heroku/force
 - provider: s3
-  skipcleanup: true
+  skip_cleanup: true
   access_key_id: AKIAITTRSYTRTVZLGNQQ
   secret_access_key:
     secure: bAiAyCQKHlEiIA3Uz1yOE+kPieydEoXMlJX5gkdOImiH2oyDXPtmZJzqogl2mMqPO1g6Syjb+W5z3FARmp8gg/Yz9OELvUGKoMdPB7m3Z7oZ3+CR/uj3OSGzwK2Yoa7StjPIZrUHvxGQ+rMpcOfEcR2dJC/coDefvzxzrBHzDf8=
