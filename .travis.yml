@@ -28,30 +28,26 @@ script:
 - mkdir -p darwin/amd64 && mv force_darwin_amd64 darwin/amd64/force
 - mkdir -p darwin/386 && mv force_darwin_386 darwin/386/force
 deploy:
-  skip_cleanup: true
-  provider: releases
-    api_key:
-      secure: W+4pJY7DjLNMU91i3LAOqr6FV+PUnoqCoY1kM9IZ391MCot6EAHkYAdlhSJ2+qllIWmamp7Dtv7Ul4AAfhnAbKJY+J2w5/HczctvjGvcER/QIiWgPfZaNkAqBcWu8XXjdJ876J6sfzWVudK/onnPgpKvtVX0WRZEBXgUl0QJp2g=
-    file:
-      - force_darwin_amd64
-      - force_darwin_386
-      - force_linux_amd64
-      - force_linux_386
-      - force_windows_amd64.exe
-      - force_windows_386.exe
-    on:
-      tags: true
-      repo: heroku/force
-
-  provider: s3
-    access_key_id: AKIAITTRSYTRTVZLGNQQ
-    secret_access_key:
-      secure: bAiAyCQKHlEiIA3Uz1yOE+kPieydEoXMlJX5gkdOImiH2oyDXPtmZJzqogl2mMqPO1g6Syjb+W5z3FARmp8gg/Yz9OELvUGKoMdPB7m3Z7oZ3+CR/uj3OSGzwK2Yoa7StjPIZrUHvxGQ+rMpcOfEcR2dJC/coDefvzxzrBHzDf8=
-    file:
-      - darwin/amd64/force
-    bucket: force-cli
-    upload-dir: heroku/force/$GO_LINKER_VALUE/darwin-386
-    acl: public_read
-    on:
-      tags: true
-      repo: heroku/force
+- provider: releases
+  skipcleanup: true
+  api_key:
+    secure: W+4pJY7DjLNMU91i3LAOqr6FV+PUnoqCoY1kM9IZ391MCot6EAHkYAdlhSJ2+qllIWmamp7Dtv7Ul4AAfhnAbKJY+J2w5/HczctvjGvcER/QIiWgPfZaNkAqBcWu8XXjdJ876J6sfzWVudK/onnPgpKvtVX0WRZEBXgUl0QJp2g=
+  file:
+    - force_darwin_amd64
+    - force_darwin_386
+    - force_linux_amd64
+    - force_linux_386
+    - force_windows_amd64.exe
+    - force_windows_386.exe
+- provider: s3
+  skipcleanup: true
+  access_key_id: AKIAITTRSYTRTVZLGNQQ
+  secret_access_key:
+    secure: bAiAyCQKHlEiIA3Uz1yOE+kPieydEoXMlJX5gkdOImiH2oyDXPtmZJzqogl2mMqPO1g6Syjb+W5z3FARmp8gg/Yz9OELvUGKoMdPB7m3Z7oZ3+CR/uj3OSGzwK2Yoa7StjPIZrUHvxGQ+rMpcOfEcR2dJC/coDefvzxzrBHzDf8=
+  file: darwin/amd64/force
+  bucket: force-cli
+  upload-dir: heroku/force/$GO_LINKER_VALUE/darwin-386
+  acl: public_read
+  on:
+    tags: true
+    repo: heroku/force
