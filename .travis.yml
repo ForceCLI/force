@@ -25,7 +25,6 @@ script:
 - export GO_LINKER_VALUE=$(git describe --tags --always)
 - export GO_LINKER_SYMBOL="main.Version"
 - gox -os "$OS_TARGETS" -arch="$ARCH_TARGETS" -ldflags "-X $GO_LINKER_SYMBOL $GO_LINKER_VALUE"
-before_deploy:
 - mkdir -p darwin/amd64 && cp force_darwin_amd64 darwin/amd64/force
 - mkdir -p darwin/386 && cp force_darwin_386 darwin/386/force
 - mkdir -p windows/amd64 && cp force_windows_amd64.exe windows/amd64/force.exe
@@ -52,7 +51,7 @@ deploy:
   access_key_id: AKIAITTRSYTRTVZLGNQQ
   secret_access_key:
     secure: bAiAyCQKHlEiIA3Uz1yOE+kPieydEoXMlJX5gkdOImiH2oyDXPtmZJzqogl2mMqPO1g6Syjb+W5z3FARmp8gg/Yz9OELvUGKoMdPB7m3Z7oZ3+CR/uj3OSGzwK2Yoa7StjPIZrUHvxGQ+rMpcOfEcR2dJC/coDefvzxzrBHzDf8=
-  local_dir: darwin/amd64/force
+  local_dir: darwin/amd64
   bucket: force-cli
   upload-dir: heroku/force/$GO_LINKER_VALUE/darwin-amd64
   acl: public_read
@@ -64,7 +63,7 @@ deploy:
   access_key_id: AKIAITTRSYTRTVZLGNQQ
   secret_access_key:
     secure: bAiAyCQKHlEiIA3Uz1yOE+kPieydEoXMlJX5gkdOImiH2oyDXPtmZJzqogl2mMqPO1g6Syjb+W5z3FARmp8gg/Yz9OELvUGKoMdPB7m3Z7oZ3+CR/uj3OSGzwK2Yoa7StjPIZrUHvxGQ+rMpcOfEcR2dJC/coDefvzxzrBHzDf8=
-  local_dir: darwin/386/force
+  local_dir: darwin/386
   bucket: force-cli
   upload-dir: heroku/force/$GO_LINKER_VALUE/darwin-386
   acl: public_read
@@ -76,7 +75,7 @@ deploy:
   access_key_id: AKIAITTRSYTRTVZLGNQQ
   secret_access_key:
     secure: bAiAyCQKHlEiIA3Uz1yOE+kPieydEoXMlJX5gkdOImiH2oyDXPtmZJzqogl2mMqPO1g6Syjb+W5z3FARmp8gg/Yz9OELvUGKoMdPB7m3Z7oZ3+CR/uj3OSGzwK2Yoa7StjPIZrUHvxGQ+rMpcOfEcR2dJC/coDefvzxzrBHzDf8=
-  local_dir: windows/amd64/force.exe
+  local_dir: windows/amd64
   bucket: force-cli
   upload-dir: heroku/force/$GO_LINKER_VALUE/windows-amd64
   acl: public_read
@@ -88,7 +87,7 @@ deploy:
   access_key_id: AKIAITTRSYTRTVZLGNQQ
   secret_access_key:
     secure: bAiAyCQKHlEiIA3Uz1yOE+kPieydEoXMlJX5gkdOImiH2oyDXPtmZJzqogl2mMqPO1g6Syjb+W5z3FARmp8gg/Yz9OELvUGKoMdPB7m3Z7oZ3+CR/uj3OSGzwK2Yoa7StjPIZrUHvxGQ+rMpcOfEcR2dJC/coDefvzxzrBHzDf8=
-  local_dir: windows/386/force.exe
+  local_dir: windows/386
   bucket: force-cli
   upload-dir: heroku/force/$GO_LINKER_VALUE/windows-386
   acl: public_read
@@ -100,7 +99,7 @@ deploy:
   access_key_id: AKIAITTRSYTRTVZLGNQQ
   secret_access_key:
     secure: bAiAyCQKHlEiIA3Uz1yOE+kPieydEoXMlJX5gkdOImiH2oyDXPtmZJzqogl2mMqPO1g6Syjb+W5z3FARmp8gg/Yz9OELvUGKoMdPB7m3Z7oZ3+CR/uj3OSGzwK2Yoa7StjPIZrUHvxGQ+rMpcOfEcR2dJC/coDefvzxzrBHzDf8=
-  local_dir: linux/amd64/force
+  local_dir: linux/amd64
   bucket: force-cli
   upload-dir: heroku/force/$GO_LINKER_VALUE/linux-amd64
   acl: public_read
@@ -112,7 +111,7 @@ deploy:
   access_key_id: AKIAITTRSYTRTVZLGNQQ
   secret_access_key:
     secure: bAiAyCQKHlEiIA3Uz1yOE+kPieydEoXMlJX5gkdOImiH2oyDXPtmZJzqogl2mMqPO1g6Syjb+W5z3FARmp8gg/Yz9OELvUGKoMdPB7m3Z7oZ3+CR/uj3OSGzwK2Yoa7StjPIZrUHvxGQ+rMpcOfEcR2dJC/coDefvzxzrBHzDf8=
-  local_dir: linux/386/force
+  local_dir: linux/386
   bucket: force-cli
   upload-dir: heroku/force/$GO_LINKER_VALUE/linux-386
   acl: public_read
