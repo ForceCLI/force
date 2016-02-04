@@ -7,13 +7,7 @@ A command-line interface to force.com
 
 ##### Precompiled Binaries
 
-* [Linux 32bit](https://godist-new.herokuapp.com/projects/heroku/force/releases/current/linux-386/force)
-* [Linux 64bit](https://godist-new.herokuapp.com/projects/heroku/force/releases/current/linux-amd64/force)
-* [Linux Arm](https://godist-new.herokuapp.com/projects/heroku/force/releases/current/linux-arm/force)
-* [OS X 32bit](https://godist-new.herokuapp.com/projects/heroku/force/releases/current/darwin-386/force)
-* [OS X 64bit](https://godist-new.herokuapp.com/projects/heroku/force/releases/current/darwin-amd64/force)
-* [Windows 32bit](https://godist-new.herokuapp.com/projects/heroku/force/releases/current/windows-386/force.exe)
-* [Windows 64bit](https://godist-new.herokuapp.com/projects/heroku/force/releases/current/windows-amd64/force.exe)
+Can be downloaded from the [Current Realease Page](https://github.com/heroku/force/releases/latest) or by visiting the [CLI Home Page](http://force-cli.herokuapp.com/).
 
 ##### Compile from Source
 
@@ -119,7 +113,7 @@ You can also push all of a specific type of resource from a given folder.
       force push -t ApexPage -p metadata/pages/
 
 ### notify
-Includes notification library, [gotifier](https://github.com/ViViDboarder/gotifier), that will display notifications for using either Using [terminal-notifier](https://github.com/alloy/terminal-notifier) on OSX or [notify-send](http://manpages.ubuntu.com/manpages/saucy/man1/notify-send.1.html) on Ubuntu. Currently, only the `push` and `test` methods are displaying notifications.
+Includes notification library, [gotifier](https://github.com/ViViDboarder/gotifier), that will display notifications for using either Using [terminal-notifier](https://github.com/julienXX/terminal-notifier) on OSX or [notify-send](http://manpages.ubuntu.com/manpages/saucy/man1/notify-send.1.html) on Ubuntu. Currently, only the `push` and `test` methods are displaying notifications.
 
 ### limits
 Limits will display limits information for your organization.
