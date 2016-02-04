@@ -1203,7 +1203,7 @@ func httpClient() (client *http.Client) {
 			config.RootCAs.AddCert(x509Cert)
 		}
 		config.BuildNameToCertificate()
-		tr := http.Transport{TLSClientConfig: &config}
+		tr := http.Transport{TLSClientConfig: &config, Proxy: http.ProxyFromEnvironment}
 		client = &http.Client{Transport: &tr}
 	} else {
 		client = &http.Client{}
