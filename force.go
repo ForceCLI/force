@@ -19,10 +19,11 @@ import (
 )
 
 const (
-	ProductionClientId = "3MVG9A2kN3Bn17huXZp1OQhPe8y4_ozAQZZCKxsWbef9GjSnHGOunHSwhnY1BWz_5vHkTL9BeLMriIX5EUKaw"
+	ProductionClientId = "3MVG9JZ_r.QzrS7gAjO9uCs2VkO.hLOCrAG2XC8vlkhr652yEh8Y5VMiNsDzmCik.eryhf1C902FFULbk1m.i"
 	PrereleaseClientId = "3MVG9lKcPoNINVBIRgC7lsz5tIhlg0mtoEqkA9ZjDAwEMbBy43gsnfkzzdTdhFLeNnWS8M4bnRnVv1Qj0k9MD"
 	Mobile1ClientId    = "3MVG9Iu66FKeHhIPqCB9VWfYPxjfcb5Ube.v5L81BLhnJtDYVP2nkA.mDPwfm5FTLbvL6aMftfi8w0rL7Dv7f"
 	RedirectUri        = "https://force-cli.herokuapp.com/auth/callback"
+	RedirectUriStaging = "https://force-clistaging.herokuapp.com/auth/callback"
 )
 
 var CustomEndpoint = ``
@@ -370,7 +371,12 @@ func ForceSoapLogin(endpoint ForceEndpoint, username string, password string) (c
 	creds = ForceCredentials{result.SessionId, identity, result.Id, instanceUrl, "", "", endpoint == EndpointCustom, "", endpoint}
 
 	f := NewForce(creds)
-	url := fmt.Sprintf("https://force-cli.herokuapp.com/auth/soaplogin/?id=%s&access_token=%s&instance_url=%s", creds.Id, creds.AccessToken, creds.InstanceUrl)
+	url := "https://force-cli"
+	if version == "dev" {
+		url = fmt.Sprintf("%sstaging.herokuapp.com/auth/soaplogin/?id=%s&access_token=%s&instance_url=%s", url, creds.Id, creds.AccessToken, creds.InstanceUrl)
+	} else {
+		url = fmt.Sprintf("https://force-cli.herokuapp.com/auth/soaplogin/?id=%s&access_token=%s&instance_url=%s", creds.Id, creds.AccessToken, creds.InstanceUrl)
+	}
 
 	body, err := f.httpGet(url)
 	if err != nil {
@@ -385,15 +391,21 @@ func ForceLogin(endpoint ForceEndpoint) (creds ForceCredentials, err error) {
 	ch := make(chan ForceCredentials)
 	port, err := startLocalHttpServer(ch)
 	var url string
+
+	Redir := RedirectUri
+	if Version == "dev" {
+		Redir = RedirectUriStaging
+	}
+
 	switch endpoint {
 	case EndpointProduction:
-		url = fmt.Sprintf("https://login.salesforce.com/services/oauth2/authorize?response_type=token&client_id=%s&redirect_uri=%s&state=%d&prompt=login", ProductionClientId, RedirectUri, port)
+		url = fmt.Sprintf("https://login.salesforce.com/services/oauth2/authorize?response_type=token&client_id=%s&redirect_uri=%s&state=%d&prompt=login", ProductionClientId, Redir, port)
 	case EndpointTest:
-		url = fmt.Sprintf("https://test.salesforce.com/services/oauth2/authorize?response_type=token&client_id=%s&redirect_uri=%s&state=%d&prompt=login", ProductionClientId, RedirectUri, port)
+		url = fmt.Sprintf("https://test.salesforce.com/services/oauth2/authorize?response_type=token&client_id=%s&redirect_uri=%s&state=%d&prompt=login", ProductionClientId, Redir, port)
 	case EndpointPrerelease:
-		url = fmt.Sprintf("https://prerellogin.pre.salesforce.com/services/oauth2/authorize?response_type=token&client_id=%s&redirect_uri=%s&state=%d&prompt=login", PrereleaseClientId, RedirectUri, port)
+		url = fmt.Sprintf("https://prerellogin.pre.salesforce.com/services/oauth2/authorize?response_type=token&client_id=%s&redirect_uri=%s&state=%d&prompt=login", PrereleaseClientId, Redir, port)
 	case EndpointMobile1:
-		url = fmt.Sprintf("https://EndpointMobile1.t.salesforce.com/services/oauth2/authorize?response_type=token&client_id=%s&redirect_uri=%s&state=%d&prompt=login", Mobile1ClientId, RedirectUri, port)
+		url = fmt.Sprintf("https://EndpointMobile1.t.salesforce.com/services/oauth2/authorize?response_type=token&client_id=%s&redirect_uri=%s&state=%d&prompt=login", Mobile1ClientId, Redir, port)
 	default:
 		ErrorAndExit("no such endpoint type")
 	}
@@ -1242,8 +1254,13 @@ func startLocalHttpServer(ch chan ForceCredentials) (port int, err error) {
 	}
 	port = listener.Addr().(*net.TCPAddr).Port
 	h := http.NewServeMux()
+	url := "https://force-cli"
+	if Version == "dev" {
+		url = fmt.Sprintf("%s%s", url, "staging")
+	}
+	url = fmt.Sprintf("%s%s", url, ".herokuapp.com")
 	h.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "https://force-cli.herokuapp.com")
+		w.Header().Set("Access-Control-Allow-Origin", url)
 		if r.Method == "OPTIONS" {
 			w.Header().Set("Access-Control-Allow-Headers", "X-Requested-With")
 		} else {
@@ -1256,7 +1273,7 @@ func startLocalHttpServer(ch chan ForceCredentials) (port int, err error) {
 			creds.Scope = query.Get("scope")
 			ch <- creds
 			if _, ok := r.Header["X-Requested-With"]; ok == false {
-				http.Redirect(w, r, "https://force-cli.herokuapp.com/auth/complete", http.StatusSeeOther)
+				http.Redirect(w, r, fmt.Sprintf("%s/auth/complete", url), http.StatusSeeOther)
 			}
 			listener.Close()
 		}
