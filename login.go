@@ -116,6 +116,8 @@ func ForceSaveLogin(creds ForceCredentials) (username string, err error) {
 		return
 	}
 
+	userId := login["user_id"].(string)
+	creds.UserId = userId
 	username = login["username"].(string)
 
 	me, err := force.Whoami()
