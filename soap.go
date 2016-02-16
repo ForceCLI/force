@@ -48,7 +48,7 @@ func (s *Soap) ExecuteLogin(username, password string) (response []byte, err err
 	req.Header.Add("Content-Type", "text/xml")
 	req.Header.Add("SOAPACtion", "login")
 
-	res, err := httpClient().Do(req)
+	res, err := doRequest(req)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -137,7 +137,7 @@ func (s *Soap) Execute(action, query string) (response []byte, err error) {
 	}
 	req.Header.Add("Content-Type", "text/xml")
 	req.Header.Add("SOAPACtion", action)
-	res, err := httpClient().Do(req)
+	res, err := doRequest(req)
 	if err != nil {
 		return
 	}
