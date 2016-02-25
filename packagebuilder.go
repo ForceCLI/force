@@ -206,6 +206,15 @@ func (pb *PackageBuilder) addDestructiveChanges(fpath string) (err error) {
 	return
 }
 
+func (pb *PackageBuilder) contains(members []string, name string) bool {
+	for _, a := range members {
+        if a == name {
+            return true
+        }
+    }
+    return false
+}
+
 // Adds a metadata name to the pending package
 func (pb *PackageBuilder) AddMetaToPackage(metaName string, name string) {
 	mt := pb.Metadata[metaName]
@@ -213,8 +222,10 @@ func (pb *PackageBuilder) AddMetaToPackage(metaName string, name string) {
 		mt.Name = metaName
 	}
 
-	mt.Members = append(mt.Members, name)
-	pb.Metadata[metaName] = mt
+	if !pb.contains(mt.Members, name) {
+		mt.Members = append(mt.Members, name)
+		pb.Metadata[metaName] = mt
+	}
 }
 
 // Gets metadata type name and target name from a file path
@@ -230,6 +241,7 @@ func getMetaTypeFromPath(fpath string) (metaName string, name string) {
 	// Get the metadata type and name for the file
 	metaName, fileName := getMetaForPath(fpath)
 	name = strings.TrimSuffix(fileName, filepath.Ext(fileName))
+	name = strings.TrimSuffix(name, filepath.Ext(name))
 	return
 }
 
