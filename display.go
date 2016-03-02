@@ -190,7 +190,12 @@ func DisplayForceRecords(result ForceQueryResult) {
 
 func recordColumns(records []ForceRecord) (columns []string) {
 	for _, record := range records {
+		var keys []string
 		for key, _ := range record {
+			keys = append(keys, key)
+		}
+		sort.Strings(keys)
+		for _, key := range keys {
 			found := false
 			for _, column := range columns {
 				if column == key {
