@@ -340,6 +340,7 @@ func RenderForceRecordsCSV(records []ForceRecord, format string) string {
 			}
 		}
 	}
+	sort.Strings(keys)
 	//keys = RemoveTransientRelationships(keys)
 	f, _ := ActiveCredentials()
 	if len(records) > 0 {
