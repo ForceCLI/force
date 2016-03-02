@@ -136,7 +136,7 @@ func (pb *PackageBuilder) AddFile(fpath string) (fname string, err error) {
 	}
 
 	metaName, fname := getMetaTypeFromPath(fpath)
-	if !isDestructiveChanges && !strings.HasSuffix(fname, "-meta.xml") {
+	if !isDestructiveChanges && !strings.HasSuffix(fpath, "-meta.xml") {
 		pb.AddMetaToPackage(metaName, fname)
 	}
 
