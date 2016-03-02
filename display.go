@@ -157,7 +157,6 @@ func DisplayForceSobjectsJson(sobjects []ForceSobject) {
 	names := make([]string, len(sobjects))
 	for i, sobject := range sobjects {
 		names[i] = sobject["name"].(string)
-		fmt.Println(sobject)
 	}
 	b, err := json.MarshalIndent(names, "", "   ")
 	if err != nil {

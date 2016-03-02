@@ -208,11 +208,11 @@ func (pb *PackageBuilder) addDestructiveChanges(fpath string) (err error) {
 
 func (pb *PackageBuilder) contains(members []string, name string) bool {
 	for _, a := range members {
-        if a == name {
-            return true
-        }
-    }
-    return false
+		if a == name {
+			return true
+		}
+	}
+	return false
 }
 
 // Adds a metadata name to the pending package
