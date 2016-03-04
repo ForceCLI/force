@@ -241,7 +241,7 @@ func getMetaTypeFromPath(fpath string) (metaName string, name string) {
 	// Get the metadata type and name for the file
 	metaName, fileName := getMetaForPath(fpath)
 	name = strings.TrimSuffix(fileName, filepath.Ext(fileName))
-	name = strings.TrimSuffix(name, filepath.Ext(name))
+	//name = strings.TrimSuffix(name, filepath.Ext(name))
 	return
 }
 
