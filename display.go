@@ -157,7 +157,6 @@ func DisplayForceSobjectsJson(sobjects []ForceSobject) {
 	names := make([]string, len(sobjects))
 	for i, sobject := range sobjects {
 		names[i] = sobject["name"].(string)
-		fmt.Println(sobject)
 	}
 	b, err := json.MarshalIndent(names, "", "   ")
 	if err != nil {
@@ -190,7 +189,12 @@ func DisplayForceRecords(result ForceQueryResult) {
 
 func recordColumns(records []ForceRecord) (columns []string) {
 	for _, record := range records {
+		var keys []string
 		for key, _ := range record {
+			keys = append(keys, key)
+		}
+		sort.Strings(keys)
+		for _, key := range keys {
 			found := false
 			for _, column := range columns {
 				if column == key {
@@ -340,6 +344,7 @@ func RenderForceRecordsCSV(records []ForceRecord, format string) string {
 			}
 		}
 	}
+	sort.Strings(keys)
 	//keys = RemoveTransientRelationships(keys)
 	f, _ := ActiveCredentials()
 	if len(records) > 0 {
