@@ -37,11 +37,14 @@ var (
 func runLogin(cmd *Command, args []string) {
 	var endpoint ForceEndpoint = EndpointProduction
 
-	currentEndpoint, customUrl, err := CurrentEndpoint()
-	if err == nil && &currentEndpoint != nil {
-		endpoint = currentEndpoint
-		if currentEndpoint == EndpointCustom && customUrl != "" {
-			*instance = customUrl
+	// If no instance specified, try to get last endpoint used
+	if *instance == "" {
+		currentEndpoint, customUrl, err := CurrentEndpoint()
+		if err == nil && &currentEndpoint != nil {
+			endpoint = currentEndpoint
+			if currentEndpoint == EndpointCustom && customUrl != "" {
+				*instance = customUrl
+			}
 		}
 	}
 
@@ -57,14 +60,14 @@ func runLogin(cmd *Command, args []string) {
 			//need to determine the form of the endpoint
 			uri, err := url.Parse(*instance)
 			if err != nil {
-				ErrorAndExit("no such endpoint: %s", *instance)
+				ErrorAndExit("Unable to parse endpoint: %s", *instance)
 			}
 			// Could be short hand?
 			if uri.Host == "" {
 				uri, err = url.Parse(fmt.Sprintf("https://%s", *instance))
 				//fmt.Println(uri)
 				if err != nil {
-					ErrorAndExit("no such endpoint: %s", *instance)
+					ErrorAndExit("Could not identify host: %s", *instance)
 				}
 			}
 			CustomEndpoint = uri.Scheme + "://" + uri.Host

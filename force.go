@@ -234,7 +234,7 @@ func ForceSoapLogin(endpoint ForceEndpoint, username string, password string) (c
 	case EndpointCustom:
 		surl = fmt.Sprintf("%s/services/Soap/u/%s", CustomEndpoint, version)
 	default:
-		ErrorAndExit("no such endpoint type")
+		ErrorAndExit("Unable to login with SOAP. Unknown endpoint type")
 	}
 
 	soap := NewSoap(surl, "", "")
@@ -296,8 +296,10 @@ func ForceLogin(endpoint ForceEndpoint) (creds ForceCredentials, err error) {
 		url = fmt.Sprintf("https://prerellogin.pre.salesforce.com/services/oauth2/authorize?response_type=token&client_id=%s&redirect_uri=%s&state=%d&prompt=login", PrereleaseClientId, Redir, port)
 	case EndpointMobile1:
 		url = fmt.Sprintf("https://EndpointMobile1.t.salesforce.com/services/oauth2/authorize?response_type=token&client_id=%s&redirect_uri=%s&state=%d&prompt=login", Mobile1ClientId, Redir, port)
+	case EndpointCustom:
+		url = fmt.Sprintf("%s/services/oauth2/authorize?response_type=token&client_id=%s&redirect_uri=%s&state=%d&prompt=login", CustomEndpoint, ProductionClientId, Redir, port)
 	default:
-		ErrorAndExit("no such endpoint type")
+		ErrorAndExit("Unable to login with OAuth. Unknown endpoint type")
 	}
 
 	err = Open(url)
