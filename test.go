@@ -60,16 +60,17 @@ func runTests(cmd *Command, args []string) {
 		fmt.Println(output.Log)
 		fmt.Println()
 	}
-	var percent string
+	var percent int
 	fmt.Println("Coverage:")
 	fmt.Println()
 	for index := range output.NumberLocations {
 		if output.NumberLocations[index] != 0 {
-			percent = strconv.Itoa(((output.NumberLocations[index]-output.NumberLocationsNotCovered[index])/output.NumberLocations[index])*100) + "%"
-		} else {
-			percent = "0%"
+			percent = ((output.NumberLocations[index] - output.NumberLocationsNotCovered[index]) / output.NumberLocations[index]) * 100
 		}
-		fmt.Println("  " + percent + "   " + output.Name[index])
+
+		if percent > 0 {
+			fmt.Println("   " + strconv.Itoa(percent) + "%   " + output.Name[index])
+		}
 	}
 	fmt.Println()
 	fmt.Println()
