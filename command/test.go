@@ -2,11 +2,11 @@ package command
 
 import (
 	"fmt"
-	"strconv"
 
 	"github.com/heroku/force/desktop"
 	. "github.com/heroku/force/error"
 	. "github.com/heroku/force/lib"
+	"strings"
 )
 
 var cmdTest = &Command{
@@ -65,6 +65,42 @@ func QualifyMethods(class string, methods []string) []string {
 	return qualified
 }
 
+func GenerateResults(output TestCoverage) string {
+	var results []string
+	var percent int
+	results = append(results, "Coverage:")
+	results = append(results, "")
+	for index := range output.NumberLocations {
+		if output.NumberLocations[index] != 0 {
+			locations := float64(output.NumberLocations[index])
+			notCovered := float64(output.NumberLocationsNotCovered[index])
+			percent = int((locations - notCovered) / locations * 100)
+		}
+
+		if percent > 0 {
+			results = append(results, fmt.Sprintf("%6d%%  %s", percent, output.Name[index]))
+		}
+	}
+	results = append(results, "")
+	results = append(results, "")
+	results = append(results, "Results:")
+	results = append(results, "")
+	for index := range output.SMethodNames {
+		results = append(results, "  [PASS]  "+output.SClassNames[index]+"::"+output.SMethodNames[index])
+	}
+
+	for index := range output.FMethodNames {
+		results = append(results, "  [FAIL]  "+output.FClassNames[index]+"::"+output.FMethodNames[index]+": "+output.FMessage[index])
+		results = append(results, "    "+output.FStackTrace[index])
+	}
+	results = append(results, "")
+	results = append(results, "")
+
+	result := strings.Join(results, "\n")
+
+	return result
+}
+
 func runTests(cmd *Command, args []string) {
 	if len(args) < 1 && *classFlag == "" {
 		ErrorAndExit("must specify tests to run")
@@ -74,7 +110,7 @@ func runTests(cmd *Command, args []string) {
 		args = QualifyMethods(*classFlag, args)
 	}
 	output, err := RunTests(force.Partner, args, *namespaceTestFlag)
-	success := false
+
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
@@ -82,36 +118,11 @@ func runTests(cmd *Command, args []string) {
 		fmt.Println(output.Log)
 		fmt.Println()
 	}
-	var percent string
-	fmt.Println("Coverage:")
-	fmt.Println()
-	for index := range output.NumberLocations {
-		if output.NumberLocations[index] != 0 {
-			locations := float64(output.NumberLocations[index])
-			notCovered := float64(output.NumberLocationsNotCovered[index])
-			percent = strconv.Itoa(int((locations-notCovered)/locations*100)) + "%"
-		} else {
-			percent = "0%"
-		}
-		fmt.Println("  " + percent + "\t" + output.Name[index])
-	}
-	fmt.Println()
-	fmt.Println()
-	fmt.Println("Results:")
-	fmt.Println()
-	for index := range output.SMethodNames {
-		fmt.Println("  [PASS]  " + output.SClassNames[index] + "::" + output.SMethodNames[index])
-	}
 
-	for index := range output.FMethodNames {
-		fmt.Println("  [FAIL]  " + output.FClassNames[index] + "::" + output.FMethodNames[index] + ": " + output.FMessage[index])
-		fmt.Println("    " + output.FStackTrace[index])
-	}
-	fmt.Println()
-	fmt.Println()
+	results := GenerateResults(output)
+	fmt.Print(results)
 
-	success = len(output.FMethodNames) == 0
-
+	success := len(output.FMethodNames) == 0
 	// Handle notifications
 	desktop.NotifySuccess("test", success)
 	if !success {
