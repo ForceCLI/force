@@ -108,9 +108,9 @@ Push gives you the ability to push specified resources to force.com.  The resour
 
 You can also push all of a specific type of resource from a given folder.
 
-      force push -t StaticResource -p(ath) metadata/staticresources/
-      force push -t ApexClass -path metadata/classes/
-      force push -t ApexPage -p metadata/pages/
+      force push -t StaticResource -f metadata/staticresources/
+      force push -t ApexClass -f metadata/classes/
+      force push -t ApexPage -f metadata/pages/
 
 ### notify
 Includes notification library, [gotifier](https://github.com/ViViDboarder/gotifier), that will display notifications for using either Using [terminal-notifier](https://github.com/julienXX/terminal-notifier) on OSX or [notify-send](http://manpages.ubuntu.com/manpages/saucy/man1/notify-send.1.html) on Ubuntu. Currently, only the `push` and `test` methods are displaying notifications.
