@@ -1101,7 +1101,6 @@ func doRequest(request *http.Request) (res *http.Response, err error) {
 }
 
 func httpRequest(method, url string, body io.Reader) (request *http.Request, err error) {
-	request, err = http.NewRequest(method, url, body)
 	fmt.Println(url + "\n")
 	if err != nil {
 		return

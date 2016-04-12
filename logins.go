@@ -77,7 +77,6 @@ func ActiveCredentials() (creds ForceCredentials, err error) {
 		apiVersionNumber = creds.ApiVersion
 		apiVersion = "v" + apiVersionNumber
 	}
-	fmt.Println("API Version: " + creds.ApiVersion + "\n")
 
 	return
 }
