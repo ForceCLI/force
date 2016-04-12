@@ -232,6 +232,8 @@ func ForceSoapLogin(endpoint ForceEndpoint, username string, password string) (c
 		surl = fmt.Sprintf("https://test.salesforce.com/services/Soap/u/%s", version)
 	case EndpointPrerelease:
 		surl = fmt.Sprintf("https://prerelna1.pre.salesforce.com/services/Soap/u/%s", version)
+	case EndpointMobile1:
+		surl = fmt.Sprintf("https://mobile1.t.salesforce.com/services/Soap/u/%s", version)
 	case EndpointCustom:
 		surl = fmt.Sprintf("%s/services/Soap/u/%s", CustomEndpoint, version)
 	default:

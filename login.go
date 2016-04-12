@@ -62,6 +62,8 @@ func runLogin(cmd *Command, args []string) {
 		endpoint = EndpointTest
 	case "pre":
 		endpoint = EndpointPrerelease
+	case "mobile1":
+		endpoint = EndpointMobile1
 	default:
 		if *instance != "" {
 			//need to determine the form of the endpoint
