@@ -33,10 +33,10 @@ const (
 	EndpointCustom     = iota
 )
 
-const (
+/*const (
 	apiVersion       = "v34.0"
 	apiVersionNumber = "34.0"
-)
+)*/
 
 type Force struct {
 	Credentials ForceCredentials
@@ -53,6 +53,7 @@ type ForceCredentials struct {
 	Scope         string
 	IsCustomEP    bool
 	Namespace     string
+	ApiVersion    string
 	ForceEndpoint ForceEndpoint
 }
 
@@ -258,7 +259,7 @@ func ForceSoapLogin(endpoint ForceEndpoint, username string, password string) (c
 	}
 	instanceUrl := u.Scheme + "://" + u.Host
 	identity := u.Scheme + "://" + u.Host + "/id/" + orgid + "/" + result.Id
-	creds = ForceCredentials{result.SessionId, identity, result.Id, instanceUrl, "", "", endpoint == EndpointCustom, "", endpoint}
+	creds = ForceCredentials{result.SessionId, identity, result.Id, instanceUrl, "", "", endpoint == EndpointCustom, "", apiVersionNumber, endpoint}
 
 	f := NewForce(creds)
 	url := "https://force-cli"
@@ -1101,6 +1102,7 @@ func doRequest(request *http.Request) (res *http.Response, err error) {
 
 func httpRequest(method, url string, body io.Reader) (request *http.Request, err error) {
 	request, err = http.NewRequest(method, url, body)
+	fmt.Println(url + "\n")
 	if err != nil {
 		return
 	}

@@ -5,6 +5,7 @@ import (
 )
 
 var commands = []*Command{
+	cmdApiVersion,
 	cmdLogin,
 	cmdLogout,
 	cmdLogins,
