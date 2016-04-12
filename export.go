@@ -24,10 +24,15 @@ Examples:
 }
 
 func runExport(cmd *Command, args []string) {
-	wd, _ := os.Getwd()
-	root := filepath.Join(wd, "metadata")
+	// Get path from args if available
+	var err error
+	var root string
 	if len(args) == 1 {
-		root, _ = filepath.Abs(args[0])
+		root, err = filepath.Abs(args[0])
+	}
+	if err != nil {
+		fmt.Printf("Error obtaining file path\n")
+		ErrorAndExit(err.Error())
 	}
 	force, _ := ActiveForce()
 	sobjects, err := force.ListSobjects()
@@ -133,6 +138,11 @@ func runExport(cmd *Command, args []string) {
 	files, err := force.Metadata.Retrieve(query)
 	if err != nil {
 		fmt.Printf("Encountered and error with retrieve...\n")
+		ErrorAndExit(err.Error())
+	}
+	root, err = GetSourceDir()
+	if err != nil {
+		fmt.Printf("Error obtaining root directory\n")
 		ErrorAndExit(err.Error())
 	}
 	for name, data := range files {

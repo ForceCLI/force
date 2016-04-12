@@ -13,7 +13,7 @@ var Config = config.NewConfig("force")
 func GetSourceDir() (src string, err error) {
 	// Last element is default
 	var sourceDirs = []string{
-		//"src",
+		"src",
 		"metadata",
 	}
 
