@@ -50,6 +50,8 @@ var metapaths = []metapath{
 	metapath{path: "documents", name: "Document", hasFolder: true},
 	metapath{path: "email", name: "EmailTemplate", hasFolder: true},
 	metapath{path: "flexipages", name: "FlexiPage"},
+	metapath{path: "flowDefinitions", name: "FlowDefinition"},
+	metapath{path: "flows", name: "Flow"},
 	metapath{path: "groups", name: "Group"},
 	metapath{path: "homePageLayouts", name: "HomePageLayout"},
 	metapath{path: "installedPackages", name: "InstalledPackage"},
