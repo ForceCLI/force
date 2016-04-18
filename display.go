@@ -6,6 +6,9 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+
+	"github.com/heroku/force/salesforce"
+	"github.com/heroku/force/util"
 )
 
 var BatchInfoTemplate = `
@@ -17,35 +20,35 @@ SystemModstamp 		%s
 NumberRecordsProcessed  %d
 `
 
-type ByXmlName []DescribeMetadataObject
+type ByXmlName []salesforce.DescribeMetadataObject
 
 func (a ByXmlName) Len() int           { return len(a) }
 func (a ByXmlName) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a ByXmlName) Less(i, j int) bool { return a[i].XmlName < a[j].XmlName }
 
-type ByFullName []MDFileProperties
+type ByFullName []salesforce.MDFileProperties
 
 func (a ByFullName) Len() int           { return len(a) }
 func (a ByFullName) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a ByFullName) Less(i, j int) bool { return a[i].FullName < a[j].FullName }
 
-func DisplayListMetadataResponse(resp ListMetadataResponse) {
+func DisplayListMetadataResponse(resp salesforce.ListMetadataResponse) {
 	sort.Sort(ByFullName(resp.Result))
 	for _, result := range resp.Result {
 		fmt.Println(result.FullName + " - " + result.Type)
 	}
 }
 
-func DisplayListMetadataResponseJson(resp ListMetadataResponse) {
+func DisplayListMetadataResponseJson(resp salesforce.ListMetadataResponse) {
 	sort.Sort(ByFullName(resp.Result))
 	b, err := json.MarshalIndent(resp.Result, "", "   ")
 	if err != nil {
-		ErrorAndExit(err.Error())
+		util.ErrorAndExit(err.Error())
 	}
 	fmt.Printf("%s\n", string(b))
 }
 
-func DisplayMetadataList(metadataObjects []DescribeMetadataObject) {
+func DisplayMetadataList(metadataObjects []salesforce.DescribeMetadataObject) {
 
 	sort.Sort(ByXmlName(metadataObjects))
 
@@ -60,7 +63,7 @@ func DisplayMetadataList(metadataObjects []DescribeMetadataObject) {
 	}
 }
 
-func DisplayMetadataListJson(metadataObjects []DescribeMetadataObject) {
+func DisplayMetadataListJson(metadataObjects []salesforce.DescribeMetadataObject) {
 
 	sort.Sort(ByXmlName(metadataObjects))
 
@@ -72,12 +75,12 @@ func DisplayMetadataListJson(metadataObjects []DescribeMetadataObject) {
 
 	b, err := json.MarshalIndent(metadataObjects, "", "   ")
 	if err != nil {
-		ErrorAndExit(err.Error())
+		util.ErrorAndExit(err.Error())
 	}
 	fmt.Printf("%s\n", string(b))
 }
 
-func DisplayBatchList(batchInfos []BatchInfo) {
+func DisplayBatchList(batchInfos []salesforce.BatchInfo) {
 
 	for i, batchInfo := range batchInfos {
 		fmt.Printf("Batch %d", i)
@@ -86,14 +89,14 @@ func DisplayBatchList(batchInfos []BatchInfo) {
 	}
 }
 
-func DisplayBatchInfo(batchInfo BatchInfo) {
+func DisplayBatchInfo(batchInfo salesforce.BatchInfo) {
 
 	fmt.Printf(BatchInfoTemplate, batchInfo.Id, batchInfo.JobId, batchInfo.State,
 		batchInfo.CreatedDate, batchInfo.SystemModstamp,
 		batchInfo.NumberRecordsProcessed)
 }
 
-func DisplayJobInfo(jobInfo JobInfo) {
+func DisplayJobInfo(jobInfo salesforce.JobInfo) {
 	var msg = `
 Id				%s
 State 				%s
@@ -136,13 +139,13 @@ func DisplayForceSobjectDescribe(sobject string) {
 	b := []byte(sobject)
 	err := json.Unmarshal(b, &d)
 	if err != nil {
-		ErrorAndExit(err.Error())
+		util.ErrorAndExit(err.Error())
 	}
 	out, err := json.MarshalIndent(d, "", "    ")
 	fmt.Println(string(out))
 }
 
-func DisplayForceSobjects(sobjects []ForceSobject) {
+func DisplayForceSobjects(sobjects []salesforce.ForceSobject) {
 	names := make([]string, len(sobjects))
 	for i, sobject := range sobjects {
 		names[i] = sobject["name"].(string)
@@ -153,19 +156,19 @@ func DisplayForceSobjects(sobjects []ForceSobject) {
 	}
 }
 
-func DisplayForceSobjectsJson(sobjects []ForceSobject) {
+func DisplayForceSobjectsJson(sobjects []salesforce.ForceSobject) {
 	names := make([]string, len(sobjects))
 	for i, sobject := range sobjects {
 		names[i] = sobject["name"].(string)
 	}
 	b, err := json.MarshalIndent(names, "", "   ")
 	if err != nil {
-		ErrorAndExit(err.Error())
+		util.ErrorAndExit(err.Error())
 	}
 	fmt.Printf("%s\n", string(b))
 }
 
-func DisplayForceRecordsf(records []ForceRecord, format string) {
+func DisplayForceRecordsf(records []salesforce.ForceRecord, format string) {
 	switch format {
 	case "csv":
 		fmt.Println(RenderForceRecordsCSV(records, format))
@@ -180,14 +183,14 @@ func DisplayForceRecordsf(records []ForceRecord, format string) {
 	}
 }
 
-func DisplayForceRecords(result ForceQueryResult) {
+func DisplayForceRecords(result salesforce.ForceQueryResult) {
 	if len(result.Records) > 0 {
 		fmt.Print(RenderForceRecords(result.Records))
 	}
 	fmt.Println(fmt.Sprintf(" (%d records)", result.TotalSize))
 }
 
-func recordColumns(records []ForceRecord) (columns []string) {
+func recordColumns(records []salesforce.ForceRecord) (columns []string) {
 	for _, record := range records {
 		var keys []string
 		for key, _ := range record {
@@ -210,15 +213,15 @@ func recordColumns(records []ForceRecord) (columns []string) {
 	return
 }
 
-func coerceForceRecords(uncoerced []map[string]interface{}) (records []ForceRecord) {
-	records = make([]ForceRecord, len(uncoerced))
+func coerceForceRecords(uncoerced []map[string]interface{}) (records []salesforce.ForceRecord) {
+	records = make([]salesforce.ForceRecord, len(uncoerced))
 	for i, record := range uncoerced {
-		records[i] = ForceRecord(record)
+		records[i] = salesforce.ForceRecord(record)
 	}
 	return
 }
 
-func columnLengths(records []ForceRecord, prefix string) (lengths map[string]int) {
+func columnLengths(records []salesforce.ForceRecord, prefix string) (lengths map[string]int) {
 	lengths = make(map[string]int)
 
 	columns := recordColumns(records)
@@ -231,7 +234,7 @@ func columnLengths(records []ForceRecord, prefix string) (lengths map[string]int
 			key := fmt.Sprintf("%s.%s", prefix, column)
 			length := 0
 			switch value := value.(type) {
-			case []ForceRecord:
+			case []salesforce.ForceRecord:
 				lens := columnLengths(value, key)
 				for k, l := range lens {
 					length += l
@@ -275,12 +278,12 @@ func recordSeparator(columns []string, lengths map[string]int, prefix string) (o
 	return
 }
 
-func recordRow(record ForceRecord, columns []string, lengths map[string]int, prefix string) (out string) {
+func recordRow(record salesforce.ForceRecord, columns []string, lengths map[string]int, prefix string) (out string) {
 	values := make([]string, len(columns))
 	for i, column := range columns {
 		value := record[column]
 		switch value := value.(type) {
-		case []ForceRecord:
+		case []salesforce.ForceRecord:
 			values[i] = strings.TrimSuffix(renderForceRecords(value, fmt.Sprintf("%s.%s", prefix, column), lengths), "\n")
 		default:
 			if value == nil {
@@ -330,7 +333,7 @@ func StringSliceContains(slice []string, value string) bool {
 	return StringSlicePos(slice, value) > -1
 }
 
-func RenderForceRecordsCSV(records []ForceRecord, format string) string {
+func RenderForceRecordsCSV(records []salesforce.ForceRecord, format string) string {
 	var out bytes.Buffer
 
 	var keys []string
@@ -362,8 +365,8 @@ func RenderForceRecordsCSV(records []ForceRecord, format string) string {
 	return out.String()
 }
 
-func flattenForceRecord(record ForceRecord) (flattened ForceRecord) {
-	flattened = make(ForceRecord)
+func flattenForceRecord(record salesforce.ForceRecord) (flattened salesforce.ForceRecord) {
+	flattened = make(salesforce.ForceRecord)
 	for key, value := range record {
 		if key == "attributes" {
 			continue
@@ -372,9 +375,9 @@ func flattenForceRecord(record ForceRecord) (flattened ForceRecord) {
 		case map[string]interface{}:
 			if value["records"] != nil {
 				unflattened := value["records"].([]interface{})
-				subflattened := make([]ForceRecord, len(unflattened))
+				subflattened := make([]salesforce.ForceRecord, len(unflattened))
 				for i, record := range unflattened {
-					subflattened[i] = (map[string]interface{})(flattenForceRecord(ForceRecord(record.(map[string]interface{}))))
+					subflattened[i] = (map[string]interface{})(flattenForceRecord(salesforce.ForceRecord(record.(map[string]interface{}))))
 				}
 				flattened[key] = subflattened
 			} else {
@@ -389,11 +392,11 @@ func flattenForceRecord(record ForceRecord) (flattened ForceRecord) {
 	return
 }
 
-func recordsHaveSubRows(records []ForceRecord) bool {
+func recordsHaveSubRows(records []salesforce.ForceRecord) bool {
 	for _, record := range records {
 		for _, value := range record {
 			switch value := value.(type) {
-			case []ForceRecord:
+			case []salesforce.ForceRecord:
 				if len(value) > 0 {
 					return true
 				}
@@ -403,7 +406,7 @@ func recordsHaveSubRows(records []ForceRecord) bool {
 	return false
 }
 
-func renderForceRecords(records []ForceRecord, prefix string, lengths map[string]int) string {
+func renderForceRecords(records []salesforce.ForceRecord, prefix string, lengths map[string]int) string {
 	var out bytes.Buffer
 
 	columns := recordColumns(records)
@@ -421,8 +424,8 @@ func renderForceRecords(records []ForceRecord, prefix string, lengths map[string
 	return out.String()
 }
 
-func RenderForceRecords(records []ForceRecord) string {
-	flattened := make([]ForceRecord, len(records))
+func RenderForceRecords(records []salesforce.ForceRecord) string {
+	flattened := make([]salesforce.ForceRecord, len(records))
 	for i, record := range records {
 		flattened[i] = flattenForceRecord(record)
 	}
@@ -430,7 +433,7 @@ func RenderForceRecords(records []ForceRecord) string {
 	return renderForceRecords(flattened, "", lengths)
 }
 
-func DisplayForceRecord(record ForceRecord) {
+func DisplayForceRecord(record salesforce.ForceRecord) {
 	DisplayInterfaceMap(record, 0)
 }
 
@@ -464,10 +467,8 @@ func StringSliceToInterfaceSlice(s []string) (i []interface{}) {
 	return
 }
 
-type ForceSobjectFields []interface{}
-
-func DisplayForceSobject(sobject ForceSobject) {
-	fields := ForceSobjectFields(sobject["fields"].([]interface{}))
+func DisplayForceSobject(sobject salesforce.ForceSobject) {
+	fields := salesforce.ForceSobjectFields(sobject["fields"].([]interface{}))
 	sort.Sort(fields)
 	for _, f := range fields {
 		field := f.(map[string]interface{})

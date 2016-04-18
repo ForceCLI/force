@@ -6,6 +6,8 @@ import (
 	"os"
 	"strings"
 	"text/tabwriter"
+
+	"github.com/heroku/force/salesforce"
 )
 
 var cmdLogins = &Command{
@@ -23,7 +25,7 @@ Examples:
 
 func runLogins(cmd *Command, args []string) {
 	active, _ := ActiveLogin()
-	accounts, _ := Config.List("accounts")
+	accounts, _ := salesforce.Config.List("accounts")
 	if len(accounts) == 0 {
 		fmt.Println("no logins")
 	} else {
@@ -32,8 +34,8 @@ func runLogins(cmd *Command, args []string) {
 
 		for _, account := range accounts {
 			if !strings.HasPrefix(account, ".") {
-				var creds ForceCredentials
-				data, err := Config.Load("accounts", account)
+				var creds salesforce.ForceCredentials
+				data, err := salesforce.Config.Load("accounts", account)
 				json.Unmarshal([]byte(data), &creds)
 
 				if err != nil {
@@ -56,9 +58,9 @@ func runLogins(cmd *Command, args []string) {
 }
 
 func ActiveLogin() (account string, err error) {
-	account, err = Config.Load("current", "account")
+	account, err = salesforce.Config.Load("current", "account")
 	if err != nil {
-		accounts, _ := Config.List("accounts")
+		accounts, _ := salesforce.Config.List("accounts")
 		if len(accounts) > 0 {
 			SetActiveLoginDefault()
 		}
@@ -66,32 +68,28 @@ func ActiveLogin() (account string, err error) {
 	return
 }
 
-func ActiveCredentials() (creds ForceCredentials, err error) {
+func ActiveCredentials() (creds salesforce.ForceCredentials, err error) {
 	account, err := ActiveLogin()
 	if err != nil {
 		return
 	}
-	data, err := Config.Load("accounts", account)
+	data, err := salesforce.Config.Load("accounts", account)
 	json.Unmarshal([]byte(data), &creds)
-	if creds.ApiVersion != "" {
-		apiVersionNumber = creds.ApiVersion
-		apiVersion = "v" + apiVersionNumber
-	}
 
 	return
 }
 
-func ActiveForce() (force *Force, err error) {
+func ActiveForce() (force *salesforce.Force, err error) {
 	creds, err := ActiveCredentials()
 	if err != nil {
 		return
 	}
-	force = NewForce(creds)
+	force = salesforce.NewForce(creds)
 	return
 }
 
 func SetActiveLoginDefault() (account string) {
-	accounts, _ := Config.List("accounts")
+	accounts, _ := salesforce.Config.List("accounts")
 	if len(accounts) > 0 {
 		account = accounts[0]
 		SetActiveLogin(account)
@@ -100,6 +98,6 @@ func SetActiveLoginDefault() (account string) {
 }
 
 func SetActiveLogin(account string) (err error) {
-	err = Config.Save("current", "account", account)
+	err = salesforce.Config.Save("current", "account", account)
 	return
 }

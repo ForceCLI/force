@@ -1,4 +1,4 @@
-package main
+package salesforce
 
 import (
 	"encoding/xml"
@@ -110,10 +110,10 @@ func (s *Soap) ExecuteLogin(username, password string) (response []byte, err err
 
 func (s *Soap) Execute(action, query string) (response []byte, err error) {
 	soap := `
-		<env:Envelope xmlns:xsd="http://www.w3.org/2001/XMLSchema" 
-		xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
-		xmlns:env="http://schemas.xmlsoap.org/soap/envelope/" 
-		xmlns:cmd="%s" 
+		<env:Envelope xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+		xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		xmlns:env="http://schemas.xmlsoap.org/soap/envelope/"
+		xmlns:cmd="%s"
 		xmlns:apex="http://soap.sforce.com/2006/08/apex">
 			<env:Header>
 				<cmd:SessionHeader>

@@ -1,9 +1,10 @@
-package main_test
+package salesforce_test
 
 import (
-	. "github.com/heroku/force"
 	"io/ioutil"
 	"os"
+
+	"github.com/heroku/force/salesforce"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -12,19 +13,19 @@ import (
 var _ = Describe("Packagebuilder", func() {
 	Describe("NewPushBuilder", func() {
 		It("should return a Packagebuilder", func() {
-			pb := NewPushBuilder()
-			Expect(pb).To(BeAssignableToTypeOf(PackageBuilder{IsPush: true}))
+			pb := salesforce.NewPushBuilder("v36.0")
+			Expect(pb).To(BeAssignableToTypeOf(salesforce.PackageBuilder{IsPush: true}))
 		})
 	})
 
 	Describe("AddFile", func() {
 		var (
-			pb      PackageBuilder
+			pb      salesforce.PackageBuilder
 			tempDir string
 		)
 
 		BeforeEach(func() {
-			pb = NewPushBuilder()
+			pb = salesforce.NewPushBuilder("v36.0")
 			tempDir, _ = ioutil.TempDir("", "packagebuilder-test")
 		})
 
@@ -113,7 +114,7 @@ var _ = Describe("Packagebuilder", func() {
 			var destructiveChangesPath string
 
 			BeforeEach(func() {
-				pb = NewPushBuilder()
+				pb = salesforce.NewPushBuilder("v36.0")
 				tempDir, _ := ioutil.TempDir("", "packagebuilder-test")
 				destructiveChangesPath = tempDir + "/destructiveChanges.xml"
 				destructiveChangesXml := `<?xml version="1.0" encoding="UTF-8"?>

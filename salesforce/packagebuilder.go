@@ -1,4 +1,4 @@
-package main
+package salesforce
 
 import (
 	"encoding/xml"
@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/heroku/force/util"
 )
 
 // Structs for XML building
@@ -21,7 +23,7 @@ type MetaType struct {
 	Name    string   `xml:"name"`
 }
 
-func createPackage() Package {
+func createPackage(apiVersion string) Package {
 	return Package{
 		Version: strings.TrimPrefix(apiVersion, "v"),
 		Xmlns:   "http://soap.sforce.com/2006/04/metadata",
@@ -52,6 +54,7 @@ var metapaths = []metapath{
 	metapath{path: "flexipages", name: "FlexiPage"},
 	metapath{path: "flowDefinitions", name: "FlowDefinition"},
 	metapath{path: "flows", name: "Flow"},
+	metapath{path: "globalPicklists", name: "GlobalPicklist"},
 	metapath{path: "groups", name: "Group"},
 	metapath{path: "homePageLayouts", name: "HomePageLayout"},
 	metapath{path: "installedPackages", name: "InstalledPackage"},
@@ -78,21 +81,22 @@ var metapaths = []metapath{
 }
 
 type PackageBuilder struct {
-	IsPush   bool
-	Metadata map[string]MetaType
-	Files    ForceMetadataFiles
+	IsPush     bool
+	Metadata   map[string]MetaType
+	Files      ForceMetadataFiles
+	ApiVersion string
 }
 
-func NewPushBuilder() PackageBuilder {
-	pb := PackageBuilder{IsPush: true}
+func NewPushBuilder(apiVersion string) PackageBuilder {
+	pb := PackageBuilder{IsPush: true, ApiVersion: apiVersion}
 	pb.Metadata = make(map[string]MetaType)
 	pb.Files = make(ForceMetadataFiles)
 
 	return pb
 }
 
-func NewFetchBuilder() PackageBuilder {
-	pb := PackageBuilder{IsPush: false}
+func NewFetchBuilder(apiVersion string) PackageBuilder {
+	pb := PackageBuilder{IsPush: false, ApiVersion: apiVersion}
 	pb.Metadata = make(map[string]MetaType)
 	pb.Files = make(ForceMetadataFiles)
 
@@ -101,7 +105,7 @@ func NewFetchBuilder() PackageBuilder {
 
 // Build and return package.xml
 func (pb PackageBuilder) PackageXml() []byte {
-	p := createPackage()
+	p := createPackage(pb.ApiVersion)
 
 	for _, metaType := range pb.Metadata {
 		p.Types = append(p.Types, metaType)
@@ -110,7 +114,7 @@ func (pb PackageBuilder) PackageXml() []byte {
 	byteXml, _ := xml.MarshalIndent(p, "", "    ")
 	byteXml = append([]byte(xml.Header), byteXml...)
 	//if err := ioutil.WriteFile("mypackage.xml", byteXml, 0644); err != nil {
-	//ErrorAndExit(err.Error())
+	//util.ErrorAndExit(err.Error())
 	//}
 	return byteXml
 }
@@ -202,10 +206,14 @@ func (pb *PackageBuilder) addDestructiveChanges(fpath string) (err error) {
 		return
 	}
 
-	frel, _ := filepath.Rel(filepath.Dir(fpath), fpath)
-	pb.Files[frel] = fdata
-
+	pb.AddDestructiveChangesData(fdata)
 	return
+}
+
+// AddDestructiveChangesData allows you to directly add a Destructive Changes XML
+// to this package..
+func (pb *PackageBuilder) AddDestructiveChangesData(fdata []byte) {
+	pb.Files["destructiveChanges.xml"] = fdata
 }
 
 func (pb *PackageBuilder) contains(members []string, name string) bool {
@@ -234,10 +242,10 @@ func (pb *PackageBuilder) AddMetaToPackage(metaName string, name string) {
 func getMetaTypeFromPath(fpath string) (metaName string, name string) {
 	fpath, err := filepath.Abs(fpath)
 	if err != nil {
-		ErrorAndExit("Cound not find " + fpath)
+		util.ErrorAndExit("Cound not find " + fpath)
 	}
 	if _, err := os.Stat(fpath); err != nil {
-		ErrorAndExit("Cound not open " + fpath)
+		util.ErrorAndExit("Cound not open " + fpath)
 	}
 
 	// Get the metadata type and name for the file
@@ -287,4 +295,17 @@ func getMetaForPath(path string) (metaName string, objectName string) {
 	metaName = parentName
 	objectName = fileName
 	return
+}
+
+func (files *ForceMetadataFilesForType) MetaType() MetaType {
+	metatype := MetaType{
+		Name:    files.Name,
+		Members: make([]string, len(files.Members)),
+	}
+
+	for _, item := range files.Members {
+		metatype.Members = append(metatype.Members, item.Name)
+	}
+
+	return metatype
 }

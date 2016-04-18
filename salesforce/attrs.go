@@ -1,4 +1,4 @@
-package main
+package salesforce
 
 import (
 	"net/url"

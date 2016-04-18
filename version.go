@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
-)
 
-var Version = "dev"
+	"github.com/heroku/force/salesforce"
+)
 
 //Dood, what
 var cmdVersion = &Command{
@@ -24,5 +24,5 @@ func init() {
 }
 
 func runVersion(cmd *Command, args []string) {
-	fmt.Println(Version)
+	fmt.Println(salesforce.Version)
 }

@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+
+	"github.com/heroku/force/util"
 )
 
 var cmdLog = &Command{
@@ -27,14 +29,14 @@ func getLog(cmd *Command, args []string) {
 	if len(args) == 0 || args[0] == "list" {
 		records, err := force.QueryLogs()
 		if err != nil {
-			ErrorAndExit(err.Error())
+			util.ErrorAndExit(err.Error())
 		}
 		DisplayForceRecords(records)
 	} else {
 		logId := args[0]
 		log, err := force.RetrieveLog(logId)
 		if err != nil {
-			ErrorAndExit(err.Error())
+			util.ErrorAndExit(err.Error())
 		}
 		fmt.Println(log)
 	}

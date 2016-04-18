@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+
+	"github.com/heroku/force/util"
 )
 
 var cmdPassword = &Command{
@@ -37,23 +39,23 @@ func runPassword(cmd *Command, args []string) {
 		case "change":
 			runPasswordChange(args[1:])
 		default:
-			ErrorAndExit("no such command: %s", args[0])
+			util.ErrorAndExit("no such command: %s", args[0])
 		}
 	}
 }
 
 func runPasswordStatus(args []string) {
 	if len(args) != 1 {
-		ErrorAndExit("must specify user name")
+		util.ErrorAndExit("must specify user name")
 	}
 	force, _ := ActiveForce()
 	records, err := force.Query(fmt.Sprintf("select Id From User Where UserName = '%s'", args[0]), false)
 	if err != nil {
-		ErrorAndExit(err.Error())
+		util.ErrorAndExit(err.Error())
 	} else {
 		object, err := force.GetPasswordStatus(records.Records[0]["Id"].(string))
 		if err != nil {
-			ErrorAndExit(err.Error())
+			util.ErrorAndExit(err.Error())
 		} else {
 			fmt.Printf("\nPassword is expired: %t\n\n", object.IsExpired)
 		}
@@ -62,13 +64,13 @@ func runPasswordStatus(args []string) {
 
 func runPasswordReset(args []string) {
 	if len(args) != 1 {
-		ErrorAndExit("must specify user name")
+		util.ErrorAndExit("must specify user name")
 	}
 	force, _ := ActiveForce()
 	records, err := force.Query(fmt.Sprintf("select Id From User Where UserName = '%s'", args[0]), false)
 	object, err := force.ResetPassword(records.Records[0]["Id"].(string))
 	if err != nil {
-		ErrorAndExit(err.Error())
+		util.ErrorAndExit(err.Error())
 	} else {
 		fmt.Printf("\nNew password is: %s\n\n", object.NewPassword)
 	}
@@ -76,19 +78,19 @@ func runPasswordReset(args []string) {
 
 func runPasswordChange(args []string) {
 	if len(args) != 2 {
-		ErrorAndExit("must specify user name")
+		util.ErrorAndExit("must specify user name")
 	}
 	force, _ := ActiveForce()
 	records, err := force.Query(fmt.Sprintf("select Id From User Where UserName = '%s'", args[0]), false)
 	if err != nil {
-		ErrorAndExit(err.Error())
+		util.ErrorAndExit(err.Error())
 	} else {
 		fmt.Println(args[1:])
 		newPass := make(map[string]string)
 		newPass["NewPassword"] = args[1]
 		_, err, emessages := force.ChangePassword(records.Records[0]["Id"].(string), newPass)
 		if err != nil {
-			ErrorAndExit(err.Error(), emessages[0].ErrorCode)
+			util.ErrorAndExit(err.Error(), emessages[0].ErrorCode)
 		} else {
 			fmt.Println("\nPassword changed\n ")
 		}

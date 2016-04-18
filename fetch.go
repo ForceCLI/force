@@ -11,6 +11,9 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	. "github.com/heroku/force/salesforce"
+	"github.com/heroku/force/util"
 )
 
 var cmdFetch = &Command{
@@ -83,12 +86,12 @@ func runFetchAura2(cmd *Command, entityname string) {
 	if entityname == "" {
 		bundles, definitions, err = force.GetAuraBundles()
 		if err != nil {
-			ErrorAndExit(err.Error())
+			util.ErrorAndExit(err.Error())
 		}
 	} else {
 		bundles, definitions, err = force.GetAuraBundle(entityname)
 		if err != nil {
-			ErrorAndExit(err.Error())
+			util.ErrorAndExit(err.Error())
 		}
 	}
 	_, err = persistBundles(bundles, definitions)
@@ -105,12 +108,12 @@ func FetchManifest(entityname string) (manifest BundleManifest) {
 	if entityname == "" {
 		bundles, definitions, err = force.GetAuraBundles()
 		if err != nil {
-			ErrorAndExit(err.Error())
+			util.ErrorAndExit(err.Error())
 		}
 	} else {
 		bundles, definitions, err = force.GetAuraBundle(entityname)
 		if err != nil {
-			ErrorAndExit(err.Error())
+			util.ErrorAndExit(err.Error())
 		}
 	}
 	makefile = false
@@ -135,12 +138,12 @@ func persistBundles(bundles AuraDefinitionBundleResult, definitions AuraDefiniti
 		root = filepath.Join(targetDirectory, root, mdbase, "aura")
 	}
 	if err := os.MkdirAll(root, 0755); err != nil {
-		ErrorAndExit(err.Error())
+		util.ErrorAndExit(err.Error())
 	}
 
 	for key, value := range bundleMap {
 		if err := os.MkdirAll(filepath.Join(root, value), 0755); err != nil {
-			ErrorAndExit(err.Error())
+			util.ErrorAndExit(err.Error())
 		}
 
 		bundleManifest = BundleManifest{}
@@ -186,7 +189,7 @@ func persistBundles(bundles AuraDefinitionBundleResult, definitions AuraDefiniti
 
 func runFetch(cmd *Command, args []string) {
 	if metadataType == "" {
-		ErrorAndExit("must specify object type and/or object name")
+		util.ErrorAndExit("must specify object type and/or object name")
 	}
 
 	force, _ := ActiveForce()
@@ -205,9 +208,11 @@ func runFetch(cmd *Command, args []string) {
 	} else if strings.ToLower(metadataType) == "package" {
 		if len(metadataName) > 0 {
 			for names := range metadataName {
-				files, err = force.Metadata.RetrievePackage(metadataName[names])
+				files, err = force.Metadata.RetrievePackage(metadataName[names], ForceRetrieveOptions{
+					PreserveZip: preserveZip,
+				})
 				if err != nil {
-					ErrorAndExit(err.Error())
+					util.ErrorAndExit(err.Error())
 				}
 				if preserveZip == true {
 					os.Rename("inbound.zip", fmt.Sprintf("%s.zip", metadataName[names]))
@@ -223,9 +228,11 @@ func runFetch(cmd *Command, args []string) {
 			mq := ForceMetadataQueryElement{metadataType, []string{"*"}}
 			query = append(query, mq)
 		}
-		files, err = force.Metadata.Retrieve(query)
+		files, err = force.Metadata.Retrieve(query, ForceRetrieveOptions{
+			PreserveZip: preserveZip,
+		})
 		if err != nil {
-			ErrorAndExit(err.Error())
+			util.ErrorAndExit(err.Error())
 		}
 	}
 
@@ -240,17 +247,17 @@ func runFetch(cmd *Command, args []string) {
 	existingPackage, _ := pathExists(filepath.Join(root, "package.xml"))
 
 	if len(files) == 1 {
-		ErrorAndExit("Could not find any objects for " + metadataType + ". (Is the metadata type correct?)")
+		util.ErrorAndExit("Could not find any objects for " + metadataType + ". (Is the metadata type correct?)")
 	}
 	for name, data := range files {
 		if !existingPackage || name != "package.xml" {
 			file := filepath.Join(root, name)
 			dir := filepath.Dir(file)
 			if err := os.MkdirAll(dir, 0755); err != nil {
-				ErrorAndExit(err.Error())
+				util.ErrorAndExit(err.Error())
 			}
 			if err := ioutil.WriteFile(filepath.Join(root, name), data, 0644); err != nil {
-				ErrorAndExit(err.Error())
+				util.ErrorAndExit(err.Error())
 			}
 			var isResource = false
 			if strings.ToLower(metadataType) == "staticresource" {
@@ -294,7 +301,7 @@ func runFetch(cmd *Command, args []string) {
 			resourcefile := value
 			dest := strings.Split(value, ".")[0]
 			if err := os.MkdirAll(dest, 0755); err != nil {
-				ErrorAndExit(err.Error())
+				util.ErrorAndExit(err.Error())
 			}
 			r, err := zip.OpenReader(resourcefile)
 			if err != nil {

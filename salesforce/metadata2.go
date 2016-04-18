@@ -1,4 +1,4 @@
-package main
+package salesforce
 
 /*import (
 	"archive/zip"
@@ -581,7 +581,7 @@ func ValidateOptionsAndDefaults(typ string, fields map[string]reflect.StructFiel
 	for name, value := range options {
 		field, ok := fields[strings.ToLower(name)]
 		if !ok {
-			ErrorAndExit(fmt.Sprintf("validation error: %s:%s is not a valid option for field type %s", name, value, typ))
+			util.ErrorAndExit(fmt.Sprintf("validation error: %s:%s is not a valid option for field type %s", name, value, typ))
 		} else {
 			newOptions[field.Tag.Get("xml")] = options[name]
 		}
@@ -698,7 +698,7 @@ func (fm *ForceMetadata) ValidateFieldOptions(typ string, options map[string]str
 		s = reflect.ValueOf(&MasterDetailRequired{}).Elem()
 		break
 	default:
-		//ErrorAndExit(fmt.Sprintf("Field type %s is not implemented.", typ))
+		//util.ErrorAndExit(fmt.Sprintf("Field type %s is not implemented.", typ))
 		break
 	}
 

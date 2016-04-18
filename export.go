@@ -6,6 +6,9 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/heroku/force/salesforce"
+	"github.com/heroku/force/util"
 )
 
 var cmdExport = &Command{
@@ -37,7 +40,7 @@ func runExport(cmd *Command, args []string) {
 	force, _ := ActiveForce()
 	sobjects, err := force.ListSobjects()
 	if err != nil {
-		ErrorAndExit(err.Error())
+		util.ErrorAndExit(err.Error())
 	}
 	stdObjects := make([]string, 1, len(sobjects)+1)
 	stdObjects[0] = "*"
@@ -47,7 +50,7 @@ func runExport(cmd *Command, args []string) {
 			stdObjects = append(stdObjects, name)
 		}
 	}
-	query := ForceMetadataQuery{
+	query := salesforce.ForceMetadataQuery{
 		{Name: "AccountSettings", Members: []string{"*"}},
 		{Name: "ActivitiesSettings", Members: []string{"*"}},
 		{Name: "AddressSettings", Members: []string{"*"}},
@@ -91,8 +94,10 @@ func runExport(cmd *Command, args []string) {
 		{Name: "ExternalDataSource", Members: []string{"*"}},
 		{Name: "FieldSet", Members: []string{"*"}},
 		{Name: "Flow", Members: []string{"*"}},
+		{Name: "FlowDefinition", Members: []string{"*"}},
 		{Name: "Folder", Members: []string{"*"}},
 		{Name: "ForecastingSettings", Members: []string{"*"}},
+		{Name: "GlobalPicklist", Members: []string{"*"}},
 		{Name: "Group", Members: []string{"*"}},
 		{Name: "HomePageComponent", Members: []string{"*"}},
 		{Name: "HomePageLayout", Members: []string{"*"}},
@@ -135,10 +140,12 @@ func runExport(cmd *Command, args []string) {
 		{Name: "ValidationRule", Members: []string{"*"}},
 		{Name: "Workflow", Members: []string{"*"}},
 	}
-	files, err := force.Metadata.Retrieve(query)
+	files, err := force.Metadata.Retrieve(query, salesforce.ForceRetrieveOptions{
+		PreserveZip: preserveZip,
+	})
 	if err != nil {
 		fmt.Printf("Encountered and error with retrieve...\n")
-		ErrorAndExit(err.Error())
+		util.ErrorAndExit(err.Error())
 	}
 	root, err = GetSourceDir()
 	if err != nil {
@@ -149,10 +156,10 @@ func runExport(cmd *Command, args []string) {
 		file := filepath.Join(root, name)
 		dir := filepath.Dir(file)
 		if err := os.MkdirAll(dir, 0755); err != nil {
-			ErrorAndExit(err.Error())
+			util.ErrorAndExit(err.Error())
 		}
 		if err := ioutil.WriteFile(filepath.Join(root, name), data, 0644); err != nil {
-			ErrorAndExit(err.Error())
+			util.ErrorAndExit(err.Error())
 		}
 	}
 	fmt.Printf("Exported to %s\n", root)

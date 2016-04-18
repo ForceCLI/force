@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"strings"
+
+	"github.com/heroku/force/util"
 )
 
 var cmdField = &Command{
@@ -50,33 +52,33 @@ func runField(cmd *Command, args []string) {
 				DisplayFieldDetails(args[1])
 			}
 		default:
-			ErrorAndExit("no such command: %s", args[0])
+			util.ErrorAndExit("no such command: %s", args[0])
 		}
 	}
 }
 
 func runFieldList(args []string) {
 	if len(args) != 1 {
-		ErrorAndExit("must specify object")
+		util.ErrorAndExit("must specify object")
 	}
 	force, _ := ActiveForce()
 	sobject, err := force.GetSobject(args[0])
 	if err != nil {
-		ErrorAndExit(err.Error())
+		util.ErrorAndExit(err.Error())
 	}
 	DisplayForceSobject(sobject)
 }
 
 func runFieldCreate(args []string) {
 	if len(args) < 2 {
-		ErrorAndExit("must specify object and at least one field")
+		util.ErrorAndExit("must specify object and at least one field")
 	}
 
 	force, _ := ActiveForce()
 
 	parts := strings.Split(args[1], ":")
 	if len(parts) != 2 {
-		ErrorAndExit("must specify name:type for fields")
+		util.ErrorAndExit("must specify name:type for fields")
 	}
 
 	var optionMap = make(map[string]string)
@@ -84,7 +86,7 @@ func runFieldCreate(args []string) {
 		for _, value := range args[2:] {
 			options := strings.Split(value, ":")
 			if len(options) != 2 {
-				ErrorAndExit(fmt.Sprintf("Missing value for field attribute %s", value))
+				util.ErrorAndExit(fmt.Sprintf("Missing value for field attribute %s", value))
 			}
 			optionMap[options[0]] = options[1]
 		}
@@ -93,21 +95,21 @@ func runFieldCreate(args []string) {
 	// Validate the options for this field type
 	newOptions, err := force.Metadata.ValidateFieldOptions(parts[1], optionMap)
 	if err != nil {
-		ErrorAndExit(err.Error())
+		util.ErrorAndExit(err.Error())
 	}
 	if err := force.Metadata.CreateCustomField(args[0], parts[0], parts[1], newOptions); err != nil {
-		ErrorAndExit(err.Error())
+		util.ErrorAndExit(err.Error())
 	}
 	fmt.Println("Custom field created")
 }
 
 func runFieldDelete(args []string) {
 	if len(args) < 2 {
-		ErrorAndExit("must specify object and at least one field")
+		util.ErrorAndExit("must specify object and at least one field")
 	}
 	force, _ := ActiveForce()
 	if err := force.Metadata.DeleteCustomField(args[0], args[1]); err != nil {
-		ErrorAndExit(err.Error())
+		util.ErrorAndExit(err.Error())
 	}
 	fmt.Println("Custom field deleted")
 }

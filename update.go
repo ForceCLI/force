@@ -2,7 +2,10 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/ddollar/dist"
+	. "github.com/heroku/force/salesforce"
+	"github.com/heroku/force/util"
 )
 
 var cmdUpdate = &Command{
@@ -26,17 +29,17 @@ func runUpdate(cmd *Command, args []string) {
 	if len(args) == 1 {
 		err := d.FullUpdate(args[0])
 		if err != nil {
-			ErrorAndExit(err.Error())
+			util.ErrorAndExit(err.Error())
 		} else {
 			fmt.Printf("updated to %s\n", args[0])
 		}
 	} else {
 		if Version == "dev" {
-			ErrorAndExit("can't update dev version")
+			util.ErrorAndExit("can't update dev version")
 		}
 		to, err := d.Update()
 		if err != nil {
-			ErrorAndExit(err.Error())
+			util.ErrorAndExit(err.Error())
 		} else {
 			fmt.Printf("updated to %s\n", to)
 		}

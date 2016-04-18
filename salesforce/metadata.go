@@ -1,8 +1,7 @@
-package main
+package salesforce
 
 import (
 	"archive/zip"
-	"bitbucket.org/pkg/inflect"
 	"bufio"
 	"bytes"
 	"encoding/base64"
@@ -14,9 +13,14 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/heroku/force/util"
+
+	"bitbucket.org/pkg/inflect"
 )
 
 type BigObject struct {
@@ -178,6 +182,17 @@ type ForceMetadataQuery []ForceMetadataQueryElement
 
 type ForceMetadataFiles map[string][]byte
 
+type ForceMetadataItem struct {
+	Name         string
+	Content      []byte
+	CompletePath string
+}
+
+type ForceMetadataFilesForType struct {
+	Members []ForceMetadataItem
+	Name    string
+}
+
 type ForceMetadata struct {
 	ApiVersion string
 	Force      *Force
@@ -194,6 +209,10 @@ type ForceDeployOptions struct {
 	TestLevel         string   `xml:"testLevel"`
 	RunTests          []string `xml:"runTests"`
 	SinglePackage     bool     `xml:"singlePackage"`
+}
+
+type ForceRetrieveOptions struct {
+	PreserveZip bool
 }
 
 /* These structs define which options are available and which are
@@ -471,6 +490,12 @@ type MasterDetail struct {
 	RelationshipName  string `xml:"relationshipName"`
 }
 
+// FlowDefinition is an encoding/xml marshallable structure for
+// Salesforce FlowDefinition metadata.
+type FlowDefinition struct {
+	ActiveVersionNumber uint64 `xml:"activeVersionNumber"`
+}
+
 // Example of how to use Go's reflection
 // Print the attributes of a Data Model
 func getAttributes(m interface{}) map[string]reflect.StructField {
@@ -506,7 +531,7 @@ func ValidateOptionsAndDefaults(typ string, fields map[string]reflect.StructFiel
 	for name, value := range options {
 		field, ok := fields[strings.ToLower(name)]
 		if !ok {
-			ErrorAndExit(fmt.Sprintf("validation error: %s:%s is not a valid option for field type %s", name, value, typ))
+			util.ErrorAndExit(fmt.Sprintf("validation error: %s:%s is not a valid option for field type %s", name, value, typ))
 		} else {
 			newOptions[field.Tag.Get("xml")] = options[name]
 		}
@@ -628,7 +653,7 @@ func (fm *ForceMetadata) ValidateFieldOptions(typ string, options map[string]str
 		s = reflect.ValueOf(&MasterDetailRequired{}).Elem()
 		break
 	default:
-		//ErrorAndExit(fmt.Sprintf("Field type %s is not implemented.", typ))
+		//util.ErrorAndExit(fmt.Sprintf("Field type %s is not implemented.", typ))
 		break
 	}
 
@@ -638,7 +663,10 @@ func (fm *ForceMetadata) ValidateFieldOptions(typ string, options map[string]str
 }
 
 func NewForceMetadata(force *Force) (fm *ForceMetadata) {
-	fm = &ForceMetadata{ApiVersion: apiVersionNumber, Force: force}
+	if force.Credentials.ApiVersion == "" {
+		util.ErrorAndExit("API version not recorded for this account, please run `force login`")
+	}
+	fm = &ForceMetadata{ApiVersion: force.Credentials.ApiVersionNumber(), Force: force}
 	return
 }
 
@@ -677,14 +705,14 @@ func (fm *ForceMetadata) CheckDeployStatus(id string) (results ForceCheckDeploym
 	}
 
 	if err = xml.Unmarshal(body, &deployResult); err != nil {
-		ErrorAndExit(err.Error())
+		util.ErrorAndExit(err.Error())
 	}
 
 	results = deployResult.Results
 	return
 }
 
-func (fm *ForceMetadata) CheckRetrieveStatus(id string) (files ForceMetadataFiles, err error) {
+func (fm *ForceMetadata) CheckRetrieveStatus(id string, options ForceRetrieveOptions) (files ForceMetadataFiles, err error) {
 	body, err := fm.soapExecute("checkRetrieveStatus", fmt.Sprintf("<id>%s</id>", id))
 	if err != nil {
 		fmt.Printf("Hrm... will probably try again\n")
@@ -702,7 +730,7 @@ func (fm *ForceMetadata) CheckRetrieveStatus(id string) (files ForceMetadataFile
 	}
 
 	zipfiles, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
-	if preserveZip == true {
+	if options.PreserveZip == true {
 		ioutil.WriteFile("inbound.zip", data, 0644)
 	}
 	if err != nil {
@@ -719,7 +747,7 @@ func (fm *ForceMetadata) CheckRetrieveStatus(id string) (files ForceMetadataFile
 }
 
 func (fm *ForceMetadata) DescribeMetadata() (describe MetadataDescribeResult, err error) {
-	body, err := fm.soapExecute("describeMetadata", fmt.Sprintf("<apiVersion>%s</apiVersion>", apiVersionNumber))
+	body, err := fm.soapExecute("describeMetadata", fmt.Sprintf("<apiVersion>%s</apiVersion>", fm.ApiVersion))
 	if err != nil {
 		return
 	}
@@ -777,7 +805,7 @@ func (fm *ForceMetadata) CreateConnectedApp(name, callback string) (err error) {
 		return err
 	}
 	email := me["Email"]
-	body, err := fm.soapExecute("create", fmt.Sprintf(soap, name, apiVersionNumber, name, email, callback))
+	body, err := fm.soapExecute("create", fmt.Sprintf(soap, name, fm.ApiVersion, name, email, callback))
 	if err != nil {
 		return err
 	}
@@ -949,7 +977,7 @@ func (fm *ForceMetadata) CreateCustomField(object, field, typ string, options ma
 			soapField += fmt.Sprintf("<%s>%s</%s>", key, value, key)
 		}
 	default:
-		ErrorAndExit("unable to create field type: %s", typ)
+		util.ErrorAndExit("unable to create field type: %s", typ)
 	}
 
 	//fmt.Println(fmt.Sprintf(soap, object, field, label, soapField))
@@ -1001,7 +1029,7 @@ func (fm *ForceMetadata) CreateBigObject(object BigObject) (err error) {
 	cmd.Stdout = os.Stdout
 	err = cmd.Run()
 	if err != nil {
-		ErrorAndExit(err.Error())
+		util.ErrorAndExit(err.Error())
 	}
 	return
 }
@@ -1138,7 +1166,7 @@ func (fm *ForceMetadata) DeployZipFile(soap string, zipfile []byte) (results For
 	return
 }
 
-func (fm *ForceMetadata) Retrieve(query ForceMetadataQuery) (files ForceMetadataFiles, err error) {
+func (fm *ForceMetadata) Retrieve(query ForceMetadataQuery, options ForceRetrieveOptions) (files ForceMetadataFiles, err error) {
 
 	soap := `
 		<retrieveRequest>
@@ -1163,7 +1191,7 @@ func (fm *ForceMetadata) Retrieve(query ForceMetadataQuery) (files ForceMetadata
 		}
 		types += fmt.Sprintf(soapType, element.Name, members)
 	}
-	body, err := fm.soapExecute("retrieve", fmt.Sprintf(soap, apiVersionNumber, types))
+	body, err := fm.soapExecute("retrieve", fmt.Sprintf(soap, fm.ApiVersion, types))
 	if err != nil {
 		return
 	}
@@ -1177,7 +1205,7 @@ func (fm *ForceMetadata) Retrieve(query ForceMetadataQuery) (files ForceMetadata
 	if err = fm.CheckStatus(status.Id); err != nil {
 		return
 	}
-	raw_files, err := fm.CheckRetrieveStatus(status.Id)
+	raw_files, err := fm.CheckRetrieveStatus(status.Id, options)
 	if err != nil {
 		return
 	}
@@ -1189,14 +1217,14 @@ func (fm *ForceMetadata) Retrieve(query ForceMetadataQuery) (files ForceMetadata
 	return
 }
 
-func (fm *ForceMetadata) RetrievePackage(packageName string) (files ForceMetadataFiles, err error) {
+func (fm *ForceMetadata) RetrievePackage(packageName string, options ForceRetrieveOptions) (files ForceMetadataFiles, err error) {
 	soap := `
 		<retrieveRequest>
 			<apiVersion>%s</apiVersion>
 			<packageNames>%s</packageNames>
 		</retrieveRequest>
 	`
-	soap = fmt.Sprintf(soap, apiVersionNumber, packageName)
+	soap = fmt.Sprintf(soap, fm.ApiVersion, packageName)
 	body, err := fm.soapExecute("retrieve", soap)
 	if err != nil {
 		return
@@ -1210,7 +1238,7 @@ func (fm *ForceMetadata) RetrievePackage(packageName string) (files ForceMetadat
 	if err = fm.CheckStatus(status.Id); err != nil {
 		return
 	}
-	raw_files, err := fm.CheckRetrieveStatus(status.Id)
+	raw_files, err := fm.CheckRetrieveStatus(status.Id, options)
 	if err != nil {
 		return
 	}
@@ -1237,10 +1265,8 @@ func (fm *ForceMetadata) ListAllMetadata() (describe MetadataDescribeResult, err
 }
 
 func (fm *ForceMetadata) ListConnectedApps() (apps ForceConnectedApps, err error) {
-	originalVersion := fm.ApiVersion
-	fm.ApiVersion = apiVersionNumber
 	body, err := fm.ListMetadata("ConnectedApp")
-	fm.ApiVersion = originalVersion
+
 	if err != nil {
 		return
 	}
@@ -1252,6 +1278,49 @@ func (fm *ForceMetadata) ListConnectedApps() (apps ForceConnectedApps, err error
 	}
 	apps = res.ConnectedApps
 	return
+}
+
+// EnumerateMetadataByType allows for finding all metadata of a given type in a
+// given ForceMetadataFiles map of Salesforce metadata.
+func EnumerateMetadataByType(files ForceMetadataFiles, metadataName string, metadataFolderPath string, metadataFileExtension string, ignoreRegex string) ForceMetadataFilesForType {
+	TypeFiles := ForceMetadataFilesForType{
+		Members: make([]ForceMetadataItem, 0),
+		Name:    metadataName,
+	}
+
+	// now, the only way to infer the resources it determine it from the
+	// regularly-formatted names of metadata items that were returned to us in a
+	// the package (the Metadata API actually returned a ZIP file) compile a
+	// regex:
+	metadataNameScraper, err := regexp.Compile(fmt.Sprintf("^%s\\/(.*)\\.%s$", metadataFolderPath, metadataFileExtension))
+	if err != nil {
+		util.ErrorAndExit(err.Error())
+	}
+
+	ignoreMatcher, err := regexp.Compile(ignoreRegex)
+	if err != nil {
+		util.ErrorAndExit(err.Error())
+	}
+
+	for name, fdata := range files {
+		matchedPathFields := metadataNameScraper.FindStringSubmatch(name)
+
+		if matchedPathFields != nil && len(matchedPathFields) == 2 {
+			// grab the filename (minus path and extension), and that's the
+			// metadata object name itself:
+			metadataName := matchedPathFields[1]
+
+			if ignoreRegex == "" || !ignoreMatcher.MatchString(metadataName) {
+				TypeFiles.Members = append(TypeFiles.Members, ForceMetadataItem{
+					Name:         metadataName,
+					Content:      fdata,
+					CompletePath: name,
+				})
+			}
+		}
+	}
+
+	return TypeFiles
 }
 
 func (fm *ForceMetadata) soapExecute(action, query string) (response []byte, err error) {

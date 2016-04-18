@@ -8,6 +8,9 @@ import (
 	"io/ioutil"
 	"os"
 	"strings"
+
+	"github.com/heroku/force/salesforce"
+	"github.com/heroku/force/util"
 )
 
 var cmdSobject = &Command{
@@ -51,16 +54,16 @@ func runSobject(cmd *Command, args []string) {
 		case "import":
 			runSobjectImport(args[1:])
 		default:
-			ErrorAndExit("no such command: %s", args[0])
+			util.ErrorAndExit("no such command: %s", args[0])
 		}
 	}
 }
 
-func getSobjectList(args []string) (l []ForceSobject) {
+func getSobjectList(args []string) (l []salesforce.ForceSobject) {
 	force, _ := ActiveForce()
 	sobjects, err := force.ListSobjects()
 	if err != nil {
-		ErrorAndExit(fmt.Sprintf("ERROR: %s\n", err))
+		util.ErrorAndExit(fmt.Sprintf("ERROR: %s\n", err))
 	}
 
 	for _, sobject := range sobjects {
@@ -81,11 +84,11 @@ func runSobjectList(args []string) {
 
 func runSobjectCreate(args []string) {
 	if len(args) < 1 {
-		ErrorAndExit("must specify object name")
+		util.ErrorAndExit("must specify object name")
 	}
 	force, _ := ActiveForce()
 	if err := force.Metadata.CreateCustomObject(args[0]); err != nil {
-		ErrorAndExit(err.Error())
+		util.ErrorAndExit(err.Error())
 	}
 	fmt.Println("Custom object created")
 
@@ -97,11 +100,11 @@ func runSobjectCreate(args []string) {
 
 func runSobjectDelete(args []string) {
 	if len(args) < 1 {
-		ErrorAndExit("must specify object")
+		util.ErrorAndExit("must specify object")
 	}
 	force, _ := ActiveForce()
 	if err := force.Metadata.DeleteCustomObject(args[0]); err != nil {
-		ErrorAndExit(err.Error())
+		util.ErrorAndExit(err.Error())
 	}
 	fmt.Println("Custom object deleted")
 }
@@ -115,10 +118,10 @@ func runSobjectImport(args []string) {
 	// Need to read the file into a query result structure
 	data, err := ioutil.ReadAll(os.Stdin)
 
-	var query ForceQueryResult
+	var query salesforce.ForceQueryResult
 	json.Unmarshal(data, &query)
 	if err != nil {
-		ErrorAndExit(err.Error())
+		util.ErrorAndExit(err.Error())
 	}
 
 	var soapMsg = ""
@@ -154,7 +157,7 @@ func runSobjectImport(args []string) {
 	}
 
 	force, _ := ActiveForce()
-	response, err := force.Partner.soapExecuteCore("create", soapMsg)
+	response, err := force.Partner.SoapExecuteCore("create", soapMsg)
 
 	type errorData struct {
 		Fields     string `xml:"field"`

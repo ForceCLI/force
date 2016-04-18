@@ -1,4 +1,4 @@
-package main
+package salesforce
 
 func (apps ForceConnectedApps) Len() int {
 	return len(apps)
@@ -11,6 +11,8 @@ func (apps ForceConnectedApps) Less(i, j int) bool {
 func (apps ForceConnectedApps) Swap(i, j int) {
 	apps[i], apps[j] = apps[j], apps[i]
 }
+
+type ForceSobjectFields []interface{}
 
 func (f ForceSobjectFields) Len() int {
 	return len(f)
