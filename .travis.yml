@@ -2,7 +2,7 @@ language: go
 go:
 - 1.5
 before_install:
-- go get golang.org/x/tools/cmd/vet golang.org/x/tools/cmd/goimports
+- go get golang.org/x/tools/cmd/goimports
 - go get github.com/mitchellh/gox
 install:
 - go get github.com/bmizerany/assert

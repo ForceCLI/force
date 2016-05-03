@@ -345,50 +345,18 @@ func RenderForceRecordsCSV(records []ForceRecord, format string) string {
 		}
 	}
 	sort.Strings(keys)
-	//keys = RemoveTransientRelationships(keys)
-	f, _ := ActiveCredentials()
+
 	if len(records) > 0 {
-		lengths := make([]int, len(keys))
-		outKeys := make([]string, len(keys))
-		for i, key := range keys {
-			lengths[i] = len(key)
-			if strings.HasSuffix(key, "__c") && f.Namespace != "" {
-				outKeys[i] = fmt.Sprintf(`%s%s%s`, f.Namespace, "__", key)
-			} else {
-				outKeys[i] = key
-			}
-		}
+		// Write out header
+		out.WriteString(fmt.Sprintf(`"%s"%s`, strings.Join(keys, `","`), "\n"))
 
-		formatter_parts := make([]string, len(outKeys))
-		for i, length := range lengths {
-			formatter_parts[i] = fmt.Sprintf(`"%%-%ds"`, length)
-		}
-
-		formatter := strings.Join(formatter_parts, `,`)
-		out.WriteString(fmt.Sprintf(formatter+"\n", StringSliceToInterfaceSlice(outKeys)...))
+		// Write out each record
 		for _, record := range flattenedRecords {
-			values := make([][]string, len(keys))
+			myvalues := make([]string, len(keys))
 			for i, key := range keys {
-				values[i] = strings.Split(fmt.Sprintf(`%v`, record[key]), `\n`)
+				myvalues[i] = strings.Replace(fmt.Sprintf(`%v`, record[key]), "<nil>", "", -1)
 			}
-
-			maxLines := 0
-			for _, value := range values {
-				lines := len(value)
-				if lines > maxLines {
-					maxLines = lines
-				}
-			}
-
-			for li := 0; li < maxLines; li++ {
-				line := make([]string, len(values))
-				for i, value := range values {
-					if len(value) > li {
-						line[i] = strings.Replace(value[li], `"`, `'`, -1)
-					}
-				}
-				out.WriteString(fmt.Sprintf(formatter+"\n", StringSliceToInterfaceSlice(line)...))
-			}
+			out.WriteString(fmt.Sprintf(`"%s"%s`, strings.Join(myvalues, `","`), "\n"))
 		}
 	}
 	return out.String()

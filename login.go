@@ -11,7 +11,7 @@ var cmdLogin = &Command{
 	Usage: "login",
 	Short: "force login [-i=<instance>] [<-u=username> <-p=password>]",
 	Long: `
-  force login [-i=<instance>] [<-u=username> <-p=password>]
+  force login [-i=<instance>] [<-u=username> <-p=password> <-v=apiversion]
 
   Examples:
     force login
@@ -30,8 +30,9 @@ var (
 	instance = cmdLogin.Flag.String("i", "", `Defaults to 'login' or last
 		logged in system. non-production server to login to (values are 'pre',
 		'test', or full instance url`)
-	userName = cmdLogin.Flag.String("u", "", "Username for Soap Login")
-	password = cmdLogin.Flag.String("p", "", "Password for Soap Login")
+	userName    = cmdLogin.Flag.String("u", "", "Username for Soap Login")
+	password    = cmdLogin.Flag.String("p", "", "Password for Soap Login")
+	api_version = cmdLogin.Flag.String("v", "", "API Version to use")
 )
 
 func runLogin(cmd *Command, args []string) {
@@ -48,6 +49,12 @@ func runLogin(cmd *Command, args []string) {
 		}
 	}
 
+	if *api_version != "" {
+		// Todo verify format of version is 30.0
+		apiVersionNumber = *api_version
+		apiVersion = "v" + apiVersionNumber
+	}
+
 	switch *instance {
 	case "login":
 		endpoint = EndpointProduction
@@ -55,6 +62,8 @@ func runLogin(cmd *Command, args []string) {
 		endpoint = EndpointTest
 	case "pre":
 		endpoint = EndpointPrerelease
+	case "mobile1":
+		endpoint = EndpointMobile1
 	default:
 		if *instance != "" {
 			//need to determine the form of the endpoint
@@ -128,7 +137,7 @@ func ForceSaveLogin(creds ForceCredentials) (username string, err error) {
 		fmt.Println("Problem getting user data, continuing...")
 		//return
 	}
-	fmt.Printf("Logged in as '%s'\n", me["Username"])
+	fmt.Printf("Logged in as '%s' (API %s)\n", me["Username"], apiVersion)
 	title := fmt.Sprintf("\033];%s\007", me["Username"])
 	fmt.Printf(title)
 

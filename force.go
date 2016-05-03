@@ -33,10 +33,10 @@ const (
 	EndpointCustom     = iota
 )
 
-const (
+/*const (
 	apiVersion       = "v34.0"
 	apiVersionNumber = "34.0"
-)
+)*/
 
 type Force struct {
 	Credentials ForceCredentials
@@ -53,6 +53,7 @@ type ForceCredentials struct {
 	Scope         string
 	IsCustomEP    bool
 	Namespace     string
+	ApiVersion    string
 	ForceEndpoint ForceEndpoint
 }
 
@@ -231,6 +232,8 @@ func ForceSoapLogin(endpoint ForceEndpoint, username string, password string) (c
 		surl = fmt.Sprintf("https://test.salesforce.com/services/Soap/u/%s", version)
 	case EndpointPrerelease:
 		surl = fmt.Sprintf("https://prerelna1.pre.salesforce.com/services/Soap/u/%s", version)
+	case EndpointMobile1:
+		surl = fmt.Sprintf("https://mobile1.t.salesforce.com/services/Soap/u/%s", version)
 	case EndpointCustom:
 		surl = fmt.Sprintf("%s/services/Soap/u/%s", CustomEndpoint, version)
 	default:
@@ -258,7 +261,7 @@ func ForceSoapLogin(endpoint ForceEndpoint, username string, password string) (c
 	}
 	instanceUrl := u.Scheme + "://" + u.Host
 	identity := u.Scheme + "://" + u.Host + "/id/" + orgid + "/" + result.Id
-	creds = ForceCredentials{result.SessionId, identity, result.Id, instanceUrl, "", "", endpoint == EndpointCustom, "", endpoint}
+	creds = ForceCredentials{result.SessionId, identity, result.Id, instanceUrl, "", "", endpoint == EndpointCustom, "", apiVersionNumber, endpoint}
 
 	f := NewForce(creds)
 	url := "https://force-cli"
