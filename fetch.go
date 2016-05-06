@@ -12,7 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	. "github.com/heroku/force/salesforce"
+	"github.com/heroku/force/salesforce"
 	"github.com/heroku/force/util"
 )
 
@@ -79,8 +79,8 @@ func init() {
 func runFetchAura2(cmd *Command, entityname string) {
 	force, _ := ActiveForce()
 
-	var bundles AuraDefinitionBundleResult
-	var definitions AuraDefinitionBundleResult
+	var bundles salesforce.AuraDefinitionBundleResult
+	var definitions salesforce.AuraDefinitionBundleResult
 	var err error
 
 	if entityname == "" {
@@ -98,11 +98,11 @@ func runFetchAura2(cmd *Command, entityname string) {
 	return
 }
 
-func FetchManifest(entityname string) (manifest BundleManifest) {
+func FetchManifest(entityname string) (manifest salesforce.BundleManifest) {
 	force, _ := ActiveForce()
 
-	var bundles AuraDefinitionBundleResult
-	var definitions AuraDefinitionBundleResult
+	var bundles salesforce.AuraDefinitionBundleResult
+	var definitions salesforce.AuraDefinitionBundleResult
 	var err error
 
 	if entityname == "" {
@@ -122,7 +122,7 @@ func FetchManifest(entityname string) (manifest BundleManifest) {
 
 }
 
-func persistBundles(bundles AuraDefinitionBundleResult, definitions AuraDefinitionBundleResult) (bundleManifest BundleManifest, err error) {
+func persistBundles(bundles salesforce.AuraDefinitionBundleResult, definitions salesforce.AuraDefinitionBundleResult) (bundleManifest salesforce.BundleManifest, err error) {
 	var bundleMap = make(map[string]string)
 	var bundleRecords = bundles.Records
 	for _, bundle := range bundleRecords {
@@ -131,7 +131,7 @@ func persistBundles(bundles AuraDefinitionBundleResult, definitions AuraDefiniti
 	}
 
 	var defRecords = definitions.Records
-	root, err := GetSourceDir()
+	root, err := salesforce.GetSourceDir()
 	if mdbase == "aura" {
 		root = filepath.Join(targetDirectory, root, "aura")
 	} else {
@@ -146,9 +146,9 @@ func persistBundles(bundles AuraDefinitionBundleResult, definitions AuraDefiniti
 			util.ErrorAndExit(err.Error())
 		}
 
-		bundleManifest = BundleManifest{}
+		bundleManifest = salesforce.BundleManifest{}
 		bundleManifest.Name = value
-		bundleManifest.Files = []ComponentFile{}
+		bundleManifest.Files = []salesforce.ComponentFile{}
 		bundleManifest.Id = key
 
 		for _, def := range defRecords {
@@ -174,7 +174,7 @@ func persistBundles(bundles AuraDefinitionBundleResult, definitions AuraDefiniti
 				default:
 					entity += fmt.Sprintf("%s.js", naming)
 				}
-				var componentFile = ComponentFile{filepath.Join(root, value, entity), fmt.Sprintf("%s", def["Id"])}
+				var componentFile = salesforce.ComponentFile{filepath.Join(root, value, entity), fmt.Sprintf("%s", def["Id"])}
 				bundleManifest.Files = append(bundleManifest.Files, componentFile)
 				if makefile {
 					ioutil.WriteFile(filepath.Join(root, value, entity), []byte(fmt.Sprintf("%s", def["Source"])), 0644)
@@ -193,7 +193,7 @@ func runFetch(cmd *Command, args []string) {
 	}
 
 	force, _ := ActiveForce()
-	var files ForceMetadataFiles
+	var files salesforce.ForceMetadataFiles
 	var err error
 	var expandResources bool = unpack
 
@@ -208,7 +208,7 @@ func runFetch(cmd *Command, args []string) {
 	} else if strings.ToLower(metadataType) == "package" {
 		if len(metadataName) > 0 {
 			for names := range metadataName {
-				files, err = force.Metadata.RetrievePackage(metadataName[names], ForceRetrieveOptions{
+				files, err = force.Metadata.RetrievePackage(metadataName[names], salesforce.ForceRetrieveOptions{
 					PreserveZip: preserveZip,
 				})
 				if err != nil {
@@ -220,15 +220,15 @@ func runFetch(cmd *Command, args []string) {
 			}
 		}
 	} else {
-		query := ForceMetadataQuery{}
+		query := salesforce.ForceMetadataQuery{}
 		if len(metadataName) > 0 {
-			mq := ForceMetadataQueryElement{metadataType, metadataName}
+			mq := salesforce.ForceMetadataQueryElement{metadataType, metadataName}
 			query = append(query, mq)
 		} else {
-			mq := ForceMetadataQueryElement{metadataType, []string{"*"}}
+			mq := salesforce.ForceMetadataQueryElement{metadataType, []string{"*"}}
 			query = append(query, mq)
 		}
-		files, err = force.Metadata.Retrieve(query, ForceRetrieveOptions{
+		files, err = force.Metadata.Retrieve(query, salesforce.ForceRetrieveOptions{
 			PreserveZip: preserveZip,
 		})
 		if err != nil {
@@ -239,7 +239,7 @@ func runFetch(cmd *Command, args []string) {
 	var resourcesMap map[string]string
 	resourcesMap = make(map[string]string)
 
-	root, err := GetSourceDir()
+	root, err := salesforce.GetSourceDir()
 	if err != nil {
 		fmt.Printf("Error obtaining root directory\n")
 		util.ErrorAndExit(err.Error())

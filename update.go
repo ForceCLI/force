@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/ddollar/dist"
-	. "github.com/heroku/force/salesforce"
+	"github.com/heroku/force/salesforce"
 	"github.com/heroku/force/util"
 )
 
@@ -25,7 +25,7 @@ func init() {
 }
 
 func runUpdate(cmd *Command, args []string) {
-	d := dist.NewDist("heroku/force", Version)
+	d := dist.NewDist("heroku/force", salesforce.Version)
 	if len(args) == 1 {
 		err := d.FullUpdate(args[0])
 		if err != nil {
@@ -34,7 +34,7 @@ func runUpdate(cmd *Command, args []string) {
 			fmt.Printf("updated to %s\n", args[0])
 		}
 	} else {
-		if Version == "dev" {
+		if salesforce.Version == "dev" {
 			util.ErrorAndExit("can't update dev version")
 		}
 		to, err := d.Update()
