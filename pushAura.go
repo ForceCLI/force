@@ -28,8 +28,14 @@ func init() {
 }
 
 func runPushAura(cmd *Command, args []string) {
-	absPath, _ := filepath.Abs(args[0])
-
+	// For some reason, when called from sublime, the quotes are included
+	// in the resourcepath argument.  Quoting is needed if you have blank spaces
+	// in the path name. So need to strip them out.
+	if strings.Contains(resourcepath[0], "\"") || strings.Contains(resourcepath[0], "'") {
+		resourcepath[0] = strings.Replace(resourcepath[0], "\"", "", -1)
+		resourcepath[0] = strings.Replace(resourcepath[0], "'", "", -1)
+	}
+	absPath, _ := filepath.Abs(resourcepath[0])
 	if _, err := os.Stat(absPath); os.IsNotExist(err) {
 		fmt.Println(err.Error())
 		ErrorAndExit("File does not exist\n" + absPath)
