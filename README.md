@@ -51,12 +51,13 @@ Can be downloaded from the [Current Realease Page](https://github.com/heroku/for
 ### login
 When you login using the CLI a record of the login is saved. Eventually your token will expire requiring re-authentication. The default login is for all production instances of salesforce.com. Two predefined non-production instances are available using the test and pre aliases.  You can set an arbitrary instance to log in to by specifying the instance url in the form of subdomain.domain. For example login-blitz.soma.salesforce.com.
 
-      force login               # log in to production or developer org
-      force login -i=test           # log in to sandbox org
-      force login -i=pre            # log in to prerelease org
-      force login -u=un -p=pw       # log in using SOAP
-      force login -i=test -u=un -p=pw       # log in using SOAP to sandbox org
-      force login -i=<instance> -u=un -p=pw     # internal only
+      force login                           # log in to last environment
+      force login -i=login                  # log in to production or developer org
+      force login -i=test                   # log in to sandbox org
+      force login -i=pre                    # log in to prerelease org
+      force login -u=un [-p=pw]             # log in using SOAP. Password is optional
+      force login -i=test -u=un -p=pw       # log in using SOAP to sandbox org. Password is optional
+      force login -i=<instance> -u=un -p=pw # internal only
 
 ### logout
 Logout will delete your authentication token and remove the saved record of that login.
