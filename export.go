@@ -35,7 +35,7 @@ func runExport(cmd *Command, args []string) {
 	}
 	if err != nil {
 		fmt.Printf("Error obtaining file path\n")
-		ErrorAndExit(err.Error())
+		util.ErrorAndExit(err.Error())
 	}
 	force, _ := ActiveForce()
 	sobjects, err := force.ListSobjects()
@@ -147,10 +147,10 @@ func runExport(cmd *Command, args []string) {
 		fmt.Printf("Encountered and error with retrieve...\n")
 		util.ErrorAndExit(err.Error())
 	}
-	root, err = GetSourceDir()
+	root, err = salesforce.GetSourceDir()
 	if err != nil {
 		fmt.Printf("Error obtaining root directory\n")
-		ErrorAndExit(err.Error())
+		util.ErrorAndExit(err.Error())
 	}
 	for name, data := range files {
 		file := filepath.Join(root, name)

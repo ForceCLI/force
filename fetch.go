@@ -242,7 +242,7 @@ func runFetch(cmd *Command, args []string) {
 	root, err := GetSourceDir()
 	if err != nil {
 		fmt.Printf("Error obtaining root directory\n")
-		ErrorAndExit(err.Error())
+		util.ErrorAndExit(err.Error())
 	}
 	existingPackage, _ := pathExists(filepath.Join(root, "package.xml"))
 
