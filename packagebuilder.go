@@ -52,6 +52,7 @@ var metapaths = []metapath{
 	metapath{path: "flexipages", name: "FlexiPage"},
 	metapath{path: "flowDefinitions", name: "FlowDefinition"},
 	metapath{path: "flows", name: "Flow"},
+	metapath{path: "globalPicklists", name: "GlobalPicklist"},
 	metapath{path: "groups", name: "Group"},
 	metapath{path: "homePageLayouts", name: "HomePageLayout"},
 	metapath{path: "installedPackages", name: "InstalledPackage"},
