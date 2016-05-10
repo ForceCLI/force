@@ -16,7 +16,7 @@ install:
 - go get github.com/kr/binarydist
 - go get github.com/kr/pretty
 - go get github.com/kr/text
-sscript:
+script:
 - git config --global user.email "you@example.com"
 - git config --global user.name "Your Name"
 - test -z "$(go fmt)"
