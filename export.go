@@ -42,8 +42,10 @@ func runExport(cmd *Command, args []string) {
 	if err != nil {
 		util.ErrorAndExit(err.Error())
 	}
-	stdObjects := make([]string, 1, len(sobjects)+1)
+	spew.Dump(sobjects)
+	stdObjects := make([]string, 2, len(sobjects)+2)
 	stdObjects[0] = "*"
+	stdObjects[1] = "Activity"
 	for _, sobject := range sobjects {
 		name := sobject["name"].(string)
 		if !sobject["custom"].(bool) && !strings.HasSuffix(name, "__Tag") && !strings.HasSuffix(name, "__History") && !strings.HasSuffix(name, "__Share") {
