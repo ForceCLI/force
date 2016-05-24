@@ -188,6 +188,7 @@ type ForceMetadataItem struct {
 	CompletePath string
 }
 
+// ForceMetadataFilesForType is a list of all ForceMetadataItems for a given object type.
 type ForceMetadataFilesForType struct {
 	Members []ForceMetadataItem
 	Name    string
