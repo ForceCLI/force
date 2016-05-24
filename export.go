@@ -42,7 +42,6 @@ func runExport(cmd *Command, args []string) {
 	if err != nil {
 		util.ErrorAndExit(err.Error())
 	}
-	spew.Dump(sobjects)
 	stdObjects := make([]string, 2, len(sobjects)+2)
 	stdObjects[0] = "*"
 	stdObjects[1] = "Activity"
