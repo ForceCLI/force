@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/heroku/force/project"
 	"github.com/heroku/force/salesforce"
 	"github.com/heroku/force/util"
 )
@@ -151,8 +152,8 @@ func pushByTypeAndPath() {
 func isValidMetadataType() {
 	fmt.Printf("Validating and deploying push...\n")
 	// Look to see if we can find any resource for that metadata type
-	root, err := salesforce.GetSourceDir()
-	salesforce.ExitIfNoSourceDir(err)
+	root, err := project.GetSourceDir()
+	project.ExitIfNoSourceDir(err)
 	metaFolder = findMetadataTypeFolder(metadataType, root)
 	if metaFolder == "" {
 		util.ErrorAndExit("No folders that contain %s metadata could be found.", metadataType)
@@ -411,8 +412,8 @@ func pushByName() {
 
 	byName = true
 
-	root, err := salesforce.GetSourceDir()
-	salesforce.ExitIfNoSourceDir(err)
+	root, err := project.GetSourceDir()
+	project.ExitIfNoSourceDir(err)
 
 	// Find file by walking directory and ignoring extension
 	var paths []string

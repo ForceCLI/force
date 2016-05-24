@@ -38,8 +38,8 @@ func init() {
 
 func runActive(cmd *Command, args []string) {
 	if account == "" {
-		account, _ := salesforce.Config.Load("current", "account")
-		data, _ := salesforce.Config.Load("accounts", account)
+		account, _ := util.Config.Load("current", "account")
+		data, _ := util.Config.Load("accounts", account)
 		var creds salesforce.ForceCredentials
 		json.Unmarshal([]byte(data), &creds)
 		if tojson {
@@ -49,7 +49,7 @@ func runActive(cmd *Command, args []string) {
 		}
 	} else {
 		//account := args[0]
-		accounts, _ := salesforce.Config.List("accounts")
+		accounts, _ := util.Config.List("accounts")
 		i := sort.SearchStrings(accounts, account)
 		if i < len(accounts) && accounts[i] == account {
 			if runtime.GOOS == "windows" {
@@ -60,7 +60,7 @@ func runActive(cmd *Command, args []string) {
 				fmt.Printf(title)
 			}
 			fmt.Printf("%s now active\n", account)
-			salesforce.Config.Save("current", "account", account)
+			util.Config.Save("current", "account", account)
 		} else {
 			util.ErrorAndExit(fmt.Sprintf("no such account %s\n", account))
 		}

@@ -125,7 +125,7 @@ func ForceSaveLogin(creds salesforce.ForceCredentials) (username string, err err
 	// TODO find existing creds to rescue existing apiVersion:
 	creds.ApiVersion = salesforce.DefaultApiVersion
 
-	if existingCredsJSON, err := salesforce.Config.Load("accounts", account); err == nil {
+	if existingCredsJSON, err := util.Config.Load("accounts", account); err == nil {
 		// there's an existing account!  Copy over its api version (and any other
 		// settings we want to persist across re-logins:)
 		var existingCreds salesforce.ForceCredentials
@@ -174,8 +174,8 @@ func ForceSaveLogin(creds salesforce.ForceCredentials) (username string, err err
 	if err != nil {
 		return
 	}
-	salesforce.Config.Save("accounts", username, string(body))
-	salesforce.Config.Save("current", "account", username)
+	util.Config.Save("accounts", username, string(body))
+	util.Config.Save("current", "account", username)
 	return
 }
 

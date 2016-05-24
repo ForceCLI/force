@@ -1,17 +1,17 @@
-package salesforce
+package project
 
 import (
 	"os"
 	"path/filepath"
 	"strings"
 
-	"github.com/devangel/config"
 	"github.com/heroku/force/util"
-	//"fmt"
 )
 
-var Config = config.NewConfig("force")
-
+// GetSourceDir walks up the given path (typically the pwd of the running `force` process) to
+// determine the context of the project the tool is being run in (similar to the behaviour of git
+// and other tools).  In the typical case, pass err to ExitIfNoSourceDir() to render an error
+// message and quit if necessary.
 func GetSourceDir() (src string, err error) {
 	// Last element is default
 	var sourceDirs = []string{
@@ -24,7 +24,7 @@ func GetSourceDir() (src string, err error) {
 	err = nil
 	for _, src = range sourceDirs {
 		if strings.Contains(wd, src) {
-			// our working directory contains a src dir above us, we need to move up the file syste
+			// our working directory contains a src dir above us, we need to move up the file system.
 			nsrc := wd
 			for {
 				nsrc = filepath.Dir(nsrc)
@@ -45,6 +45,8 @@ func GetSourceDir() (src string, err error) {
 	return
 }
 
+// ExitIfNoSourceDir takes a possible error returned by GetSourceDir() and renders an error message
+// and quits if necessary.
 func ExitIfNoSourceDir(err error) {
 	if err != nil {
 		if os.IsNotExist(err) {

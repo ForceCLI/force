@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	"github.com/ViViDboarder/gotifier"
-	"github.com/heroku/force/salesforce"
+	"github.com/heroku/force/util"
 )
 
 var cmdNotifySet = &Command{
@@ -37,12 +37,12 @@ func notifySet(cmd *Command, args []string) {
 
 func setShouldNotify(shouldNotify bool) {
 	// Set config
-	salesforce.Config.Save("notifications", "shouldNotify", strconv.FormatBool(shouldNotify))
+	util.Config.Save("notifications", "shouldNotify", strconv.FormatBool(shouldNotify))
 }
 
 func getShouldNotify() bool {
 	shouldNotify := false
-	notifStr, err := salesforce.Config.Load("notifications", "shouldNotify")
+	notifStr, err := util.Config.Load("notifications", "shouldNotify")
 	if err == nil {
 		shouldNotify, err = strconv.ParseBool(notifStr)
 	}

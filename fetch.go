@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/heroku/force/project"
 	"github.com/heroku/force/salesforce"
 	"github.com/heroku/force/util"
 )
@@ -131,7 +132,7 @@ func persistBundles(bundles salesforce.AuraDefinitionBundleResult, definitions s
 	}
 
 	var defRecords = definitions.Records
-	root, err := salesforce.GetSourceDir()
+	root, err := project.GetSourceDir()
 	if mdbase == "aura" {
 		root = filepath.Join(targetDirectory, root, "aura")
 	} else {
@@ -239,7 +240,7 @@ func runFetch(cmd *Command, args []string) {
 	var resourcesMap map[string]string
 	resourcesMap = make(map[string]string)
 
-	root, err := salesforce.GetSourceDir()
+	root, err := project.GetSourceDir()
 	if err != nil {
 		fmt.Printf("Error obtaining root directory\n")
 		util.ErrorAndExit(err.Error())

@@ -5,7 +5,7 @@ import (
 	"os/exec"
 	"runtime"
 
-	"github.com/heroku/force/salesforce"
+	"github.com/heroku/force/util"
 )
 
 var cmdLogout = &Command{
@@ -34,9 +34,9 @@ func runLogout(cmd *Command, args []string) {
 		cmd.Flag.Usage()
 		return
 	}
-	salesforce.Config.Delete("accounts", *userName1)
-	if active, _ := salesforce.Config.Load("current", "account"); active == *userName1 {
-		salesforce.Config.Delete("current", "account")
+	util.Config.Delete("accounts", *userName1)
+	if active, _ := util.Config.Load("current", "account"); active == *userName1 {
+		util.Config.Delete("current", "account")
 		SetActiveLoginDefault()
 	}
 	if runtime.GOOS == "windows" {
