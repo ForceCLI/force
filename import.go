@@ -84,7 +84,7 @@ func runImport(cmd *Command, args []string) {
 		util.ErrorAndExit(err.Error())
 	}
 
-	if projectEnvironmentConfig, err := loadedProject.GetEnvironmentConfigForActiveUser(loginUsername); projectEnvironmentConfig != nil {
+	if projectEnvironmentConfig, err := loadedProject.GetEnvironmentConfigForActiveEnvironment(loginUsername, force.Credentials.InstanceUrl); projectEnvironmentConfig != nil {
 		fmt.Printf("About to deploy to: %s at %s\n", projectEnvironmentConfig.Name, force.Credentials.InstanceUrl)
 		files = loadedProject.ContentsWithInternalTransformsApplied(projectEnvironmentConfig)
 	} else if err != nil {
