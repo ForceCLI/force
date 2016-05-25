@@ -7,7 +7,7 @@ A command-line interface to force.com
 
 ##### Precompiled Binaries
 
-Can be downloaded from the [Current Realease Page](https://github.com/heroku/force/releases/latest) or by visiting the [CLI Home Page](http://force-cli.herokuapp.com/).
+Can be downloaded from the [Current Release Page](https://github.com/heroku/force/releases/latest) or by visiting the [CLI Home Page](http://force-cli.herokuapp.com/).
 
 ##### Compile from Source
 
@@ -127,7 +127,7 @@ When you use `force export` for the first time, you can pass it a path to write 
 
 Force supports per-project config on your filesystem/source code repository in an `environments.json` config file as a sibling file with your `package.xml`.  Currently this only supports one feature, simple pre-processing of your metadata with variable interpolation when using the `import` command to deploy metadata.
 
-The format of that file is a JSON object hash, with keys of environment names (arbitrary strings) containing hashes which the individual environments.  The object is a hash of environment names (the names are currently used for informative purposes only) mapped to objects which respectively describe the environment, which in turn contain `match` fields that match the environment by the either the login name (`login`) or the target instance (`instance`), or both.
+The format of that file is a JSON object hash, with keys of environment names (arbitrary strings) containing hashes which the individual environments.  The object is a hash of environment names (the names are currently used for informative purposes only) mapped to objects which respectively describe the environment, which in turn contain `match` objects of regexes that match by the login name (`login`) and/or by the target instance (`instance`).
 
 A suggested approach is to leverage the typical Salesforce convention (described in the Users and Contacts section of SF's [Sandbox Setup Considerations](https://help.salesforce.com/HTViewHelpDoc?id=data_sandbox_implementation_tips.htm) documentation) of appending Sandbox names to usernames in order to match environments to logins.  This method allows for discrimating between prod and the multiple sandboxes in a given org/project, while still allowing for multiple users to collaborate on the project without them having to meddle with their project configuration on an individual basis.
 
@@ -167,7 +167,7 @@ Example `environments.json` where a Salesforce project is integrating with a hyp
         "dev": {
             "match": {
                 "login": "@myapp.com.dev$"
-            }
+            },
             "vars": {
                 "INTEGRATION_HOST": "https://dave-super-staging.herokuapp.com",
                 "INTEGRATION_TOKEN": "derp",
@@ -177,7 +177,7 @@ Example `environments.json` where a Salesforce project is integrating with a hyp
         "production": {
             "match": {
                 "login": "@myapp.com$"
-            }
+            },
             "vars": {
                 "INTEGRATION_HOST": "https://dave-super.herokuapp.com",
                 "INTEGRATION_TOKEN": "sekrit",
