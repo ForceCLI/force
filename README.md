@@ -123,11 +123,11 @@ The two relevant commands are `force import` and `force export`.
 
 When you use `force export` for the first time, you can pass it a path to write the contents to.  By default it retrieves all known types of metadata.  As defined by the Salesforce Metadata API itself, the resulting file structure will have a directory for each type of metadata object, in addition to a `package.xml` manifest.  `force import` will check for the existence of `package.xml` before creating a changeset.
 
-#### Variable interpolation
+#### Project-level Configuration
 
-If required, you can use the string interpolation feature of `force` to dynamically modify your metadata when running `force import` according to a set of variables you can specify.  This can be handy for working around restrictions of Salesforce metadata that by design must refer to a given instance-specific piece of data (say, a user ID), or perhaps a remote endpoint.  Which interpolation to apply is discriminated by the hostname of the instance.  When you use the `force import` command, the instance hostname of your currently active login in used to match which specified environment should be used.  Currently, if your org has multiple environments that are on the same pod, then this feature currently does not support your use case.
+Force supports per-project config on your filesystem/source code repository in an `environments.json` config file as a sibling file with your `package.xml`.  Currently this only supports one feature, simple pre-processing of your metadata with variable interpolation when using the `import` command to deploy metadata.
 
-The format is a JSON object hash, with keys of environment names (arbitrary strings) containing hashes which describe the environment with an `instance` field (the URI fragment of the Pod the environment is running on).
+The format of that file is a JSON object hash, with keys of environment names (arbitrary strings) containing hashes which the individual environments.  The object is a hash of environment names (the names are currently used for informative purposes only) mapped to objects which respectively describe the environment, which in turn contain `domain` fields that match the environment by the username's domain, in order to leverage the typical Salesforce method (described in the Users and Contacts section of SF's [Sandbox Setup Considerations](https://help.salesforce.com/HTViewHelpDoc?id=data_sandbox_implementation_tips.htm) documentation) of appending Sandbox names to usernames in order to match environments to logins.  This method allows for discrimating between prod and the multiple sandboxes in a given org/project, while still allowing for multiple users to collaborate on the project without having to meddle with their project configuration.
 
 Example:
 
@@ -135,7 +135,27 @@ Example:
 {
     "environments": {
         "dev": {
-            "instance": "https://na15.salesforce.com",
+            "domain": "myapp.com.dev"
+        },
+        "demo": {
+            "domain": "myapp.com.demo"
+        },
+        "production": {
+            "domain": "myapp.com"
+        }
+    }
+}
+```
+
+##### Variable interpolation
+
+If required, you can use the string interpolation feature of `force` to dynamically modify your metadata when running `force import` according to a set of variables you can specify.  This can be handy for working around restrictions of Salesforce metadata that by design must refer to a given instance-specific piece of data (say, a user ID), or perhaps a remote endpoint.  Which interpolation to apply is discriminated by the hostname of the instance.  Example `environments.json` where a Salesforce project is integrating with a hypothetical app running on Heroku:
+
+```json
+{
+    "environments": {
+        "dev": {
+            "domain": "myapp.com.dev",
             "vars": {
                 "INTEGRATION_HOST": "https://dave-super-staging.herokuapp.com",
                 "INTEGRATION_TOKEN": "derp",
@@ -143,7 +163,7 @@ Example:
             }
         },
         "demo": {
-            "instance": "https://na6.salesforce.com",
+            "domain": "myapp.com.demo",
             "vars": {
                 "INTEGRATION_HOST": "https://dave-super-staging.herokuapp.com",
                 "INTEGRATION_TOKEN": "dorp",
@@ -151,7 +171,7 @@ Example:
             }
         },
         "production": {
-            "instance": "https://na30.salesforce.com",
+            "domain": "myapp.com",
             "vars": {
                 "INTEGRATION_HOST": "https://dave-super.herokuapp.com",
                 "INTEGRATION_TOKEN": "sekrit",

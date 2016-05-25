@@ -79,10 +79,16 @@ func runImport(cmd *Command, args []string) {
 	}
 	files := loadedProject.EnumerateContents()
 
-	if projectEnvironmentConfig := loadedProject.GetEnvironmentConfigForActiveEnvironment(force.Credentials.InstanceUrl); projectEnvironmentConfig != nil {
-		fmt.Printf("About to deploy to: %s at %s\n", projectEnvironmentConfig.Name, projectEnvironmentConfig.InstanceHost)
+	loginUsername, err := ActiveLogin()
+	if err != nil {
+		util.ErrorAndExit(err.Error())
+	}
 
+	if projectEnvironmentConfig, err := loadedProject.GetEnvironmentConfigForActiveUser(loginUsername); projectEnvironmentConfig != nil {
+		fmt.Printf("About to deploy to: %s at %s\n", projectEnvironmentConfig.Name, force.Credentials.InstanceUrl)
 		files = loadedProject.ContentsWithInternalTransformsApplied(projectEnvironmentConfig)
+	} else if err != nil {
+		util.ErrorAndExit(err.Error())
 	}
 
 	// Now to handle the metadata types that Salesforce has implemented their
