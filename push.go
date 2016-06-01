@@ -43,16 +43,15 @@ Deployment Options
 }
 
 var (
-	namePaths = make(map[string]string)
-	byName    = false
-)
-
-var (
-	resourcepath metaName
-	metaFolder   string
+	namePaths     = make(map[string]string)
+	byName        = false
+	resourcepaths string
+	metaName      string
+	metaFolder    string
 )
 
 func init() {
+	// Deploy options
 	cmdPush.Flag.BoolVar(rollBackOnErrorFlag, "rollbackonerror", false, "set roll back on error")
 	cmdPush.Flag.BoolVar(rollBackOnErrorFlag, "r", false, "set roll back on error")
 	cmdPush.Flag.BoolVar(runAllTestsFlag, "runalltests", false, "set run all tests")
@@ -70,8 +69,9 @@ func init() {
 	cmdPush.Flag.BoolVar(ignoreWarningsFlag, "ignorewarnings", false, "set ignore warnings")
 	cmdPush.Flag.BoolVar(ignoreWarningsFlag, "i", false, "set ignore warnings")
 
-	cmdPush.Flag.Var(&resourcepath, "f", "Path to resource(s)")
-	cmdPush.Flag.Var(&resourcepath, "filepath", "Path to resource(s)")
+	// Ways to push
+	cmdPush.Flag.Var(&resourcepaths, "f", "Path to resource(s)")
+	cmdPush.Flag.Var(&resourcepaths, "filepath", "Path to resource(s)")
 	cmdPush.Flag.Var(&testsToRun, "test", "Test(s) to run")
 	cmdPush.Flag.StringVar(&metadataType, "t", "", "Metatdata type")
 	cmdPush.Flag.StringVar(&metadataType, "type", "", "Metatdata type")
@@ -88,60 +88,30 @@ func argIsFile(fpath string) bool {
 }
 
 func runPush(cmd *Command, args []string) {
-	var subcommand = strings.ToLower(metadataType)
-
-	switch subcommand {
-	case "package":
+	if strings.ToLower(metadataType) == "package" {
 		pushPackage()
-	default:
-		resourcepath = append(resourcepath, args...)
-		if len(resourcepath) != 0 {
-			// It's not a package but does have a path. This could be a path to a file
-			// or to a folder. If it is a folder, we pickup the resources a different
-			// way than if it's a file.
-			validatePushByMetadataTypeCommand()
+		return
+	}
+	// Treat trailing args as file paths
+	resourcepaths = append(resourcepaths, args...)
+	if len(resourcepaths) > 0 {
+		// It's not a package but does have a path. This could be a path to a file
+		// or to a folder. If it is a folder, we pickup the resources a different
+		// way than if it's a file.
+		validatePushByMetadataTypeCommand()
+		pushByPaths(resourcepaths)
+	} else {
+		if len(metadataName) > 0 {
 			if len(metadataType) != 0 {
-				pushByTypeAndPath()
-			} else {
-				pushByPathOnly()
-			}
-		} else {
-			if len(metadataName) > 0 {
-				if len(metadataType) != 0 {
-					validatePushByMetadataTypeCommand()
-					pushByMetadataType()
-				} else {
-					ErrorAndExit("The -type (-t) parameter is required.")
-					//isValidMetadataType()
-					//pushByName()
-					//validatePushByMetadataTypeCommand()
-					//pushByMetadataType()
-				}
-			} else {
 				validatePushByMetadataTypeCommand()
 				pushByMetadataType()
+			} else {
+				ErrorAndExit("The -type (-t) parameter is required.")
 			}
+		} else {
+			validatePushByMetadataTypeCommand()
+			pushByMetadataType()
 		}
-	}
-}
-
-func pushByPathOnly() {
-	pushByPath(resourcepath)
-}
-
-func pushByTypeAndPath() {
-	for _, name := range resourcepath {
-		fi, err := os.Stat(name)
-		if err != nil {
-			ErrorAndExit(err.Error())
-		}
-		if fi.IsDir() {
-
-		}
-
-		fn := filepath.Base(name)
-		fn = strings.Replace(fn, filepath.Ext(fn), "", -1)
-		metadataName = append(metadataName, fn)
 	}
 }
 
@@ -176,6 +146,7 @@ func metadataExists() {
 }
 
 func validatePushByMetadataTypeCommand() {
+	// TODO: Is this needed?
 	isValidMetadataType()
 	metadataExists()
 }
@@ -211,10 +182,10 @@ func contains(s []string, e string) bool {
 }
 
 func pushPackage() {
-	if len(resourcepath) == 0 {
+	if len(resourcepaths) == 0 {
 		var packageFolder = findPackageFolder(metadataName[0])
 		zipResource(packageFolder, metadataName[0])
-		resourcepath.Set(packageFolder + ".resource")
+		resourcepaths.Set(packageFolder + ".resource")
 		//var dir, _ = os.Getwd();
 		//ErrorAndExit(fmt.Sprintf("No resource path sepcified. %s, %s", metadataName[0], dir))
 	}
@@ -318,6 +289,8 @@ func FilenameMatchesMetadataName(filename string, metadataName string) bool {
 func pushByMetadataType() {
 	byName = true
 
+	// TODO: get all files that match these types and make a list out of them
+
 	// Walk the metaFolder obtained during validation and compile a list of resources
 	// to be added to the package.
 	var files []string
@@ -405,9 +378,7 @@ func zipResource(path string, topLevelFolder string) {
 }
 
 func pushByName() {
-
 	byName = true
-
 	root, err := GetSourceDir()
 	ExitIfNoSourceDir(err)
 
@@ -424,6 +395,7 @@ func pushByName() {
 					fname := filepath.Base(path)
 					// Check to see if the resource name matches the one of the ones passed on the -name flag
 					if fname == name {
+						// TODO: Is thsi ToLower stuff needed?
 						metadataType = strings.ToLower(filepath.Base(filepath.Dir(path)))
 						if metadataType == "staticresources" {
 							metadataType = "StaticResource"
@@ -460,11 +432,6 @@ func pushByName() {
 
 }
 
-// Wrapper to handle a single resource path
-func pushByPath(fpath []string) {
-	pushByPaths(fpath)
-}
-
 // Creates a package that includes everything in the passed in string slice
 // and then deploys the package to salesforce
 func pushByPaths(fpaths []string) {
@@ -472,6 +439,7 @@ func pushByPaths(fpaths []string) {
 
 	var badPaths []string
 	for _, fpath := range fpaths {
+		// TODO: check for folder, if a folder, add all files in it
 		name, err := pb.AddFile(fpath)
 		if err != nil {
 			fmt.Println(err.Error())
@@ -499,7 +467,7 @@ func pushByPaths(fpaths []string) {
 func deployPackage() {
 	force, _ := ActiveForce()
 	DeploymentOptions := deployOpts()
-	for _, name := range resourcepath {
+	for _, name := range resourcepaths {
 		zipfile, err := ioutil.ReadFile(name)
 		result, err := force.Metadata.DeployZipFile(force.Metadata.MakeDeploySoap(*DeploymentOptions), zipfile)
 		processDeployResults(result, err)
