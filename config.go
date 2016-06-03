@@ -1,46 +1,61 @@
 package main
 
 import (
-	"github.com/devangel/config"
 	"os"
 	"path/filepath"
-	"strings"
-	//"fmt"
+
+	"github.com/devangel/config"
 )
 
 var Config = config.NewConfig("force")
 
-func GetSourceDir() (src string, err error) {
-	// Last element is default
-	var sourceDirs = []string{
-		"src",
-		"metadata",
+var sourceDirs = []string{
+	"src",
+	"metadata",
+}
+
+// IsSourceDir returns a boolean indicating that dir is actually a Salesforce
+// source directory.
+func IsSourceDir(dir string) bool {
+	for _, src := range sourceDirs {
+		// Look for src properly for case-insensitive filesystems
+		manifest := filepath.Join(filepath.Dir(dir), src, "package.xml")
+		if _, err := os.Stat(manifest); err == nil {
+			return true
+		}
+	}
+	return false
+}
+
+// GetSourceDir returns a rooted path name of the Salesforce source directory,
+// relative to the current directory. GetSourceDir will look for a source
+// directory in the nearest subdirectory. If no such directory exists, it will
+// look at its parents, assuming that it is within a source directory already.
+func GetSourceDir() (dir string, err error) {
+	base, err := os.Getwd()
+	if err != nil {
+		return
 	}
 
-	wd, err := os.Getwd()
-
-	err = nil
-	for _, src = range sourceDirs {
-		if strings.Contains(wd, src) {
-			// our working directory contains a src dir above us, we need to move up the file syste
-			nsrc := wd
-			for {
-				nsrc = filepath.Dir(nsrc)
-				if filepath.Base(nsrc) == src {
-					src = nsrc
-					return
-				}
-			}
-		} else {
-			_, err = os.Stat(filepath.Join(wd, src)) //, "package.xml"))
-			// Found a real source dir
-			if err == nil {
-				return
-			}
+	// Look down to our nearest subdirectories
+	for _, src := range sourceDirs {
+		dir = filepath.Join(base, src)
+		if IsSourceDir(dir) {
+			return
 		}
 	}
 
-	return
+	// Check the current directory and then start looking up at our parents.
+	// When dir's parent is identical, it means we're at the root
+	for dir != filepath.Dir(dir) {
+		dir = filepath.Dir(dir)
+		if IsSourceDir(dir) {
+			return
+		}
+	}
+
+	// Not a source directory
+	return "", os.ErrNotExist
 }
 
 func ExitIfNoSourceDir(err error) {
