@@ -14,10 +14,8 @@ var cmdDescribe = &Command{
 
   Examples
 
-  force describe metadata -n=CustomObject
-  force describe sobject -n=Account
-  force describe metata
-  force describe sobject
+  force describe -t=metadata -n=CustomObject
+  force describe -t=sobject -n=Account
   `,
 }
 
