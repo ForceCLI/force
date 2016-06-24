@@ -7,7 +7,7 @@ A command-line interface to force.com
 
 ##### Precompiled Binaries
 
-Can be downloaded from the [Current Realease Page](https://github.com/heroku/force/releases/latest) or by visiting the [CLI Home Page](http://force-cli.herokuapp.com/).
+Can be downloaded from the [Current Release Page](https://github.com/heroku/force/releases/latest) or by visiting the [CLI Home Page](http://force-cli.herokuapp.com/).
 
 ##### Compile from Source
 
