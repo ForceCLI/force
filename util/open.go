@@ -1,4 +1,4 @@
-package main
+package util
 
 // taken from https://bitbucket.org/tebeka/go-wise/src/tip/desktop.go
 

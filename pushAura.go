@@ -7,6 +7,9 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/heroku/force/salesforce"
+	"github.com/heroku/force/util"
 )
 
 var cmdPushAura = &Command{
@@ -38,12 +41,12 @@ func runPushAura(cmd *Command, args []string) {
 	absPath, _ := filepath.Abs(resourcepath[0])
 	if _, err := os.Stat(absPath); os.IsNotExist(err) {
 		fmt.Println(err.Error())
-		ErrorAndExit("File does not exist\n" + absPath)
+		util.ErrorAndExit("File does not exist\n" + absPath)
 	}
 
 	// Verify that the file is in an aura bundles folder
 	if !InAuraBundlesFolder(absPath) {
-		ErrorAndExit("File is not in an aura bundle folder (aura)")
+		util.ErrorAndExit("File is not in an aura bundle folder (aura)")
 	}
 
 	// See if this is a directory
@@ -90,12 +93,12 @@ func isValidAuraExtension(fname string) bool {
 	if ext == ".app" || ext == ".cmp" || ext == ".evt" || ext == ".intf" {
 		return true
 	} else {
-		ErrorAndExit("You need to create an application (.app) or component (.cmp) or and event (.evt) as the first item in your bundle.")
+		util.ErrorAndExit("You need to create an application (.app) or component (.cmp) or and event (.evt) as the first item in your bundle.")
 	}
 	return false
 }
 
-func createNewAuraBundleAndDefinition(force Force, fname string) {
+func createNewAuraBundleAndDefinition(force salesforce.Force, fname string) {
 	// 	Creating a new bundle. We need
 	// 		the name of the bundle (parent folder of file)
 	//		the type of artifact (based on naming convention)
@@ -104,7 +107,7 @@ func createNewAuraBundleAndDefinition(force Force, fname string) {
 		// Need the parent folder name to name the bundle
 		var bundleName = filepath.Base(filepath.Dir(fname))
 		// Create the manifext
-		var manifest BundleManifest
+		var manifest salesforce.BundleManifest
 		manifest.Name = bundleName
 
 		_, _ = getFormatByresourcepath(fname)
@@ -118,12 +121,12 @@ func createNewAuraBundleAndDefinition(force Force, fname string) {
 				updateAuraDefinition(force, fname)
 				return
 			}
-			ErrorAndExit(err.Error())
+			util.ErrorAndExit(err.Error())
 		} else {
 			manifest.Id = bundle.Id
 			component, err, emessages := createBundleEntity(manifest, force, fname)
 			if err != nil {
-				ErrorAndExit(err.Error(), emessages[0].ErrorCode)
+				util.ErrorAndExit(err.Error(), emessages[0].ErrorCode)
 			}
 			createManifest(manifest, component, fname)
 		}
@@ -145,7 +148,7 @@ func SetTargetDirectory(fname string) (dir string, base string) {
 	return
 }
 
-func createBundleEntity(manifest BundleManifest, force Force, fname string) (component ForceCreateRecordResult, err error, emessages []ForceError) {
+func createBundleEntity(manifest salesforce.BundleManifest, force salesforce.Force, fname string) (component salesforce.ForceCreateRecordResult, err error, emessages []salesforce.ForceError) {
 	// create the bundle entity
 	format, deftype := getFormatByresourcepath(fname)
 	mbody, _ := readFile(fname)
@@ -153,8 +156,8 @@ func createBundleEntity(manifest BundleManifest, force Force, fname string) (com
 	return
 }
 
-func createManifest(manifest BundleManifest, component ForceCreateRecordResult, fname string) {
-	cfile := ComponentFile{}
+func createManifest(manifest salesforce.BundleManifest, component salesforce.ForceCreateRecordResult, fname string) {
+	cfile := salesforce.ComponentFile{}
 	cfile.FileName = fname
 	cfile.ComponentId = component.Id
 
@@ -165,8 +168,8 @@ func createManifest(manifest BundleManifest, component ForceCreateRecordResult, 
 	return
 }
 
-func updateManifest(manifest BundleManifest, component ForceCreateRecordResult, fname string) {
-	cfile := ComponentFile{}
+func updateManifest(manifest salesforce.BundleManifest, component salesforce.ForceCreateRecordResult, fname string) {
+	cfile := salesforce.ComponentFile{}
 	cfile.FileName = fname
 	cfile.ComponentId = component.Id
 
@@ -177,7 +180,7 @@ func updateManifest(manifest BundleManifest, component ForceCreateRecordResult, 
 	return
 }
 
-func GetManifest(fname string) (manifest BundleManifest, err error) {
+func GetManifest(fname string) (manifest salesforce.BundleManifest, err error) {
 	manifestname := filepath.Join(filepath.Dir(fname), ".manifest")
 
 	if _, err = os.Stat(manifestname); os.IsNotExist(err) {
@@ -189,7 +192,7 @@ func GetManifest(fname string) (manifest BundleManifest, err error) {
 	return
 }
 
-func updateAuraDefinition(force Force, fname string) {
+func updateAuraDefinition(force salesforce.Force, fname string) {
 
 	//Get the manifest
 	manifest, err := GetManifest(fname)
@@ -201,7 +204,7 @@ func updateAuraDefinition(force Force, fname string) {
 			mbody, _ := readFile(fname)
 			err := force.UpdateAuraComponent(map[string]string{"source": mbody}, component.ComponentId)
 			if err != nil {
-				ErrorAndExit(err.Error())
+				util.ErrorAndExit(err.Error())
 			}
 			fmt.Printf("Aura definition updated: %s\n", filepath.Base(fname))
 			return
@@ -209,7 +212,7 @@ func updateAuraDefinition(force Force, fname string) {
 	}
 	component, err, emessages := createBundleEntity(manifest, force, fname)
 	if err != nil {
-		ErrorAndExit(err.Error(), emessages[0].ErrorCode)
+		util.ErrorAndExit(err.Error(), emessages[0].ErrorCode)
 	}
 	updateManifest(manifest, component, fname)
 	fmt.Println("New component in the bundle")
@@ -270,7 +273,7 @@ func getFormatByresourcepath(resourcepath string) (format string, defType string
 			format = "XML"
 			defType = "DOCUMENTATION"
 		} else {
-			ErrorAndExit("Could not determine aura definition type.", fname)
+			util.ErrorAndExit("Could not determine aura definition type.", fname)
 		}
 	}
 	return

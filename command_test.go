@@ -1,8 +1,9 @@
 package main
 
 import (
-	"github.com/bmizerany/assert"
 	"testing"
+
+	"github.com/bmizerany/assert"
 )
 
 // test that all avialable commands come with at least a name and short usage information

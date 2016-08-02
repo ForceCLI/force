@@ -7,6 +7,9 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/heroku/force/salesforce"
+	"github.com/heroku/force/util"
 )
 
 // Brief comment to fire commit
@@ -79,12 +82,12 @@ func runAura(cmd *Command, args []string) {
 	if strings.HasPrefix(subcommand, "delete ") || strings.HasPrefix(subcommand, "push ") {
 		what := strings.Split(subcommand, " ")
 		if err := cmd.Flag.Parse(what[1:]); err != nil {
-			ErrorAndExit(err.Error())
+			util.ErrorAndExit(err.Error())
 		}
 		subcommand = what[0]
 	} else {
 		if err := cmd.Flag.Parse(args[1:]); err != nil {
-			ErrorAndExit(err.Error())
+			util.ErrorAndExit(err.Error())
 		}
 	}
 
@@ -94,14 +97,14 @@ func runAura(cmd *Command, args []string) {
 			fmt.Println("Must specify entity type and name")
 			os.Exit(2)
 		}*/
-		ErrorAndExit("force aura create not yet implemented")
+		util.ErrorAndExit("force aura create not yet implemented")
 
 	case "delete":
 		runDeleteAura()
 	case "list":
 		bundles, err := force.GetAuraBundlesList()
 		if err != nil {
-			ErrorAndExit(err.Error())
+			util.ErrorAndExit(err.Error())
 		}
 		for _, bundle := range bundles.Records {
 			fmt.Println(bundle["DeveloperName"])
@@ -119,7 +122,7 @@ func runDeleteAura() {
 	if InAuraBundlesFolder(absPath) {
 		info, err := os.Stat(absPath)
 		if err != nil {
-			ErrorAndExit(err.Error())
+			util.ErrorAndExit(err.Error())
 		}
 		manifest, err := GetManifest(absPath)
 		isBundle := false
@@ -131,10 +134,10 @@ func runDeleteAura() {
 				// Try to look up the bundle by name
 				b, err := force.GetAuraBundleByName(filepath.Base(absPath))
 				if err != nil {
-					ErrorAndExit(err.Error())
+					util.ErrorAndExit(err.Error())
 				} else {
 					if len(b.Records) == 0 {
-						ErrorAndExit(fmt.Sprintf("No bundle definition named %q", filepath.Base(absPath)))
+						util.ErrorAndExit(fmt.Sprintf("No bundle definition named %q", filepath.Base(absPath)))
 					} else {
 						bid = b.Records[0]["Id"].(string)
 					}
@@ -145,7 +148,7 @@ func runDeleteAura() {
 
 			err = force.DeleteToolingRecord("AuraDefinitionBundle", bid)
 			if err != nil {
-				ErrorAndExit(err.Error())
+				util.ErrorAndExit(err.Error())
 			}
 			// Now walk the bundle and remove all the atrifacts
 			filepath.Walk(absPath, func(path string, inf os.FileInfo, err error) error {
@@ -183,21 +186,21 @@ func runDeleteAura() {
 		}
 	}
 }
-func deleteAuraDefinitionBundle(manifest BundleManifest) {
+func deleteAuraDefinitionBundle(manifest salesforce.BundleManifest) {
 	force, err := ActiveForce()
 	err = force.DeleteToolingRecord("AuraDefinitionBundle", manifest.Id)
 	if err != nil {
-		ErrorAndExit(err.Error())
+		util.ErrorAndExit(err.Error())
 	}
 	os.Remove(filepath.Join(resourcepath[0], ".manifest"))
 	os.Remove(resourcepath[0])
 }
 
-func deleteAuraDefinition(manifest BundleManifest, key int) {
+func deleteAuraDefinition(manifest salesforce.BundleManifest, key int) {
 	force, err := ActiveForce()
 	err = force.DeleteToolingRecord("AuraDefinition", manifest.Files[key].ComponentId)
 	if err != nil {
-		ErrorAndExit(err.Error())
+		util.ErrorAndExit(err.Error())
 	}
 	fname := manifest.Files[key].FileName
 	os.Remove(fname)

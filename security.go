@@ -8,6 +8,9 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/heroku/force/salesforce"
+	"github.com/heroku/force/util"
 )
 
 ////////////////////////////////////////////////////////////////////////
@@ -246,10 +249,10 @@ func runSecurity(cmd *Command, args []string) {
 	wd, _ := os.Getwd()
 	root := filepath.Join(wd, ".")
 
-	var query ForceMetadataQuery
+	var query salesforce.ForceMetadataQuery
 
 	if len(args) == 1 {
-		query = ForceMetadataQuery{
+		query = salesforce.ForceMetadataQuery{
 			{Name: "Profile", Members: []string{"*"}},
 			{Name: "CustomObject", Members: args},
 		}
@@ -261,9 +264,9 @@ func runSecurity(cmd *Command, args []string) {
 	force, _ := ActiveForce()
 
 	// Step 1: retrieve the desired metadata
-	files, err := force.Metadata.Retrieve(query)
+	files, err := force.Metadata.Retrieve(query, salesforce.ForceRetrieveOptions{})
 	if err != nil {
-		ErrorAndExit(err.Error())
+		util.ErrorAndExit(err.Error())
 	}
 
 	// Step 2: go through the metadata and construct a list of Profile (profiles) and a CustomObject (theObject)
@@ -357,8 +360,8 @@ func runSecurity(cmd *Command, args []string) {
 
 	// Last step: write the file on disk and display it inside a Web browser
 	if err := ioutil.WriteFile(filepath.Join(root, "security.html"), []byte(HTMLoutput), 0644); err != nil {
-		ErrorAndExit(err.Error())
+		util.ErrorAndExit(err.Error())
 	}
 
-	Open(filepath.Join(root, "security.html"))
+	util.Open(filepath.Join(root, "security.html"))
 }

@@ -11,6 +11,10 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/heroku/force/project"
+	"github.com/heroku/force/salesforce"
+	"github.com/heroku/force/util"
 )
 
 var cmdFetch = &Command{
@@ -76,41 +80,41 @@ func init() {
 func runFetchAura2(cmd *Command, entityname string) {
 	force, _ := ActiveForce()
 
-	var bundles AuraDefinitionBundleResult
-	var definitions AuraDefinitionBundleResult
+	var bundles salesforce.AuraDefinitionBundleResult
+	var definitions salesforce.AuraDefinitionBundleResult
 	var err error
 
 	if entityname == "" {
 		bundles, definitions, err = force.GetAuraBundles()
 		if err != nil {
-			ErrorAndExit(err.Error())
+			util.ErrorAndExit(err.Error())
 		}
 	} else {
 		bundles, definitions, err = force.GetAuraBundle(entityname)
 		if err != nil {
-			ErrorAndExit(err.Error())
+			util.ErrorAndExit(err.Error())
 		}
 	}
 	_, err = persistBundles(bundles, definitions)
 	return
 }
 
-func FetchManifest(entityname string) (manifest BundleManifest) {
+func FetchManifest(entityname string) (manifest salesforce.BundleManifest) {
 	force, _ := ActiveForce()
 
-	var bundles AuraDefinitionBundleResult
-	var definitions AuraDefinitionBundleResult
+	var bundles salesforce.AuraDefinitionBundleResult
+	var definitions salesforce.AuraDefinitionBundleResult
 	var err error
 
 	if entityname == "" {
 		bundles, definitions, err = force.GetAuraBundles()
 		if err != nil {
-			ErrorAndExit(err.Error())
+			util.ErrorAndExit(err.Error())
 		}
 	} else {
 		bundles, definitions, err = force.GetAuraBundle(entityname)
 		if err != nil {
-			ErrorAndExit(err.Error())
+			util.ErrorAndExit(err.Error())
 		}
 	}
 	makefile = false
@@ -119,7 +123,7 @@ func FetchManifest(entityname string) (manifest BundleManifest) {
 
 }
 
-func persistBundles(bundles AuraDefinitionBundleResult, definitions AuraDefinitionBundleResult) (bundleManifest BundleManifest, err error) {
+func persistBundles(bundles salesforce.AuraDefinitionBundleResult, definitions salesforce.AuraDefinitionBundleResult) (bundleManifest salesforce.BundleManifest, err error) {
 	var bundleMap = make(map[string]string)
 	var bundleRecords = bundles.Records
 	for _, bundle := range bundleRecords {
@@ -128,24 +132,24 @@ func persistBundles(bundles AuraDefinitionBundleResult, definitions AuraDefiniti
 	}
 
 	var defRecords = definitions.Records
-	root, err := GetSourceDir()
+	root, err := project.GetSourceDir()
 	if mdbase == "aura" {
 		root = filepath.Join(targetDirectory, root, "aura")
 	} else {
 		root = filepath.Join(targetDirectory, root, mdbase, "aura")
 	}
 	if err := os.MkdirAll(root, 0755); err != nil {
-		ErrorAndExit(err.Error())
+		util.ErrorAndExit(err.Error())
 	}
 
 	for key, value := range bundleMap {
 		if err := os.MkdirAll(filepath.Join(root, value), 0755); err != nil {
-			ErrorAndExit(err.Error())
+			util.ErrorAndExit(err.Error())
 		}
 
-		bundleManifest = BundleManifest{}
+		bundleManifest = salesforce.BundleManifest{}
 		bundleManifest.Name = value
-		bundleManifest.Files = []ComponentFile{}
+		bundleManifest.Files = []salesforce.ComponentFile{}
 		bundleManifest.Id = key
 
 		for _, def := range defRecords {
@@ -173,7 +177,7 @@ func persistBundles(bundles AuraDefinitionBundleResult, definitions AuraDefiniti
 				default:
 					entity += fmt.Sprintf("%s.js", naming)
 				}
-				var componentFile = ComponentFile{filepath.Join(root, value, entity), fmt.Sprintf("%s", def["Id"])}
+				var componentFile = salesforce.ComponentFile{filepath.Join(root, value, entity), fmt.Sprintf("%s", def["Id"])}
 				bundleManifest.Files = append(bundleManifest.Files, componentFile)
 				if makefile {
 					ioutil.WriteFile(filepath.Join(root, value, entity), []byte(fmt.Sprintf("%s", def["Source"])), 0644)
@@ -188,11 +192,11 @@ func persistBundles(bundles AuraDefinitionBundleResult, definitions AuraDefiniti
 
 func runFetch(cmd *Command, args []string) {
 	if metadataType == "" {
-		ErrorAndExit("must specify object type and/or object name")
+		util.ErrorAndExit("must specify object type and/or object name")
 	}
 
 	force, _ := ActiveForce()
-	var files ForceMetadataFiles
+	var files salesforce.ForceMetadataFiles
 	var err error
 	var expandResources bool = unpack
 
@@ -207,9 +211,11 @@ func runFetch(cmd *Command, args []string) {
 	} else if strings.ToLower(metadataType) == "package" {
 		if len(metadataName) > 0 {
 			for names := range metadataName {
-				files, err = force.Metadata.RetrievePackage(metadataName[names])
+				files, err = force.Metadata.RetrievePackage(metadataName[names], salesforce.ForceRetrieveOptions{
+					PreserveZip: preserveZip,
+				})
 				if err != nil {
-					ErrorAndExit(err.Error())
+					util.ErrorAndExit(err.Error())
 				}
 				if preserveZip == true {
 					os.Rename("inbound.zip", fmt.Sprintf("%s.zip", metadataName[names]))
@@ -217,42 +223,44 @@ func runFetch(cmd *Command, args []string) {
 			}
 		}
 	} else {
-		query := ForceMetadataQuery{}
+		query := salesforce.ForceMetadataQuery{}
 		if len(metadataName) > 0 {
-			mq := ForceMetadataQueryElement{metadataType, metadataName}
+			mq := salesforce.ForceMetadataQueryElement{metadataType, metadataName}
 			query = append(query, mq)
 		} else {
-			mq := ForceMetadataQueryElement{metadataType, []string{"*"}}
+			mq := salesforce.ForceMetadataQueryElement{metadataType, []string{"*"}}
 			query = append(query, mq)
 		}
-		files, err = force.Metadata.Retrieve(query)
+		files, err = force.Metadata.Retrieve(query, salesforce.ForceRetrieveOptions{
+			PreserveZip: preserveZip,
+		})
 		if err != nil {
-			ErrorAndExit(err.Error())
+			util.ErrorAndExit(err.Error())
 		}
 	}
 
 	var resourcesMap map[string]string
 	resourcesMap = make(map[string]string)
 
-	root, err := GetSourceDir()
+	root, err := project.GetSourceDir()
 	if err != nil {
 		fmt.Printf("Error obtaining root directory\n")
-		ErrorAndExit(err.Error())
+		util.ErrorAndExit(err.Error())
 	}
 	existingPackage, _ := pathExists(filepath.Join(root, "package.xml"))
 
 	if len(files) == 1 {
-		ErrorAndExit("Could not find any objects for " + metadataType + ". (Is the metadata type correct?)")
+		util.ErrorAndExit("Could not find any objects for " + metadataType + ". (Is the metadata type correct?)")
 	}
 	for name, data := range files {
 		if !existingPackage || name != "package.xml" {
 			file := filepath.Join(root, name)
 			dir := filepath.Dir(file)
 			if err := os.MkdirAll(dir, 0755); err != nil {
-				ErrorAndExit(err.Error())
+				util.ErrorAndExit(err.Error())
 			}
 			if err := ioutil.WriteFile(filepath.Join(root, name), data, 0644); err != nil {
-				ErrorAndExit(err.Error())
+				util.ErrorAndExit(err.Error())
 			}
 			var isResource = false
 			if strings.ToLower(metadataType) == "staticresource" {
@@ -296,7 +304,7 @@ func runFetch(cmd *Command, args []string) {
 			resourcefile := value
 			dest := strings.Split(value, ".")[0]
 			if err := os.MkdirAll(dest, 0755); err != nil {
-				ErrorAndExit(err.Error())
+				util.ErrorAndExit(err.Error())
 			}
 			r, err := zip.OpenReader(resourcefile)
 			if err != nil {

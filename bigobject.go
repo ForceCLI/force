@@ -1,11 +1,14 @@
 package main
 
 import (
-	"bitbucket.org/pkg/inflect"
 	"fmt"
 	"os"
 	"strconv"
 	"strings"
+
+	"bitbucket.org/pkg/inflect"
+	"github.com/heroku/force/salesforce"
+	"github.com/heroku/force/util"
 )
 
 var cmdBigObject = &Command{
@@ -21,7 +24,7 @@ Usage:
   force bigobject create -n=<name> [-f=<field> ...]
   		A field is defined as a "+" separated list of attributes
   		Attributes depend on the type of the field.
-  		
+
   		Type = text: name, label, length
   		Type = datetime: name, label
   		Type = lookup: name, label, referenceTo, relationshipName
@@ -85,12 +88,12 @@ func runBigObject(cmd *Command, args []string) {
 		case "create":
 			runBigObjectCreate(args[1:])
 		default:
-			ErrorAndExit("no such command: %s", args[0])
+			util.ErrorAndExit("no such command: %s", args[0])
 		}
 	}
 }
 
-func parseField(fielddata string) (result BigObjectField) {
+func parseField(fielddata string) (result salesforce.BigObjectField) {
 	attrs := strings.Split(fielddata, "+")
 	for _, data := range attrs {
 		pair := strings.Split(data, ":")
@@ -109,7 +112,7 @@ func parseField(fielddata string) (result BigObjectField) {
 			var lval int64
 			lval, err := strconv.ParseInt(pair[1], 10, 0)
 			if err != nil {
-				ErrorAndExit(err.Error())
+				util.ErrorAndExit(err.Error())
 			}
 			result.Length = int(lval)
 		}
@@ -118,10 +121,10 @@ func parseField(fielddata string) (result BigObjectField) {
 	return
 }
 
-func validateField(originField BigObjectField) (field BigObjectField) {
+func validateField(originField salesforce.BigObjectField) (field salesforce.BigObjectField) {
 	field = originField
 	if len(field.Type) == 0 {
-		ErrorAndExit("You need to indicate the type for field %s", field.FullName)
+		util.ErrorAndExit("You need to indicate the type for field %s", field.FullName)
 	}
 	if len(field.Label) == 0 {
 		field.Label = field.FullName
@@ -129,32 +132,32 @@ func validateField(originField BigObjectField) (field BigObjectField) {
 	switch strings.ToLower(field.Type) {
 	case "text":
 		if field.Length == 0 {
-			ErrorAndExit("The text field %s is missing the length attribute.", field.FullName)
+			util.ErrorAndExit("The text field %s is missing the length attribute.", field.FullName)
 		}
 		field.ReferenceTo = ""
 		field.RelationshipName = ""
 	case "lookup":
 		if len(field.ReferenceTo) == 0 {
-			ErrorAndExit("The lookup field %s is missing the referenceTo attribute.", field.FullName)
+			util.ErrorAndExit("The lookup field %s is missing the referenceTo attribute.", field.FullName)
 		}
 		if len(field.RelationshipName) == 0 {
-			ErrorAndExit("The lookup field %s is missing the relationshipName attribute.")
+			util.ErrorAndExit("The lookup field %s is missing the relationshipName attribute.")
 		}
 	case "datetime":
 		field.ReferenceTo = ""
 		field.RelationshipName = ""
 		field.Length = 0
 	default:
-		ErrorAndExit("%s is not a valid field type.\nValid field types are 'text', 'dateTime' and 'lookup'", field.Type)
+		util.ErrorAndExit("%s is not a valid field type.\nValid field types are 'text', 'dateTime' and 'lookup'", field.Type)
 	}
 	return
 }
 
-func getBigObjectList(args []string) (l []ForceSobject) {
+func getBigObjectList(args []string) (l []salesforce.ForceSobject) {
 	force, _ := ActiveForce()
 	sobjects, err := force.ListSobjects()
 	if err != nil {
-		ErrorAndExit(fmt.Sprintf("ERROR: %s\n", err))
+		util.ErrorAndExit(fmt.Sprintf("ERROR: %s\n", err))
 	}
 
 	for _, sobject := range sobjects {
@@ -170,21 +173,21 @@ func getBigObjectList(args []string) (l []ForceSobject) {
 }
 
 func runBigObjectCreate(args []string) {
-	var fieldObjects = make([]BigObjectField, len(fields))
+	var fieldObjects = make([]salesforce.BigObjectField, len(fields))
 	for i, field := range fields {
 		fieldObjects[i] = parseField(field)
 	}
 
-	var object = BigObject{deploymentStatus, objectLabel, pluralLabel, fieldObjects}
+	var object = salesforce.BigObject{deploymentStatus, objectLabel, pluralLabel, fieldObjects}
 	if len(object.Label) == 0 {
-		ErrorAndExit("Please provide a label for your big object using the -l flag.")
+		util.ErrorAndExit("Please provide a label for your big object using the -l flag.")
 	}
 	if len(object.PluralLabel) == 0 {
 		object.PluralLabel = inflect.Pluralize(object.Label)
 	}
 	force, _ := ActiveForce()
 	if err := force.Metadata.CreateBigObject(object); err != nil {
-		ErrorAndExit(err.Error())
+		util.ErrorAndExit(err.Error())
 	}
 	fmt.Println("Big object created")
 

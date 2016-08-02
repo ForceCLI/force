@@ -113,6 +113,81 @@ You can also push all of a specific type of resource from a given folder.
       force push -t ApexClass -f metadata/classes/
       force push -t ApexPage -f metadata/pages/
 
+### Importing and Exporting Metadata
+
+You can use these commands to copy metadata in and out of Salesforce.  This can be particularly useful for implementing external change management using a VCS such as a git.  However, remember that Salesforce metadata can not be always be simply replaced on a target environment, and so you'll have to be mindful of deleted or renamed metadata objects, in addition to dependencies and undeployable metadata (some retrieved metadata is not valid for being redeployed, particularly things that involve builtins).
+
+The two relevant commands are `force import` and `force export`.
+
+#### Project Structure
+
+When you use `force export` for the first time, you can pass it a path to write the contents to.  By default it retrieves all known types of metadata.  As defined by the Salesforce Metadata API itself, the resulting file structure will have a directory for each type of metadata object, in addition to a `package.xml` manifest.  When run, `force import` will check for the existence of `package.xml` before creating a changeset.
+
+#### Project-level Configuration
+
+Force supports per-project config on your filesystem/source code repository in an `environments.json` config file as a sibling file with your `package.xml`.  Currently this only supports one feature, simple pre-processing of your metadata with variable interpolation when using the `import` command to deploy metadata.
+
+The format of that file is a JSON object hash, with keys of environment names (arbitrary strings) containing hashes which the individual environments.  The object is a hash of environment names (the names are currently used for informative purposes only) mapped to objects which respectively describe the environment, which in turn contain `match` objects of regexes that match by the login name (`login`) and/or by the target instance (`instance`).
+
+A suggested approach is to leverage the typical Salesforce convention (described in the Users and Contacts section of SF's [Sandbox Setup Considerations](https://help.salesforce.com/HTViewHelpDoc?id=data_sandbox_implementation_tips.htm) documentation) of appending Sandbox names to usernames in order to match environments to logins.  This method allows for discrimating between prod and the multiple sandboxes in a given org/project, while still allowing for multiple users to collaborate on the project without them having to meddle with their project configuration on an individual basis.
+
+Example `environments.json`:
+
+```json
+{
+    "environments": {
+        "dev": {
+            "match": {
+                "login": "@myapp.com.dev$"
+            }
+        },
+        "production": {
+            "match": {
+                "login": "@myapp.com$"
+            }
+        },
+        "demo": {
+            "match": {
+                "instance": "https://cs00.salesforce.com/"
+            }
+        },
+    }
+}
+```
+
+##### Variable interpolation
+
+If required, you can use the string interpolation feature of `force` to dynamically modify your metadata when running `force import` according to a set of variables you can specify.  This can be handy for working around restrictions of Salesforce metadata that by design must refer to a given instance-specific piece of data (say, a user ID), or perhaps a remote endpoint.  Which interpolation to apply is discriminated by the hostname of the instance.
+
+Example `environments.json` where a Salesforce project is integrating with a hypothetical app running on Heroku:
+
+```json
+{
+    "environments": {
+        "dev": {
+            "match": {
+                "login": "@myapp.com.dev$"
+            },
+            "vars": {
+                "INTEGRATION_HOST": "https://dave-super-staging.herokuapp.com",
+                "INTEGRATION_TOKEN": "derp",
+                "INTEGRATION_USER": "api@example.com.dev"
+            }
+        },
+        "production": {
+            "match": {
+                "login": "@myapp.com$"
+            },
+            "vars": {
+                "INTEGRATION_HOST": "https://dave-super.herokuapp.com",
+                "INTEGRATION_TOKEN": "sekrit",
+                "INTEGRATION_USER": "api@example.com"
+            }
+        }
+    }
+}
+```
+
 ### notify
 Includes notification library, [gotifier](https://github.com/ViViDboarder/gotifier), that will display notifications for using either Using [terminal-notifier](https://github.com/julienXX/terminal-notifier) on OSX or [notify-send](http://manpages.ubuntu.com/manpages/saucy/man1/notify-send.1.html) on Ubuntu. Currently, only the `push` and `test` methods are displaying notifications.
 
@@ -122,7 +197,7 @@ Limits will display limits information for your organization.
 - Remaining is the total number of calls or events left for the organization
 
 The list is limited to those exposed by the REST API.
-	
+
       force limits
 
 ### Hacking

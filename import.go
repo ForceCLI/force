@@ -2,11 +2,10 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
-	"os"
-	"os/user"
-	"path/filepath"
-	"strings"
+
+	"github.com/heroku/force/project"
+	"github.com/heroku/force/salesforce"
+	"github.com/heroku/force/util"
 )
 
 var cmdImport = &Command{
@@ -69,57 +68,51 @@ func init() {
 
 func runImport(cmd *Command, args []string) {
 	if len(args) > 0 {
-		ErrorAndExit("Unrecognized argument: " + args[0])
+		util.ErrorAndExit("Unrecognized argument: " + args[0])
 	}
 
-	wd, _ := os.Getwd()
-	usr, err := user.Current()
-	var dir string
+	loadedProject := project.LoadProject(*directory)
 
-	//Manually handle shell expansion short cut
+	force, err := ActiveForce()
 	if err != nil {
-		if strings.HasPrefix(*directory, "~") {
-			ErrorAndExit("Cannot determine tilde expansion, please use relative or absolute path to directory.")
-		} else {
-			dir = *directory
-		}
-	} else {
-		if strings.HasPrefix(*directory, "~") {
-			dir = strings.Replace(*directory, "~", usr.HomeDir, 1)
-		} else {
-			dir = *directory
-		}
+		util.ErrorAndExit(err.Error())
 	}
+	files := loadedProject.EnumerateContents()
 
-	root := filepath.Join(wd, dir)
-
-	// Check for absolute path
-	if filepath.IsAbs(dir) {
-		root = dir
-	}
-
-	force, _ := ActiveForce()
-	files := make(ForceMetadataFiles)
-	if _, err := os.Stat(filepath.Join(root, "package.xml")); os.IsNotExist(err) {
-		ErrorAndExit(" \n" + filepath.Join(root, "package.xml") + "\ndoes not exist")
-	}
-
-	err = filepath.Walk(root, func(path string, f os.FileInfo, err error) error {
-		if f.Mode().IsRegular() {
-			if f.Name() != ".DS_Store" {
-				data, err := ioutil.ReadFile(path)
-				if err != nil {
-					ErrorAndExit(err.Error())
-				}
-				files[strings.Replace(path, fmt.Sprintf("%s%s", root, string(os.PathSeparator)), "", -1)] = data
-			}
-		}
-		return nil
-	})
+	loginUsername, err := ActiveLogin()
 	if err != nil {
-		ErrorAndExit(err.Error())
+		util.ErrorAndExit(err.Error())
 	}
-	var DeploymentOptions ForceDeployOptions
+
+	if projectEnvironmentConfig, err := loadedProject.GetEnvironmentConfigForActiveEnvironment(loginUsername, force.Credentials.InstanceUrl); projectEnvironmentConfig != nil {
+		fmt.Printf("About to deploy to: %s at %s\n", projectEnvironmentConfig.Name, force.Credentials.InstanceUrl)
+		files = loadedProject.ContentsWithInternalTransformsApplied(projectEnvironmentConfig)
+	} else if err != nil {
+		util.ErrorAndExit(err.Error())
+	}
+
+	// Now to handle the metadata types that Salesforce has implemented their
+	// own versioning regimes for, do a retrieval of the current content of the
+	// environment.
+	query := salesforce.ForceMetadataQuery{
+		{Name: "FlowDefinition", Members: []string{"*"}},
+		{Name: "Flow", Members: []string{"*"}},
+	}
+
+	// if we have any flows to deploy, run a remote query to see if we actually
+	// have any non-replaceable metadata that requires it!
+	if project.IsNewFlowVersionsOnlyTransformRequired(files) {
+		fmt.Print("Flows are present, checking for active flows in target to skip...\n")
+		targetFlowsAndDefinitions, err := force.Metadata.Retrieve(query, salesforce.ForceRetrieveOptions{})
+		if err != nil {
+			fmt.Printf("Encountered an error with retrieve...\n")
+			util.ErrorAndExit(err.Error())
+		}
+
+		files = project.TransformDeployToIncludeNewFlowVersionsOnly(files, targetFlowsAndDefinitions)
+	}
+
+	var DeploymentOptions salesforce.ForceDeployOptions
 	DeploymentOptions.AllowMissingFiles = *allowMissingFilesFlag
 	DeploymentOptions.AutoUpdatePackage = *autoUpdatePackageFlag
 	DeploymentOptions.CheckOnly = *checkOnlyFlag
@@ -136,7 +129,7 @@ func runImport(cmd *Command, args []string) {
 	problems := result.Details.ComponentFailures
 	successes := result.Details.ComponentSuccesses
 	if err != nil {
-		ErrorAndExit(err.Error())
+		util.ErrorAndExit(err.Error())
 	}
 
 	fmt.Printf("\nFailures - %d\n", len(problems))
@@ -166,5 +159,5 @@ func runImport(cmd *Command, args []string) {
 			}
 		}
 	}
-	fmt.Printf("Imported from %s\n", root)
+	fmt.Printf("Imported from %s\n", loadedProject.LoadedFromPath())
 }

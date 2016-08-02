@@ -1,6 +1,10 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/heroku/force/util"
+)
 
 var cmdEventLogFile = &Command{
 	Run:   getEventLogFile,
@@ -20,14 +24,14 @@ func getEventLogFile(cmd *Command, args []string) {
 	if len(args) == 0 {
 		records, err := force.QueryEventLogFiles()
 		if err != nil {
-			ErrorAndExit(err.Error())
+			util.ErrorAndExit(err.Error())
 		}
 		DisplayForceRecords(records)
 	} else {
 		logId := args[0]
 		log, err := force.RetrieveEventLogFile(logId)
 		if err != nil {
-			ErrorAndExit(err.Error())
+			util.ErrorAndExit(err.Error())
 		}
 		fmt.Println(log)
 	}

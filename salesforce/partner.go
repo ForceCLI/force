@@ -1,4 +1,4 @@
-package main
+package salesforce
 
 import (
 	"encoding/xml"
@@ -83,12 +83,12 @@ func (partner *ForcePartner) ExecuteAnonymous(apex string) (output string, err e
 	return
 }
 
-func (partner *ForcePartner) soapExecuteCore(action, query string) (response []byte, err error) {
+func (partner *ForcePartner) SoapExecuteCore(action, query string) (response []byte, err error) {
 	login, err := partner.Force.Get(partner.Force.Credentials.Id)
 	if err != nil {
 		return
 	}
-	version := strings.Replace(apiVersion, "v", "", 1)
+	version := partner.Force.Credentials.ApiVersionNumber()
 	url := strings.Replace(login["urls"].(map[string]interface{})["partner"].(string), "{version}", version, 1)
 	//url = strings.Replace(url, "/u/", "/s/", 1) // seems dirty
 	soap := NewSoap(url, "urn:partner.soap.sforce.com", partner.Force.Credentials.AccessToken)
@@ -127,7 +127,7 @@ func (partner *ForcePartner) soapExecute(action, query string) (response []byte,
 	if err != nil {
 		return
 	}
-	version := strings.Replace(apiVersion, "v", "", 1)
+	version := partner.Force.Credentials.ApiVersionNumber()
 	url := strings.Replace(login["urls"].(map[string]interface{})["partner"].(string), "{version}", version, 1)
 	url = strings.Replace(url, "/u/", "/s/", 1) // seems dirty
 	soap := NewSoap(url, "http://soap.sforce.com/2006/08/apex", partner.Force.Credentials.AccessToken)

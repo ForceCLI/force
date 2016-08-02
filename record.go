@@ -2,6 +2,9 @@ package main
 
 import (
 	"fmt"
+
+	"github.com/heroku/force/salesforce"
+	"github.com/heroku/force/util"
 )
 
 var cmdRecord = &Command{
@@ -63,19 +66,19 @@ func runRecord(cmd *Command, args []string) {
 		case "delete", "remove":
 			runRecordDelete(args[1:])
 		default:
-			ErrorAndExit("no such command: %s", args[0])
+			util.ErrorAndExit("no such command: %s", args[0])
 		}
 	}
 }
 
 func runRecordGet(args []string) {
 	if len(args) != 2 {
-		ErrorAndExit("must specify object and id")
+		util.ErrorAndExit("must specify object and id")
 	}
 	force, _ := ActiveForce()
 	object, err := force.GetRecord(args[0], args[1])
 	if err != nil {
-		ErrorAndExit(err.Error())
+		util.ErrorAndExit(err.Error())
 	} else {
 		DisplayForceRecord(object)
 	}
@@ -83,38 +86,38 @@ func runRecordGet(args []string) {
 
 func runRecordCreate(args []string) {
 	if len(args) < 1 {
-		ErrorAndExit("must specify object")
+		util.ErrorAndExit("must specify object")
 	}
 	force, _ := ActiveForce()
-	attrs := ParseArgumentAttrs(args[1:])
+	attrs := salesforce.ParseArgumentAttrs(args[1:])
 	id, err, emessages := force.CreateRecord(args[0], attrs)
 	if err != nil {
-		ErrorAndExit(err.Error(), emessages[0].ErrorCode)
+		util.ErrorAndExit(err.Error(), emessages[0].ErrorCode)
 	}
 	fmt.Printf("Record created: %s\n", id)
 }
 
 func runRecordUpdate(args []string) {
 	if len(args) < 2 {
-		ErrorAndExit("must specify object and id")
+		util.ErrorAndExit("must specify object and id")
 	}
 	force, _ := ActiveForce()
-	attrs := ParseArgumentAttrs(args[2:])
+	attrs := salesforce.ParseArgumentAttrs(args[2:])
 	err := force.UpdateRecord(args[0], args[1], attrs)
 	if err != nil {
-		ErrorAndExit(err.Error())
+		util.ErrorAndExit(err.Error())
 	}
 	fmt.Println("Record updated")
 }
 
 func runRecordDelete(args []string) {
 	if len(args) != 2 {
-		ErrorAndExit("must specify object and id")
+		util.ErrorAndExit("must specify object and id")
 	}
 	force, _ := ActiveForce()
 	err := force.DeleteRecord(args[0], args[1])
 	if err != nil {
-		ErrorAndExit(err.Error())
+		util.ErrorAndExit(err.Error())
 	}
 	fmt.Println("Record deleted")
 }

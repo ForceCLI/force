@@ -3,6 +3,9 @@ package main
 import (
 	"fmt"
 	"sort"
+
+	"github.com/heroku/force/salesforce"
+	"github.com/heroku/force/util"
 )
 
 var cmdLimits = &Command{
@@ -24,17 +27,17 @@ func runLimits(cmd *Command, args []string) {
 
 	force, _ := ActiveForce()
 
-	var result ForceLimits
+	var result salesforce.ForceLimits
 	result, err := force.GetLimits()
 
 	if err != nil {
-		ErrorAndExit(err.Error())
+		util.ErrorAndExit(err.Error())
 	} else {
 		printLimits(result)
 	}
 }
 
-func printLimits(result map[string]ForceLimit) {
+func printLimits(result map[string]salesforce.ForceLimit) {
 
 	//sort keys
 	var keys []string

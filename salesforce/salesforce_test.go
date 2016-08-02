@@ -1,4 +1,4 @@
-package main_test
+package salesforce_test
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -9,5 +9,5 @@ import (
 
 func TestForce(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Force Suite")
+	RunSpecs(t, "Salesforce Module Suite")
 }

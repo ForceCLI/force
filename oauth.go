@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+
+	"github.com/heroku/force/util"
 )
 
 var cmdOauth = &Command{
@@ -29,23 +31,23 @@ func runOauth(cmd *Command, args []string) {
 		case "create", "add":
 			runOauthCreate(cmd, args[1:])
 		default:
-			ErrorAndExit("no such command: %s", args[0])
+			util.ErrorAndExit("no such command: %s", args[0])
 		}
 	}
 }
 
 func runOauthCreate(cmd *Command, args []string) {
 	if len(args) != 2 {
-		ErrorAndExit("must specify name and callback")
+		util.ErrorAndExit("must specify name and callback")
 	}
 	force, _ := ActiveForce()
 	err := force.Metadata.CreateConnectedApp(args[0], args[1])
 	if err != nil {
-		ErrorAndExit(err.Error())
+		util.ErrorAndExit(err.Error())
 	}
 	apps, err := force.Metadata.ListConnectedApps()
 	if err != nil {
-		ErrorAndExit(err.Error())
+		util.ErrorAndExit(err.Error())
 	}
 	runFetch(cmd, []string{"ConnectedApp", args[0]})
 	for _, app := range apps {

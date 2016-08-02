@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"strings"
+
+	"github.com/heroku/force/util"
 )
 
 var cmdQuery = &Command{
@@ -49,7 +51,7 @@ func runQuery(cmd *Command, args []string) {
 		records, err := force.Query(fmt.Sprintf("%s", soql), isTooling)
 
 		if err != nil {
-			ErrorAndExit(err.Error())
+			util.ErrorAndExit(err.Error())
 		} else {
 			if format == "console" {
 				DisplayForceRecords(records)

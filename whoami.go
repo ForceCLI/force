@@ -1,6 +1,8 @@
 package main
 
-import ()
+import (
+	"github.com/heroku/force/util"
+)
 
 var cmdWhoami = &Command{
 	Run:   runWhoami,
@@ -19,7 +21,7 @@ func runWhoami(cmd *Command, args []string) {
 	force, _ := ActiveForce()
 	me, err := force.Whoami()
 	if err != nil {
-		ErrorAndExit(err.Error())
+		util.ErrorAndExit(err.Error())
 	} else if len(args) == 0 {
 		DisplayForceRecord(me)
 	}

@@ -4,9 +4,11 @@ metadata/
 # Force CLI specific things
 force
 metadata
-test 
+test
 
 *.json
 
 *.xml
 *.exe
+
+/.vscode

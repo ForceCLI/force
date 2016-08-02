@@ -2,10 +2,9 @@ package main
 
 import (
 	"fmt"
-)
 
-var apiVersion = "v36.0"
-var apiVersionNumber = "36.0"
+	"github.com/heroku/force/util"
+)
 
 var cmdApiVersion = &Command{
 	Run:   runApiVersion,
@@ -27,14 +26,16 @@ func init() {
 func runApiVersion(cmd *Command, args []string) {
 	force, _ := ActiveForce()
 	if len(args) == 1 {
-		// Todo validate that the version is in the right format
-		apiVersionNumber = args[0]
-		apiVersion = "v" + apiVersionNumber
-		force.Credentials.ApiVersion = apiVersionNumber
+		var versionNumberArgument = args[0]
+		// validate that the version is in the right format
+		if []rune(versionNumberArgument)[0] != 'v' {
+			util.ErrorAndExit("You must specify version number in the format vMM.mm")
+		}
+		force.Credentials.ApiVersion = versionNumberArgument
 		ForceSaveLogin(force.Credentials)
 	} else if len(args) == 0 {
-		fmt.Println(apiVersion)
+		fmt.Println(force.Credentials.ApiVersion)
 	} else {
-		ErrorAndExit("The apiversion command only accepts a single argument in the form of nn.0")
+		util.ErrorAndExit("The apiversion command only accepts a single argument in the form of nn.0")
 	}
 }

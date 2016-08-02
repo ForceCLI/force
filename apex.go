@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+
+	"github.com/heroku/force/util"
 )
 
 var cmdApex = &Command{
@@ -39,13 +41,13 @@ func runApex(cmd *Command, args []string) {
 		fmt.Println("\n\n>> Executing code...")
 	}
 	if err != nil {
-		ErrorAndExit(err.Error())
+		util.ErrorAndExit(err.Error())
 	}
 	force, _ := ActiveForce()
 	if len(args) <= 1 {
 		output, err := force.Partner.ExecuteAnonymous(string(code))
 		if err != nil {
-			ErrorAndExit(err.Error())
+			util.ErrorAndExit(err.Error())
 		}
 		fmt.Println(output)
 	} else {
@@ -53,7 +55,7 @@ func runApex(cmd *Command, args []string) {
 		fmt.Println(apexclass)
 		err := force.GetCodeCoverage("", apexclass)
 		if err != nil {
-			ErrorAndExit(err.Error())
+			util.ErrorAndExit(err.Error())
 		}
 	}
 }
