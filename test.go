@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"strconv"
+	"strings"
 )
 
 var cmdTest = &Command{
@@ -52,7 +53,7 @@ func runTests(cmd *Command, args []string) {
 	}
 	force, _ := ActiveForce()
 	output, err := RunTests(force.Partner, args, *namespaceTestFlag)
-	success := false
+
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
@@ -60,35 +61,49 @@ func runTests(cmd *Command, args []string) {
 		fmt.Println(output.Log)
 		fmt.Println()
 	}
+
+	success := false
+
+	results := GenerateResults(output)
+
+	fmt.Print(results)
+
+	success = len(output.FMethodNames) == 0
+	// Handle notifications
+	notifySuccess("test", success)
+
+}
+
+func GenerateResults(output TestCoverage) string {
+	var results []string
 	var percent int
-	fmt.Println("Coverage:")
-	fmt.Println()
+	results = append(results, "Coverage:")
+	results = append(results, "")
 	for index := range output.NumberLocations {
 		if output.NumberLocations[index] != 0 {
 			percent = ((output.NumberLocations[index] - output.NumberLocationsNotCovered[index]) / output.NumberLocations[index]) * 100
 		}
 
 		if percent > 0 {
-			fmt.Println("   " + strconv.Itoa(percent) + "%   " + output.Name[index])
+			results = append(results, "   "+strconv.Itoa(percent)+"%   "+output.Name[index])
 		}
 	}
-	fmt.Println()
-	fmt.Println()
-	fmt.Println("Results:")
-	fmt.Println()
+	results = append(results, "")
+	results = append(results, "")
+	results = append(results, "Results:")
+	results = append(results, "")
 	for index := range output.SMethodNames {
-		fmt.Println("  [PASS]  " + output.SClassNames[index] + "::" + output.SMethodNames[index])
+		results = append(results, "  [PASS]  "+output.SClassNames[index]+"::"+output.SMethodNames[index])
 	}
 
 	for index := range output.FMethodNames {
-		fmt.Println("  [FAIL]  " + output.FClassNames[index] + "::" + output.FMethodNames[index] + ": " + output.FMessage[index])
-		fmt.Println("    " + output.FStackTrace[index])
+		results = append(results, "  [FAIL]  "+output.FClassNames[index]+"::"+output.FMethodNames[index]+": "+output.FMessage[index])
+		results = append(results, "    "+output.FStackTrace[index])
 	}
-	fmt.Println()
-	fmt.Println()
+	results = append(results, "")
+	results = append(results, "")
 
-	success = len(output.FMethodNames) == 0
+	result := strings.Join(results, "\n")
 
-	// Handle notifications
-	notifySuccess("test", success)
+	return result
 }
