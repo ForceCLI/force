@@ -54,6 +54,7 @@ var metapaths = []metapath{
 	metapath{path: "flows", name: "Flow"},
 	metapath{path: "globalPicklists", name: "GlobalPicklist"},
 	metapath{path: "groups", name: "Group"},
+	metapath{path: "homePageComponents", name: "HomePageComponent"},
 	metapath{path: "homePageLayouts", name: "HomePageLayout"},
 	metapath{path: "installedPackages", name: "InstalledPackage"},
 	metapath{path: "labels", name: "CustomLabels"},
