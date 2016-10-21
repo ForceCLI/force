@@ -13,8 +13,8 @@ import (
 	"net/http"
 	"net/url"
 	"runtime"
-	"strings"
 	"strconv"
+	"strings"
 )
 
 const (
@@ -82,7 +82,7 @@ type ForceError struct {
 
 type FieldName struct {
 	FieldName string
-	IsObject bool
+	IsObject  bool
 }
 
 type SelectStruct struct {
@@ -666,15 +666,15 @@ func (f *Force) DecodeMe2(jsonStream string) (result ForceQueryResult) {
 			}
 		}
 		switch tokenType {
-			case "{":
-				if !recordsFound {
-					// This should be the start of the entire json
-				} else {
-					// Need to set a flag that in the next loop we are adding fields
-					// to a child object
-				}
-			default:
-				
+		case "{":
+			if !recordsFound {
+				// This should be the start of the entire json
+			} else {
+				// Need to set a flag that in the next loop we are adding fields
+				// to a child object
+			}
+		default:
+
 		}
 	}
 	return
@@ -724,21 +724,21 @@ func (f *Force) DecodeMe(jsonStream string) (result *list.List) {
 		} else if token == "attributes" {
 			isAttributes = true
 		} else if tokenType != "json.Delim" && recordsFound && token != "attributes" && token != "url" {
-				//fmt.Printf("\ncase fieldName: %v.%v\n", SObjecttype, token)
-				spec := f.GetObjectSpec(SObjecttype, result)
-				//fmt.Printf("%v:", token)
-				t, err = dec.Token()
-				tt := fmt.Sprintf("%T", t)
-				//if /*t != nil &&*/ tt != "json.Delim" {
-					//fmt.Printf("%T\n", t)
-					f.PushFieldName(token, spec, (tt == "json.Delim" || t == nil))
-					/*if tt == "json.Number" {
-						fmt.Printf("Value: %#v\n",  JSONNumberToString(t, ','))
-					} else {
-						fmt.Printf("Value: %s\n", t)
-					}*/
-				//}
-				//fmt.Printf("\n")
+			//fmt.Printf("\ncase fieldName: %v.%v\n", SObjecttype, token)
+			spec := f.GetObjectSpec(SObjecttype, result)
+			//fmt.Printf("%v:", token)
+			t, err = dec.Token()
+			tt := fmt.Sprintf("%T", t)
+			//if /*t != nil &&*/ tt != "json.Delim" {
+			//fmt.Printf("%T\n", t)
+			f.PushFieldName(token, spec, (tt == "json.Delim" || t == nil))
+			/*if tt == "json.Number" {
+				fmt.Printf("Value: %#v\n",  JSONNumberToString(t, ','))
+			} else {
+				fmt.Printf("Value: %s\n", t)
+			}*/
+			//}
+			//fmt.Printf("\n")
 		} else {
 			if err != nil {
 				ErrorAndExit(err.Error())
@@ -781,7 +781,11 @@ func (f *Force) DumpListStack(l *list.List) {
 		fmt.Println(spec.ObjectName)
 		for _, v := range spec.FieldNames {
 			fmt.Printf("\t%v", v.FieldName)
-			if v.IsObject { fmt.Printf(" (Object)\n") } else { fmt.Printf("\n") }
+			if v.IsObject {
+				fmt.Printf(" (Object)\n")
+			} else {
+				fmt.Printf("\n")
+			}
 		}
 	}
 	fmt.Printf("\n\n")
