@@ -605,8 +605,6 @@ func (f *Force) Query(query string, isTooling bool) (result ForceQueryResult, fi
 		ErrorAndExit(err.Error())
 	}
 	//fieldList = f.DecodeMe(string(body))
-	qr := f.DecodeMe2(string(body))
-	fmt.Sprintf("%v", qr)
 	json.Unmarshal(body, &result)
 	if result.Done == false {
 		var nextResult ForceQueryResult
