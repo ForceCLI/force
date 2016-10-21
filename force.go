@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"container/list"
 	"encoding/json"
 	"encoding/xml"
 	"errors"
@@ -13,6 +14,7 @@ import (
 	"net/url"
 	"runtime"
 	"strings"
+	"strconv"
 )
 
 const (
@@ -78,9 +80,17 @@ type ForceError struct {
 	ErrorCode string
 }
 
-type ForceEndpoint int
+type FieldName struct {
+	FieldName string
+	IsObject bool
+}
 
-type ForceRecord map[string]interface{}
+type SelectStruct struct {
+	ObjectName string
+	FieldNames []FieldName
+}
+
+type ForceEndpoint int
 
 type ForceSobject map[string]interface{}
 
@@ -105,6 +115,8 @@ type ForcePasswordStatusResult struct {
 type ForcePasswordResetResult struct {
 	NewPassword string
 }
+
+type ForceRecord map[string]interface{}
 
 type ForceQueryResult struct {
 	Done           bool
@@ -575,7 +587,7 @@ func (f *Force) GetSobject(name string) (sobject ForceSobject, err error) {
 	return
 }
 
-func (f *Force) Query(query string, isTooling bool) (result ForceQueryResult, err error) {
+func (f *Force) Query(query string, isTooling bool) (result ForceQueryResult, fieldList *list.List, err error) {
 	vurl := ""
 	if isTooling == true {
 		vurl = fmt.Sprintf("%s/services/data/%s/tooling/query?q=%s", f.Credentials.InstanceUrl, apiVersion, url.QueryEscape(query))
@@ -586,6 +598,15 @@ func (f *Force) Query(query string, isTooling bool) (result ForceQueryResult, er
 	if err != nil {
 		return
 	}
+	//fmt.Println(string(body))
+	//dec := json.NewDecoder(strings.NewReader(string(body)))
+	//err = dec.Decode(&result)
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
+	//fieldList = f.DecodeMe(string(body))
+	qr := f.DecodeMe2(string(body))
+	fmt.Sprintf("%v", qr)
 	json.Unmarshal(body, &result)
 	if result.Done == false {
 		var nextResult ForceQueryResult
@@ -602,6 +623,214 @@ func (f *Force) Query(query string, isTooling bool) (result ForceQueryResult, er
 			result.Records = append(result.Records, nextResult.Records...)
 		}
 	}
+	return
+}
+
+func (f *Force) DecodeMe2(jsonStream string) (result ForceQueryResult) {
+	dec := json.NewDecoder(strings.NewReader(jsonStream))
+	dec.UseNumber()
+	recordsFound := false
+
+	for {
+		t, err := dec.Token()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			ErrorAndExit(err.Error())
+		}
+
+		var tokenType = fmt.Sprintf("%T", t)
+		var token = fmt.Sprintf("%v", t)
+		//fmt.Printf("%s: %s\n", tokenType, token)
+		if tokenType == "json.Delim" {
+
+		} else {
+			if !recordsFound {
+				switch token {
+				case "totalSize":
+					t, _ = dec.Token()
+					v, _ := strconv.Atoi(t.(json.Number).String())
+					result.TotalSize = v
+				case "done":
+					t, _ = dec.Token()
+					v, _ := t.(bool)
+					result.Done = v
+				case "nextRecordsUrl":
+					t, _ = dec.Token()
+					result.NextRecordsUrl = fmt.Sprintf("%v", t)
+				case "records":
+					recordsFound = true
+				}
+
+			}
+		}
+		switch tokenType {
+			case "{":
+				if !recordsFound {
+					// This should be the start of the entire json
+				} else {
+					// Need to set a flag that in the next loop we are adding fields
+					// to a child object
+				}
+			default:
+				
+		}
+	}
+	return
+}
+
+func (f *Force) DecodeMe(jsonStream string) (result *list.List) {
+	type val interface{}
+	type keyval struct {
+		Key string
+		Val val
+	}
+	dec := json.NewDecoder(strings.NewReader(jsonStream))
+	dec.UseNumber()
+	//var records = list.New()
+	//var currentContainer = new(val)
+	var recordsFound = false
+	//var stack = make([]string, 0, 0)
+	result = list.New()
+	SObjecttype := ""
+	var isAttributes = false
+	for {
+		t, err := dec.Token()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			ErrorAndExit(err.Error())
+		}
+
+		var tokenType = fmt.Sprintf("%T", t)
+		var token = fmt.Sprintf("%v", t)
+		//fmt.Printf("tokenType: %s, token: %s\n", tokenType, token)
+		if token == "type" {
+			t, err = dec.Token()
+			token = fmt.Sprintf("%v", t)
+			SObjecttype = token
+			//fmt.Printf("case token=type %s\n", SObjecttype)
+			spec := f.GetObjectSpec(SObjecttype, result)
+			spec.ObjectName = token
+		} else if token == "totalSize" {
+			t, err = dec.Token()
+		} else if token == "done" {
+			t, err = dec.Token()
+		} else if token == "records" {
+			//fmt.Println("Records have been found...")
+			recordsFound = true
+		} else if token == "attributes" {
+			isAttributes = true
+		} else if tokenType != "json.Delim" && recordsFound && token != "attributes" && token != "url" {
+				//fmt.Printf("\ncase fieldName: %v.%v\n", SObjecttype, token)
+				spec := f.GetObjectSpec(SObjecttype, result)
+				//fmt.Printf("%v:", token)
+				t, err = dec.Token()
+				tt := fmt.Sprintf("%T", t)
+				//if /*t != nil &&*/ tt != "json.Delim" {
+					//fmt.Printf("%T\n", t)
+					f.PushFieldName(token, spec, (tt == "json.Delim" || t == nil))
+					/*if tt == "json.Number" {
+						fmt.Printf("Value: %#v\n",  JSONNumberToString(t, ','))
+					} else {
+						fmt.Printf("Value: %s\n", t)
+					}*/
+				//}
+				//fmt.Printf("\n")
+		} else {
+			if err != nil {
+				ErrorAndExit(err.Error())
+			}
+			if token == "url" {
+				t, err = dec.Token()
+			} else if token == "[" {
+				//fmt.Println("Starting Array...")
+			} else if token == "]" {
+				//fmt.Println("Ending Array...")
+			} else if token == "}" {
+				if isAttributes {
+					isAttributes = false
+				} else {
+					prev := f.GetPrevObjectSpec(SObjecttype, result)
+					if prev != nil {
+						SObjecttype = prev.ObjectName
+						//fmt.Printf("Prev Obj: %s\n\n", prev.ObjectName)
+					} else {
+						//fmt.Printf("NO PREV OBJ\n\n")
+					}
+					//fmt.Println("Ending Object...")
+				}
+			} else if token == "{" {
+				//spec := f.GetObjectSpec(SObjecttype, result)
+				//result.PushFront(spec)
+				//fmt.Println("Starting Object...")
+			}
+		}
+		f.DumpListStack(result)
+	}
+	f.DumpListStack(result)
+	return
+}
+
+func (f *Force) DumpListStack(l *list.List) {
+	fmt.Printf("\nDecode Results:\n")
+	for e := l.Front(); e != nil; e = e.Next() {
+		spec := e.Value.(*SelectStruct)
+		fmt.Println(spec.ObjectName)
+		for _, v := range spec.FieldNames {
+			fmt.Printf("\t%v", v.FieldName)
+			if v.IsObject { fmt.Printf(" (Object)\n") } else { fmt.Printf("\n") }
+		}
+	}
+	fmt.Printf("\n\n")
+}
+
+func (f *Force) PushFieldName(fieldName string, spec *SelectStruct, IsObject bool) {
+	//fmt.Println("Pushing fieldname: ", fieldName)
+	for _, v := range spec.FieldNames {
+		if v.FieldName == fieldName {
+			return
+		}
+	}
+	spec.FieldNames = append(spec.FieldNames, FieldName{fieldName, IsObject})
+	return
+}
+
+func (f *Force) GetPrevObjectSpec(objectName string, l *list.List) (foundItem *SelectStruct) {
+	for e := l.Front(); e != nil; e = e.Next() {
+		if e.Value.(*SelectStruct).ObjectName == objectName {
+			p := e.Prev()
+			if p != nil {
+				foundItem = e.Prev().Value.(*SelectStruct)
+				return
+			}
+		}
+	}
+	return
+}
+
+func (f *Force) GetObjectSpec(objectName string, l *list.List) (result *SelectStruct) {
+	//fmt.Println("Looking for Spec", objectName)
+	found, result := f.HasObject(objectName, l)
+	if !found {
+		result = new(SelectStruct)
+		result.ObjectName = objectName
+		l.PushBack(result)
+	}
+	return
+}
+
+func (f *Force) HasObject(objectName string, l *list.List) (result bool, foundItem *SelectStruct) {
+	for e := l.Front(); e != nil; e = e.Next() {
+		if e.Value.(*SelectStruct).ObjectName == objectName {
+			result = true
+			foundItem = e.Value.(*SelectStruct)
+			return
+		}
+	}
+	result = false
 	return
 }
 

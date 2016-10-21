@@ -69,7 +69,7 @@ func ActiveLogin() (account string, err error) {
 func ActiveCredentials() (creds ForceCredentials, err error) {
 	account, err := ActiveLogin()
 	if err != nil {
-		return
+		ErrorAndExit("Please login before running this command.")
 	}
 	data, err := Config.Load("accounts", account)
 	json.Unmarshal([]byte(data), &creds)
