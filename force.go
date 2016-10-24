@@ -22,7 +22,6 @@ const (
 	PrereleaseClientId = "3MVG9lKcPoNINVBIRgC7lsz5tIhlg0mtoEqkA9ZjDAwEMbBy43gsnfkzzdTdhFLeNnWS8M4bnRnVv1Qj0k9MD"
 	Mobile1ClientId    = "3MVG9Iu66FKeHhIPqCB9VWfYPxjfcb5Ube.v5L81BLhnJtDYVP2nkA.mDPwfm5FTLbvL6aMftfi8w0rL7Dv7f"
 	RedirectUri        = "https://force-cli.herokuapp.com/auth/callback"
-	RedirectUriStaging = "https://force-clistaging.herokuapp.com/auth/callback"
 )
 
 var CustomEndpoint = ``
@@ -297,9 +296,6 @@ func ForceLogin(endpoint ForceEndpoint) (creds ForceCredentials, err error) {
 	var url string
 
 	Redir := RedirectUri
-	if Version == "dev" {
-		Redir = RedirectUriStaging
-	}
 
 	switch endpoint {
 	case EndpointProduction:
