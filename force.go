@@ -1061,6 +1061,9 @@ func (f *Force) StartTrace(userId ...string) (result ForceCreateRecordResult, er
 	attrs["Validation"] = "Warn"
 	attrs["Visualforce"] = "Info"
 	attrs["Workflow"] = "Info"
+	attrs["LogType"] = "DEVELOPER_LOG"
+	attrs["DebugLevelId"], _ = f.GetConsoleLogLevelId()
+
 	if len(userId) == 1 {
 		attrs["TracedEntityId"] = userId[0]
 	} else {
@@ -1073,6 +1076,19 @@ func (f *Force) StartTrace(userId ...string) (result ForceCreateRecordResult, er
 	}
 	json.Unmarshal(body, &result)
 
+	return
+}
+
+func (f *Force) GetConsoleLogLevelId() (result string, err error) {
+	url := fmt.Sprintf("%s/services/data/%s/tooling/query?q=Select+Id+From+DebugLevel+Where+DeveloperName+=+'SFDC_DevConsole'", f.Credentials.InstanceUrl, apiVersion)
+	body, err := f.httpGet(url)
+	var res ForceQueryResult
+	if err != nil {
+		return
+	}
+	json.Unmarshal(body, &res)
+	result = res.Records[0]["Id"].(string)
+	fmt.Println(result)
 	return
 }
 

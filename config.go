@@ -17,9 +17,9 @@ var sourceDirs = []string{
 // IsSourceDir returns a boolean indicating that dir is actually a Salesforce
 // source directory.
 func IsSourceDir(dir string) bool {
-		if _, err := os.Stat(dir); err == nil {
-			return true
-		}
+	if _, err := os.Stat(dir); err == nil {
+		return true
+	}
 	return false
 }
 
@@ -44,7 +44,7 @@ func GetSourceDir() (dir string, err error) {
 	}
 
 	// Check the current directory and then start looking up at our parents.
-	// When dir's parent is identical, it means we're at the root.  If we blow 
+	// When dir's parent is identical, it means we're at the root.  If we blow
 	// past the actual root, we should drop to the next section of code
 	for dir != filepath.Dir(dir) {
 		dir = filepath.Dir(dir)
@@ -62,8 +62,8 @@ func GetSourceDir() (dir string, err error) {
 	dir = filepath.Join(base, "src")
 	err = os.Mkdir(dir, 0777)
 	symlink := filepath.Join(base, "metadata")
-    os.Symlink(dir, symlink)
-    dir = symlink
+	os.Symlink(dir, symlink)
+	dir = symlink
 	return
 }
 

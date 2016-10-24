@@ -67,7 +67,7 @@ func runTests(cmd *Command, args []string) {
 		if output.NumberLocations[index] != 0 {
 			locations := float64(output.NumberLocations[index])
 			notCovered := float64(output.NumberLocationsNotCovered[index])
-			percent = strconv.Itoa(int((locations - notCovered) / locations * 100)) + "%"
+			percent = strconv.Itoa(int((locations-notCovered)/locations*100)) + "%"
 		} else {
 			percent = "0%"
 		}
