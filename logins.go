@@ -66,9 +66,9 @@ func ActiveLogin() (account string, err error) {
 	return
 }
 
-func ActiveCredentials() (creds ForceCredentials, err error) {
+func ActiveCredentials(requireCredentials bool) (creds ForceCredentials, err error) {
 	account, err := ActiveLogin()
-	if err != nil {
+	if err != nil && requireCredentials {
 		ErrorAndExit("Please login before running this command.")
 	}
 	data, err := Config.Load("accounts", account)
@@ -82,7 +82,7 @@ func ActiveCredentials() (creds ForceCredentials, err error) {
 }
 
 func ActiveForce() (force *Force, err error) {
-	creds, err := ActiveCredentials()
+	creds, err := ActiveCredentials(true)
 	if err != nil {
 		return
 	}

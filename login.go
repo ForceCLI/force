@@ -37,7 +37,6 @@ var (
 
 func runLogin(cmd *Command, args []string) {
 	var endpoint ForceEndpoint = EndpointProduction
-
 	// If no instance specified, try to get last endpoint used
 	if *instance == "" {
 		currentEndpoint, customUrl, err := CurrentEndpoint()
@@ -107,7 +106,7 @@ func runLogin(cmd *Command, args []string) {
 }
 
 func CurrentEndpoint() (endpoint ForceEndpoint, customUrl string, err error) {
-	creds, err := ActiveCredentials()
+	creds, err := ActiveCredentials(false)
 	if err != nil {
 		return
 	}

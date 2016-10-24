@@ -285,7 +285,6 @@ func ForceSoapLogin(endpoint ForceEndpoint, username string, password string) (c
 
 	body, err := f.httpGet(url)
 	if err != nil {
-		fmt.Println(err.Error())
 		return
 	}
 	fmt.Println("Save login was ", string(body))
