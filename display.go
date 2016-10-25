@@ -354,7 +354,10 @@ func RenderForceRecordsCSV(records []ForceRecord, format string) string {
 		for _, record := range flattenedRecords {
 			myvalues := make([]string, len(keys))
 			for i, key := range keys {
-				myvalues[i] = strings.Replace(fmt.Sprintf(`%v`, record[key]), "<nil>", "", -1)
+				var value = fmt.Sprintf(`%v`, record[key])
+				value = strings.Replace(value, "<nil>", "", -1)
+				value = strings.Replace(value, `"`, `""`, -1)
+				myvalues[i] = value
 			}
 			out.WriteString(fmt.Sprintf(`"%s"%s`, strings.Join(myvalues, `","`), "\n"))
 		}
