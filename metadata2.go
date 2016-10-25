@@ -560,7 +560,7 @@ func getAttributes(m interface{}) map[string]reflect.StructField {
 	// Only structs are supported so return an empty result if the passed object
 	// isn't a struct
 	if typ.Kind() != reflect.Struct {
-		fmt.Printf("%v type can't have attributes inspected\n", typ.Kind())
+		ConsolePrintf("%v type can't have attributes inspected\n", typ.Kind())
 		return attrs
 	}
 

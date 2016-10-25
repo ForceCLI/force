@@ -43,11 +43,10 @@ Deployment Options
 }
 
 var (
-	namePaths     = make(map[string]string)
-	byName        = false
-	resourcepaths string
-	metaName      string
-	metaFolder    string
+	namePaths    = make(map[string]string)
+	byName       = false
+	resourcepath metaName
+	metaFolder   string
 )
 
 func init() {
@@ -70,8 +69,8 @@ func init() {
 	cmdPush.Flag.BoolVar(ignoreWarningsFlag, "i", false, "set ignore warnings")
 
 	// Ways to push
-	cmdPush.Flag.Var(&resourcepaths, "f", "Path to resource(s)")
-	cmdPush.Flag.Var(&resourcepaths, "filepath", "Path to resource(s)")
+	cmdPush.Flag.Var(&resourcepath, "f", "Path to resource(s)")
+	cmdPush.Flag.Var(&resourcepath, "filepath", "Path to resource(s)")
 	cmdPush.Flag.Var(&testsToRun, "test", "Test(s) to run")
 	cmdPush.Flag.StringVar(&metadataType, "t", "", "Metatdata type")
 	cmdPush.Flag.StringVar(&metadataType, "type", "", "Metatdata type")
@@ -93,13 +92,13 @@ func runPush(cmd *Command, args []string) {
 		return
 	}
 	// Treat trailing args as file paths
-	resourcepaths = append(resourcepaths, args...)
-	if len(resourcepaths) > 0 {
+	resourcepath = append(resourcepath, args...)
+	if len(resourcepath) > 0 {
 		// It's not a package but does have a path. This could be a path to a file
 		// or to a folder. If it is a folder, we pickup the resources a different
 		// way than if it's a file.
 		validatePushByMetadataTypeCommand()
-		pushByPaths(resourcepaths)
+		pushByPaths(resourcepath)
 	} else {
 		if len(metadataName) > 0 {
 			if len(metadataType) != 0 {
@@ -116,7 +115,7 @@ func runPush(cmd *Command, args []string) {
 }
 
 func isValidMetadataType() {
-	fmt.Printf("Validating and deploying push...\n")
+	ConsolePrintf("Validating and deploying push...\n")
 	// Look to see if we can find any resource for that metadata type
 	root, err := GetSourceDir()
 	ExitIfNoSourceDir(err)
@@ -182,10 +181,10 @@ func contains(s []string, e string) bool {
 }
 
 func pushPackage() {
-	if len(resourcepaths) == 0 {
+	if len(resourcepath) == 0 {
 		var packageFolder = findPackageFolder(metadataName[0])
 		zipResource(packageFolder, metadataName[0])
-		resourcepaths.Set(packageFolder + ".resource")
+		resourcepath.Set(packageFolder + ".resource")
 		//var dir, _ = os.Getwd();
 		//ErrorAndExit(fmt.Sprintf("No resource path sepcified. %s, %s", metadataName[0], dir))
 	}
@@ -244,7 +243,7 @@ func findPackageFolder(packageName string) (folder string) {
 	folder = findMetadataFolder(wd)
 	if len(folder) == 0 {
 		// Didn't find it, error out
-		fmt.Println("Could not find metadata folder.")
+		ConsolePrintln("Could not find metadata folder.")
 	}
 	if _, err := os.Stat(filepath.Join(folder, packageName)); err == nil {
 		folder = filepath.Join(folder, packageName)
@@ -442,7 +441,7 @@ func pushByPaths(fpaths []string) {
 		// TODO: check for folder, if a folder, add all files in it
 		name, err := pb.AddFile(fpath)
 		if err != nil {
-			fmt.Println(err.Error())
+			ConsolePrintln(err.Error())
 			badPaths = append(badPaths, fpath)
 		} else {
 			// Store paths by name for error messages
@@ -451,11 +450,11 @@ func pushByPaths(fpaths []string) {
 	}
 
 	if len(badPaths) == 0 {
-		fmt.Println("Deploying now...")
+		ConsolePrintln("Deploying now...")
 		t0 := time.Now()
 		deployFiles(pb.ForceMetadataFiles())
 		t1 := time.Now()
-		fmt.Printf("The deployment took %v to run.\n", t1.Sub(t0))
+		ConsolePrintf(fmt.Sprintf("The deployment took %v to run.\n", t1.Sub(t0)))
 	} else {
 		ErrorAndExit("Could not add the following files:\n {}", strings.Join(badPaths, "\n"))
 	}
@@ -467,7 +466,7 @@ func pushByPaths(fpaths []string) {
 func deployPackage() {
 	force, _ := ActiveForce()
 	DeploymentOptions := deployOpts()
-	for _, name := range resourcepaths {
+	for _, name := range resourcepath {
 		zipfile, err := ioutil.ReadFile(name)
 		result, err := force.Metadata.DeployZipFile(force.Metadata.MakeDeploySoap(*DeploymentOptions), zipfile)
 		processDeployResults(result, err)
@@ -511,26 +510,26 @@ func processDeployResults(result ForceCheckDeploymentStatusResult, err error) {
 	testSuccesses := result.Details.RunTestResult.TestSuccesses
 
 	if len(problems) > 0 {
-		fmt.Printf("\nFailures - %d\n", len(problems))
+		ConsolePrintf(fmt.Sprintf("\nFailures - %d\n", len(problems)))
 		for _, problem := range problems {
 			if problem.FullName == "" {
-				fmt.Println(problem.Problem)
+				ConsolePrintln(problem.Problem)
 			} else {
 				if byName {
-					fmt.Printf("ERROR with %s, line %d\n %s\n", problem.FullName, problem.LineNumber, problem.Problem)
+					ConsolePrintf(fmt.Sprintf("ERROR with %s, line %d\n %s\n", problem.FullName, problem.LineNumber, problem.Problem))
 				} else {
 					fname, found := namePaths[problem.FullName]
 					if !found {
 						fname = problem.FullName
 					}
-					fmt.Printf("\"%s\", line %d: %s %s\n", fname, problem.LineNumber, problem.ProblemType, problem.Problem)
+					ConsolePrintf(fmt.Sprintf("\"%s\", line %d: %s %s\n", fname, problem.LineNumber, problem.ProblemType, problem.Problem))
 				}
 			}
 		}
 	}
 
 	if len(successes) > 0 {
-		fmt.Printf("\nSuccesses - %d\n", len(successes)-1)
+		ConsolePrintf(fmt.Sprintf("\nSuccesses - %d\n", len(successes)-1))
 		for _, success := range successes {
 			if success.FullName != "package.xml" {
 				verb := "unchanged"
@@ -541,20 +540,20 @@ func processDeployResults(result ForceCheckDeploymentStatusResult, err error) {
 				} else if success.Created {
 					verb = "created"
 				}
-				fmt.Printf("\t%s: %s\n", success.FullName, verb)
+				ConsolePrintf("\t%s: %s\n", success.FullName, verb)
 			}
 		}
 	}
 
-	fmt.Printf("\nTest Successes - %d\n", len(testSuccesses))
+	ConsolePrintf(fmt.Sprintf("\nTest Successes - %d\n", len(testSuccesses)))
 	for _, failure := range testSuccesses {
-		fmt.Printf("  [PASS]  %s::%s\n", failure.Name, failure.MethodName)
+		ConsolePrintf("  [PASS]  %s::%s\n", failure.Name, failure.MethodName)
 	}
 
-	fmt.Printf("\nTest Failures - %d\n", len(testFailures))
+	ConsolePrintf(fmt.Sprintf("\nTest Failures - %d\n", len(testFailures)))
 	for _, failure := range testFailures {
-		fmt.Printf("\n  [FAIL]  %s::%s: %s\n", failure.Name, failure.MethodName, failure.Message)
-		fmt.Println(failure.StackTrace)
+		ConsolePrintf("\n  [FAIL]  %s::%s: %s\n", failure.Name, failure.MethodName, failure.Message)
+		ConsolePrintln(failure.StackTrace)
 	}
 
 	// Handle notifications

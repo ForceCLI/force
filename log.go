@@ -1,9 +1,5 @@
 package main
 
-import (
-	"fmt"
-)
-
 var cmdLog = &Command{
 	Run:   getLog,
 	Usage: "log",
@@ -36,6 +32,6 @@ func getLog(cmd *Command, args []string) {
 		if err != nil {
 			ErrorAndExit(err.Error())
 		}
-		fmt.Println(log)
+		ConsolePrintln(log)
 	}
 }

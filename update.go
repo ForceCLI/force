@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/ddollar/dist"
 )
 
@@ -28,7 +27,7 @@ func runUpdate(cmd *Command, args []string) {
 		if err != nil {
 			ErrorAndExit(err.Error())
 		} else {
-			fmt.Printf("updated to %s\n", args[0])
+			ConsolePrintf("updated to %s\n", args[0])
 		}
 	} else {
 		if Version == "dev" {
@@ -38,7 +37,7 @@ func runUpdate(cmd *Command, args []string) {
 		if err != nil {
 			ErrorAndExit(err.Error())
 		} else {
-			fmt.Printf("updated to %s\n", to)
+			ConsolePrintf("updated to %s\n", to)
 		}
 	}
 }

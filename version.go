@@ -1,9 +1,5 @@
 package main
 
-import (
-	"fmt"
-)
-
 var Version = "dev"
 
 //Dood, what
@@ -24,5 +20,5 @@ func init() {
 }
 
 func runVersion(cmd *Command, args []string) {
-	fmt.Println(Version)
+	ConsolePrintln(Version)
 }

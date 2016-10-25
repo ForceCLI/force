@@ -1,9 +1,5 @@
 package main
 
-import (
-	"fmt"
-)
-
 var cmdRecord = &Command{
 	Run:   runRecord,
 	Usage: "record <command> [<args>]",
@@ -91,7 +87,7 @@ func runRecordCreate(args []string) {
 	if err != nil {
 		ErrorAndExit(err.Error(), emessages[0].ErrorCode)
 	}
-	fmt.Printf("Record created: %s\n", id)
+	ConsolePrintf("Record created: %s\n", id)
 }
 
 func runRecordUpdate(args []string) {
@@ -104,7 +100,7 @@ func runRecordUpdate(args []string) {
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
-	fmt.Println("Record updated")
+	ConsolePrintln("Record updated")
 }
 
 func runRecordDelete(args []string) {
@@ -116,5 +112,5 @@ func runRecordDelete(args []string) {
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
-	fmt.Println("Record deleted")
+	ConsolePrintln("Record deleted")
 }

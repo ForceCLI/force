@@ -2,8 +2,8 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -91,7 +91,7 @@ func runAura(cmd *Command, args []string) {
 	switch strings.ToLower(subcommand) {
 	case "create":
 		/*if *auraentitytype == "" || *auraentityname == "" {
-			fmt.Println("Must specify entity type and name")
+			ConsolePrintln("Must specify entity type and name")
 			os.Exit(2)
 		}*/
 		ErrorAndExit("force aura create not yet implemented")
@@ -104,7 +104,7 @@ func runAura(cmd *Command, args []string) {
 			ErrorAndExit(err.Error())
 		}
 		for _, bundle := range bundles.Records {
-			fmt.Println(bundle["DeveloperName"])
+			ConsolePrintln(fmt.Sprintf("%s", bundle["DeveloperName"]))
 		}
 	case "push":
 		//		absPath, _ := filepath.Abs(resourcepath[0])
@@ -153,7 +153,7 @@ func runDeleteAura() {
 				return nil
 			})
 			os.Remove(absPath)
-			fmt.Println("Bundle ", filepath.Base(absPath), " deleted.")
+			ConsolePrintln("Bundle ", filepath.Base(absPath), " deleted.")
 			return
 		}
 

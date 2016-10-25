@@ -10,7 +10,7 @@ func Example() {
 		a, b int
 	}
 	var x = []myType{{1, 2}, {3, 4}, {5, 6}}
-	fmt.Printf("%# v", pretty.Formatter(x))
+	ConsolePrintf("%# v", pretty.Formatter(x))
 	// output:
 	// []pretty_test.myType{
 	//     {a:1, b:2},

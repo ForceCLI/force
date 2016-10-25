@@ -3,7 +3,6 @@ package main
 import (
 	"container/list"
 	"encoding/xml"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -47,7 +46,7 @@ func (o *OLS) addProperty(name string, value string) {
 		o.viewAllRecords = value
 	}
 
-	//	fmt.Println("Object Property " + name + "=" + value)
+	//	ConsolePrintln("Object Property " + name + "=" + value)
 }
 func (o *OLS) getProperty(name string) string {
 	switch name {
@@ -85,7 +84,7 @@ func (f *FLS) addProperty(name string, value string) {
 	case "readable":
 		f.readable = value
 	}
-	//	fmt.Println("Field Property " + name + "=" + value)
+	//	ConsolePrintln("Field Property " + name + "=" + value)
 }
 func (f *FLS) addToProfile(p Profile) {
 	p.fieldPermissions[f.field] = *f
@@ -149,7 +148,7 @@ func parseProfileXML(profileName string, text string) Profile {
 		}
 	}
 
-	//	fmt.Println(p)
+	//	ConsolePrintln(p)
 
 	return *p
 }
@@ -223,7 +222,7 @@ func parseCustomObjectXML(objectName string, text string) CustomObject {
 		}
 	}
 
-	//	fmt.Println(obj)
+	//	ConsolePrintln(obj)
 	return obj
 }
 
@@ -254,7 +253,7 @@ func runSecurity(cmd *Command, args []string) {
 			{Name: "CustomObject", Members: args},
 		}
 	} else {
-		fmt.Printf("Pass an SObject name")
+		ConsolePrintf("Pass an SObject name")
 		return
 	}
 

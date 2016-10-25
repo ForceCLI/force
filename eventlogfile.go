@@ -1,7 +1,5 @@
 package main
 
-import "fmt"
-
 var cmdEventLogFile = &Command{
 	Run:   getEventLogFile,
 	Usage: "eventlogfile [eventlogfileId]",
@@ -29,6 +27,6 @@ func getEventLogFile(cmd *Command, args []string) {
 		if err != nil {
 			ErrorAndExit(err.Error())
 		}
-		fmt.Println(log)
+		ConsolePrintln(log)
 	}
 }

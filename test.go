@@ -57,12 +57,12 @@ func runTests(cmd *Command, args []string) {
 		ErrorAndExit(err.Error())
 	}
 	if verboselogging {
-		fmt.Println(output.Log)
-		fmt.Println()
+		ConsolePrintln(output.Log)
+		ConsolePrintln(" ")
 	}
 	var percent string
-	fmt.Println("Coverage:")
-	fmt.Println()
+	ConsolePrintln("Coverage:")
+	ConsolePrintln(" ")
 	for index := range output.NumberLocations {
 		if output.NumberLocations[index] != 0 {
 			locations := float64(output.NumberLocations[index])
@@ -71,22 +71,22 @@ func runTests(cmd *Command, args []string) {
 		} else {
 			percent = "0%"
 		}
-		fmt.Println("  " + percent + "\t" + output.Name[index])
+		ConsolePrintln("  " + percent + "\t" + output.Name[index])
 	}
-	fmt.Println()
-	fmt.Println()
-	fmt.Println("Results:")
-	fmt.Println()
+	ConsolePrintln(" ")
+	ConsolePrintln(" ")
+	ConsolePrintln("Results:")
+	ConsolePrintln(" ")
 	for index := range output.SMethodNames {
-		fmt.Println("  [PASS]  " + output.SClassNames[index] + "::" + output.SMethodNames[index])
+		ConsolePrintln("  [PASS]  " + output.SClassNames[index] + "::" + output.SMethodNames[index])
 	}
 
 	for index := range output.FMethodNames {
-		fmt.Println("  [FAIL]  " + output.FClassNames[index] + "::" + output.FMethodNames[index] + ": " + output.FMessage[index])
-		fmt.Println("    " + output.FStackTrace[index])
+		ConsolePrintln("  [FAIL]  " + output.FClassNames[index] + "::" + output.FMethodNames[index] + ": " + output.FMessage[index])
+		ConsolePrintln("    " + output.FStackTrace[index])
 	}
-	fmt.Println()
-	fmt.Println()
+	ConsolePrintln(" ")
+	ConsolePrintln(" ")
 
 	success = len(output.FMethodNames) == 0
 

@@ -40,9 +40,13 @@ func runActive(cmd *Command, args []string) {
 		var creds ForceCredentials
 		json.Unmarshal([]byte(data), &creds)
 		if tojson {
-			fmt.Printf(fmt.Sprintf("{ \"login\": \"%s\", \"instanceUrl\": \"%s\", \"namespace\":\"%s\" }", account, creds.InstanceUrl, creds.Namespace))
+			ConsolePrintln(
+				fmt.Sprintf("{ \"login\": \"%s\", \"instanceUrl\": \"%s\", \"namespace\":\"%s\" }",
+					account,
+					creds.InstanceUrl,
+					creds.Namespace))
 		} else {
-			fmt.Println(fmt.Sprintf("%s - %s - ns:%s", account, creds.InstanceUrl, creds.Namespace))
+			ConsolePrintln(fmt.Sprintf("%s - %s - ns:%s", account, creds.InstanceUrl, creds.Namespace))
 		}
 	} else {
 		//account := args[0]
@@ -54,9 +58,9 @@ func runActive(cmd *Command, args []string) {
 				cmd.Run()
 			} else {
 				title := fmt.Sprintf("\033];%s\007", account)
-				fmt.Printf(title)
+				ConsolePrintf(title)
 			}
-			fmt.Printf("%s now active\n", account)
+			ConsolePrintf("%s now active\n", account)
 			Config.Save("current", "account", account)
 		} else {
 			ErrorAndExit(fmt.Sprintf("no such account %s\n", account))

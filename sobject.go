@@ -87,7 +87,7 @@ func runSobjectCreate(args []string) {
 	if err := force.Metadata.CreateCustomObject(args[0]); err != nil {
 		ErrorAndExit(err.Error())
 	}
-	fmt.Println("Custom object created")
+	ConsolePrintln("Custom object created")
 
 	if len(args) > 1 {
 		args[0] = fmt.Sprintf("%s__c", args[0])
@@ -103,7 +103,7 @@ func runSobjectDelete(args []string) {
 	if err := force.Metadata.DeleteCustomObject(args[0]); err != nil {
 		ErrorAndExit(err.Error())
 	}
-	fmt.Println("Custom object deleted")
+	ConsolePrintln("Custom object deleted")
 }
 
 func runSobjectImport(args []string) {
@@ -176,10 +176,10 @@ func runSobjectImport(args []string) {
 
 	for i, res := range xmlresponse.Results {
 		if res.Success {
-			fmt.Printf("%s created successfully\n", res.Id)
+			ConsolePrintf("%s created successfully\n", res.Id)
 		} else {
 			for _, e := range res.Errors {
-				fmt.Printf("%s\n\t%s\n%s\n", e.StatusCode, e.Message, query.Records[i])
+				ConsolePrintf(fmt.Sprintf("%s\n\t%s\n%s\n", e.StatusCode, e.Message, query.Records[i]))
 			}
 		}
 	}

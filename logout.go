@@ -28,7 +28,7 @@ var (
 
 func runLogout(cmd *Command, args []string) {
 	if *userName1 == "" {
-		fmt.Println("Missing required argument...")
+		ConsolePrintln("Missing required argument...")
 		cmd.Flag.Usage()
 		return
 	}
@@ -42,6 +42,6 @@ func runLogout(cmd *Command, args []string) {
 		cmd.Run()
 	} else {
 		title := fmt.Sprintf("\033];%s\007", "")
-		fmt.Printf(title)
+		ConsolePrintf(title)
 	}
 }

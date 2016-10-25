@@ -55,7 +55,7 @@ func runPasswordStatus(args []string) {
 		if err != nil {
 			ErrorAndExit(err.Error())
 		} else {
-			fmt.Printf("\nPassword is expired: %t\n\n", object.IsExpired)
+			ConsolePrintf(fmt.Sprintf("\nPassword is expired: %t\n\n", object.IsExpired))
 		}
 	}
 }
@@ -70,7 +70,7 @@ func runPasswordReset(args []string) {
 	if err != nil {
 		ErrorAndExit(err.Error())
 	} else {
-		fmt.Printf("\nNew password is: %s\n\n", object.NewPassword)
+		ConsolePrintf("\nNew password is: %s\n\n", object.NewPassword)
 	}
 }
 
@@ -83,14 +83,14 @@ func runPasswordChange(args []string) {
 	if err != nil {
 		ErrorAndExit(err.Error())
 	} else {
-		fmt.Println(args[1:])
+		ConsolePrintln(fmt.Sprintf("%s", args[1:]))
 		newPass := make(map[string]string)
 		newPass["NewPassword"] = args[1]
 		_, err, emessages := force.ChangePassword(records.Records[0]["Id"].(string), newPass)
 		if err != nil {
 			ErrorAndExit(err.Error(), emessages[0].ErrorCode)
 		} else {
-			fmt.Println("\nPassword changed\n ")
+			ConsolePrintln("\nPassword changed\n ")
 		}
 	}
 }

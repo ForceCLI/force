@@ -73,7 +73,7 @@ func runLogin(cmd *Command, args []string) {
 			// Could be short hand?
 			if uri.Host == "" {
 				uri, err = url.Parse(fmt.Sprintf("https://%s", *instance))
-				//fmt.Println(uri)
+				//ConsolePrintln(uri)
 				if err != nil {
 					ErrorAndExit("Could not identify host: %s", *instance)
 				}
@@ -81,7 +81,7 @@ func runLogin(cmd *Command, args []string) {
 			CustomEndpoint = uri.Scheme + "://" + uri.Host
 			endpoint = EndpointCustom
 
-			fmt.Println("Loaded Endpoint: (" + CustomEndpoint + ")")
+			ConsolePrintln("Loaded Endpoint: (" + CustomEndpoint + ")")
 		}
 	}
 
@@ -133,19 +133,20 @@ func ForceSaveLogin(creds ForceCredentials) (username string, err error) {
 
 	me, err := force.Whoami()
 	if err != nil {
-		fmt.Println("Problem getting user data, continuing...")
+		ConsolePrintln("Problem getting user data, continuing...")
 		//return
 	}
-	fmt.Printf("Logged in as '%s' (API %s)\n", me["Username"], apiVersion)
+	ConsolePrintf(fmt.Sprintf("Logged in as '%s' (API %s)\n", me["Username"], apiVersion))
 	title := fmt.Sprintf("\033];%s\007", me["Username"])
-	fmt.Printf(title)
+	creds.ProfileId = fmt.Sprintf("%s", me["ProfileId"])
+	ConsolePrintf(title)
 
 	describe, err := force.Metadata.DescribeMetadata()
 
 	if err == nil {
 		creds.Namespace = describe.NamespacePrefix
 	} else {
-		fmt.Printf("Your profile does not have Modify All Data enabled. Functionallity will be limited.\n")
+		ConsolePrintf("Your profile does not have Modify All Data enabled. Functionallity will be limited.\n")
 		err = nil
 	}
 
@@ -165,7 +166,7 @@ func ForceLoginAndSaveSoap(endpoint ForceEndpoint, user_name string, password st
 	}
 
 	username, err = ForceSaveLogin(creds)
-	//fmt.Printf("Creds %+v", creds)
+	//ConsolePrintf("Creds %+v", creds)
 	return
 }
 

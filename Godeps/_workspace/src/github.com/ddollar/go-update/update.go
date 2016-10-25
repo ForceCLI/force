@@ -10,7 +10,7 @@ Updating your program to a new version is as easy as:
 
 	err := update.FromUrl("http://release.example.com/2.0/myprogram")
 	if err != nil {
-		fmt.Printf("Update failed: %v", err)
+		ConsolePrintf("Update failed: %v", err)
 	}
 
 The most low-level API is FromStream() which updates the current executable

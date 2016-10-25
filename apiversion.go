@@ -1,9 +1,5 @@
 package main
 
-import (
-	"fmt"
-)
-
 var apiVersion = "v37.0"
 var apiVersionNumber = "37.0"
 
@@ -33,7 +29,7 @@ func runApiVersion(cmd *Command, args []string) {
 		force.Credentials.ApiVersion = apiVersionNumber
 		ForceSaveLogin(force.Credentials)
 	} else if len(args) == 0 {
-		fmt.Println(apiVersion)
+		ConsolePrintln(apiVersion)
 	} else {
 		ErrorAndExit("The apiversion command only accepts a single argument in the form of nn.0")
 	}
