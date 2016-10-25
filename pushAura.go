@@ -21,7 +21,7 @@ var cmdPushAura = &Command{
 
 func init() {
 	cmdPushAura.Run = runPushAura
-	cmdPushAura.Flag.Var(&resourcepath, "f", "fully qualified file name for entity")
+	cmdPushAura.Flag.Var(&resourcepaths, "f", "fully qualified file name for entity")
 	cmdPushAura.Flag.StringVar(&metadataType, "t", "", "Type of entity or bundle to create")
 	cmdPushAura.Flag.StringVar(&metadataType, "type", "", "Type of entity or bundle to create")
 }
@@ -30,11 +30,11 @@ func runPushAura(cmd *Command, args []string) {
 	// For some reason, when called from sublime, the quotes are included
 	// in the resourcepath argument.  Quoting is needed if you have blank spaces
 	// in the path name. So need to strip them out.
-	if strings.Contains(resourcepath[0], "\"") || strings.Contains(resourcepath[0], "'") {
-		resourcepath[0] = strings.Replace(resourcepath[0], "\"", "", -1)
-		resourcepath[0] = strings.Replace(resourcepath[0], "'", "", -1)
+	if strings.Contains(resourcepaths[0], "\"") || strings.Contains(resourcepaths[0], "'") {
+		resourcepaths[0] = strings.Replace(resourcepaths[0], "\"", "", -1)
+		resourcepaths[0] = strings.Replace(resourcepaths[0], "'", "", -1)
 	}
-	absPath, _ := filepath.Abs(resourcepath[0])
+	absPath, _ := filepath.Abs(resourcepaths[0])
 	if _, err := os.Stat(absPath); os.IsNotExist(err) {
 		ConsolePrintln(err.Error())
 		ErrorAndExit("File does not exist\n" + absPath)

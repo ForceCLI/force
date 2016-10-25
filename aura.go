@@ -13,7 +13,7 @@ import (
 
 var cmdAura = &Command{
 	Usage: "aura",
-	Short: "force aura push -resourcepath=<filepath>",
+	Short: "force aura push -f <filepath>",
 	Long: `
 	The aura command needs context to work. If you execute "aura get"
 	it will create a folder structure that provides the context for
@@ -53,8 +53,8 @@ var cmdAura = &Command{
 
 func init() {
 	cmdAura.Run = runAura
-	cmdAura.Flag.Var(&resourcepath, "p", "fully qualified file name for entity")
-	cmdAura.Flag.Var(&resourcepath, "f", "fully qualified file name for entity")
+	cmdAura.Flag.Var(&resourcepaths, "p", "fully qualified file name for entity")
+	cmdAura.Flag.Var(&resourcepaths, "f", "fully qualified file name for entity")
 	cmdAura.Flag.StringVar(&metadataType, "entitytype", "", "fully qualified file name for entity")
 	cmdAura.Flag.StringVar(&auraentityname, "entityname", "", "fully qualified file name for entity")
 	cmdAura.Flag.StringVar(&metadataType, "t", "", "fully qualified file name for entity")
@@ -107,14 +107,14 @@ func runAura(cmd *Command, args []string) {
 			ConsolePrintln(fmt.Sprintf("%s", bundle["DeveloperName"]))
 		}
 	case "push":
-		//		absPath, _ := filepath.Abs(resourcepath[0])
-		runPushAura(cmd, resourcepath)
+		//		absPath, _ := filepath.Abs(resourcepaths[0])
+		runPushAura(cmd, resourcepaths)
 	}
 }
 
 func runDeleteAura() {
-	absPath, _ := filepath.Abs(resourcepath[0])
-	//resourcepath = absPath
+	absPath, _ := filepath.Abs(resourcepaths[0])
+	//resourcepaths = absPath
 
 	if InAuraBundlesFolder(absPath) {
 		info, err := os.Stat(absPath)
@@ -189,8 +189,8 @@ func deleteAuraDefinitionBundle(manifest BundleManifest) {
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
-	os.Remove(filepath.Join(resourcepath[0], ".manifest"))
-	os.Remove(resourcepath[0])
+	os.Remove(filepath.Join(resourcepaths[0], ".manifest"))
+	os.Remove(resourcepaths[0])
 }
 
 func deleteAuraDefinition(manifest BundleManifest, key int) {

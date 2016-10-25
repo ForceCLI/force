@@ -43,10 +43,17 @@ Deployment Options
 }
 
 var (
+<<<<<<< HEAD
 	namePaths    = make(map[string]string)
 	byName       = false
 	resourcepath metaName
 	metaFolder   string
+=======
+	namePaths     = make(map[string]string)
+	byName        = false
+	resourcepaths metaName
+	metaFolder    string
+>>>>>>> master
 )
 
 func init() {
