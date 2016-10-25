@@ -53,9 +53,9 @@ force bulk batch <batchId>
 
 import (
 	"encoding/xml"
+	"fmt"
 	"io/ioutil"
 	"strings"
-	"fmt"
 )
 
 var cmdBulk = &Command{
@@ -215,7 +215,7 @@ func getBatchResults(jobId string, batchId string) {
 	force, _ := ActiveForce()
 
 	data, err := force.RetrieveBulkBatchResults(jobId, batchId)
-	ConsolePrintln(fmt.Sprintf("%s", data))
+	ConsolePrintln(fmt.Sprintf("%v", data))
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
