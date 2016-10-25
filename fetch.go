@@ -129,14 +129,7 @@ func persistBundles(bundles AuraDefinitionBundleResult, definitions AuraDefiniti
 
 	var defRecords = definitions.Records
 	root, err := GetSourceDir()
-	if mdbase == "aura" {
-		root = filepath.Join(targetDirectory, root, "aura")
-	} else {
-		root = filepath.Join(targetDirectory, root, mdbase, "aura")
-	}
-	if err := os.MkdirAll(root, 0755); err != nil {
-		ErrorAndExit(err.Error())
-	}
+	root = filepath.Join(root, "aura")
 
 	for key, value := range bundleMap {
 		if err := os.MkdirAll(filepath.Join(root, value), 0755); err != nil {

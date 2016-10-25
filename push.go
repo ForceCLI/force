@@ -45,8 +45,7 @@ Deployment Options
 var (
 	namePaths     = make(map[string]string)
 	byName        = false
-	resourcepaths string
-	metaName      string
+	resourcepaths metaName
 	metaFolder    string
 )
 
