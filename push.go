@@ -43,17 +43,10 @@ Deployment Options
 }
 
 var (
-<<<<<<< HEAD
-	namePaths    = make(map[string]string)
-	byName       = false
-	resourcepath metaName
-	metaFolder   string
-=======
 	namePaths     = make(map[string]string)
 	byName        = false
 	resourcepaths metaName
 	metaFolder    string
->>>>>>> master
 )
 
 func init() {
@@ -76,8 +69,8 @@ func init() {
 	cmdPush.Flag.BoolVar(ignoreWarningsFlag, "i", false, "set ignore warnings")
 
 	// Ways to push
-	cmdPush.Flag.Var(&resourcepath, "f", "Path to resource(s)")
-	cmdPush.Flag.Var(&resourcepath, "filepath", "Path to resource(s)")
+	cmdPush.Flag.Var(&resourcepaths, "f", "Path to resource(s)")
+	cmdPush.Flag.Var(&resourcepaths, "filepath", "Path to resource(s)")
 	cmdPush.Flag.Var(&testsToRun, "test", "Test(s) to run")
 	cmdPush.Flag.StringVar(&metadataType, "t", "", "Metatdata type")
 	cmdPush.Flag.StringVar(&metadataType, "type", "", "Metatdata type")
@@ -99,13 +92,13 @@ func runPush(cmd *Command, args []string) {
 		return
 	}
 	// Treat trailing args as file paths
-	resourcepath = append(resourcepath, args...)
-	if len(resourcepath) > 0 {
+	resourcepaths = append(resourcepaths, args...)
+	if len(resourcepaths) > 0 {
 		// It's not a package but does have a path. This could be a path to a file
 		// or to a folder. If it is a folder, we pickup the resources a different
 		// way than if it's a file.
 		validatePushByMetadataTypeCommand()
-		pushByPaths(resourcepath)
+		pushByPaths(resourcepaths)
 	} else {
 		if len(metadataName) > 0 {
 			if len(metadataType) != 0 {
@@ -188,10 +181,10 @@ func contains(s []string, e string) bool {
 }
 
 func pushPackage() {
-	if len(resourcepath) == 0 {
+	if len(resourcepaths) == 0 {
 		var packageFolder = findPackageFolder(metadataName[0])
 		zipResource(packageFolder, metadataName[0])
-		resourcepath.Set(packageFolder + ".resource")
+		resourcepaths.Set(packageFolder + ".resource")
 		//var dir, _ = os.Getwd();
 		//ErrorAndExit(fmt.Sprintf("No resource path sepcified. %s, %s", metadataName[0], dir))
 	}
@@ -473,7 +466,7 @@ func pushByPaths(fpaths []string) {
 func deployPackage() {
 	force, _ := ActiveForce()
 	DeploymentOptions := deployOpts()
-	for _, name := range resourcepath {
+	for _, name := range resourcepaths {
 		zipfile, err := ioutil.ReadFile(name)
 		result, err := force.Metadata.DeployZipFile(force.Metadata.MakeDeploySoap(*DeploymentOptions), zipfile)
 		processDeployResults(result, err)
