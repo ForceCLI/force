@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"strings"
 )
 
@@ -20,9 +21,9 @@ type Command struct {
 
 func (c *Command) printUsage() {
 	if c.Runnable() {
-		ConsolePrintf("Usage: force %s\n\n", c.Usage)
+		fmt.Printf("Usage: force %s\n\n", c.Usage)
 	}
-	ConsolePrintln(strings.Trim(c.Long, "\n"))
+	fmt.Println(strings.Trim(c.Long, "\n"))
 }
 
 func (c *Command) Name() string {

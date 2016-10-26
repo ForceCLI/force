@@ -485,7 +485,7 @@ func getAttributes(m interface{}) map[string]reflect.StructField {
 	// Only structs are supported so return an empty result if the passed object
 	// isn't a struct
 	if typ.Kind() != reflect.Struct {
-		ConsolePrintf(fmt.Sprintf("%v type can't have attributes inspected\n", typ.Kind()))
+		fmt.Printf("%v type can't have attributes inspected\n", typ.Kind())
 		return attrs
 	}
 
@@ -657,7 +657,7 @@ func (fm *ForceMetadata) CheckStatus(id string) (err error) {
 	}
 	switch {
 	case !status.Done:
-		ConsolePrintf("Not done yet: %s  Will check again in five seconds.\n", status.State)
+		fmt.Printf("Not done yet: %s  Will check again in five seconds.\n", status.State)
 		time.Sleep(5000 * time.Millisecond)
 		return fm.CheckStatus(id)
 	case status.State == "Error":
@@ -687,7 +687,7 @@ func (fm *ForceMetadata) CheckDeployStatus(id string) (results ForceCheckDeploym
 func (fm *ForceMetadata) CheckRetrieveStatus(id string) (files ForceMetadataFiles, err error) {
 	body, err := fm.soapExecute("checkRetrieveStatus", fmt.Sprintf("<id>%s</id>", id))
 	if err != nil {
-		ConsolePrintf("Hrm... will probably try again\n")
+		fmt.Printf("Hrm... will probably try again\n")
 		return
 	}
 	var status struct {
@@ -730,7 +730,7 @@ func (fm *ForceMetadata) DescribeMetadata() (describe MetadataDescribeResult, er
 	err = xml.Unmarshal([]byte(body), &result)
 
 	if err != nil {
-		ConsolePrintln(err.Error())
+		fmt.Println(err.Error())
 	} else {
 		describe = result.Data
 	}
@@ -750,7 +750,7 @@ func (fm *ForceMetadata) DescribeMetadata() (describe MetadataDescribeResult, er
 err = xml.Unmarshal([]byte(body), &result)
 
 if err != nil {
-	ConsolePrintln(err.Error())
+	fmt.Println(err.Error())
 	} else {
 		describe = result.Data
 	}
@@ -874,8 +874,8 @@ func (fm *ForceMetadata) CreateCustomField(object, field, typ string, options ma
 	case "picklist":
 		soapField = "<type>Picklist</type>\n"
 		for key, value := range options {
-			//ConsolePrintln("Options: ", options)
-			//ConsolePrintln(fmt.Sprintf("Key %s", key))
+			//fmt.Println("Options: ", options)
+			//fmt.Println(fmt.Sprintf("Key %s", key))
 			if key == "picklist>picklistValues" {
 				soapField += "<picklist>\n"
 				for _, k := range strings.Split(value, ",") {
@@ -1003,7 +1003,7 @@ func (fm *ForceMetadata) CreateCustomField(object, field, typ string, options ma
 		ErrorAndExit("unable to create field type: %s", typ)
 	}
 
-	//ConsolePrintln(fmt.Sprintf(soap, object, field, label, soapField))
+	//fmt.Println(fmt.Sprintf(soap, object, field, label, soapField))
 	body, err := fm.soapExecute("create", fmt.Sprintf(soap, object, field, label, soapField))
 	if err != nil {
 		return
@@ -1017,11 +1017,9 @@ func (fm *ForceMetadata) CreateCustomField(object, field, typ string, options ma
 	if err = fm.CheckStatus(status.Id); err != nil {
 		return
 	}
-	quietMode = true
 	serr := fm.UpdateFLSOnProfile(object, field)
-	quietMode = false
 	if serr != nil {
-		ConsolePrintln("INFO: Failed to set FLS on new Field (field was created).")
+		fmt.Println("INFO: Failed to set FLS on new Field (field was created).")
 	}
 	return
 }
@@ -1195,7 +1193,7 @@ func (fm *ForceMetadata) DeployZipFile(soap string, zipfile []byte) (results For
 	encoded := base64.StdEncoding.EncodeToString(zipfile)
 	body, err := fm.soapExecute("deploy", fmt.Sprintf(soap, encoded))
 	if err != nil {
-		ConsolePrintln(err.Error())
+		fmt.Println(err.Error())
 		return
 	}
 

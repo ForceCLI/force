@@ -29,22 +29,10 @@ func (a ByFullName) Len() int           { return len(a) }
 func (a ByFullName) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a ByFullName) Less(i, j int) bool { return a[i].FullName < a[j].FullName }
 
-func ConsolePrintln(message string, values ...string) {
-	if !quietMode {
-		fmt.Println(message)
-	}
-}
-
-func ConsolePrintf(message string, values ...string) {
-	if !quietMode {
-		fmt.Printf(message)
-	}
-}
-
 func DisplayListMetadataResponse(resp ListMetadataResponse) {
 	sort.Sort(ByFullName(resp.Result))
 	for _, result := range resp.Result {
-		ConsolePrintln(result.FullName + " - " + result.Type)
+		fmt.Println(result.FullName + " - " + result.Type)
 	}
 }
 
@@ -54,7 +42,7 @@ func DisplayListMetadataResponseJson(resp ListMetadataResponse) {
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
-	ConsolePrintf("%s\n", string(b))
+	fmt.Printf("%s\n", string(b))
 }
 
 func DisplayMetadataList(metadataObjects []DescribeMetadataObject) {
@@ -62,11 +50,11 @@ func DisplayMetadataList(metadataObjects []DescribeMetadataObject) {
 	sort.Sort(ByXmlName(metadataObjects))
 
 	for _, obj := range metadataObjects {
-		ConsolePrintf("%s ==> %s\n", obj.XmlName, obj.DirectoryName)
+		fmt.Printf("%s ==> %s\n", obj.XmlName, obj.DirectoryName)
 		if len(obj.ChildXmlNames) > 0 {
 			sort.Strings(obj.ChildXmlNames)
 			for _, child := range obj.ChildXmlNames {
-				ConsolePrintf("\t%s\n", child)
+				fmt.Printf("\t%s\n", child)
 			}
 		}
 	}
@@ -86,23 +74,23 @@ func DisplayMetadataListJson(metadataObjects []DescribeMetadataObject) {
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
-	ConsolePrintf("%s\n", string(b))
+	fmt.Printf("%s\n", string(b))
 }
 
 func DisplayBatchList(batchInfos []BatchInfo) {
 
 	for i, batchInfo := range batchInfos {
-		ConsolePrintf(fmt.Sprintf("Batch %d", i))
+		fmt.Printf("Batch %d", i)
 		DisplayBatchInfo(batchInfo)
-		ConsolePrintln(" ")
+		fmt.Println(" ")
 	}
 }
 
 func DisplayBatchInfo(batchInfo BatchInfo) {
 
-	ConsolePrintf(fmt.Sprintf(BatchInfoTemplate, batchInfo.Id, batchInfo.JobId, batchInfo.State,
+	fmt.Printf(BatchInfoTemplate, batchInfo.Id, batchInfo.JobId, batchInfo.State,
 		batchInfo.CreatedDate, batchInfo.SystemModstamp,
-		batchInfo.NumberRecordsProcessed))
+		batchInfo.NumberRecordsProcessed)
 }
 
 func DisplayJobInfo(jobInfo JobInfo) {
@@ -132,7 +120,7 @@ Total Processing Time 		%d
 Api Active Processing Time 	%d
 Apex Processing Time 		%d
 `
-	ConsolePrintf(fmt.Sprintf(msg, jobInfo.Id, jobInfo.State, jobInfo.Operation, jobInfo.Object, jobInfo.ApiVersion,
+	fmt.Printf(msg, jobInfo.Id, jobInfo.State, jobInfo.Operation, jobInfo.Object, jobInfo.ApiVersion,
 		jobInfo.CreatedById, jobInfo.CreatedDate, jobInfo.SystemModStamp,
 		jobInfo.ContentType, jobInfo.ConcurrencyMode,
 		jobInfo.NumberBatchesQueued, jobInfo.NumberBatchesInProgress,
@@ -140,7 +128,7 @@ Apex Processing Time 		%d
 		jobInfo.NumberBatchesTotal, jobInfo.NumberRecordsProcessed,
 		jobInfo.NumberRetries,
 		jobInfo.NumberRecordsFailed, jobInfo.TotalProcessingTime,
-		jobInfo.ApiActiveProcessingTime, jobInfo.ApexProcessingTime))
+		jobInfo.ApiActiveProcessingTime, jobInfo.ApexProcessingTime)
 }
 
 func DisplayForceSobjectDescribe(sobject string) {
@@ -151,7 +139,7 @@ func DisplayForceSobjectDescribe(sobject string) {
 		ErrorAndExit(err.Error())
 	}
 	out, err := json.MarshalIndent(d, "", "    ")
-	ConsolePrintln(string(out))
+	fmt.Println(string(out))
 }
 
 func DisplayForceSobjects(sobjects []ForceSobject) {
@@ -161,7 +149,7 @@ func DisplayForceSobjects(sobjects []ForceSobject) {
 	}
 	sort.Strings(names)
 	for _, name := range names {
-		ConsolePrintln(name)
+		fmt.Println(name)
 	}
 }
 
@@ -174,21 +162,21 @@ func DisplayForceSobjectsJson(sobjects []ForceSobject) {
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
-	ConsolePrintf("%s\n", string(b))
+	fmt.Printf("%s\n", string(b))
 }
 
 func DisplayForceRecordsf(records []ForceRecord, format string) {
 	switch format {
 	case "csv":
-		ConsolePrintln(RenderForceRecordsCSV(records, format))
+		fmt.Println(RenderForceRecordsCSV(records, format))
 	case "json":
 		recs, _ := json.Marshal(records)
-		ConsolePrintln(string(recs))
+		fmt.Println(string(recs))
 	case "json-pretty":
 		recs, _ := json.MarshalIndent(records, "", "  ")
-		ConsolePrintln(string(recs))
+		fmt.Println(string(recs))
 	default:
-		ConsolePrintf("Format %s not supported\n\n", format)
+		fmt.Printf("Format %s not supported\n\n", format)
 	}
 }
 
@@ -196,7 +184,7 @@ func DisplayForceRecords(result ForceQueryResult) {
 	if len(result.Records) > 0 {
 		fmt.Print(RenderForceRecords(result.Records))
 	}
-	ConsolePrintln(fmt.Sprintf(" (%d records)", result.TotalSize))
+	fmt.Println(fmt.Sprintf(" (%d records)", result.TotalSize))
 }
 
 func recordColumns(records []ForceRecord) (columns []string) {
@@ -459,15 +447,15 @@ func DisplayInterfaceMap(object map[string]interface{}, indent int) {
 	sort.Strings(keys)
 	for _, key := range keys {
 		for i := 0; i < indent; i++ {
-			ConsolePrintf("  ")
+			fmt.Printf("  ")
 		}
-		ConsolePrintf("%s: ", key)
+		fmt.Printf("%s: ", key)
 		switch v := object[key].(type) {
 		case map[string]interface{}:
-			ConsolePrintf("\n")
+			fmt.Printf("\n")
 			DisplayInterfaceMap(v, indent+1)
 		default:
-			ConsolePrintf(fmt.Sprintf("%v\n", v))
+			fmt.Printf(fmt.Sprintf("%v\n", v))
 		}
 	}
 }
@@ -492,15 +480,15 @@ func DisplayForceSobject(sobject ForceSobject) {
 			for _, value := range field["picklistValues"].([]interface{}) {
 				values = append(values, value.(map[string]interface{})["value"].(string))
 			}
-			ConsolePrintf(fmt.Sprintf("%s: %s (%s)\n", field["name"], field["type"], strings.Join(values, ", ")))
+			fmt.Printf("%s: %s (%s)\n", field["name"], field["type"], strings.Join(values, ", "))
 		case "reference":
 			var refs []string
 			for _, ref := range field["referenceTo"].([]interface{}) {
 				refs = append(refs, ref.(string))
 			}
-			ConsolePrintf(fmt.Sprintf("%s: %s (%s)\n", field["name"], field["type"], strings.Join(refs, ", ")))
+			fmt.Printf("%s: %s (%s)\n", field["name"], field["type"], strings.Join(refs, ", "))
 		default:
-			ConsolePrintf(fmt.Sprintf("%s: %s\n", field["name"], field["type"]))
+			fmt.Printf("%s: %s\n", field["name"], field["type"])
 		}
 	}
 }
@@ -528,7 +516,7 @@ func DisplayFieldTypes() {
   *To create a formula field add a formula argument to the command.
   force field create <objectname> <fieldName>:text formula:'LOWER("HEY MAN")'
   `
-	ConsolePrintln(msg)
+	fmt.Println(msg)
 }
 
 func DisplayFieldDetails(fieldType string) {
@@ -582,7 +570,7 @@ func DisplayFieldDetails(fieldType string) {
   Sorry, that is not a valid field type.
 `
 	}
-	ConsolePrintf(msg + "\n")
+	fmt.Printf(msg + "\n")
 }
 
 func DisplayTextFieldDetails() (message string) {

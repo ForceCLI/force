@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -30,7 +31,7 @@ func runExport(cmd *Command, args []string) {
 		root, err = filepath.Abs(args[0])
 	}
 	if err != nil {
-		ConsolePrintf("Error obtaining file path\n")
+		fmt.Printf("Error obtaining file path\n")
 		ErrorAndExit(err.Error())
 	}
 	force, _ := ActiveForce()
@@ -136,12 +137,12 @@ func runExport(cmd *Command, args []string) {
 	}
 	root, err = GetSourceDir()
 	if err != nil {
-		ConsolePrintf("Error obtaining root directory\n")
+		fmt.Printf("Error obtaining root directory\n")
 		ErrorAndExit(err.Error())
 	}
 	files, err := force.Metadata.Retrieve(query)
 	if err != nil {
-		ConsolePrintf("Encountered and error with retrieve...\n")
+		fmt.Printf("Encountered and error with retrieve...\n")
 		ErrorAndExit(err.Error())
 	}
 	for name, data := range files {
@@ -154,5 +155,5 @@ func runExport(cmd *Command, args []string) {
 			ErrorAndExit(err.Error())
 		}
 	}
-	ConsolePrintf("Exported to %s\n", root)
+	fmt.Printf(fmt.Sprintf("Exported to %s\n", root))
 }

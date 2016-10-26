@@ -1,5 +1,9 @@
 package main
 
+import (
+	"fmt"
+)
+
 var cmdOauth = &Command{
 	Run:   runOauth,
 	Usage: "oauth <command> [<args>]",
@@ -50,5 +54,5 @@ func runOauthCreate(cmd *Command, args []string) {
 			//Open(url)
 		}
 	}
-	ConsolePrintln("OAuth credentials created")
+	fmt.Println("OAuth credentials created")
 }

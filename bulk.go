@@ -125,7 +125,7 @@ func runBulk(cmd *Command, args []string) {
 			getBatchResults(args[2], args[3])
 		} else if args[0] == "query" {
 			if args[1] == "retrieve" {
-				ConsolePrintln(string(getBulkQueryResults(args[2], args[3])))
+				fmt.Println(string(getBulkQueryResults(args[2], args[3])))
 			} else if args[1] == "status" {
 				DisplayBatchInfo(getBatchDetails(args[2], args[3]))
 			} else {
@@ -144,9 +144,9 @@ func doBulkQuery(objectType string, soql string, contenttype string) {
 		closeBulkJob(jobInfo.Id)
 		ErrorAndExit(err.Error())
 	}
-	ConsolePrintln("Query Submitted")
-	ConsolePrintf("To retrieve query status use\nforce bulk query status %s %s\n\n", jobInfo.Id, result.Id)
-	ConsolePrintf("To retrieve query data use\nforce bulk query retrieve %s %s\n\n", jobInfo.Id, result.Id)
+	fmt.Println("Query Submitted")
+	fmt.Printf("To retrieve query status use\nforce bulk query status %s %s\n\n", jobInfo.Id, result.Id)
+	fmt.Printf("To retrieve query data use\nforce bulk query retrieve %s %s\n\n", jobInfo.Id, result.Id)
 	closeBulkJob(jobInfo.Id)
 }
 
@@ -215,7 +215,7 @@ func getBatchResults(jobId string, batchId string) {
 	force, _ := ActiveForce()
 
 	data, err := force.RetrieveBulkBatchResults(jobId, batchId)
-	ConsolePrintln(fmt.Sprintf("%v", data))
+	fmt.Printf("%v", data)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
@@ -266,7 +266,7 @@ func createBulkInsertJob(csvFilePath string, objectType string, format string) {
 			ErrorAndExit(err.Error())
 		} else {
 			closeBulkJob(jobInfo.Id)
-			ConsolePrintf("Job created ( %s ) - for job status use\n force bulk batch %s %s\n", jobInfo.Id, jobInfo.Id, batchInfo.Id)
+			fmt.Printf("Job created ( %s ) - for job status use\n force bulk batch %s %s\n", jobInfo.Id, jobInfo.Id, batchInfo.Id)
 		}
 	}
 }
@@ -282,7 +282,7 @@ func createBulkUpdateJob(csvFilePath string, objectType string, format string) {
 			ErrorAndExit(err.Error())
 		} else {
 			closeBulkJob(jobInfo.Id)
-			ConsolePrintf("Job created ( %s ) - for job status use\n force bulk batch %s %s\n", jobInfo.Id, jobInfo.Id, batchInfo.Id)
+			fmt.Printf("Job created ( %s ) - for job status use\n force bulk batch %s %s\n", jobInfo.Id, jobInfo.Id, batchInfo.Id)
 		}
 	}
 }
@@ -298,7 +298,7 @@ func addBatchToJob(csvFilePath string, jobId string) (result BatchInfo, err erro
 		if err != nil {
 			break
 		} else {
-			ConsolePrintf(fmt.Sprintf("Batch %d of %d added with Id %s \n", b+1, len(batches), result.Id))
+			fmt.Printf("Batch %d of %d added with Id %s \n", b+1, len(batches), result.Id)
 		}
 	}
 	return

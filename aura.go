@@ -91,7 +91,7 @@ func runAura(cmd *Command, args []string) {
 	switch strings.ToLower(subcommand) {
 	case "create":
 		/*if *auraentitytype == "" || *auraentityname == "" {
-			ConsolePrintln("Must specify entity type and name")
+			fmt.Println("Must specify entity type and name")
 			os.Exit(2)
 		}*/
 		ErrorAndExit("force aura create not yet implemented")
@@ -104,7 +104,7 @@ func runAura(cmd *Command, args []string) {
 			ErrorAndExit(err.Error())
 		}
 		for _, bundle := range bundles.Records {
-			ConsolePrintln(fmt.Sprintf("%s", bundle["DeveloperName"]))
+			fmt.Printf("%s", bundle["DeveloperName"])
 		}
 	case "push":
 		//		absPath, _ := filepath.Abs(resourcepaths[0])
@@ -153,7 +153,7 @@ func runDeleteAura() {
 				return nil
 			})
 			os.Remove(absPath)
-			ConsolePrintln("Bundle ", filepath.Base(absPath), " deleted.")
+			fmt.Println("Bundle ", filepath.Base(absPath), " deleted.")
 			return
 		}
 

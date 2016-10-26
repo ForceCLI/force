@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/ViViDboarder/gotifier"
@@ -20,14 +21,14 @@ func notifySet(cmd *Command, args []string) {
 	shouldNotify := true
 	if len(args) == 0 {
 		shouldNotify = getShouldNotify()
-		ConsolePrintln("Show notifications: " + strconv.FormatBool(shouldNotify))
+		fmt.Println("Show notifications: " + strconv.FormatBool(shouldNotify))
 	} else if len(args) == 1 {
 		shouldNotify, err = strconv.ParseBool(args[0])
 		if err != nil {
-			ConsolePrintln("Expecting a boolean parameter.")
+			fmt.Println("Expecting a boolean parameter.")
 		}
 	} else {
-		ConsolePrintln("Expecting only one parameter. true/false")
+		fmt.Println("Expecting only one parameter. true/false")
 	}
 
 	setShouldNotify(shouldNotify)

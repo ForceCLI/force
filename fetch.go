@@ -229,7 +229,7 @@ func runFetch(cmd *Command, args []string) {
 
 	root, err := GetSourceDir()
 	if err != nil {
-		ConsolePrintf("Error obtaining root directory\n")
+		fmt.Printf("Error obtaining root directory\n")
 		ErrorAndExit(err.Error())
 	}
 	existingPackage, _ := pathExists(filepath.Join(root, "package.xml"))
@@ -299,7 +299,7 @@ func runFetch(cmd *Command, args []string) {
 			for _, f := range r.File {
 				rc, err := f.Open()
 				if err != nil {
-					ConsolePrintln(fmt.Sprintf("%s", err))
+					fmt.Println(fmt.Sprintf("%s", err))
 				}
 				defer rc.Close()
 
@@ -313,12 +313,12 @@ func runFetch(cmd *Command, args []string) {
 						zf, err := os.OpenFile(
 							filepath.Join(dest, f.Name), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
 						if err != nil {
-							ConsolePrintln(fmt.Sprintf("OpenFile: %s", err))
+							fmt.Println(fmt.Sprintf("OpenFile: %s", err))
 						}
 
 						_, err = io.Copy(zf, rc)
 						if err != nil {
-							ConsolePrintln(fmt.Sprintf("%s", err))
+							fmt.Println(fmt.Sprintf("%s", err))
 							zf.Close()
 						}
 						zf.Close()
@@ -328,7 +328,7 @@ func runFetch(cmd *Command, args []string) {
 		}
 	}
 
-	ConsolePrintf("Exported to %s\n", root)
+	fmt.Printf("Exported to %s\n", root)
 }
 
 func pathExists(path string) (bool, error) {

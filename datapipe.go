@@ -129,7 +129,7 @@ func runDataPipelineJob() {
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
-	ConsolePrintf("Successfully created DataPipeline job for %s\n", dpname)
+	fmt.Printf("Successfully created DataPipeline job for %s\n", dpname)
 }
 
 func runDataPipelineListJobs() {
@@ -166,7 +166,7 @@ func runDataPipelineQuery() {
 		ErrorAndExit(err.Error())
 	}
 
-	ConsolePrintln(fmt.Sprintf("Result: \n%v\n", result))
+	fmt.Println(fmt.Sprintf("Result: \n%v\n", result))
 }
 
 func runDataPipelineCreate() {
@@ -182,7 +182,7 @@ func runDataPipelineCreate() {
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
-	ConsolePrintf("DataPipeline %s successfully created.\n", dpname)
+	fmt.Printf("DataPipeline %s successfully created.\n", dpname)
 }
 
 func runDataPipelineUpdate() {
@@ -213,7 +213,7 @@ func runDataPipelineUpdate() {
 			scriptcontent = record["ScriptContent"].(string)
 		}
 		if _, err := os.Stat(scriptcontent); err == nil {
-			ConsolePrintf("file exists; processing...")
+			fmt.Println("file exists; processing...")
 			scriptcontent, err = readScriptFile(scriptcontent)
 			if err != nil {
 				ErrorAndExit(err.Error())
@@ -223,7 +223,7 @@ func runDataPipelineUpdate() {
 		if err != nil {
 			ErrorAndExit(err.Error())
 		}
-		ConsolePrintf("%s successfully updated.\n", dpname)
+		fmt.Printf("%s successfully updated.\n", dpname)
 	}
 }
 
@@ -258,7 +258,7 @@ func runDataPipelineDelete() {
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
-	ConsolePrintf("%s successfully deleted.\n", dpname)
+	fmt.Printf("%s successfully deleted.\n", dpname)
 }
 
 func runDataPipelineList() {

@@ -117,7 +117,7 @@ func runFieldCreate(args []string) {
 	globalSilencer = "off"
 	return*/
 
-	ConsolePrintln("Custom field created")
+	fmt.Println("Custom field created")
 }
 
 func runFieldDelete(args []string) {
@@ -128,5 +128,5 @@ func runFieldDelete(args []string) {
 	if err := force.Metadata.DeleteCustomField(args[0], args[1]); err != nil {
 		ErrorAndExit(err.Error())
 	}
-	ConsolePrintln("Custom field deleted")
+	fmt.Println("Custom field deleted")
 }

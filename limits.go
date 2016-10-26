@@ -45,7 +45,7 @@ func printLimits(result map[string]ForceLimit) {
 
 	//print map
 	for _, k := range keys {
-		ConsolePrintln(fmt.Sprintln(k, "\n ", result[k].Max, "maximum\n", result[k].Remaining, "remaining\n "))
+		fmt.Println(fmt.Sprintln(k, "\n ", result[k].Max, "maximum\n", result[k].Remaining, "remaining\n "))
 	}
 
 }

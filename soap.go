@@ -50,7 +50,7 @@ func (s *Soap) ExecuteLogin(username, password string) (response []byte, err err
 
 	res, err := doRequest(req)
 	if err != nil {
-		ConsolePrintln(fmt.Sprintf(err.Error()))
+		fmt.Println(fmt.Sprintf(err.Error()))
 		return
 	}
 	defer res.Body.Close()
@@ -91,7 +91,7 @@ func (s *Soap) ExecuteLogin(username, password string) (response []byte, err err
 
 	res, err := httpClient().Do(req)
 	if err != nil {
-		ConsolePrintln(err)
+		fmt.Println(err)
 		return
 	}
 	defer res.Body.Close()
@@ -130,7 +130,7 @@ func (s *Soap) Execute(action, query string) (response []byte, err error) {
 	`
 	rbody := fmt.Sprintf(soap, s.Namespace,
 		s.AccessToken, s.Header, action, s.Namespace, query, action)
-	//ConsolePrintln(rbody)
+	//fmt.Println(rbody)
 	req, err := httpRequest("POST", s.Endpoint, strings.NewReader(rbody))
 	if err != nil {
 		return

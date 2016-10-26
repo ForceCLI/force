@@ -139,18 +139,18 @@ func runImport(cmd *Command, args []string) {
 		ErrorAndExit(err.Error())
 	}
 
-	ConsolePrintf(fmt.Sprintf("\nFailures - %d\n", len(problems)))
+	fmt.Printf("\nFailures - %d\n", len(problems))
 	if *verbose {
 		for _, problem := range problems {
 			if problem.FullName == "" {
-				ConsolePrintln(problem.Problem)
+				fmt.Println(problem.Problem)
 			} else {
-				ConsolePrintf("%s: %s\n", problem.FullName, problem.Problem)
+				fmt.Printf("%s: %s\n", problem.FullName, problem.Problem)
 			}
 		}
 	}
 
-	ConsolePrintf(fmt.Sprintf("\nSuccesses - %d\n", len(successes)))
+	fmt.Printf("\nSuccesses - %d\n", len(successes))
 	if *verbose {
 		for _, success := range successes {
 			if success.FullName != "package.xml" {
@@ -162,9 +162,9 @@ func runImport(cmd *Command, args []string) {
 				} else if success.Created {
 					verb = "created"
 				}
-				ConsolePrintf("%s\n\tstatus: %s\n\tid=%s\n", success.FullName, verb, success.Id)
+				fmt.Printf("%s\n\tstatus: %s\n\tid=%s\n", success.FullName, verb, success.Id)
 			}
 		}
 	}
-	ConsolePrintf("Imported from %s\n", root)
+	fmt.Printf("Imported from %s\n", root)
 }

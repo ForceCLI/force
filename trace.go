@@ -1,5 +1,9 @@
 package main
 
+import (
+	"fmt"
+)
+
 var cmdTrace = &Command{
 	Run:   runTrace,
 	Usage: "trace <command>",
@@ -59,7 +63,7 @@ func runStartTrace(userId ...string) {
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
-	ConsolePrintf("Tracing Enabled\n")
+	fmt.Printf("Tracing Enabled\n")
 }
 
 func runDeleteTrace(id string) {
@@ -68,5 +72,5 @@ func runDeleteTrace(id string) {
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
-	ConsolePrintf("Trace Flag deleted\n")
+	fmt.Printf("Trace Flag deleted\n")
 }

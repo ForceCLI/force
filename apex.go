@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 )
@@ -31,11 +32,11 @@ func runApex(cmd *Command, args []string) {
 	if len(args) == 1 {
 		code, err = ioutil.ReadFile(args[0])
 	} else if len(args) > 1 {
-		ConsolePrintln("Got test indication.")
+		fmt.Println("Got test indication.")
 	} else {
-		ConsolePrintln(">> Start typing Apex code; press CTRL-D(for Max/Unix) / Ctrl-Z (for Windows) when finished")
+		fmt.Println(">> Start typing Apex code; press CTRL-D(for Max/Unix) / Ctrl-Z (for Windows) when finished")
 		code, err = ioutil.ReadAll(os.Stdin)
-		ConsolePrintln("\n\n>> Executing code...")
+		fmt.Println("\n\n>> Executing code...")
 	}
 	if err != nil {
 		ErrorAndExit(err.Error())
@@ -46,10 +47,10 @@ func runApex(cmd *Command, args []string) {
 		if err != nil {
 			ErrorAndExit(err.Error())
 		}
-		ConsolePrintln(output)
+		fmt.Println(output)
 	} else {
 		apexclass := args[1]
-		ConsolePrintln(apexclass)
+		fmt.Println(apexclass)
 		err := force.GetCodeCoverage("", apexclass)
 		if err != nil {
 			ErrorAndExit(err.Error())

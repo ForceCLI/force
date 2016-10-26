@@ -24,7 +24,6 @@ const (
 	RedirectUri        = "https://force-cli.herokuapp.com/auth/callback"
 )
 
-var quietMode = false
 var CustomEndpoint = ``
 
 const (
@@ -288,7 +287,7 @@ func ForceSoapLogin(endpoint ForceEndpoint, username string, password string) (c
 	if err != nil {
 		return
 	}
-	ConsolePrintln("Save login was ", string(body))
+	fmt.Println("Save login was ", string(body))
 	return
 }
 
@@ -340,7 +339,7 @@ func (f *Force) GetCodeCoverage(classId string, className string) (err error) {
 
 	//var result ForceSobjectsResult
 	json.Unmarshal(body, &result)
-	ConsolePrintf(fmt.Sprintf("\n%d lines covered\n%d lines not covered\n", int(result.Records[0]["NumLinesCovered"].(float64)), int(result.Records[0]["NumLinesUncovered"].(float64))))
+	fmt.Printf("\n%d lines covered\n%d lines not covered\n", int(result.Records[0]["NumLinesCovered"].(float64)), int(result.Records[0]["NumLinesUncovered"].(float64)))
 	return
 }
 
@@ -595,7 +594,7 @@ func (f *Force) Query(query string, isTooling bool) (result ForceQueryResult, fi
 	if err != nil {
 		return
 	}
-	//ConsolePrintln(string(body))
+	//fmt.Println(string(body))
 	//dec := json.NewDecoder(strings.NewReader(string(body)))
 	//err = dec.Decode(&result)
 	if err != nil {
@@ -637,7 +636,6 @@ func (f *Force) DecodeMe2(jsonStream string) (result ForceQueryResult) {
 
 		var tokenType = fmt.Sprintf("%T", t)
 		var token = fmt.Sprintf("%v", t)
-		//ConsolePrintf("%s: %s\n", tokenType, token)
 		if tokenType == "json.Delim" {
 
 		} else {
@@ -701,12 +699,10 @@ func (f *Force) DecodeMe(jsonStream string) (result *list.List) {
 
 		var tokenType = fmt.Sprintf("%T", t)
 		var token = fmt.Sprintf("%v", t)
-		//ConsolePrintf("tokenType: %s, token: %s\n", tokenType, token)
 		if token == "type" {
 			t, err = dec.Token()
 			token = fmt.Sprintf("%v", t)
 			SObjecttype = token
-			//ConsolePrintf("case token=type %s\n", SObjecttype)
 			spec := f.GetObjectSpec(SObjecttype, result)
 			spec.ObjectName = token
 		} else if token == "totalSize" {
@@ -714,26 +710,15 @@ func (f *Force) DecodeMe(jsonStream string) (result *list.List) {
 		} else if token == "done" {
 			t, err = dec.Token()
 		} else if token == "records" {
-			//ConsolePrintln("Records have been found...")
+			//fmt.Println("Records have been found...")
 			recordsFound = true
 		} else if token == "attributes" {
 			isAttributes = true
 		} else if tokenType != "json.Delim" && recordsFound && token != "attributes" && token != "url" {
-			//ConsolePrintf("\ncase fieldName: %v.%v\n", SObjecttype, token)
 			spec := f.GetObjectSpec(SObjecttype, result)
-			//ConsolePrintf("%v:", token)
 			t, err = dec.Token()
 			tt := fmt.Sprintf("%T", t)
-			//if /*t != nil &&*/ tt != "json.Delim" {
-			//ConsolePrintf("%T\n", t)
 			f.PushFieldName(token, spec, (tt == "json.Delim" || t == nil))
-			/*if tt == "json.Number" {
-				ConsolePrintf("Value: %#v\n",  JSONNumberToString(t, ','))
-			} else {
-				ConsolePrintf("Value: %s\n", t)
-			}*/
-			//}
-			//ConsolePrintf("\n")
 		} else {
 			if err != nil {
 				ErrorAndExit(err.Error())
@@ -741,9 +726,9 @@ func (f *Force) DecodeMe(jsonStream string) (result *list.List) {
 			if token == "url" {
 				t, err = dec.Token()
 			} else if token == "[" {
-				//ConsolePrintln("Starting Array...")
+				//fmt.Println("Starting Array...")
 			} else if token == "]" {
-				//ConsolePrintln("Ending Array...")
+				//fmt.Println("Ending Array...")
 			} else if token == "}" {
 				if isAttributes {
 					isAttributes = false
@@ -751,16 +736,16 @@ func (f *Force) DecodeMe(jsonStream string) (result *list.List) {
 					prev := f.GetPrevObjectSpec(SObjecttype, result)
 					if prev != nil {
 						SObjecttype = prev.ObjectName
-						//ConsolePrintf("Prev Obj: %s\n\n", prev.ObjectName)
+						//fmt.Sprintf("Prev Obj: %s\n\n", prev.ObjectName)
 					} else {
-						//ConsolePrintf("NO PREV OBJ\n\n")
+						//fmt.Sprintf("NO PREV OBJ\n\n")
 					}
-					//ConsolePrintln("Ending Object...")
+					//fmt.Println("Ending Object...")
 				}
 			} else if token == "{" {
 				//spec := f.GetObjectSpec(SObjecttype, result)
 				//result.PushFront(spec)
-				//ConsolePrintln("Starting Object...")
+				//fmt.Println("Starting Object...")
 			}
 		}
 		f.DumpListStack(result)
@@ -770,24 +755,24 @@ func (f *Force) DecodeMe(jsonStream string) (result *list.List) {
 }
 
 func (f *Force) DumpListStack(l *list.List) {
-	ConsolePrintf("\nDecode Results:\n")
+	fmt.Printf("\nDecode Results:\n")
 	for e := l.Front(); e != nil; e = e.Next() {
 		spec := e.Value.(*SelectStruct)
-		ConsolePrintln(spec.ObjectName)
+		fmt.Println(spec.ObjectName)
 		for _, v := range spec.FieldNames {
-			ConsolePrintf("\t%v", v.FieldName)
+			fmt.Printf("\t%v", v.FieldName)
 			if v.IsObject {
-				ConsolePrintf(" (Object)\n")
+				fmt.Printf(" (Object)\n")
 			} else {
-				ConsolePrintf("\n")
+				fmt.Printf("\n")
 			}
 		}
 	}
-	ConsolePrintf("\n\n")
+	fmt.Printf("\n\n")
 }
 
 func (f *Force) PushFieldName(fieldName string, spec *SelectStruct, IsObject bool) {
-	//ConsolePrintln("Pushing fieldname: ", fieldName)
+	//fmt.Println("Pushing fieldname: ", fieldName)
 	for _, v := range spec.FieldNames {
 		if v.FieldName == fieldName {
 			return
@@ -811,7 +796,7 @@ func (f *Force) GetPrevObjectSpec(objectName string, l *list.List) (foundItem *S
 }
 
 func (f *Force) GetObjectSpec(objectName string, l *list.List) (result *SelectStruct) {
-	//ConsolePrintln("Looking for Spec", objectName)
+	//fmt.Println("Looking for Spec", objectName)
 	found, result := f.HasObject(objectName, l)
 	if !found {
 		result = new(SelectStruct)
@@ -1090,7 +1075,7 @@ func (f *Force) GetConsoleLogLevelId() (result string, err error) {
 	}
 	json.Unmarshal(body, &res)
 	result = res.Records[0]["Id"].(string)
-	ConsolePrintln(result)
+	fmt.Println(result)
 	return
 }
 
@@ -1117,7 +1102,7 @@ func (f *Force) QueryProfile(fields ...string) (results ForceQueryResult, err er
 
 	body, err := f.httpGet(url)
 	if err != nil {
-		ConsolePrintln(fmt.Sprintf(err.Error()))
+		fmt.Println(fmt.Sprintf(err.Error()))
 		return
 	}
 	json.Unmarshal(body, &results)

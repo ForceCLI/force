@@ -115,7 +115,7 @@ func runPush(cmd *Command, args []string) {
 }
 
 func isValidMetadataType() {
-	ConsolePrintf("Validating and deploying push...\n")
+	fmt.Printf("Validating and deploying push...\n")
 	// Look to see if we can find any resource for that metadata type
 	root, err := GetSourceDir()
 	ExitIfNoSourceDir(err)
@@ -243,7 +243,7 @@ func findPackageFolder(packageName string) (folder string) {
 	folder = findMetadataFolder(wd)
 	if len(folder) == 0 {
 		// Didn't find it, error out
-		ConsolePrintln("Could not find metadata folder.")
+		fmt.Println("Could not find metadata folder.")
 	}
 	if _, err := os.Stat(filepath.Join(folder, packageName)); err == nil {
 		folder = filepath.Join(folder, packageName)
@@ -441,7 +441,7 @@ func pushByPaths(fpaths []string) {
 		// TODO: check for folder, if a folder, add all files in it
 		name, err := pb.AddFile(fpath)
 		if err != nil {
-			ConsolePrintln(err.Error())
+			fmt.Println(err.Error())
 			badPaths = append(badPaths, fpath)
 		} else {
 			// Store paths by name for error messages
@@ -450,11 +450,11 @@ func pushByPaths(fpaths []string) {
 	}
 
 	if len(badPaths) == 0 {
-		ConsolePrintln("Deploying now...")
+		fmt.Println("Deploying now...")
 		t0 := time.Now()
 		deployFiles(pb.ForceMetadataFiles())
 		t1 := time.Now()
-		ConsolePrintf(fmt.Sprintf("The deployment took %v to run.\n", t1.Sub(t0)))
+		fmt.Printf("The deployment took %v to run.\n", t1.Sub(t0))
 	} else {
 		ErrorAndExit("Could not add the following files:\n {}", strings.Join(badPaths, "\n"))
 	}
@@ -510,26 +510,26 @@ func processDeployResults(result ForceCheckDeploymentStatusResult, err error) {
 	testSuccesses := result.Details.RunTestResult.TestSuccesses
 
 	if len(problems) > 0 {
-		ConsolePrintf(fmt.Sprintf("\nFailures - %d\n", len(problems)))
+		fmt.Printf("\nFailures - %d\n", len(problems))
 		for _, problem := range problems {
 			if problem.FullName == "" {
-				ConsolePrintln(problem.Problem)
+				fmt.Println(problem.Problem)
 			} else {
 				if byName {
-					ConsolePrintf(fmt.Sprintf("ERROR with %s, line %d\n %s\n", problem.FullName, problem.LineNumber, problem.Problem))
+					fmt.Printf("ERROR with %s, line %d\n %s\n", problem.FullName, problem.LineNumber, problem.Problem)
 				} else {
 					fname, found := namePaths[problem.FullName]
 					if !found {
 						fname = problem.FullName
 					}
-					ConsolePrintf(fmt.Sprintf("\"%s\", line %d: %s %s\n", fname, problem.LineNumber, problem.ProblemType, problem.Problem))
+					fmt.Printf("\"%s\", line %d: %s %s\n", fname, problem.LineNumber, problem.ProblemType, problem.Problem)
 				}
 			}
 		}
 	}
 
 	if len(successes) > 0 {
-		ConsolePrintf(fmt.Sprintf("\nSuccesses - %d\n", len(successes)-1))
+		fmt.Printf("\nSuccesses - %d\n", len(successes)-1)
 		for _, success := range successes {
 			if success.FullName != "package.xml" {
 				verb := "unchanged"
@@ -540,20 +540,20 @@ func processDeployResults(result ForceCheckDeploymentStatusResult, err error) {
 				} else if success.Created {
 					verb = "created"
 				}
-				ConsolePrintf("\t%s: %s\n", success.FullName, verb)
+				fmt.Printf("\t%s: %s\n", success.FullName, verb)
 			}
 		}
 	}
 
-	ConsolePrintf(fmt.Sprintf("\nTest Successes - %d\n", len(testSuccesses)))
+	fmt.Printf("\nTest Successes - %d\n", len(testSuccesses))
 	for _, failure := range testSuccesses {
-		ConsolePrintf("  [PASS]  %s::%s\n", failure.Name, failure.MethodName)
+		fmt.Printf("  [PASS]  %s::%s\n", failure.Name, failure.MethodName)
 	}
 
-	ConsolePrintf(fmt.Sprintf("\nTest Failures - %d\n", len(testFailures)))
+	fmt.Printf("\nTest Failures - %d\n", len(testFailures))
 	for _, failure := range testFailures {
-		ConsolePrintf("\n  [FAIL]  %s::%s: %s\n", failure.Name, failure.MethodName, failure.Message)
-		ConsolePrintln(failure.StackTrace)
+		fmt.Printf("\n  [FAIL]  %s::%s: %s\n", failure.Name, failure.MethodName, failure.Message)
+		fmt.Println(failure.StackTrace)
 	}
 
 	// Handle notifications

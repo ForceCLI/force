@@ -186,6 +186,6 @@ func runBigObjectCreate(args []string) {
 	if err := force.Metadata.CreateBigObject(object); err != nil {
 		ErrorAndExit(err.Error())
 	}
-	ConsolePrintln("Big object created")
+	fmt.Println("Big object created")
 
 }

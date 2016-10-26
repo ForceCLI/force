@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -36,7 +37,7 @@ func runPushAura(cmd *Command, args []string) {
 	}
 	absPath, _ := filepath.Abs(resourcepaths[0])
 	if _, err := os.Stat(absPath); os.IsNotExist(err) {
-		ConsolePrintln(err.Error())
+		fmt.Println(err.Error())
 		ErrorAndExit("File does not exist\n" + absPath)
 	}
 
@@ -53,10 +54,10 @@ func runPushAura(cmd *Command, args []string) {
 		filepath.Walk(absPath, func(path string, inf os.FileInfo, err error) error {
 			info, err = os.Stat(filepath.Join(absPath, inf.Name()))
 			if err != nil {
-				ConsolePrintln(err.Error())
+				fmt.Println(err.Error())
 			} else {
 				if info.IsDir() || inf.Name() == ".manifest" {
-					ConsolePrintln("\nSkip")
+					fmt.Println("\nSkip")
 				} else {
 					pushAuraComponent(filepath.Join(absPath, inf.Name()))
 				}
@@ -78,7 +79,7 @@ func pushAuraComponent(fname string) {
 		createNewAuraBundleAndDefinition(*force, fname)
 	} else {
 		// Got the manifest, let's update the artifact
-		ConsolePrintln("Updating")
+		fmt.Println("Updating")
 		updateAuraDefinition(*force, fname)
 		return
 	}
@@ -202,7 +203,7 @@ func updateAuraDefinition(force Force, fname string) {
 			if err != nil {
 				ErrorAndExit(err.Error())
 			}
-			ConsolePrintf("Aura definition updated: %s\n", filepath.Base(fname))
+			fmt.Printf("Aura definition updated: %s\n", filepath.Base(fname))
 			return
 		}
 	}
@@ -211,7 +212,7 @@ func updateAuraDefinition(force Force, fname string) {
 		ErrorAndExit(err.Error(), emessages[0].ErrorCode)
 	}
 	updateManifest(manifest, component, fname)
-	ConsolePrintln("New component in the bundle")
+	fmt.Println("New component in the bundle")
 }
 
 func getFormatByresourcepath(resourcepath string) (format string, defType string) {
