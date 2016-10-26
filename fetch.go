@@ -299,7 +299,7 @@ func runFetch(cmd *Command, args []string) {
 			for _, f := range r.File {
 				rc, err := f.Open()
 				if err != nil {
-					fmt.Println(fmt.Sprintf("%s", err))
+					fmt.Printf("%s", err)
 				}
 				defer rc.Close()
 
@@ -313,12 +313,12 @@ func runFetch(cmd *Command, args []string) {
 						zf, err := os.OpenFile(
 							filepath.Join(dest, f.Name), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
 						if err != nil {
-							fmt.Println(fmt.Sprintf("OpenFile: %s", err))
+							fmt.Printf("OpenFile: %s", err)
 						}
 
 						_, err = io.Copy(zf, rc)
 						if err != nil {
-							fmt.Println(fmt.Sprintf("%s", err))
+							fmt.Printf("%s", err)
 							zf.Close()
 						}
 						zf.Close()

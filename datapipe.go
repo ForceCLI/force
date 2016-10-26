@@ -166,7 +166,7 @@ func runDataPipelineQuery() {
 		ErrorAndExit(err.Error())
 	}
 
-	fmt.Println(fmt.Sprintf("Result: \n%v\n", result))
+	fmt.Printf("Result: \n%v\n", result)
 }
 
 func runDataPipelineCreate() {

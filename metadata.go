@@ -875,7 +875,7 @@ func (fm *ForceMetadata) CreateCustomField(object, field, typ string, options ma
 		soapField = "<type>Picklist</type>\n"
 		for key, value := range options {
 			//fmt.Println("Options: ", options)
-			//fmt.Println(fmt.Sprintf("Key %s", key))
+			//fmt.Printf("Key %s", key)
 			if key == "picklist>picklistValues" {
 				soapField += "<picklist>\n"
 				for _, k := range strings.Split(value, ",") {
@@ -1003,7 +1003,7 @@ func (fm *ForceMetadata) CreateCustomField(object, field, typ string, options ma
 		ErrorAndExit("unable to create field type: %s", typ)
 	}
 
-	//fmt.Println(fmt.Sprintf(soap, object, field, label, soapField))
+	//fmt.Printf(soap, object, field, label, soapField)
 	body, err := fm.soapExecute("create", fmt.Sprintf(soap, object, field, label, soapField))
 	if err != nil {
 		return

@@ -1102,7 +1102,7 @@ func (f *Force) QueryProfile(fields ...string) (results ForceQueryResult, err er
 
 	body, err := f.httpGet(url)
 	if err != nil {
-		fmt.Println(fmt.Sprintf(err.Error()))
+		fmt.Printf(err.Error())
 		return
 	}
 	json.Unmarshal(body, &results)

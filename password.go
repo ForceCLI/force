@@ -83,7 +83,7 @@ func runPasswordChange(args []string) {
 	if err != nil {
 		ErrorAndExit(err.Error())
 	} else {
-		fmt.Println(fmt.Sprintf("%s", args[1:]))
+		fmt.Printf("%s", args[1:])
 		newPass := make(map[string]string)
 		newPass["NewPassword"] = args[1]
 		_, err, emessages := force.ChangePassword(records.Records[0]["Id"].(string), newPass)
