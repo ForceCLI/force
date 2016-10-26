@@ -1017,10 +1017,12 @@ func (fm *ForceMetadata) CreateCustomField(object, field, typ string, options ma
 	if err = fm.CheckStatus(status.Id); err != nil {
 		return
 	}
+	stdout := SilenceStdOut()
 	serr := fm.UpdateFLSOnProfile(object, field)
 	if serr != nil {
 		fmt.Println("INFO: Failed to set FLS on new Field (field was created).")
 	}
+	RestoreStdOut(stdout)
 	return
 }
 

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"os"
 )
 
 var BatchInfoTemplate = `
@@ -34,6 +35,18 @@ func DisplayListMetadataResponse(resp ListMetadataResponse) {
 	for _, result := range resp.Result {
 		fmt.Println(result.FullName + " - " + result.Type)
 	}
+}
+
+func SilenceStdOut() (old *os.File) {
+	old = os.Stdout // keep backup of the real stdout
+    _, w, _ := os.Pipe()
+    os.Stdout = w
+	return
+}
+
+func RestoreStdOut(old *os.File) {
+	os.Stdout = old
+	return
 }
 
 func DisplayListMetadataResponseJson(resp ListMetadataResponse) {

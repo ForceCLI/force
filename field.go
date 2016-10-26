@@ -74,21 +74,10 @@ func runFieldCreate(args []string) {
 
 	force, _ := ActiveForce()
 
-	/*	res, err := force.QueryProfile("Id", "Name", "FullName")
-		profileFullName := fmt.Sprintf("%s", res.Records[0]["FullName"])
-	*/
 	parts := strings.Split(args[1], ":")
 	if len(parts) != 2 {
 		ErrorAndExit("must specify name:type for fields")
 	}
-	/*
-		field := strings.Replace(parts[0], " ", "_", -1) + "__c"
-
-		if err := force.Metadata.UpdateFLSOnProfile(profileFullName, args[0], field); err != nil {
-			globalSilencer = "off"
-			ErrorAndExit(err.Error())
-		}
-		return*/
 
 	var optionMap = make(map[string]string)
 	if len(args) > 2 {
@@ -106,16 +95,10 @@ func runFieldCreate(args []string) {
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
+
 	if err := force.Metadata.CreateCustomField(args[0], parts[0], parts[1], newOptions); err != nil {
 		ErrorAndExit(err.Error())
 	}
-	/*globalSilencer = "on"
-	if err := force.Metadata.UpdateFLSOnProfile(fmt.Sprintf("%s.profile", profileFullName), args[0], field); err != nil {
-		globalSilencer = "off"
-		ErrorAndExit(err.Error())
-	}
-	globalSilencer = "off"
-	return*/
 
 	fmt.Println("Custom field created")
 }
