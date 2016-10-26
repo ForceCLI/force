@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"os"
 	"sort"
 	"strings"
-	"os"
 )
 
 var BatchInfoTemplate = `
@@ -39,8 +39,8 @@ func DisplayListMetadataResponse(resp ListMetadataResponse) {
 
 func SilenceStdOut() (old *os.File) {
 	old = os.Stdout // keep backup of the real stdout
-    _, w, _ := os.Pipe()
-    os.Stdout = w
+	_, w, _ := os.Pipe()
+	os.Stdout = w
 	return
 }
 
