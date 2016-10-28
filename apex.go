@@ -18,7 +18,7 @@ Examples:
   force apex ~/test.apex
 
   force apex
-  >> Start typing Apex code; press CTRL-D(for Max/Unix) / Ctrl-Z (for Windows) when finished
+  >> Start typing Apex code; press CTRL-D(for Mac/Linux) / Ctrl-Z (for Windows) when finished
 
 `,
 }
@@ -34,7 +34,7 @@ func runApex(cmd *Command, args []string) {
 	} else if len(args) > 1 {
 		fmt.Println("Got test indication.")
 	} else {
-		fmt.Println(">> Start typing Apex code; press CTRL-D(for Max/Unix) / Ctrl-Z (for Windows) when finished")
+		fmt.Println(">> Start typing Apex code; press CTRL-D(for Mac/Linux) / Ctrl-Z (for Windows) when finished")
 		code, err = ioutil.ReadAll(os.Stdin)
 		fmt.Println("\n\n>> Executing code...")
 	}
