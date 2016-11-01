@@ -35,6 +35,16 @@ func runExport(cmd *Command, args []string) {
 		ErrorAndExit(err.Error())
 	}
 	force, _ := ActiveForce()
+	emailTemplatesResult, _, err := force.Query(fmt.Sprintf("%s", "SELECT EmailTemplate.DeveloperName, EmailTemplate.Folder.DeveloperName from EmailTemplate"), false)
+	emailTemplates := make([]string, 1, 100)
+	emailTemplates[0] = "*"
+	for _, et := range emailTemplatesResult.Records {
+		fmt.Println(et)
+		if et["Folder"] != nil {
+			folderName := et["Folder"].(map[string]interface{})
+			emailTemplates = append(emailTemplates, folderName["DeveloperName"].(string)+"/"+et["DeveloperName"].(string))
+		}
+	}
 	sobjects, err := force.ListSobjects()
 	if err != nil {
 		ErrorAndExit(err.Error())
@@ -84,7 +94,7 @@ func runExport(cmd *Command, args []string) {
 		{Name: "Dashboard", Members: []string{"*"}},
 		{Name: "DataCategoryGroup", Members: []string{"*"}},
 		{Name: "Document", Members: []string{"*"}},
-		{Name: "EmailTemplate", Members: []string{"*"}},
+		{Name: "EmailTemplate", Members: emailTemplates},
 		{Name: "EntitlementProcess", Members: []string{"*"}},
 		{Name: "EntitlementSettings", Members: []string{"*"}},
 		{Name: "EntitlementTemplate", Members: []string{"*"}},
