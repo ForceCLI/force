@@ -59,79 +59,115 @@ import (
 )
 
 var cmdBulk = &Command{
-	Run:   runBulk,
-	Usage: "bulk insert Account [csv file]",
+	//	Run:   runBulk,
+	Usage: "bulk -[command, c]=[insert, update, ...] -flags args",
 	Short: "Load csv file use Bulk API",
 	Long: `
 Load csv file use Bulk API
 
+Commands:
+  insert   upload a .csv file to insert records
+  update   upload a .csv file to update records
+  query    run a SOQL statement to generate a .csv file on the server
+  retrieve retrieve a query generated .csv file from the server
+  job      get information about a job based on job Id
+  batch    get detailed information about a batch within a job based on job Id and batch Id
+  batches  get a list of batches associated with a job based on job Id
+
 Examples:
 
-  force bulk insert Account [csv file]
+  force bulk -c=insert -[objectType, o]=Account mydata.csv
 
-  force bulk update Account [csv file]
+  force bulk -c=update -[objectType, o]=Account mydata.csv
 
-  force bulk job [job id]
+  force bulk -c=query -[objectType, o]=Account "SOQL"
 
-  force bulk batches [job id]
+  force bulk -c=job -[jobId, j]=jobid
 
-  force Bulk batch [job id] [batch id]
+  force bulk -c=batches -[jobId, j]=jobid
 
-  force bulk batch retrieve [job id] [batch id]
+  force bulk -c=batch -[jobId, j]=jobid -[batchId, b]=batchid
 
-  force bulk query Account [SOQL]
+  force bulk -c=retrieve -[jobId, j]=jobid -[batchId, b]=batchid
 
-  force bulk query retrieve [job id] [batch id]
+  force bulk -c retrieve -j jobid -b batchid > mydata.csv
+
+
 `,
 }
 
+var (
+	command    string
+	objectType string
+	jobId      string
+	batchId    string
+)
+
+func init() {
+	cmdBulk.Flag.StringVar(&command, "command", "", "Sub command for bulk api. Can be insert, update, job, batches, batch, retrieve or query.")
+	cmdBulk.Flag.StringVar(&command, "c", "", "Sub command for bulk api. Can be insert, update, job, batches, batch, retrieve or query.")
+	cmdBulk.Flag.StringVar(&objectType, "objectType", "", "Type of sObject for CRUD commands.")
+	cmdBulk.Flag.StringVar(&objectType, "o", "", "Type of sObject for CRUD commands.")
+	cmdBulk.Flag.StringVar(&jobId, "jobId", "", "A batch job id.")
+	cmdBulk.Flag.StringVar(&jobId, "j", "", "A batch job id.")
+	cmdBulk.Flag.StringVar(&batchId, "batchId", "", "A batch id.")
+	cmdBulk.Flag.StringVar(&batchId, "b", "", "A batch id.")
+	cmdBulk.Run = runBulk
+}
+
 func runBulk(cmd *Command, args []string) {
-	if len(args) == 0 {
+	if len(command) == 0 {
 		cmd.printUsage()
-	} else if len(args) == 1 {
-		ErrorAndExit("Invalid command")
-	} else if len(args) == 2 {
-		if args[0] == "insert" {
-			ErrorAndExit("Missing argument for insert")
-		} else if args[0] == "update" {
-			ErrorAndExit("Missing argument for update")
-		} else if args[0] == "job" {
-			showJobDetails(args[1])
-		} else if args[0] == "batches" {
-			listBatches(args[1])
-		} else {
-			ErrorAndExit("Invalid command")
+		return
+	}
+	switch strings.ToLower(command) {
+	case "insert", "update", "query":
+		runDBCommand(strings.ToLower(command), args)
+	case "job", "retrieve", "batch", "batches":
+		runBulkInfoCommand(strings.ToLower(command))
+		//fmt.Println(string(getBulkQueryResults(args[2], args[3])))
+	default:
+		ErrorAndExit("Unknown sub-command: " + command)
+	}
+}
+
+func runBulkInfoCommand(command string) {
+	if len(jobId) == 0 {
+		ErrorAndExit("For the " + command + " command you need to specify a job id.")
+	}
+	switch command {
+	case "job":
+		showJobDetails(jobId)
+	case "batches":
+		listBatches(jobId)
+	case "batch", "retrieve":
+		if len(batchId) == 0 {
+			ErrorAndExit("For the " + command + " command you need to provide a batch id in addition to a job id.")
 		}
-	} else if len(args) == 3 {
-		if args[0] == "insert" {
-			createBulkInsertJob(args[2], args[1], "CSV")
-		} else if args[0] == "update" {
-			createBulkUpdateJob(args[2], args[1], "CSV")
-		} else if args[0] == "batch" {
-			showBatchDetails(args[1], args[2])
-		} else if args[0] == "query" {
-			if args[1] == "retrieve" {
-				ErrorAndExit("Query retrieve requires a job id and a batch id")
-			} else {
-				doBulkQuery(args[1], args[2], "CSV")
-			}
+		if command == "batch" {
+			DisplayBatchInfo(getBatchDetails(jobId, batchId))
+		} else /* retrieve */ {
+			fmt.Println(string(getBulkQueryResults(jobId, batchId)))
 		}
-	} else if len(args) == 4 {
-		if args[0] == "insert" {
-			createBulkInsertJob(args[2], args[1], args[3])
-		} else if args[0] == "update" {
-			createBulkUpdateJob(args[2], args[1], args[3])
-		} else if args[0] == "batch" {
-			getBatchResults(args[2], args[3])
-		} else if args[0] == "query" {
-			if args[1] == "retrieve" {
-				fmt.Println(string(getBulkQueryResults(args[2], args[3])))
-			} else if args[1] == "status" {
-				DisplayBatchInfo(getBatchDetails(args[2], args[3]))
-			} else {
-				doBulkQuery(args[1], args[2], args[3])
-			}
-		}
+	}
+}
+func runDBCommand(subcommand string, args []string) {
+	if len(objectType) == 0 {
+		fmt.Println(args)
+		ErrorAndExit("Database commands need to have an sObject specified.")
+	}
+	if len(args) == 0 {
+		ErrorAndExit("You need to supply a path to a data file (csv) for insert and update or a SOQL statement for query.")
+	}
+
+	switch subcommand {
+	case "insert":
+		createBulkInsertJob(args[0], objectType, "CSV")
+	case "update":
+		createBulkUpdateJob(args[0], objectType, "CSV")
+	case "query":
+		fmt.Println(args)
+		doBulkQuery(objectType, args[0], "CSV")
 	}
 }
 
@@ -145,8 +181,8 @@ func doBulkQuery(objectType string, soql string, contenttype string) {
 		ErrorAndExit(err.Error())
 	}
 	fmt.Println("Query Submitted")
-	fmt.Printf("To retrieve query status use\nforce bulk query status %s %s\n\n", jobInfo.Id, result.Id)
-	fmt.Printf("To retrieve query data use\nforce bulk query retrieve %s %s\n\n", jobInfo.Id, result.Id)
+	fmt.Printf("To retrieve query status use\nforce bulk -cmd=batch -j=%s -b=%s\n\n", jobInfo.Id, result.Id)
+	fmt.Printf("To retrieve query data use\nforce bulk -cmd=retrieve -j=%s -b=%s\n\n", jobInfo.Id, result.Id)
 	closeBulkJob(jobInfo.Id)
 }
 
@@ -204,11 +240,6 @@ func showJobDetails(jobId string) {
 func listBatches(jobId string) {
 	batchInfos := getBatches(jobId)
 	DisplayBatchList(batchInfos)
-}
-
-func showBatchDetails(jobId string, batchId string) {
-	batchInfo := getBatchDetails(jobId, batchId)
-	DisplayBatchInfo(batchInfo)
 }
 
 func getBatchResults(jobId string, batchId string) {
