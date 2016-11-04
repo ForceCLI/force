@@ -181,8 +181,8 @@ func doBulkQuery(objectType string, soql string, contenttype string) {
 		ErrorAndExit(err.Error())
 	}
 	fmt.Println("Query Submitted")
-	fmt.Printf("To retrieve query status use\nforce bulk -cmd=batch -j=%s -b=%s\n\n", jobInfo.Id, result.Id)
-	fmt.Printf("To retrieve query data use\nforce bulk -cmd=retrieve -j=%s -b=%s\n\n", jobInfo.Id, result.Id)
+	fmt.Printf("To retrieve query status use\nforce bulk -c=batch -j=%s -b=%s\n\n", jobInfo.Id, result.Id)
+	fmt.Printf("To retrieve query data use\nforce bulk -c=retrieve -j=%s -b=%s\n\n", jobInfo.Id, result.Id)
 	closeBulkJob(jobInfo.Id)
 }
 
