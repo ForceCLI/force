@@ -23,6 +23,38 @@ Examples:
 `,
 }
 
+func getMetadataType(metadataType string, folders map[string]string) (member []string) {
+	force, _ := ActiveForce()
+	var queryString string
+	if metadataType == "Report" {
+		queryString = "SELECT Id, OwnerId ,DeveloperName from Report"
+	} else {
+		queryString = "SELECT Id, DeveloperName, Folder.DeveloperName from " + metadataType
+	}
+	queryResult, _, _ := force.Query(fmt.Sprintf("%s", queryString), false)
+	metadataItems := make([]string, 1, 1000)
+	metadataItems[0] = "*"
+	for _, folderName := range folders {
+		metadataItems = append(metadataItems, folderName)
+	}
+
+	for _, metadataItem := range queryResult.Records {
+		folderName := ""
+		if metadataType == "Report" {
+			folderName, _ = folders[metadataItem["OwnerId"].(string)]
+		} else {
+			folderData, _ := metadataItem["Folder"].(map[string]interface{})
+			if folderData != nil {
+				folderName = folderData["DeveloperName"].(string)
+			}
+		}
+		if folderName != "" {
+			metadataItems = append(metadataItems, folderName+"/"+metadataItem["DeveloperName"].(string))
+		}
+	}
+	return metadataItems
+}
+
 func runExport(cmd *Command, args []string) {
 	// Get path from args if available
 	var err error
@@ -81,10 +113,7 @@ func runExport(cmd *Command, args []string) {
 		{Name: "CustomPermission", Members: []string{"*"}},
 		{Name: "CustomSite", Members: []string{"*"}},
 		{Name: "CustomTab", Members: []string{"*"}},
-		{Name: "Dashboard", Members: []string{"*"}},
 		{Name: "DataCategoryGroup", Members: []string{"*"}},
-		{Name: "Document", Members: []string{"*"}},
-		{Name: "EmailTemplate", Members: []string{"*"}},
 		{Name: "EntitlementProcess", Members: []string{"*"}},
 		{Name: "EntitlementSettings", Members: []string{"*"}},
 		{Name: "EntitlementTemplate", Members: []string{"*"}},
@@ -120,7 +149,6 @@ func runExport(cmd *Command, args []string) {
 		{Name: "QuoteSettings", Members: []string{"*"}},
 		{Name: "RecordType", Members: []string{"*"}},
 		{Name: "RemoteSiteSetting", Members: []string{"*"}},
-		{Name: "Report", Members: []string{"*"}},
 		{Name: "ReportType", Members: []string{"*"}},
 		{Name: "Role", Members: []string{"*"}},
 		{Name: "SamlSsoConfig", Members: []string{"*"}},
@@ -135,6 +163,28 @@ func runExport(cmd *Command, args []string) {
 		{Name: "ValidationRule", Members: []string{"*"}},
 		{Name: "Workflow", Members: []string{"*"}},
 	}
+
+	folderResult, _, err := force.Query(fmt.Sprintf("%s", "SELECT Id, Type, DeveloperName from Folder"), false)
+	folders := make(map[string]map[string]string)
+	for _, folder := range folderResult.Records {
+		if folder["DeveloperName"] != nil {
+			folderType := folder["Type"].(string)
+			m, ok := folders[folderType]
+			if !ok {
+				m = make(map[string]string)
+				folders[folderType] = m
+			}
+			m[folder["Id"].(string)] = folder["DeveloperName"].(string)
+		}
+	}
+	for foldersType, foldersName := range folders {
+		if foldersType == "Email" {
+			foldersType = "EmailTemplate"
+		}
+		members := getMetadataType(foldersType, foldersName)
+		query = append(query, ForceMetadataQueryElement{Name: foldersType, Members: members})
+	}
+
 	root, err = GetSourceDir()
 	if err != nil {
 		fmt.Printf("Error obtaining root directory\n")
