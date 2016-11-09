@@ -583,39 +583,41 @@ func (f *Force) GetSobject(name string) (sobject ForceSobject, err error) {
 }
 
 func (f *Force) Query(query string, isTooling bool) (result ForceQueryResult, fieldList *list.List, err error) {
-	vurl := ""
-	if isTooling == true {
-		vurl = fmt.Sprintf("%s/services/data/%s/tooling/query?q=%s", f.Credentials.InstanceUrl, apiVersion, url.QueryEscape(query))
-	} else {
-		vurl = fmt.Sprintf("%s/services/data/%s/query?q=%s", f.Credentials.InstanceUrl, apiVersion, url.QueryEscape(query))
+	toolingPath := ""
+	if isTooling {
+		toolingPath = "tooling/"
 	}
-	body, err := f.httpGet(vurl)
-	if err != nil {
-		return
-	}
-	//fmt.Println(string(body))
-	//dec := json.NewDecoder(strings.NewReader(string(body)))
-	//err = dec.Decode(&result)
-	if err != nil {
-		ErrorAndExit(err.Error())
-	}
-	//fieldList = f.DecodeMe(string(body))
-	json.Unmarshal(body, &result)
-	if result.Done == false {
-		var nextResult ForceQueryResult
-		nextResult.NextRecordsUrl = result.NextRecordsUrl
-		for nextResult.Done == false {
-			nextUrl := fmt.Sprintf("%s%s", f.Credentials.InstanceUrl, nextResult.NextRecordsUrl)
-			nextBody, nextErr := f.httpGet(nextUrl)
-			if nextErr != nil {
-				return
-			}
-			nextResult.Records = []ForceRecord{}
-			json.Unmarshal(nextBody, &nextResult)
 
-			result.Records = append(result.Records, nextResult.Records...)
-		}
+	result = ForceQueryResult{
+		Done:           false,
+		NextRecordsUrl: fmt.Sprintf("%s/services/data/%s/%squery?q=%s", f.Credentials.InstanceUrl, apiVersion, toolingPath, url.QueryEscape(query)),
+		TotalSize:      0,
+		Records:        []ForceRecord{},
 	}
+
+	/* The Force API will split queries returning large result sets into
+	 * multiple pieces (generally every 200 records). We need to repeatedly
+	 * query until we've retrieved all of them. */
+	for !result.Done {
+		var body []byte
+		body, err = f.httpGet(result.NextRecordsUrl)
+
+		if err != nil {
+			break
+		}
+
+		var currResult ForceQueryResult
+		json.Unmarshal(body, &currResult)
+
+		/* The result set will indicate whether it's the last one or not... */
+		result.Done = currResult.Done
+		/* ...and if it isn't, where the next result set can be found. */
+		result.NextRecordsUrl = fmt.Sprintf("%s%s", f.Credentials.InstanceUrl, currResult.NextRecordsUrl)
+		result.Records = append(result.Records, currResult.Records...)
+	}
+
+	result.TotalSize = len(result.Records)
+
 	return
 }
 
