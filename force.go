@@ -599,24 +599,16 @@ func (f *Force) Query(query string, isTooling bool) (result ForceQueryResult, fi
 	 * multiple pieces (generally every 200 records). We need to repeatedly
 	 * query until we've retrieved all of them. */
 	for !result.Done {
-		var body []byte
-		body, err = f.httpGet(result.NextRecordsUrl)
+		body, err := f.httpGet(result.NextRecordsUrl)
 
 		if err != nil {
-			break
+			ErrorAndExit(err.Error())
 		}
 
 		var currResult ForceQueryResult
 		json.Unmarshal(body, &currResult)
-
-		/* The result set will indicate whether it's the last one or not... */
-		result.Done = currResult.Done
-		/* ...and if it isn't, where the next result set can be found. */
-		result.NextRecordsUrl = fmt.Sprintf("%s%s", f.Credentials.InstanceUrl, currResult.NextRecordsUrl)
-		result.Records = append(result.Records, currResult.Records...)
+		result.Update(currResult, f)
 	}
-
-	result.TotalSize = len(result.Records)
 
 	return
 }
@@ -1339,6 +1331,13 @@ func (f *Force) httpDelete(url string) (body []byte, err error) {
 		return
 	}
 	return
+}
+
+func (result *ForceQueryResult) Update(other ForceQueryResult, force *Force) {
+	result.Done = other.Done
+	result.Records = append(result.Records, other.Records...)
+	result.TotalSize = len(result.Records)
+	result.NextRecordsUrl = fmt.Sprintf("%s%s", force.Credentials.InstanceUrl, other.NextRecordsUrl)
 }
 
 func doRequest(request *http.Request) (res *http.Response, err error) {
