@@ -1087,7 +1087,7 @@ func (f *Force) RetrieveBulkBatchResults(jobId string, batchId string) (results 
 }
 
 func (f *Force) QueryTraceFlags() (results ForceQueryResult, err error) {
-	url := fmt.Sprintf("%s/services/data/%s/tooling/query/?q=Select+Id,+ApexCode,+ApexProfiling,+Callout,+CreatedDate,+Database,+ExpirationDate,+Scope.Name,+System,+TracedEntity.Name,+Validation,+Visualforce,+Workflow+From+TraceFlag+Order+By+ExpirationDate,TracedEntity.Name,Scope.Name", f.Credentials.InstanceUrl, apiVersion)
+	url := fmt.Sprintf("%s/services/data/%s/tooling/query/?q=Select+Id,+DebugLevel.DeveloperName,++ApexCode,+ApexProfiling,+Callout,+CreatedDate,+Database,+ExpirationDate,+System,+TracedEntity.Name,+Validation,+Visualforce,+Workflow+From+TraceFlag+Order+By+ExpirationDate,TracedEntity.Name", f.Credentials.InstanceUrl, apiVersion)
 	body, err := f.httpGet(url)
 	if err != nil {
 		return
@@ -1096,13 +1096,31 @@ func (f *Force) QueryTraceFlags() (results ForceQueryResult, err error) {
 	return
 }
 
-func (f *Force) StartTrace(userId ...string) (result ForceCreateRecordResult, err error, emessages []ForceError) {
-	url := fmt.Sprintf("%s/services/data/%s/tooling/sobjects/TraceFlag", f.Credentials.InstanceUrl, apiVersion)
+func (f *Force) QueryDefaultDebugLevel() (id string, err error) {
+	url := fmt.Sprintf("%s/services/data/%s/tooling/query/?q=Select+Id+From+DebugLevel+Where+DeveloperName+=+'Force_CLI'", f.Credentials.InstanceUrl, apiVersion)
+	body, err := f.httpGet(url)
+	if err != nil {
+		return
+	}
+	var results ForceQueryResult
+	json.Unmarshal(body, &results)
+	if len(results.Records) == 1 {
+		id = results.Records[0]["Id"].(string)
+	}
+	return
+}
+
+func (f *Force) DefaultDebugLevel() (id string, err error, emessages []ForceError) {
+	id, err = f.QueryDefaultDebugLevel()
+	if err != nil || id != "" {
+		return
+	}
+	url := fmt.Sprintf("%s/services/data/%s/tooling/sobjects/DebugLevel", f.Credentials.InstanceUrl, apiVersion)
 
 	// The log levels are currently hard-coded to a useful level of logging
 	// without hitting the maximum log size of 2MB in most cases, hopefully.
 	attrs := make(map[string]string)
-	attrs["ApexCode"] = "Debug"
+	attrs["ApexCode"] = "Fine"
 	attrs["ApexProfiling"] = "Error"
 	attrs["Callout"] = "Info"
 	attrs["Database"] = "Info"
@@ -1110,13 +1128,37 @@ func (f *Force) StartTrace(userId ...string) (result ForceCreateRecordResult, er
 	attrs["Validation"] = "Warn"
 	attrs["Visualforce"] = "Info"
 	attrs["Workflow"] = "Info"
-	attrs["LogType"] = "DEVELOPER_LOG"
-	attrs["DebugLevelId"], _ = f.GetConsoleLogLevelId()
+	attrs["DeveloperName"] = "Force_CLI"
+	attrs["MasterLabel"] = "Force_CLI"
 
+	body, err, emessages := f.httpPost(url, attrs)
+	if err != nil {
+		return
+	}
+	var result ForceCreateRecordResult
+	json.Unmarshal(body, &result)
+	if result.Success {
+		id = result.Id
+	}
+
+	return
+}
+
+func (f *Force) StartTrace(userId ...string) (result ForceCreateRecordResult, err error, emessages []ForceError) {
+	debugLevel, err, emessages := f.DefaultDebugLevel()
+	if err != nil {
+		return
+	}
+	url := fmt.Sprintf("%s/services/data/%s/tooling/sobjects/TraceFlag", f.Credentials.InstanceUrl, apiVersion)
+
+	attrs := make(map[string]string)
+	attrs["DebugLevelId"] = debugLevel
 	if len(userId) == 1 {
 		attrs["TracedEntityId"] = userId[0]
+		attrs["LogType"] = "USER_DEBUG"
 	} else {
 		attrs["TracedEntityId"] = f.Credentials.UserId
+		attrs["LogType"] = "DEVELOPER_LOG"
 	}
 
 	body, err, emessages := f.httpPost(url, attrs)
