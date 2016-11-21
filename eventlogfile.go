@@ -1,6 +1,8 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+)
 
 var cmdEventLogFile = &Command{
 	Run:   getEventLogFile,

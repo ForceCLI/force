@@ -246,7 +246,7 @@ func getBatchResults(jobId string, batchId string) {
 	force, _ := ActiveForce()
 
 	data, err := force.RetrieveBulkBatchResults(jobId, batchId)
-	fmt.Println(data)
+	fmt.Printf("%v", data)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}

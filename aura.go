@@ -104,7 +104,7 @@ func runAura(cmd *Command, args []string) {
 			ErrorAndExit(err.Error())
 		}
 		for _, bundle := range bundles.Records {
-			fmt.Println(bundle["DeveloperName"])
+			fmt.Printf("%s", bundle["DeveloperName"])
 		}
 	case "push":
 		//		absPath, _ := filepath.Abs(resourcepaths[0])

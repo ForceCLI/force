@@ -40,9 +40,13 @@ func runActive(cmd *Command, args []string) {
 		var creds ForceCredentials
 		json.Unmarshal([]byte(data), &creds)
 		if tojson {
-			fmt.Printf(fmt.Sprintf("{ \"login\": \"%s\", \"instanceUrl\": \"%s\", \"namespace\":\"%s\" }", account, creds.InstanceUrl, creds.Namespace))
+			fmt.Println(
+				fmt.Printf("{ \"login\": \"%s\", \"instanceUrl\": \"%s\", \"namespace\":\"%s\" }",
+					account,
+					creds.InstanceUrl,
+					creds.Namespace))
 		} else {
-			fmt.Println(fmt.Sprintf("%s - %s - ns:%s", account, creds.InstanceUrl, creds.Namespace))
+			fmt.Printf("%s - %s - ns:%s", account, creds.InstanceUrl, creds.Namespace)
 		}
 	} else {
 		//account := args[0]

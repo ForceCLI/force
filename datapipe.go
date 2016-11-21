@@ -166,7 +166,7 @@ func runDataPipelineQuery() {
 		ErrorAndExit(err.Error())
 	}
 
-	fmt.Println("Result: \n", result)
+	fmt.Printf("Result: \n%v\n", result)
 }
 
 func runDataPipelineCreate() {
@@ -213,7 +213,7 @@ func runDataPipelineUpdate() {
 			scriptcontent = record["ScriptContent"].(string)
 		}
 		if _, err := os.Stat(scriptcontent); err == nil {
-			fmt.Printf("file exists; processing...")
+			fmt.Println("file exists; processing...")
 			scriptcontent, err = readScriptFile(scriptcontent)
 			if err != nil {
 				ErrorAndExit(err.Error())

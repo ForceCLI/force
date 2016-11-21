@@ -50,7 +50,7 @@ func (s *Soap) ExecuteLogin(username, password string) (response []byte, err err
 
 	res, err := doRequest(req)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Printf(err.Error())
 		return
 	}
 	defer res.Body.Close()

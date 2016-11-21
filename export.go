@@ -205,5 +205,5 @@ func runExport(cmd *Command, args []string) {
 			ErrorAndExit(err.Error())
 		}
 	}
-	fmt.Printf("Exported to %s\n", root)
+	fmt.Printf(fmt.Sprintf("Exported to %s\n", root))
 }

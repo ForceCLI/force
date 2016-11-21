@@ -758,6 +758,57 @@ if err != nil {
 //		return
 //	}
 
+func (fm *ForceMetadata) GetFLSUpdateXML(objectName string, fieldName string) (result string) {
+	if !strings.HasSuffix(fieldName, "__c") {
+		fieldName = fieldName + "__c"
+	}
+
+	result = fmt.Sprintf(
+		`<?xml version="1.0" encoding="UTF-8"?>
+	<Profile xmlns="http://soap.sforce.com/2006/04/metadata">
+    	<fieldPermissions>
+        	<editable>true</editable>
+        	<field>%s.%s</field>
+        	<readable>true</readable>
+    	</fieldPermissions>
+    	<objectPermissions>
+		    <allowCreate>true</allowCreate>
+    		<allowDelete>true</allowDelete>
+		    <allowEdit>true</allowEdit>
+    		<allowRead>true</allowRead>
+	    	<viewAllRecords>false</viewAllRecords>
+	    	<modifyAllRecords>false</modifyAllRecords>
+    		<object>%s</object>
+		</objectPermissions>
+
+	</Profile>
+	`, objectName, fieldName, objectName)
+	return
+}
+
+func (fm *ForceMetadata) UpdateFLSOnProfile(objectName string, fieldName string) (err error) {
+	res, err := fm.Force.QueryProfile("Id", "Name", "FullName")
+	profileFullName := fmt.Sprintf("%s", res.Records[0]["FullName"])
+
+	/*parts := strings.Split(args[1], ":")
+	if len(parts) != 2 {
+		ErrorAndExit("must specify name:type for fields")
+	}
+
+	field := strings.Replace(parts[0], " ", "_", -1) + "__c"
+	*/
+
+	/*if err := force.Metadata.UpdateFLSOnProfile(args[0], field); err != nil {
+		globalSilencer = "off"
+		ErrorAndExit(err.Error())
+	}*/
+
+	fm.DeployWithTempFile(
+		fm.GetFLSUpdateXML(objectName, fieldName),
+		fmt.Sprintf("%s.profile", profileFullName))
+	return
+}
+
 func (fm *ForceMetadata) CreateConnectedApp(name, callback string) (err error) {
 	soap := `
 		<metadata xsi:type="ConnectedApp">
@@ -823,8 +874,8 @@ func (fm *ForceMetadata) CreateCustomField(object, field, typ string, options ma
 	case "picklist":
 		soapField = "<type>Picklist</type>\n"
 		for key, value := range options {
-			fmt.Println("Options: ", options)
-			fmt.Println(fmt.Sprintf("Key %s", key))
+			//fmt.Println("Options: ", options)
+			//fmt.Printf("Key %s", key)
 			if key == "picklist>picklistValues" {
 				soapField += "<picklist>\n"
 				for _, k := range strings.Split(value, ",") {
@@ -952,10 +1003,10 @@ func (fm *ForceMetadata) CreateCustomField(object, field, typ string, options ma
 		ErrorAndExit("unable to create field type: %s", typ)
 	}
 
-	//fmt.Println(fmt.Sprintf(soap, object, field, label, soapField))
+	//fmt.Printf(soap, object, field, label, soapField)
 	body, err := fm.soapExecute("create", fmt.Sprintf(soap, object, field, label, soapField))
 	if err != nil {
-		return err
+		return
 	}
 	var status struct {
 		Id string `xml:"Body>createResponse>result>id"`
@@ -966,6 +1017,12 @@ func (fm *ForceMetadata) CreateCustomField(object, field, typ string, options ma
 	if err = fm.CheckStatus(status.Id); err != nil {
 		return
 	}
+	stdout := SilenceStdOut()
+	serr := fm.UpdateFLSOnProfile(object, field)
+	if serr != nil {
+		fmt.Println("INFO: Failed to set FLS on new Field (field was created).")
+	}
+	RestoreStdOut(stdout)
 	return
 }
 
@@ -1104,6 +1161,24 @@ func (fm *ForceMetadata) MakeZip(files ForceMetadataFiles) (zipdata []byte, err 
 	zipper.Close()
 	zipdata = zipfile.Bytes()
 	return
+}
+
+func (fm *ForceMetadata) DeployWithTempFile(soap string, filename string) {
+	// Create temp file and store the XML for the MD in the file
+	wd, _ := os.Getwd()
+	mpath := findMetapathForFile(filename)
+
+	tempdir, err := ioutil.TempDir(wd, "md_temp")
+	tempdir = filepath.Join(tempdir, mpath.path)
+
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
+
+	os.MkdirAll(tempdir, 0777)
+	xmlfile := filepath.Join(tempdir, filename)
+	ioutil.WriteFile(xmlfile, []byte(soap), 0777)
+	pushByPaths([]string{xmlfile})
 }
 
 func (fm *ForceMetadata) Deploy(files ForceMetadataFiles, options ForceDeployOptions) (results ForceCheckDeploymentStatusResult, err error) {

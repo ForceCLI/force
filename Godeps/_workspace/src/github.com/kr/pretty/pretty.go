@@ -64,21 +64,21 @@ func Print(a ...interface{}) (n int, errno error) {
 	return fmt.Print(wrap(a, true)...)
 }
 
-// Printf is a convenience wrapper for fmt.Printf.
+// Printf is a convenience wrapper for ConsolePrintf.
 //
 // Calling Printf(f, x, y) is equivalent to
-// fmt.Printf(f, Formatter(x), Formatter(y)).
+// ConsolePrintf(f, Formatter(x), Formatter(y)).
 func Printf(format string, a ...interface{}) (n int, errno error) {
-	return fmt.Printf(format, wrap(a, false)...)
+	return ConsolePrintf(format, wrap(a, false)...)
 }
 
 // Println pretty-prints its operands and writes to standard output.
 //
 // Calling Print(x, y) is equivalent to
-// fmt.Println(Formatter(x), Formatter(y)), but each operand is
+// ConsolePrintln(Formatter(x), Formatter(y)), but each operand is
 // formatted with "%# v".
 func Println(a ...interface{}) (n int, errno error) {
-	return fmt.Println(wrap(a, true)...)
+	return ConsolePrintln(wrap(a, true)...)
 }
 
 // Sprintf is a convenience wrapper for fmt.Sprintf.

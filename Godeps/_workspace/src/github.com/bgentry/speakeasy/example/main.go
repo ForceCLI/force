@@ -10,9 +10,9 @@ import (
 func main() {
 	password, err := speakeasy.Ask("Please enter a password: ")
 	if err != nil {
-		fmt.Println(err)
+		ConsolePrintln(err)
 		os.Exit(1)
 	}
-	fmt.Printf("Password result: %q\n", password)
-	fmt.Printf("Password len: %d\n", len(password))
+	ConsolePrintf("Password result: %q\n", password)
+	ConsolePrintf("Password len: %d\n", len(password))
 }

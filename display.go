@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"os"
 	"sort"
 	"strings"
 )
@@ -34,6 +35,18 @@ func DisplayListMetadataResponse(resp ListMetadataResponse) {
 	for _, result := range resp.Result {
 		fmt.Println(result.FullName + " - " + result.Type)
 	}
+}
+
+func SilenceStdOut() (old *os.File) {
+	old = os.Stdout // keep backup of the real stdout
+	_, w, _ := os.Pipe()
+	os.Stdout = w
+	return
+}
+
+func RestoreStdOut(old *os.File) {
+	os.Stdout = old
+	return
 }
 
 func DisplayListMetadataResponseJson(resp ListMetadataResponse) {
@@ -82,7 +95,7 @@ func DisplayBatchList(batchInfos []BatchInfo) {
 	for i, batchInfo := range batchInfos {
 		fmt.Printf("Batch %d", i)
 		DisplayBatchInfo(batchInfo)
-		fmt.Println()
+		fmt.Println(" ")
 	}
 }
 
@@ -184,7 +197,7 @@ func DisplayForceRecords(result ForceQueryResult) {
 	if len(result.Records) > 0 {
 		fmt.Print(RenderForceRecords(result.Records))
 	}
-	fmt.Println(fmt.Sprintf(" (%d records)", result.TotalSize))
+	fmt.Printf(" (%d records)", result.TotalSize)
 }
 
 func recordColumns(records []ForceRecord) (columns []string) {
@@ -455,7 +468,7 @@ func DisplayInterfaceMap(object map[string]interface{}, indent int) {
 			fmt.Printf("\n")
 			DisplayInterfaceMap(v, indent+1)
 		default:
-			fmt.Printf("%v\n", v)
+			fmt.Printf(fmt.Sprintf("%v\n", v))
 		}
 	}
 }
