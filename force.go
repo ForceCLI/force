@@ -57,6 +57,7 @@ type ForceCredentials struct {
 	RefreshToken  string
 	ForceEndpoint ForceEndpoint
         IsHourly      bool
+        HourlyCheck   bool
 }
 
 type LoginFault struct {
@@ -273,7 +274,7 @@ func ForceSoapLogin(endpoint ForceEndpoint, username string, password string) (c
 	}
 	instanceUrl := u.Scheme + "://" + u.Host
 	identity := u.Scheme + "://" + u.Host + "/id/" + orgid + "/" + result.Id
-	creds = ForceCredentials{AccessToken: result.SessionId, Id: identity, UserId: result.Id, InstanceUrl: instanceUrl, IsCustomEP: endpoint == EndpointCustom, ApiVersion: apiVersionNumber, ForceEndpoint: endpoint, IsHourly: false}
+	creds = ForceCredentials{AccessToken: result.SessionId, Id: identity, UserId: result.Id, InstanceUrl: instanceUrl, IsCustomEP: endpoint == EndpointCustom, ApiVersion: apiVersionNumber, ForceEndpoint: endpoint, IsHourly: false, HourlyCheck: false}
 	LogAuth()
 	return
 }
@@ -1210,7 +1211,8 @@ func (f *Force) RetrieveEventLogFile(elfId string) (result string, err error) {
 	return
 }
 
-func  (force *Force) setHourlyEnabled() () {
+func  (force *Force) setHourlyPerm() () {
+        force.Credentials.HourlyCheck = true
         const EventLogFile string = "EventLogFile"
         const HourlyEnabledField string = "Sequence"
         force.Credentials.IsHourly = false
@@ -1230,6 +1232,9 @@ func  (force *Force) setHourlyEnabled() () {
 }
 
 func (f *Force) QueryEventLogFiles() (results ForceQueryResult, err error) {
+        if(!f.Credentials.HourlyCheck) {
+            f.setHourlyPerm()
+        }
         url := ""
         currApi, e := strconv.ParseFloat(f.Credentials.ApiVersion, 64)
         if e != nil {
