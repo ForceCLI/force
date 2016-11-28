@@ -90,6 +90,7 @@ func runExport(cmd *Command, args []string) {
 		{Name: "ApexTrigger", Members: []string{"*"}},
 		{Name: "ApprovalProcess", Members: []string{"*"}},
 		{Name: "AssignmentRules", Members: []string{"*"}},
+		{Name: "AuraDefinitionBundle", Members: []string{"*"}},
 		{Name: "AuthProvider", Members: []string{"*"}},
 		{Name: "AutoResponseRules", Members: []string{"*"}},
 		{Name: "BusinessHoursSettings", Members: []string{"*"}},
