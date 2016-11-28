@@ -107,6 +107,7 @@ func runExport(cmd *Command, args []string) {
 		{Name: "CustomApplication", Members: []string{"*"}},
 		{Name: "CustomField", Members: []string{"*"}},
 		{Name: "CustomLabels", Members: []string{"*"}},
+		{Name: "CustomMetadata", Members: []string("*")},
 		{Name: "CustomObject", Members: stdObjects},
 		{Name: "CustomObjectTranslation", Members: []string{"*"}},
 		{Name: "CustomPageWebLink", Members: []string{"*"}},
