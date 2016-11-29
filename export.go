@@ -166,7 +166,7 @@ func runExport(cmd *Command, args []string) {
 		{Name: "Workflow", Members: []string{"*"}},
 	}
 
-	folderResult, _, err := force.Query(fmt.Sprintf("%s", "SELECT Id, Type, DeveloperName from Folder"), false)
+	folderResult, _, err := force.Query(fmt.Sprintf("%s", "SELECT Id, Type, DeveloperName from Folder Where Type in ('Dashboard', 'Document', 'Email', 'Report')"), false)
 	folders := make(map[string]map[string]string)
 	for _, folder := range folderResult.Records {
 		if folder["DeveloperName"] != nil {
