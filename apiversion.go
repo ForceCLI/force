@@ -31,7 +31,7 @@ func runApiVersion(cmd *Command, args []string) {
 		apiVersionNumber = args[0]
 		apiVersion = "v" + apiVersionNumber
 		force.Credentials.ApiVersion = apiVersionNumber
-		ForceSaveLogin(force.Credentials)
+		ForceSaveLogin(*force.Credentials)
 	} else if len(args) == 0 {
 		fmt.Println(apiVersion)
 	} else {

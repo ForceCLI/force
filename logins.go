@@ -86,7 +86,7 @@ func ActiveForce() (force *Force, err error) {
 	if err != nil {
 		return
 	}
-	force = NewForce(creds)
+	force = NewForce(&creds)
 	return
 }
 

@@ -39,7 +39,7 @@ const (
 )*/
 
 type Force struct {
-	Credentials ForceCredentials
+	Credentials *ForceCredentials
 	Metadata    *ForceMetadata
 	Partner     *ForcePartner
 }
@@ -56,6 +56,8 @@ type ForceCredentials struct {
 	ApiVersion    string
 	RefreshToken  string
 	ForceEndpoint ForceEndpoint
+	IsHourly      bool
+	HourlyCheck   bool
 }
 
 type LoginFault struct {
@@ -225,7 +227,7 @@ type BundleManifest struct {
 	Files []ComponentFile
 }
 
-func NewForce(creds ForceCredentials) (force *Force) {
+func NewForce(creds *ForceCredentials) (force *Force) {
 	force = new(Force)
 	force.Credentials = creds
 	force.Metadata = NewForceMetadata(force)
@@ -272,9 +274,8 @@ func ForceSoapLogin(endpoint ForceEndpoint, username string, password string) (c
 	}
 	instanceUrl := u.Scheme + "://" + u.Host
 	identity := u.Scheme + "://" + u.Host + "/id/" + orgid + "/" + result.Id
-	creds = ForceCredentials{AccessToken: result.SessionId, Id: identity, UserId: result.Id, InstanceUrl: instanceUrl, IsCustomEP: endpoint == EndpointCustom, ApiVersion: apiVersionNumber, ForceEndpoint: endpoint}
+	creds = ForceCredentials{AccessToken: result.SessionId, Id: identity, UserId: result.Id, InstanceUrl: instanceUrl, IsCustomEP: endpoint == EndpointCustom, ApiVersion: apiVersionNumber, ForceEndpoint: endpoint, IsHourly: false, HourlyCheck: false}
 	LogAuth()
-
 	return
 }
 
@@ -289,7 +290,7 @@ func (f *Force) UpdateCredentials(creds ForceCredentials) {
 	f.Credentials.InstanceUrl = creds.InstanceUrl
 	f.Credentials.Scope = creds.Scope
 	f.Credentials.Id = creds.Id
-	ForceSaveLogin(f.Credentials)
+	ForceSaveLogin(*f.Credentials)
 }
 
 func (f *Force) refreshTokenURL() string {
@@ -1210,8 +1211,40 @@ func (f *Force) RetrieveEventLogFile(elfId string) (result string, err error) {
 	return
 }
 
+func (force *Force) setHourlyPerm() {
+	force.Credentials.HourlyCheck = true
+	const EventLogFile string = "EventLogFile"
+	const HourlyEnabledField string = "Sequence"
+	force.Credentials.IsHourly = false
+	sobject, err := force.GetSobject(EventLogFile)
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
+	fields := ForceSobjectFields(sobject["fields"].([]interface{}))
+	for _, f := range fields {
+		field := f.(map[string]interface{})
+		if field["name"] == HourlyEnabledField {
+			force.Credentials.IsHourly = true
+			break
+		}
+	}
+	return
+}
+
 func (f *Force) QueryEventLogFiles() (results ForceQueryResult, err error) {
-	url := fmt.Sprintf("%s/services/data/%s/query/?q=Select+Id,+LogDate,+EventType,+LogFileLength+FROM+EventLogFile+ORDER+BY+LogDate+DESC,+EventType", f.Credentials.InstanceUrl, apiVersion)
+	if !f.Credentials.HourlyCheck {
+		f.setHourlyPerm()
+	}
+	url := ""
+	currApi, e := strconv.ParseFloat(f.Credentials.ApiVersion, 64)
+	if e != nil {
+		ErrorAndExit(e.Error())
+	}
+	if f.Credentials.IsHourly && currApi >= 37.0 {
+		url = fmt.Sprintf("%s/services/data/%s/query/?q=Select+Id,+LogDate,+EventType,+LogFileLength,+Sequence,+Interval+FROM+EventLogFile+ORDER+BY+LogDate+DESC,+EventType,+Sequence,+Interval", f.Credentials.InstanceUrl, apiVersion)
+	} else {
+		url = fmt.Sprintf("%s/services/data/%s/query/?q=Select+Id,+LogDate,+EventType,+LogFileLength+FROM+EventLogFile+ORDER+BY+LogDate+DESC,+EventType", f.Credentials.InstanceUrl, apiVersion)
+	}
 	body, err := f.httpGet(url)
 	if err != nil {
 		return

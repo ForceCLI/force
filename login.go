@@ -116,7 +116,7 @@ func CurrentEndpoint() (endpoint ForceEndpoint, customUrl string, err error) {
 }
 
 func ForceSaveLogin(creds ForceCredentials) (username string, err error) {
-	force := NewForce(creds)
+	force := NewForce(&creds)
 	login, err := force.Get(creds.Id)
 	if err != nil {
 		return
