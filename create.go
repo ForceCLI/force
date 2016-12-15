@@ -50,7 +50,7 @@ func runCreate(cmd *Command, args []string) {
 		if err != nil {
 			ErrorAndExit(err.Error())
 		} else {
-			fmt.Println("Created new %s at %s", what, "location")
+			fmt.Printf("Created new %s named %s.\n", what, itemName)
 		}
 	}
 }
