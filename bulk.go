@@ -74,24 +74,27 @@ Commands:
   batch    get detailed information about a batch within a job based on job Id and batch Id
   batches  get a list of batches associated with a job based on job Id
 
-Examples:
+Examples using flags - more flexible, flags can be in any order with arguments after all flags.
 
   force bulk -c=insert -[objectType, o]=Account mydata.csv
-
   force bulk -c=update -[objectType, o]=Account mydata.csv
-
   force bulk -c=query -[objectType, o]=Account "SOQL"
-
   force bulk -c=job -[jobId, j]=jobid
-
   force bulk -c=batches -[jobId, j]=jobid
-
   force bulk -c=batch -[jobId, j]=jobid -[batchId, b]=batchid
-
   force bulk -c=retrieve -[jobId, j]=jobid -[batchId, b]=batchid
+  force bulk -c=retrieve -j=jobid -b=batchid > mydata.csv
 
-  force bulk -c retrieve -j jobid -b batchid > mydata.csv
+Examples using positional arguments - less flexible, arguments must be in the correct order.
 
+  force bulk insert Account [csv file]
+  force bulk update Account [csv file]
+  force bulk job [job id]
+  force bulk batches [job id]
+  force Bulk batch [job id] [batch id]
+  force bulk batch retrieve [job id] [batch id]
+  force bulk query Account [SOQL]
+  force bulk query retrieve [job id] [batch id]
 
 `,
 }
@@ -101,7 +104,9 @@ var (
 	objectType string
 	jobId      string
 	batchId    string
+	fileFormat string
 )
+var commandVersion = "old"
 
 func init() {
 	cmdBulk.Flag.StringVar(&command, "command", "", "Sub command for bulk api. Can be insert, update, job, batches, batch, retrieve or query.")
@@ -112,26 +117,29 @@ func init() {
 	cmdBulk.Flag.StringVar(&jobId, "j", "", "A batch job id.")
 	cmdBulk.Flag.StringVar(&batchId, "batchId", "", "A batch id.")
 	cmdBulk.Flag.StringVar(&batchId, "b", "", "A batch id.")
+	cmdBulk.Flag.StringVar(&fileFormat, "format", "CSV", "File format.")
+	cmdBulk.Flag.StringVar(&fileFormat, "f", "CSV", "File format.")
 	cmdBulk.Run = runBulk
 }
 
-func runBulk(cmd *Command, args []string) {
+func runBulk2(cmd *Command, args []string) {
 	if len(command) == 0 {
 		cmd.printUsage()
 		return
 	}
-	switch strings.ToLower(command) {
+	commandVersion = "new"
+	command = strings.ToLower(command)
+	switch command {
 	case "insert", "update", "query":
-		runDBCommand(strings.ToLower(command), args)
+		runDBCommand(args[0])
 	case "job", "retrieve", "batch", "batches":
-		runBulkInfoCommand(strings.ToLower(command))
-		//fmt.Println(string(getBulkQueryResults(args[2], args[3])))
+		runBulkInfoCommand()
 	default:
 		ErrorAndExit("Unknown sub-command: " + command)
 	}
 }
 
-func runBulkInfoCommand(command string) {
+func runBulkInfoCommand() {
 	if len(jobId) == 0 {
 		ErrorAndExit("For the " + command + " command you need to specify a job id.")
 	}
@@ -140,34 +148,98 @@ func runBulkInfoCommand(command string) {
 		showJobDetails(jobId)
 	case "batches":
 		listBatches(jobId)
-	case "batch", "retrieve":
+	case "batch", "retrieve", "status":
 		if len(batchId) == 0 {
 			ErrorAndExit("For the " + command + " command you need to provide a batch id in addition to a job id.")
 		}
-		if command == "batch" {
-			DisplayBatchInfo(getBatchDetails(jobId, batchId))
-		} else /* retrieve */ {
+		if command == "retrieve" {
 			fmt.Println(string(getBulkQueryResults(jobId, batchId)))
+		} else /* batch or status */ {
+			DisplayBatchInfo(getBatchDetails(jobId, batchId))
 		}
+	default:
+		ErrorAndExit("Unknown sub-command " + command + ".")
 	}
 }
-func runDBCommand(subcommand string, args []string) {
+
+func runDBCommand(arg string) {
 	if len(objectType) == 0 {
-		fmt.Println(args)
 		ErrorAndExit("Database commands need to have an sObject specified.")
 	}
-	if len(args) == 0 {
+	if len(arg) == 0 {
 		ErrorAndExit("You need to supply a path to a data file (csv) for insert and update or a SOQL statement for query.")
 	}
 
-	switch subcommand {
+	switch command {
 	case "insert":
-		createBulkInsertJob(args[0], objectType, "CSV")
+		createBulkInsertJob(arg, objectType, fileFormat)
 	case "update":
-		createBulkUpdateJob(args[0], objectType, "CSV")
+		createBulkUpdateJob(arg, objectType, fileFormat)
 	case "query":
-		fmt.Println(args)
-		doBulkQuery(objectType, args[0], "CSV")
+		doBulkQuery(objectType, arg, fileFormat)
+	}
+}
+
+func runBulk(cmd *Command, args []string) {
+	if len(command) > 0 {
+		runBulk2(cmd, args)
+		return
+	}
+	if len(args) == 0 {
+		cmd.printUsage()
+		return
+	}
+
+	command = strings.ToLower(args[0])
+
+	switch command {
+	case "query":
+		handleQuery(args)
+	case "insert", "update":
+		handleDML(args)
+	case "batch", "batches", "job":
+		handleInfo(args)
+	default:
+		ErrorAndExit("Unknown command - " + command + ".")
+	}
+}
+
+func handleInfo(args []string) {
+	if len(args) == 4 && args[1] == "retrieve" {
+		jobId = args[2]
+		batchId = args[3]
+		command = "retrieve"
+	} else if len(args) == 3 && command == "batch" {
+		jobId = args[1]
+		batchId = args[2]
+	} else if len(args) == 2 {
+		jobId = args[1]
+	} else {
+		ErrorAndExit("Problem parsing the command.")
+	}
+	runBulkInfoCommand()
+}
+
+func handleDML(args []string) {
+	objectType = args[1]
+	file := args[2]
+	if len(args) == 4 {
+		fileFormat = args[3]
+	}
+	runDBCommand(file)
+}
+
+func handleQuery(args []string) {
+	if len(args) == 3 {
+		objectType = args[1]
+		runDBCommand(args[2])
+	} else if len(args) == 4 {
+		jobId = args[2]
+		batchId = args[3]
+		command = args[1]
+		runBulkInfoCommand()
+	} else {
+		ErrorAndExit("Bad command, check arguments...")
 	}
 }
 
@@ -181,8 +253,13 @@ func doBulkQuery(objectType string, soql string, contenttype string) {
 		ErrorAndExit(err.Error())
 	}
 	fmt.Println("Query Submitted")
-	fmt.Printf("To retrieve query status use\nforce bulk -c=batch -j=%s -b=%s\n\n", jobInfo.Id, result.Id)
-	fmt.Printf("To retrieve query data use\nforce bulk -c=retrieve -j=%s -b=%s\n\n", jobInfo.Id, result.Id)
+	if commandVersion == "new" {
+		fmt.Printf("To retrieve query status use\nforce bulk -c=batch -j=%s -b=%s\n\n", jobInfo.Id, result.Id)
+		fmt.Printf("To retrieve query data use\nforce bulk -c=retrieve -j=%s -b=%s\n\n", jobInfo.Id, result.Id)
+	} else {
+		fmt.Printf("To retrieve query status use\nforce bulk query status %s %s\n\n", jobInfo.Id, result.Id)
+		fmt.Printf("To retrieve query data use\nforce bulk query retrieve %s %s\n\n", jobInfo.Id, result.Id)
+	}
 	closeBulkJob(jobInfo.Id)
 }
 
@@ -297,7 +374,11 @@ func createBulkInsertJob(csvFilePath string, objectType string, format string) {
 			ErrorAndExit(err.Error())
 		} else {
 			closeBulkJob(jobInfo.Id)
-			fmt.Printf("Job created ( %s ) - for job status use\n force bulk batch %s %s\n", jobInfo.Id, jobInfo.Id, batchInfo.Id)
+			if commandVersion == "old" {
+				fmt.Printf("Job created ( %s ) - for job status use\n force bulk batch %s %s\n", jobInfo.Id, jobInfo.Id, batchInfo.Id)
+			} else {
+				fmt.Printf("Job created ( %s ) - for job status use\n force bulk -c=batch -j=%s -b=%s\n", jobInfo.Id, jobInfo.Id, batchInfo.Id)
+			}
 		}
 	}
 }
@@ -313,7 +394,11 @@ func createBulkUpdateJob(csvFilePath string, objectType string, format string) {
 			ErrorAndExit(err.Error())
 		} else {
 			closeBulkJob(jobInfo.Id)
-			fmt.Printf("Job created ( %s ) - for job status use\n force bulk batch %s %s\n", jobInfo.Id, jobInfo.Id, batchInfo.Id)
+			if commandVersion == "old" {
+				fmt.Printf("Job created ( %s ) - for job status use\n force bulk batch %s %s\n", jobInfo.Id, jobInfo.Id, batchInfo.Id)
+			} else {
+				fmt.Printf("Job created ( %s ) - for job status use\n force bulk -c=batch -j=%s -b=%s\n", jobInfo.Id, jobInfo.Id, batchInfo.Id)
+			}
 		}
 	}
 }
