@@ -15,7 +15,9 @@ Examples:
 
   force log [list]
 
-  force log 07Le000000sKUylEAG
+  force log <id>
+
+  force log delete <id>
 `,
 }
 
@@ -30,6 +32,15 @@ func getLog(cmd *Command, args []string) {
 			ErrorAndExit(err.Error())
 		}
 		DisplayForceRecords(records)
+	} else if args[0] == "delete" {
+		if len(args) != 2 {
+			ErrorAndExit("You need to provide the id of a debug log to delete.")
+		}
+		err := force.DeleteToolingRecord("ApexLog", args[1])
+		if err != nil {
+			ErrorAndExit(err.Error())
+		}
+		fmt.Println("Debug log deleted")
 	} else {
 		logId := args[0]
 		log, err := force.RetrieveLog(logId)
