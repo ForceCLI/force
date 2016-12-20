@@ -250,8 +250,8 @@ func runSecurity(cmd *Command, args []string) {
 
 	if len(args) == 1 {
 		query = ForceMetadataQuery{
-			{Name: "Profile", Members: []string{"*"}},
-			{Name: "CustomObject", Members: args},
+			{Name: []string{"Profile"}, Members: []string{"*"}},
+			{Name: []string{"CustomObject"}, Members: args},
 		}
 	} else {
 		fmt.Printf("Pass an SObject name")

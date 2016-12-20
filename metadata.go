@@ -170,7 +170,7 @@ type ForceMetadataDeployProblem struct {
 }
 
 type ForceMetadataQueryElement struct {
-	Name    string
+	Name    []string
 	Members []string
 }
 
@@ -470,6 +470,10 @@ type MasterDetail struct {
 	RelationshipLabel string `xml:"relationshipLabel"`
 	RelationshipName  string `xml:"relationshipName"`
 }
+
+var (
+	metadataType string
+)
 
 // Example of how to use Go's reflection
 // Print the attributes of a Data Model
@@ -1161,7 +1165,9 @@ func (fm *ForceMetadata) Retrieve(query ForceMetadataQuery) (files ForceMetadata
 		for _, member := range element.Members {
 			members += fmt.Sprintf(soapTypeMembers, member)
 		}
-		types += fmt.Sprintf(soapType, element.Name, members)
+		for _, atype := range element.Name {
+			types += fmt.Sprintf(soapType, atype, members)
+		}
 	}
 	body, err := fm.soapExecute("retrieve", fmt.Sprintf(soap, apiVersionNumber, types))
 	if err != nil {
