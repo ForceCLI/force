@@ -662,6 +662,7 @@ func (fm *ForceMetadata) CheckStatus(id string) (err error) {
 	switch {
 	case !status.Done:
 		fmt.Printf("Not done yet: %s  Will check again in five seconds.\n", status.State)
+		//fmt.Printf("ID: %s State: %s - message: %s\n", id, status.State, status.Message)
 		time.Sleep(5000 * time.Millisecond)
 		return fm.CheckStatus(id)
 	case status.State == "Error":
@@ -1138,6 +1139,73 @@ func (fm *ForceMetadata) DeployZipFile(soap string, zipfile []byte) (results For
 		return
 	}
 	results, err = fm.CheckDeployStatus(status.Id)
+
+	return
+}
+
+func (fm *ForceMetadata) RetrieveByPackageXml(package_xml string) (files ForceMetadataFiles, err error) {
+	// Need to crack open the xml file and pull out the <types> array
+	data, err := ioutil.ReadFile(package_xml)
+
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
+	soap := `
+		<retrieveRequest>
+			<apiVersion>%s</apiVersion>
+			<unpackaged>
+				%s
+			</unpackaged>
+		</retrieveRequest>
+	`
+
+	type types struct {
+		Name    string `xml:"name"`
+		Members []string `xml:"members"`
+	}
+
+	var pxml struct {
+		Results []types `xml:"types"`
+	}
+	
+	xml.Unmarshal(data, &pxml) 
+
+	xml_types := ""
+	for _, p_xml := range pxml.Results {
+		xml, err := xml.MarshalIndent(p_xml, " ", "    ")
+		if err != nil {
+			ErrorAndExit(err.Error())
+		}
+		xml_types += fmt.Sprintf("%s\n", xml)
+	}
+
+	body, err := fm.soapExecute("retrieve", fmt.Sprintf(soap, apiVersionNumber, xml_types))
+	if err != nil {
+		fmt.Printf("Error: %s\n", err.Error())
+		return
+	}
+	var status struct {
+		Id string `xml:"Body>retrieveResponse>result>id"`
+	}
+	if err = xml.Unmarshal(body, &status); err != nil {
+		fmt.Printf("Error: %s\n", err.Error())
+		return
+	}
+
+	if err = fm.CheckStatus(status.Id); err != nil {
+		fmt.Printf("Error: %s\n", err.Error())
+		return
+	}
+	raw_files, err := fm.CheckRetrieveStatus(status.Id)
+	if err != nil {
+		fmt.Printf("Error: %s\n", err.Error())
+		return
+	}
+	files = make(ForceMetadataFiles)
+	for raw_name, data := range raw_files {
+		name := strings.Replace(raw_name, "unpackaged/", "", -1)
+		files[name] = data
+	}
 
 	return
 }
