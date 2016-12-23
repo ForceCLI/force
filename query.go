@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"golang.org/x/crypto/ssh/terminal"
+	"os"
 	"strings"
 )
 
@@ -28,6 +30,9 @@ func runQuery(cmd *Command, args []string) {
 		cmd.printUsage()
 	} else {
 		format := "console"
+		if !terminal.IsTerminal(int(os.Stdout.Fd())) {
+			format = "csv"
+		}
 		var formatArg = ""
 		var isTooling = false
 		var formatIndex = 1
