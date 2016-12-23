@@ -185,9 +185,9 @@ func persistBundles(bundles AuraDefinitionBundleResult, definitions AuraDefiniti
 }
 
 func runFetch(cmd *Command, args []string) {
-	
+
 	force, _ := ActiveForce()
-	
+
 	if len(packageXml) == 0 && len(metadataTypes) == 0 {
 		ErrorAndExit("must specify object type and/or object name or package xml path")
 	}

@@ -1160,15 +1160,15 @@ func (fm *ForceMetadata) RetrieveByPackageXml(package_xml string) (files ForceMe
 	`
 
 	type types struct {
-		Name    string `xml:"name"`
+		Name    string   `xml:"name"`
 		Members []string `xml:"members"`
 	}
 
 	var pxml struct {
 		Results []types `xml:"types"`
 	}
-	
-	xml.Unmarshal(data, &pxml) 
+
+	xml.Unmarshal(data, &pxml)
 
 	xml_types := ""
 	for _, p_xml := range pxml.Results {
