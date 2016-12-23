@@ -16,6 +16,7 @@ install:
 - go get github.com/kr/binarydist
 - go get github.com/kr/pretty
 - go get github.com/kr/text
+- go get golang.org/x/crypto/ssh/terminal
 script:
 - git config --global user.email "you@example.com"
 - git config --global user.name "Your Name"
