@@ -1356,6 +1356,15 @@ func (f *Force) PatchREST(url string, content string) (result string, err error)
 	return
 }
 
+func (f *Force) getForceResult(url string) (results ForceQueryResult, err error) {
+	body, err := f.httpGet(fmt.Sprintf("%s%s", f.Credentials.InstanceUrl, url))
+	if err != nil {
+		return
+	}
+	json.Unmarshal(body, &results)
+	return
+}
+
 func (f *Force) httpGet(url string) (body []byte, err error) {
 	body, err = f.httpGetRequest(url, "Authorization", fmt.Sprintf("Bearer %s", f.Credentials.AccessToken))
 	if err == SessionExpiredError {
