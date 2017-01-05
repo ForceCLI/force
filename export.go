@@ -105,7 +105,6 @@ func runExport(cmd *Command, args []string) {
 		{Name: []string{"ContractSettings"}, Members: []string{"*"}},
 		{Name: []string{"CustomApplication"}, Members: []string{"*"}},
 		{Name: []string{"CustomApplicationComponent"}, Members: []string{"*"}},
-		{Name: []string{"CustomApplication"}, Members: []string{"*"}},
 		{Name: []string{"CustomField"}, Members: []string{"*"}},
 		{Name: []string{"CustomLabels"}, Members: []string{"*"}},
 		{Name: []string{"CustomMetadata"}, Members: []string{"*"}},
