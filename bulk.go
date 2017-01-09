@@ -174,7 +174,7 @@ func runDBCommand(arg string) {
 	if len(arg) == 0 {
 		ErrorAndExit("You need to supply a path to a data file (csv) for insert and update or a SOQL statement for query.")
 	}
-	if command == "upsert" && len(externalId) ==0{
+	if command == "upsert" && len(externalId) == 0 {
 		ErrorAndExit("Upsert commands must have ExternalId specified. -[externalId, e]")
 	}
 
@@ -480,18 +480,18 @@ func createBulkJob(objectType string, operation string, fileFormat string, exter
  		<operation>%s</operation>
  		<object>%s</object>
  		`
- 	if operation == "upsert"{
- 		xml += `<externalIdFieldName>%s</externalIdFieldName>`
- 	}
+	if operation == "upsert" {
+		xml += `<externalIdFieldName>%s</externalIdFieldName>`
+	}
 
- 	xml += `<contentType>%s</contentType>
+	xml += `<contentType>%s</contentType>
 	</jobInfo>
 	`
 
 	data := ""
-	if operation == "upsert"{
- 		data = fmt.Sprintf(xml, operation, objectType, externalId, fileFormat)
- 	}else{
+	if operation == "upsert" {
+		data = fmt.Sprintf(xml, operation, objectType, externalId, fileFormat)
+	} else {
 		data = fmt.Sprintf(xml, operation, objectType, fileFormat)
 	}
 	jobInfo, err = force.CreateBulkJob(data)
