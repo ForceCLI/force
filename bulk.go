@@ -68,6 +68,7 @@ Load csv file use Bulk API
 Commands:
   insert   upload a .csv file to insert records
   update   upload a .csv file to update records
+  upsert   upload a .csv file to upsert records
   query    run a SOQL statement to generate a .csv file on the server
   retrieve retrieve a query generated .csv file from the server
   job      get information about a job based on job Id
@@ -84,6 +85,7 @@ Examples using flags - more flexible, flags can be in any order with arguments a
   force bulk -c=batch -[jobId, j]=jobid -[batchId, b]=batchid
   force bulk -c=retrieve -[jobId, j]=jobid -[batchId, b]=batchid
   force bulk -c=retrieve -j=jobid -b=batchid > mydata.csv
+  force bulk -c=upsert -[objectType, o]=Account -[externalId, e]=ExternalIdField__c mydata.csv
 
 Examples using positional arguments - less flexible, arguments must be in the correct order.
 
@@ -105,6 +107,7 @@ var (
 	jobId      string
 	batchId    string
 	fileFormat string
+	externalId string
 )
 var commandVersion = "old"
 
@@ -119,6 +122,8 @@ func init() {
 	cmdBulk.Flag.StringVar(&batchId, "b", "", "A batch id.")
 	cmdBulk.Flag.StringVar(&fileFormat, "format", "CSV", "File format.")
 	cmdBulk.Flag.StringVar(&fileFormat, "f", "CSV", "File format.")
+	cmdBulk.Flag.StringVar(&externalId, "externalId", "", "The external Id field for upserts of data.")
+	cmdBulk.Flag.StringVar(&externalId, "e", "", "The External Id Field for upserts of data.")
 	cmdBulk.Run = runBulk
 }
 
@@ -130,7 +135,7 @@ func runBulk2(cmd *Command, args []string) {
 	commandVersion = "new"
 	command = strings.ToLower(command)
 	switch command {
-	case "insert", "update", "query":
+	case "insert", "update", "upsert", "query":
 		runDBCommand(args[0])
 	case "job", "retrieve", "batch", "batches":
 		runBulkInfoCommand()
@@ -169,12 +174,17 @@ func runDBCommand(arg string) {
 	if len(arg) == 0 {
 		ErrorAndExit("You need to supply a path to a data file (csv) for insert and update or a SOQL statement for query.")
 	}
+	if command == "upsert" && len(externalId) == 0 {
+		ErrorAndExit("Upsert commands must have ExternalId specified. -[externalId, e]")
+	}
 
 	switch command {
 	case "insert":
 		createBulkInsertJob(arg, objectType, fileFormat)
 	case "update":
 		createBulkUpdateJob(arg, objectType, fileFormat)
+	case "upsert":
+		createBulkUpsertJob(arg, objectType, fileFormat, externalId)
 	case "query":
 		doBulkQuery(objectType, arg, fileFormat)
 	}
@@ -244,7 +254,7 @@ func handleQuery(args []string) {
 }
 
 func doBulkQuery(objectType string, soql string, contenttype string) {
-	jobInfo, err := createBulkJob(objectType, "query", contenttype)
+	jobInfo, err := createBulkJob(objectType, "query", contenttype, "")
 	force, _ := ActiveForce()
 
 	result, err := force.BulkQuery(soql, jobInfo.Id, contenttype)
@@ -364,7 +374,7 @@ func getBatchDetails(jobId string, batchId string) (batchInfo BatchInfo) {
 }
 
 func createBulkInsertJob(csvFilePath string, objectType string, format string) {
-	jobInfo, err := createBulkJob(objectType, "insert", format)
+	jobInfo, err := createBulkJob(objectType, "insert", format, "")
 	if err != nil {
 		ErrorAndExit(err.Error())
 	} else {
@@ -384,7 +394,27 @@ func createBulkInsertJob(csvFilePath string, objectType string, format string) {
 }
 
 func createBulkUpdateJob(csvFilePath string, objectType string, format string) {
-	jobInfo, err := createBulkJob(objectType, "update", format)
+	jobInfo, err := createBulkJob(objectType, "update", format, "")
+	if err != nil {
+		ErrorAndExit(err.Error())
+	} else {
+		batchInfo, err := addBatchToJob(csvFilePath, jobInfo.Id)
+		if err != nil {
+			closeBulkJob(jobInfo.Id)
+			ErrorAndExit(err.Error())
+		} else {
+			closeBulkJob(jobInfo.Id)
+			if commandVersion == "old" {
+				fmt.Printf("Job created ( %s ) - for job status use\n force bulk batch %s %s\n", jobInfo.Id, jobInfo.Id, batchInfo.Id)
+			} else {
+				fmt.Printf("Job created ( %s ) - for job status use\n force bulk -c=batch -j=%s -b=%s\n", jobInfo.Id, jobInfo.Id, batchInfo.Id)
+			}
+		}
+	}
+}
+
+func createBulkUpsertJob(csvFilePath string, objectType string, format string, externalId string) {
+	jobInfo, err := createBulkJob(objectType, "upsert", format, externalId)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	} else {
@@ -442,17 +472,28 @@ func getBatchInfo(jobId string, batchId string) (batchInfo BatchInfo, err error)
 	return
 }
 
-func createBulkJob(objectType string, operation string, fileFormat string) (jobInfo JobInfo, err error) {
+func createBulkJob(objectType string, operation string, fileFormat string, externalId string) (jobInfo JobInfo, err error) {
 	force, _ := ActiveForce()
 
 	xml := `
 	<jobInfo xmlns="http://www.force.com/2009/06/asyncapi/dataload">
  		<operation>%s</operation>
  		<object>%s</object>
- 		<contentType>%s</contentType>
+ 		`
+	if operation == "upsert" {
+		xml += `<externalIdFieldName>%s</externalIdFieldName>`
+	}
+
+	xml += `<contentType>%s</contentType>
 	</jobInfo>
 	`
-	data := fmt.Sprintf(xml, operation, objectType, fileFormat)
+
+	data := ""
+	if operation == "upsert" {
+		data = fmt.Sprintf(xml, operation, objectType, externalId, fileFormat)
+	} else {
+		data = fmt.Sprintf(xml, operation, objectType, fileFormat)
+	}
 	jobInfo, err = force.CreateBulkJob(data)
 	return
 }
