@@ -68,11 +68,14 @@ func ActiveLogin() (account string, err error) {
 
 func ActiveCredentials(requireCredentials bool) (creds ForceCredentials, err error) {
 	account, err := ActiveLogin()
-	if err != nil && requireCredentials {
+	if requireCredentials && (err != nil || strings.TrimSpace(account) == "") {
 		ErrorAndExit("Please login before running this command.")
 	}
-	data, err := Config.Load("accounts", account)
-	json.Unmarshal([]byte(data), &creds)
+	data, err := Config.Load("accounts", strings.TrimSpace(account))
+	if requireCredentials && err != nil {
+		ErrorAndExit("Failed to load credentials. %v", err)
+	}
+	_ = json.Unmarshal([]byte(data), &creds)
 	if creds.ApiVersion != "" {
 		apiVersionNumber = creds.ApiVersion
 		apiVersion = "v" + apiVersionNumber
