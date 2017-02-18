@@ -75,6 +75,28 @@ var _ = Describe("Packagebuilder", func() {
 			})
 		})
 
+		Context("when adding both a metadata file and a meta.xml file", func() {
+			var apexClassPath string
+			var apexClassMetadataPath string
+
+			BeforeEach(func() {
+				os.MkdirAll(tempDir+"/src/classes", 0755)
+				apexClassPath = tempDir + "/src/classes/Test.cls"
+				apexClassContents := "class Test {}"
+				ioutil.WriteFile(apexClassPath, []byte(apexClassContents), 0644)
+				apexClassMetadataPath = tempDir + "/src/classes/Test.cls-meta.xml"
+				apexClassMetadataContents := `<?xml version="1.0" encoding="UTF-8"?>`
+				ioutil.WriteFile(apexClassMetadataPath, []byte(apexClassMetadataContents), 0644)
+			})
+
+			It("should add both files to package", func() {
+				_, err := pb.AddFile(apexClassMetadataPath)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(pb.Files).To(HaveKey("classes/Test.cls"))
+				Expect(pb.Files).To(HaveKey("classes/Test.cls-meta.xml"))
+			})
+		})
+
 		Context("when adding a CustomMetadata file", func() {
 			var customMetadataPath string
 

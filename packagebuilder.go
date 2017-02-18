@@ -123,6 +123,20 @@ func (pb *PackageBuilder) ForceMetadataFiles() ForceMetadataFiles {
 	return pb.Files
 }
 
+// Returns the source file path for a given metadata file path.
+func MetaPathToSourcePath(mpath string) (spath string) {
+	spath = strings.TrimSuffix(mpath, "-meta.xml")
+	if spath == mpath {
+		return
+	}
+
+	_, err := os.Stat(spath)
+	if err != nil {
+		spath = mpath
+	}
+	return
+}
+
 // Add a file to the builder
 func (pb *PackageBuilder) AddFile(fpath string) (fname string, err error) {
 	fpath, err = filepath.Abs(fpath)
@@ -139,6 +153,7 @@ func (pb *PackageBuilder) AddFile(fpath string) (fname string, err error) {
 		return
 	}
 
+	fpath = MetaPathToSourcePath(fpath)
 	metaName, fname := getMetaTypeFromPath(fpath)
 	if !isDestructiveChanges && !strings.HasSuffix(fpath, "-meta.xml") {
 		pb.AddMetaToPackage(metaName, fname)
