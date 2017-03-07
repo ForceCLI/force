@@ -92,4 +92,7 @@ func runTests(cmd *Command, args []string) {
 
 	// Handle notifications
 	notifySuccess("test", success)
+	if !success {
+		ErrorAndExit("Tests Failed")
+	}
 }
