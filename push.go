@@ -224,14 +224,19 @@ func getFirstXmlElement(xmlFile []byte) (firstElement string) {
 // passed in type, then folder is empty.
 func findMetadataTypeFolder(mdtype string, root string) (folder string) {
 	filepath.Walk(root, func(path string, f os.FileInfo, err error) error {
-		//base := filepath.Base(path)
-		//if filepath.Ext(base) == ".object" {
 		firstEl, _ := getMDTypeFromXml(path)
 		if firstEl == mdtype {
-			folder = filepath.Dir(path)
+			// This is sufficient for MD that does not have sub folders (classes, pages, etc)
+			// It is NOT sufficient for aura bundles
+			if mdtype == "AuraDefinitionBundle" {
+				// Need the parent of this folder to get all aura bundles in the directory
+				folder = filepath.Dir(filepath.Dir(path))
+			} else {
+				folder = filepath.Dir(path)
+			}
 			return errors.New("walk canceled")
 		}
-		//}
+
 		return nil
 	})
 	return
@@ -293,30 +298,50 @@ func pushByMetadataType() {
 	// Walk the metaFolder obtained during validation and compile a list of resources
 	// to be added to the package.
 	var files []string
+
+	// Handle aura separately
+	if filepath.Base(metaFolder) == "aura" {
+		cur := ""
+		filepath.Walk(metaFolder, func(path string, f os.FileInfo, err error) error {
+			if f.IsDir() && cur != f.Name() {
+				cur = f.Name()
+				fmt.Printf("Pushing " + f.Name() + "\n")
+			}
+			if f.Name() != "aura" && strings.ToLower(f.Name()) != ".ds_store" && f.IsDir() {
+				absPath, _ := filepath.Abs(path)
+				pushAuraComponentByPath(absPath)
+			}
+			return nil
+		})
+		return
+	}
+
 	filepath.Walk(metaFolder, func(path string, f os.FileInfo, err error) error {
 		// Check to see if this is a folder. This will be the case with static resources
 		// that have been unpacked.  Not entirely sure if this is the only time we will
 		// find a folder inside a metadata type folder.
 		if f.IsDir() {
-			// Check to see if any names where specified in the -name flag
-			if len(metadataName) == 0 {
-				// Take all
-				zipResource(path, "")
-			} else {
-				for _, name := range metadataName {
-					fname := filepath.Base(path)
-					// Check to see if the resource name matches the one of the ones passed on the -name flag
-					if fname == name {
-						zipResource(path, "")
+			if f.Name() != "aura" && filepath.Base(filepath.Dir(path)) != "aura" && filepath.Base(filepath.Dir(filepath.Dir(path))) != "aura" {
+				// Check to see if any names where specified in the -name flag
+				if len(metadataName) == 0 {
+					// Take all
+					zipResource(path, "")
+				} else {
+					for _, name := range metadataName {
+						fname := filepath.Base(path)
+						// Check to see if the resource name matches the one of the ones passed on the -name flag
+						if fname == name {
+							zipResource(path, "")
+						}
 					}
 				}
+				return nil
 			}
-			return nil
 		}
 
 		// These should be file resources, but, could be child folders of unzipped resources in
 		// which case we will have handled them above.
-		if filepath.Dir(path) != metaFolder && !f.IsDir() {
+		if (filepath.Dir(path) != metaFolder && !f.IsDir()) || f.Name() == "aura" {
 			return nil
 		}
 		// Again, if no names where specifed on -name flag, just add the file.
@@ -350,7 +375,7 @@ func zipResource(path string, topLevelFolder string) {
 	zipper := zip.NewWriter(zipfile)
 	startPath := path + "/"
 	filepath.Walk(path, func(path string, f os.FileInfo, err error) error {
-		if filepath.Base(path) != ".DS_Store" {
+		if strings.ToLower(filepath.Base(path)) != ".ds_store" {
 			// Can skip dirs since the dirs will be created when the files are added
 			if !f.IsDir() {
 				file, err := ioutil.ReadFile(path)
