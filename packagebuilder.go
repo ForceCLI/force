@@ -86,6 +86,7 @@ var metapaths = []metapath{
 	metapath{path: "pages", name: "ApexPage"},
 	metapath{path: "pathAssistants", name: "PathAssistant"},
 	metapath{path: "permissionsets", name: "PermissionSet"},
+	metapath{path: "postTemplates", name: "PostTemplate"},
 	metapath{path: "profiles", name: "Profile", extension: ".profile"},
 	metapath{path: "postTemplates", name: "PostTemplate"},
   metapath{path: "postTemplates", name: "PostTemplate"},

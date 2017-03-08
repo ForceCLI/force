@@ -55,7 +55,7 @@ type ForceCredentials struct {
 	Namespace     string
 	ApiVersion    string
 	RefreshToken  string
-	ProfileId 	  string
+	ProfileId     string
 	ForceEndpoint ForceEndpoint
 	IsHourly      bool
 	HourlyCheck   bool

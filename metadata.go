@@ -220,7 +220,7 @@ type AutoNumberFieldRequired struct {
 }
 
 type AutoNumberField struct {
-	Label 				 string `xml:"label"`
+	Label          string `xml:"label"`
 	StartingNumber int    `xml:"startingNumber"`
 	DisplayFormat  string `xml:"displayFormat"`
 	Description    string `xml:"description"`
@@ -234,7 +234,7 @@ type FloatFieldRequired struct {
 }
 
 type FloatField struct {
-	Label 				 string `xml:"label"`
+	Label                string `xml:"label"`
 	Description          string `xml:"description"`
 	HelpText             string `xml:"helpText"`
 	Unique               bool   `xml:"unique"`
@@ -252,7 +252,7 @@ type NumberFieldRequired struct {
 }
 
 type NumberField struct {
-	Label 				 string `xml:"label"`
+	Label                string `xml:"label"`
 	Description          string `xml:"description"`
 	HelpText             string `xml:"helpText"`
 	Unique               bool   `xml:"unique"`
@@ -268,7 +268,7 @@ type DatetimeFieldRequired struct {
 }
 
 type DatetimeField struct {
-	Label 				 string `xml:"label"`
+	Label                string    `xml:"label"`
 	Description          string    `xml:"description"`
 	HelpText             string    `xml:"helpText"`
 	DefaultValue         time.Time `xml:"defaultValue"`
@@ -287,7 +287,7 @@ type PicklistFieldRequired struct {
 }
 
 type PicklistField struct {
-	Label 				 string `xml:"label"`
+	Label    string          `xml:"label"`
 	Picklist []PicklistValue `xml:"picklist>picklistValues"`
 }
 
@@ -296,7 +296,7 @@ type BoolFieldRequired struct {
 }
 
 type BoolField struct {
-	Label 				 string `xml:"label"`
+	Label                string `xml:"label"`
 	Description          string `xml:"description"`
 	HelpText             string `xml:"helpText"`
 	DefaultValue         bool   `xml:"defaultValue"`
@@ -419,7 +419,7 @@ type EmailFieldRequired struct {
 }
 
 type EmailField struct {
-	Label 				 string `xml:"label"`
+	Label string `xml:"label"`
 }
 
 type TextAreaFieldRequired struct {
@@ -468,7 +468,7 @@ type RichTextAreaField struct {
 type LookupFieldRequired struct{}
 
 type LookupField struct {
-	Label 				 string `xml:"label"`
+	Label             string `xml:"label"`
 	ReferenceTo       string `xml:"referenceTo"`
 	RelationshipLabel string `xml:"relationshipLabel"`
 	RelationshipName  string `xml:"relationshipName"`
@@ -477,7 +477,7 @@ type LookupField struct {
 type MasterDetailRequired struct{}
 
 type MasterDetail struct {
-	Label 				 string `xml:"label"`
+	Label             string `xml:"label"`
 	ReferenceTo       string `xml:"referenceTo"`
 	RelationshipLabel string `xml:"relationshipLabel"`
 	RelationshipName  string `xml:"relationshipName"`
