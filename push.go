@@ -494,7 +494,10 @@ func deployPackage() {
 	for _, name := range resourcepaths {
 		zipfile, err := ioutil.ReadFile(name)
 		result, err := force.Metadata.DeployZipFile(force.Metadata.MakeDeploySoap(*DeploymentOptions), zipfile)
-		processDeployResults(result, err)
+		err = processDeployResults(result, err)
+		if err != nil {
+			ErrorAndExit(err.Error())
+		}
 	}
 	return
 }
@@ -503,7 +506,10 @@ func deployFiles(files ForceMetadataFiles) {
 	force, _ := ActiveForce()
 	var DeploymentOptions = deployOpts()
 	result, err := force.Metadata.Deploy(files, *DeploymentOptions)
-	processDeployResults(result, err)
+	err = processDeployResults(result, err)
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
 	return
 }
 
@@ -524,9 +530,9 @@ func deployOpts() *ForceDeployOptions {
 }
 
 // Process and display the result of the push operation
-func processDeployResults(result ForceCheckDeploymentStatusResult, err error) {
-	if err != nil {
-		ErrorAndExit(err.Error())
+func processDeployResults(result ForceCheckDeploymentStatusResult, deployErr error) (err error) {
+	if deployErr != nil {
+		ErrorAndExit(deployErr.Error())
 	}
 
 	problems := result.Details.ComponentFailures
@@ -583,4 +589,10 @@ func processDeployResults(result ForceCheckDeploymentStatusResult, err error) {
 
 	// Handle notifications
 	notifySuccess("push", len(problems) == 0)
+	if len(problems) > 0 {
+		err = errors.New("Some components failed deployment")
+	} else if len(testFailures) > 0 {
+		err = errors.New("Some tests failed")
+	}
+	return
 }

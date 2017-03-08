@@ -232,7 +232,7 @@ func parseCustomObjectXML(objectName string, text string) CustomObject {
 var cmdSecurity = &Command{
 	Run:   runSecurity,
 	Usage: "security [SObject]",
-	Short: "Displays the OLS and FLS for a give SObject",
+	Short: "Displays the OLS and FLS for a given SObject",
 	Long: `
 Displays the OLS and FLS for a given SObject
 
