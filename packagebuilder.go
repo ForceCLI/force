@@ -62,6 +62,7 @@ var metapaths = []metapath{
 	metapath{path: "objectTranslations", name: "CustomObjectTranslation"},
 	metapath{path: "pages", name: "ApexPage"},
 	metapath{path: "permissionsets", name: "PermissionSet"},
+	metapath{path: "postTemplates", name: "PostTemplate"},
 	metapath{path: "profiles", name: "Profile"},
 	metapath{path: "queues", name: "Queue"},
 	metapath{path: "quickActions", name: "QuickAction"},
