@@ -33,6 +33,7 @@ type metapath struct {
 	name       string
 	hasFolder  bool
 	onlyFolder bool
+	extension  string
 }
 
 var metapaths = []metapath{
@@ -63,7 +64,7 @@ var metapaths = []metapath{
 	metapath{path: "objectTranslations", name: "CustomObjectTranslation"},
 	metapath{path: "pages", name: "ApexPage"},
 	metapath{path: "permissionsets", name: "PermissionSet"},
-	metapath{path: "profiles", name: "Profile"},
+	metapath{path: "profiles", name: "Profile", extension: ".profile"},
 	metapath{path: "queues", name: "Queue"},
 	metapath{path: "quickActions", name: "QuickAction"},
 	metapath{path: "remoteSiteSettings", name: "RemoteSiteSetting"},
@@ -259,6 +260,30 @@ func getPathForMeta(metaname string) string {
 
 	// Unknown, so use metaname
 	return metaname
+}
+
+func findMetapathForFile(file string) (path metapath) {
+	parentDir := filepath.Dir(file)
+	parentName := filepath.Base(parentDir)
+	grandparentName := filepath.Base(filepath.Dir(parentDir))
+	fileExtension := filepath.Ext(file)
+
+	for _, mp := range metapaths {
+		if mp.hasFolder && grandparentName == mp.path {
+			return mp
+		}
+		if mp.path == parentName {
+			return mp
+		}
+	}
+
+	// Hmm, maybe we can use the extension to determine the type
+	for _, mp := range metapaths {
+		if mp.extension == fileExtension {
+			return mp
+		}
+	}
+	return
 }
 
 // Gets meta type and name based on a path

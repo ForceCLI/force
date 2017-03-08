@@ -138,6 +138,7 @@ func ForceSaveLogin(creds ForceCredentials) (username string, err error) {
 	}
 	fmt.Printf("Logged in as '%s' (API %s)\n", me["Username"], apiVersion)
 	title := fmt.Sprintf("\033];%s\007", me["Username"])
+	creds.ProfileId = fmt.Sprintf("%s", me["ProfileId"])
 	fmt.Printf(title)
 
 	describe, err := force.Metadata.DescribeMetadata()

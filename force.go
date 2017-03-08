@@ -55,6 +55,7 @@ type ForceCredentials struct {
 	Namespace     string
 	ApiVersion    string
 	RefreshToken  string
+	ProfileId 	  string
 	ForceEndpoint ForceEndpoint
 	IsHourly      bool
 	HourlyCheck   bool
@@ -1084,6 +1085,28 @@ func (f *Force) RetrieveBulkBatchResults(jobId string, batchId string) (results 
 		err = errors.New(fmt.Sprintf("%s: %s", fault.ExceptionCode, fault.ExceptionMessage))
 	}
 	//	sreader = Reader.NewReader(result);
+	return
+}
+
+func (f *Force) SetFLS(profileId string, objectName string, fieldName string) {
+	// First, write out a file to a temporary location with a package.xml
+
+	f.Metadata.UpdateFLSOnProfile(objectName, fieldName)
+}
+
+func (f *Force) QueryProfile(fields ...string) (results ForceQueryResult, err error) {
+
+	url := fmt.Sprintf("%s/services/data/%s/tooling/query?q=Select+%s+From+Profile+Where+Id='%s'",
+		f.Credentials.InstanceUrl,
+		apiVersion,
+		strings.Join(fields, ","),
+		f.Credentials.ProfileId)
+
+	body, err := f.httpGet(url)
+	if err != nil {
+		return
+	}
+	json.Unmarshal(body, &results)
 	return
 }
 
