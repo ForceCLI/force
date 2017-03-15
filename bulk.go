@@ -126,8 +126,8 @@ func init() {
 	cmdBulk.Flag.StringVar(&fileFormat, "f", "CSV", "File format.")
 	cmdBulk.Flag.StringVar(&externalId, "externalId", "", "The external Id field for upserts of data.")
 	cmdBulk.Flag.StringVar(&externalId, "e", "", "The External Id Field for upserts of data.")
-	cmdBulk.Flag.StringVar(&concurrencyMode, "m", "", "Concurrency mode for bulk api inserts, updates and upserts.  Valid options are `Serial` and `Parallel` (default).")
-	cmdBulk.Flag.StringVar(&concurrencyMode, "concurrencyMode", "", "Concurrency mode for bulk api inserts, updates and upserts.  Valid options are `Serial` and `Parallel` (default).")
+	cmdBulk.Flag.StringVar(&concurrencyMode, "m", "Parallel", "Concurrency mode for bulk api inserts, updates and upserts.  Valid options are `Serial` and `Parallel` (default).")
+	cmdBulk.Flag.StringVar(&concurrencyMode, "concurrencyMode", "Parallel", "Concurrency mode for bulk api inserts, updates and upserts.  Valid options are `Serial` and `Parallel` (default).")
 	cmdBulk.Run = runBulk
 }
 
