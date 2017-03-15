@@ -240,9 +240,11 @@ func handleDML(args []string) {
 		externalId = args[1]
 		objectType = args[2]
 		file := args[3]
-		if argLength == 5 || argLength == 6 {
+		if argLength == 5 {
 			setConcurrencyModeOrFileFormat(args[4])
-			setConcurrencyModeOrFileFormat(args[5])
+			if argLength == 6 {
+				setConcurrencyModeOrFileFormat(args[5])
+			}
 		}
 		runDBCommand(file)
 	} else {
