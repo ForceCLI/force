@@ -513,12 +513,14 @@ func createBulkJob(objectType string, operation string, fileFormat string, exter
  		<operation>%s</operation>
  		<object>%s</object>
  		`
-	if operation == "upsert" {
-		xml += `<externalIdFieldName>upsert</externalIdFieldName>`
+	if strings.EqualFold(concurrencyMode, "serial") {
+		xml += `<concurrencyMode>Serial</concurrencyMode>
+		`
 	}
 
-	if strings.EqualFold(concurrencyMode, "serial") {
-		xml += `<concurrencyMode>Serial</concurrencyMode>`
+	if operation == "upsert" {
+		xml += `<externalIdFieldName>%s</externalIdFieldName>
+		`
 	}
 
 	xml += `<contentType>%s</contentType>
@@ -526,7 +528,11 @@ func createBulkJob(objectType string, operation string, fileFormat string, exter
 	`
 
 	data := ""
-	data = fmt.Sprintf(xml, objectType, fileFormat)
+	if operation == "upsert" {
+		data = fmt.Sprintf(xml, operation, objectType, externalId, fileFormat)
+	} else {
+		data = fmt.Sprintf(xml, operation, objectType, fileFormat)
+	}
 	jobInfo, err = force.CreateBulkJob(data)
 	return
 }
