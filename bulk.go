@@ -248,9 +248,11 @@ func handleDML(args []string) {
 	} else {
 		objectType = args[1]
 		file := args[2]
-		if argLength == 4 || argLength == 5 {
+		if argLength == 4 {
 			setConcurrencyModeOrFileFormat(args[3])
-			setConcurrencyModeOrFileFormat(args[4])
+			if argLength == 5 {
+				setConcurrencyModeOrFileFormat(args[4])
+			}
 		}
 		runDBCommand(file)
 	}
