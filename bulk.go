@@ -89,9 +89,9 @@ Examples using flags - more flexible, flags can be in any order with arguments a
 
 Examples using positional arguments - less flexible, arguments must be in the correct order.
 
-  force bulk insert Account [csv file] [concurrency mode (optional)]
-  force bulk update Account [csv file] [concurrency mode (optional)]
-  force bulk upsert ExternalIdField__c Account [csv file] [concurrency mode (optional)]
+  force bulk insert Account [csv file] [<concurrency mode>]
+  force bulk update Account [csv file] [<concurrency mode>]
+  force bulk upsert ExternalIdField__c Account [csv file] [<concurrency mode>]
   force bulk job [job id]
   force bulk batches [job id]
   force Bulk batch [job id] [batch id]
@@ -244,6 +244,7 @@ func handleDML(args []string) {
 			setConcurrencyModeOrFileFormat(args[4])
 			setConcurrencyModeOrFileFormat(args[5])
 		}
+		runDBCommand(file)
 	} else {
 		objectType = args[1]
 		file := args[2]
@@ -251,8 +252,8 @@ func handleDML(args []string) {
 			setConcurrencyModeOrFileFormat(args[3])
 			setConcurrencyModeOrFileFormat(args[4])
 		}
+		runDBCommand(file)
 	}
-	runDBCommand(file)
 }
 
 func handleQuery(args []string) {
@@ -497,8 +498,8 @@ func getBatchInfo(jobId string, batchId string) (batchInfo BatchInfo, err error)
 }
 
 func createBulkJob(objectType string, operation string, fileFormat string, externalId string, concurrencyMode string) (jobInfo JobInfo, err error) {
-	if not strings.EqualFold(concurrencyMode, "serial") {
-		if not strings.EqualFold(concurrencyMode, "parallel") {
+	if !(strings.EqualFold(concurrencyMode, "serial")) {
+		if !(strings.EqualFold(concurrencyMode, "parallel")) {
 			ErrorAndExit("Concurrency Mode must be set to either Serial or Parallel")
 		}
 	}
