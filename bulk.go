@@ -109,7 +109,7 @@ var (
 	batchId         string
 	fileFormat      string
 	externalId      string
-  concurrencyMode string
+	concurrencyMode string
 )
 var commandVersion = "old"
 
@@ -235,23 +235,23 @@ func handleInfo(args []string) {
 }
 
 func handleDML(args []string) {
-  var argLength = len(args)
-  if args[0] == "upsert" {
-    externalId = args[1]
-    objectType = args[2]
-    file := args[3]
-    if argLength == 5 || argLength == 6 {
-      setConcurrencyModeOrFileFormat(args[4])
-      setConcurrencyModeOrFileFormat(args[5])
-    }
-  } else {
-    objectType = args[1]
-    file := args[2]
-    if argLength == 4 || argLength == 5 {
-      setConcurrencyModeOrFileFormat(args[3])
-      setConcurrencyModeOrFileFormat(args[4])
-    }
-  }
+	var argLength = len(args)
+	if args[0] == "upsert" {
+		externalId = args[1]
+		objectType = args[2]
+		file := args[3]
+		if argLength == 5 || argLength == 6 {
+			setConcurrencyModeOrFileFormat(args[4])
+			setConcurrencyModeOrFileFormat(args[5])
+		}
+	} else {
+		objectType = args[1]
+		file := args[2]
+		if argLength == 4 || argLength == 5 {
+			setConcurrencyModeOrFileFormat(args[3])
+			setConcurrencyModeOrFileFormat(args[4])
+		}
+	}
 	runDBCommand(file)
 }
 
@@ -270,11 +270,11 @@ func handleQuery(args []string) {
 }
 
 func setConcurrencyModeOrFileFormat(argument string) {
-  if strings.EqualFold(argument, "parallel") || strings.EqualFold(argument, "serial") {
-    concurrencyMode = argument
-  } else {
-    fileFormat = argument
-  }
+	if strings.EqualFold(argument, "parallel") || strings.EqualFold(argument, "serial") {
+		concurrencyMode = argument
+	} else {
+		fileFormat = argument
+	}
 }
 
 func doBulkQuery(objectType string, soql string, contenttype string, concurrencyMode string) {
@@ -497,6 +497,12 @@ func getBatchInfo(jobId string, batchId string) (batchInfo BatchInfo, err error)
 }
 
 func createBulkJob(objectType string, operation string, fileFormat string, externalId string, concurrencyMode string) (jobInfo JobInfo, err error) {
+	if not strings.EqualFold(concurrencyMode, "serial") {
+		if not strings.EqualFold(concurrencyMode, "parallel") {
+			ErrorAndExit("Concurrency Mode must be set to either Serial or Parallel")
+		}
+	}
+
 	force, _ := ActiveForce()
 
 	xml := `
@@ -508,16 +514,16 @@ func createBulkJob(objectType string, operation string, fileFormat string, exter
 		xml += `<externalIdFieldName>upsert</externalIdFieldName>`
 	}
 
-  if strings.EqualFold(concurrencyMode, "serial") {
-    xml += `<concurrencyMode>Serial</concurrencyMode>`
-  }
+	if strings.EqualFold(concurrencyMode, "serial") {
+		xml += `<concurrencyMode>Serial</concurrencyMode>`
+	}
 
   xml += `<contentType>%s</contentType>
 	</jobInfo>
 	`
 
 	data := ""
-  data = fmt.Sprintf(xml, objectType, fileFormat)
+	data = fmt.Sprintf(xml, objectType, fileFormat)
 	jobInfo, err = force.CreateBulkJob(data)
 	return
 }
