@@ -77,20 +77,21 @@ Commands:
 
 Examples using flags - more flexible, flags can be in any order with arguments after all flags.
 
-  force bulk -c=insert -[objectType, o]=Account mydata.csv
-  force bulk -c=update -[objectType, o]=Account mydata.csv
+  force bulk -c=insert -[concurrencyMode, m]=Serial -[objectType, o]=Account mydata.csv
+  force bulk -c=update -[concurrencyMode, m]=Parallel -[objectType, o]=Account mydata.csv
   force bulk -c=query -[objectType, o]=Account "SOQL"
   force bulk -c=job -[jobId, j]=jobid
   force bulk -c=batches -[jobId, j]=jobid
   force bulk -c=batch -[jobId, j]=jobid -[batchId, b]=batchid
   force bulk -c=retrieve -[jobId, j]=jobid -[batchId, b]=batchid
   force bulk -c=retrieve -j=jobid -b=batchid > mydata.csv
-  force bulk -c=upsert -[objectType, o]=Account -[externalId, e]=ExternalIdField__c mydata.csv
+  force bulk -c=upsert -[concurrencyMode, m]=Serial -[objectType, o]=Account -[externalId, e]=ExternalIdField__c mydata.csv
 
 Examples using positional arguments - less flexible, arguments must be in the correct order.
 
-  force bulk insert Account [csv file]
-  force bulk update Account [csv file]
+  force bulk insert Account [csv file] [concurrency mode (optional)]
+  force bulk update Account [csv file] [concurrency mode (optional)]
+  force bulk upsert ExternalIdField__c Account [csv file] [concurrency mode (optional)]
   force bulk job [job id]
   force bulk batches [job id]
   force Bulk batch [job id] [batch id]
@@ -102,12 +103,13 @@ Examples using positional arguments - less flexible, arguments must be in the co
 }
 
 var (
-	command    string
-	objectType string
-	jobId      string
-	batchId    string
-	fileFormat string
-	externalId string
+	command         string
+	objectType      string
+	jobId           string
+	batchId         string
+	fileFormat      string
+	externalId      string
+  concurrencyMode string
 )
 var commandVersion = "old"
 
@@ -124,6 +126,8 @@ func init() {
 	cmdBulk.Flag.StringVar(&fileFormat, "f", "CSV", "File format.")
 	cmdBulk.Flag.StringVar(&externalId, "externalId", "", "The external Id field for upserts of data.")
 	cmdBulk.Flag.StringVar(&externalId, "e", "", "The External Id Field for upserts of data.")
+  cmdBulk.Flag.StringVar(&concurrencyMode, "m", "", "Concurrency mode for bulk api inserts, updates and upserts.  Valid options are `Serial` and `Parallel` (default).")
+  cmdBulk.Flag.StringVar(&concurrencyMode, "concurrencyMode", "", "Concurrency mode for bulk api inserts, updates and upserts.  Valid options are `Serial` and `Parallel` (default).")
 	cmdBulk.Run = runBulk
 }
 
@@ -180,13 +184,13 @@ func runDBCommand(arg string) {
 
 	switch command {
 	case "insert":
-		createBulkInsertJob(arg, objectType, fileFormat)
+		createBulkInsertJob(arg, objectType, fileFormat, concurrencyMode)
 	case "update":
-		createBulkUpdateJob(arg, objectType, fileFormat)
+		createBulkUpdateJob(arg, objectType, fileFormat, concurrencyMode)
 	case "upsert":
-		createBulkUpsertJob(arg, objectType, fileFormat, externalId)
+		createBulkUpsertJob(arg, objectType, fileFormat, externalId, concurrencyMode)
 	case "query":
-		doBulkQuery(objectType, arg, fileFormat)
+		doBulkQuery(objectType, arg, fileFormat, concurrencyMode)
 	}
 }
 
@@ -231,11 +235,23 @@ func handleInfo(args []string) {
 }
 
 func handleDML(args []string) {
-	objectType = args[1]
-	file := args[2]
-	if len(args) == 4 {
-		fileFormat = args[3]
-	}
+  var argLength = len(args)
+  if args[0] == "upsert" {
+    externalId = args[1]
+    objectType = args[2]
+    file := args[3]
+    if argLength == 5 || argLength == 6 {
+      setConcurrencyModeOrFileFormat(args[4])
+      setConcurrencyModeOrFileFormat(args[5])
+    }
+  } else {
+    objectType = args[1]
+    file := args[2]
+    if argLength == 4 || argLength == 5 {
+      setConcurrencyModeOrFileFormat(args[3])
+      setConcurrencyModeOrFileFormat(args[4])
+    }
+  }
 	runDBCommand(file)
 }
 
@@ -253,8 +269,16 @@ func handleQuery(args []string) {
 	}
 }
 
-func doBulkQuery(objectType string, soql string, contenttype string) {
-	jobInfo, err := createBulkJob(objectType, "query", contenttype, "")
+func setConcurrencyModeOrFileFormat(argument string) {
+  if strings.EqualFold(argument, "parallel") || strings.EqualFold(argument, "serial") {
+    concurrencyMode = argument
+  } else {
+    fileFormat = argument
+  }
+}
+
+func doBulkQuery(objectType string, soql string, contenttype string, concurrencyMode string) {
+	jobInfo, err := createBulkJob(objectType, "query", contenttype, "", concurrencyMode)
 	force, _ := ActiveForce()
 
 	result, err := force.BulkQuery(soql, jobInfo.Id, contenttype)
@@ -373,8 +397,8 @@ func getBatchDetails(jobId string, batchId string) (batchInfo BatchInfo) {
 	return
 }
 
-func createBulkInsertJob(csvFilePath string, objectType string, format string) {
-	jobInfo, err := createBulkJob(objectType, "insert", format, "")
+func createBulkInsertJob(csvFilePath string, objectType string, format string, concurrencyMode string) {
+	jobInfo, err := createBulkJob(objectType, "insert", format, "", concurrencyMode)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	} else {
@@ -393,8 +417,8 @@ func createBulkInsertJob(csvFilePath string, objectType string, format string) {
 	}
 }
 
-func createBulkUpdateJob(csvFilePath string, objectType string, format string) {
-	jobInfo, err := createBulkJob(objectType, "update", format, "")
+func createBulkUpdateJob(csvFilePath string, objectType string, format string, concurrencyMode string) {
+	jobInfo, err := createBulkJob(objectType, "update", format, "", concurrencyMode)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	} else {
@@ -413,8 +437,8 @@ func createBulkUpdateJob(csvFilePath string, objectType string, format string) {
 	}
 }
 
-func createBulkUpsertJob(csvFilePath string, objectType string, format string, externalId string) {
-	jobInfo, err := createBulkJob(objectType, "upsert", format, externalId)
+func createBulkUpsertJob(csvFilePath string, objectType string, format string, externalId string, concurrencyMode string) {
+	jobInfo, err := createBulkJob(objectType, "upsert", format, externalId, concurrencyMode)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	} else {
@@ -472,7 +496,7 @@ func getBatchInfo(jobId string, batchId string) (batchInfo BatchInfo, err error)
 	return
 }
 
-func createBulkJob(objectType string, operation string, fileFormat string, externalId string) (jobInfo JobInfo, err error) {
+func createBulkJob(objectType string, operation string, fileFormat string, externalId string, concurrencyMode string) (jobInfo JobInfo, err error) {
 	force, _ := ActiveForce()
 
 	xml := `
@@ -481,19 +505,19 @@ func createBulkJob(objectType string, operation string, fileFormat string, exter
  		<object>%s</object>
  		`
 	if operation == "upsert" {
-		xml += `<externalIdFieldName>%s</externalIdFieldName>`
+		xml += `<externalIdFieldName>upsert</externalIdFieldName>`
 	}
 
-	xml += `<contentType>%s</contentType>
+  if strings.EqualFold(concurrencyMode, "serial") {
+    xml += `<concurrencyMode>Serial</concurrencyMode>`
+  }
+
+  xml += `<contentType>%s</contentType>
 	</jobInfo>
 	`
 
 	data := ""
-	if operation == "upsert" {
-		data = fmt.Sprintf(xml, operation, objectType, externalId, fileFormat)
-	} else {
-		data = fmt.Sprintf(xml, operation, objectType, fileFormat)
-	}
+  data = fmt.Sprintf(xml, objectType, fileFormat)
 	jobInfo, err = force.CreateBulkJob(data)
 	return
 }
