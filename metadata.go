@@ -343,7 +343,7 @@ type MDFileProperties struct {
 	Id                 string    `xml:"id"`
 	LastModifiedById   string    `xml:"lastModifiedById"`
 	LastModifiedByName string    `xml:"lastModifiedByName"`
-	LastModifedByDate  time.Time `xml:"lastModifiedByDate"`
+	LastModifedDate    time.Time `xml:"lastModifiedDate"`
 	ManageableState    string    `xml:"manageableState"`
 	NamespacePrefix    string    `xml:"namespacePrefix"`
 	Type               string    `xml:"type"`
