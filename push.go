@@ -155,7 +155,7 @@ func wildCardSearch(metaFolder string, name string) []string {
 		ErrorAndExit(err.Error())
 	}
 
-	var ret []string
+  var ret []string
 	for _, s := range files {
 		ss := s.Name()
 		ss = strings.Split(ss, ".")[0]

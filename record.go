@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 )
 
 var cmdRecord = &Command{
@@ -19,7 +20,7 @@ Usage:
 
   force record create <object> [<fields>]
 
-  force record create:bulk <object> <file> [<format>]
+  force record create:bulk <object> <file> [<format>] [<concurrency mode>]
 
   force record update <object> <id> [<fields>]
 
@@ -54,9 +55,19 @@ func runRecord(cmd *Command, args []string) {
 			runRecordCreate(args[1:])
 		case "create:bulk":
 			if len(args) == 3 {
-				createBulkInsertJob(args[2], args[1], "CSV")
+				createBulkInsertJob(args[2], args[1], "CSV", "Parallel")
 			} else if len(args) == 4 {
-				createBulkInsertJob(args[2], args[1], args[3])
+				if strings.EqualFold(args[3], "parallel") || strings.EqualFold(args[3], "serial") {
+					createBulkInsertJob(args[2], args[1], "CSV", args[3])
+				} else {
+					createBulkInsertJob(args[2], args[1], args[3], "Parallel")
+				}
+			} else if len(args) == 5 {
+				if strings.EqualFold(args[3], "parallel") || strings.EqualFold(args[3], "serial") {
+					createBulkInsertJob(args[2], args[1], args[4], args[3])
+				} else if strings.EqualFold(args[4], "parallel") || strings.EqualFold(args[4], "serial") {
+					createBulkInsertJob(args[2], args[1], args[3], args[4])
+				}
 			}
 		case "update":
 			runRecordUpdate(args[1:])
