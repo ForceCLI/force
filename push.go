@@ -18,7 +18,7 @@ var cmdPush = &Command{
 	Usage: "push -t <metadata type> -n <metadata name> -f <pathtometadata> [deployment options]",
 	Short: "Deploy artifact from a local directory",
 	Long: `
-Deploy artifact from a local directory
+Deploy artifact from a local directory 
 <metadata>: Accepts either actual directory name or Metadata type
 
 Examples:
@@ -155,7 +155,7 @@ func wildCardSearch(metaFolder string, name string) []string {
 		ErrorAndExit(err.Error())
 	}
 
-  var ret []string
+	var ret []string
 	for _, s := range files {
 		ss := s.Name()
 		ss = strings.Split(ss, ".")[0]
