@@ -151,24 +151,20 @@ func validatePushByMetadataTypeCommand() {
 }
 
 func wildCardSearch(metaFolder string, name string) []string {
-	cmd := exec.Command("ls", metaFolder)
-	var out bytes.Buffer
-	cmd.Stdout = &out
-	err := cmd.Run()
+	files, err := ioutil.ReadDir(metaFolder)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
-	f := strings.Split(out.String(), "\n")
+ 
 	var ret []string
-	for _, s := range f {
-		ss := filepath.Base(s)
+	for _, s := range files {
+		ss := s.Name()
 		ss = strings.Split(ss, ".")[0]
 		if ss == name {
-			ret = append(ret, s)
+			ret = append(ret, ss)
 		}
 	}
 	return ret
-	//return contains(f, name)
 }
 
 func contains(s []string, e string) bool {
