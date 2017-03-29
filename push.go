@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -19,7 +18,7 @@ var cmdPush = &Command{
 	Usage: "push -t <metadata type> -n <metadata name> -f <pathtometadata> [deployment options]",
 	Short: "Deploy artifact from a local directory",
 	Long: `
-Deploy artifact from a local directory
+Deploy artifact from a local directory 
 <metadata>: Accepts either actual directory name or Metadata type
 
 Examples:
@@ -155,7 +154,7 @@ func wildCardSearch(metaFolder string, name string) []string {
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
- 
+
 	var ret []string
 	for _, s := range files {
 		ss := s.Name()
