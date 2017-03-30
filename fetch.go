@@ -17,11 +17,12 @@ var cmdFetch = &Command{
 	Usage: "fetch -t ApexClass",
 	Short: "Export specified artifact(s) to a local directory",
 	Long: `
-  -t, -type       # type of metadata to retrieve
+  -t, -type       # type of metadata to retrieve (multiple ok if -n not used)
   -n, -name       # name of specific metadata to retrieve (must be used with -type)
   -d, -directory  # override the default target directory
   -u, -unpack     # unpack any zipped static resources (ignored if type is not StaticResource)
   -p, -preserve   # preserve the zip file
+  -x, -xml        # provide a package.xml file to fetch data specified within
 
 Export specified artifact(s) to a local directory. Use "package" type to retrieve an unmanaged package.
 
@@ -29,7 +30,8 @@ Examples
 
   force fetch -t=CustomObject n=Book__c n=Author__c
   force fetch -t Aura -n MyComponent -d /Users/me/Documents/Project/home
-
+  force fetch -t AuraDefinitionBundle -t ApexClass
+  force fetch -x myproj/metadata/package.xml
 `,
 }
 
@@ -49,26 +51,29 @@ func (i *metaName) Set(value string) error {
 }
 
 var (
-	metadataType    string
+	metadataTypes   metaName
 	targetDirectory string
 	unpack          bool
 	metadataName    metaName
 	makefile        bool
 	preserveZip     bool
 	mdbase          string
+	packageXml      string
 )
 
 func init() {
 	cmdFetch.Flag.Var(&metadataName, "name", "names of metadata")
 	cmdFetch.Flag.Var(&metadataName, "n", "names of metadata")
-	cmdFetch.Flag.StringVar(&metadataType, "t", "", "Type of metadata to fetch")
-	cmdFetch.Flag.StringVar(&metadataType, "type", "", "Type of metadata to fetch")
+	cmdFetch.Flag.Var(&metadataTypes, "t", "Type of metadata to fetch")
+	cmdFetch.Flag.Var(&metadataTypes, "type", "Type of metadata to fetch")
 	cmdFetch.Flag.StringVar(&targetDirectory, "d", "", "Use to specify the root directory of your project")
 	cmdFetch.Flag.StringVar(&targetDirectory, "directory", "", "Use to specify the root directory of your project")
 	cmdFetch.Flag.BoolVar(&unpack, "u", false, "Unpack any static resources")
 	cmdFetch.Flag.BoolVar(&unpack, "unpack", false, "Unpack any static resources")
 	cmdFetch.Flag.BoolVar(&preserveZip, "p", false, "keep zip file on disk")
 	cmdFetch.Flag.BoolVar(&preserveZip, "preserve", false, "keep zip file on disk")
+	cmdFetch.Flag.StringVar(&packageXml, "x", "", "Package.xml file to use for fetch.")
+	cmdFetch.Flag.StringVar(&packageXml, "xml", "", "Package.xml file to use for fetch.")
 	cmdFetch.Run = runFetch
 	makefile = true
 }
@@ -129,14 +134,7 @@ func persistBundles(bundles AuraDefinitionBundleResult, definitions AuraDefiniti
 
 	var defRecords = definitions.Records
 	root, err := GetSourceDir()
-	if mdbase == "aura" {
-		root = filepath.Join(targetDirectory, root, "aura")
-	} else {
-		root = filepath.Join(targetDirectory, root, mdbase, "aura")
-	}
-	if err := os.MkdirAll(root, 0755); err != nil {
-		ErrorAndExit(err.Error())
-	}
+	root = filepath.Join(root, "aura")
 
 	for key, value := range bundleMap {
 		if err := os.MkdirAll(filepath.Join(root, value), 0755); err != nil {
@@ -187,16 +185,21 @@ func persistBundles(bundles AuraDefinitionBundleResult, definitions AuraDefiniti
 }
 
 func runFetch(cmd *Command, args []string) {
-	if metadataType == "" {
-		ErrorAndExit("must specify object type and/or object name")
-	}
 
 	force, _ := ActiveForce()
+
+	if len(packageXml) == 0 && len(metadataTypes) == 0 {
+		ErrorAndExit("must specify object type and/or object name or package xml path")
+	}
+	if len(metadataTypes) > 1 && len(metadataName) > 1 {
+		ErrorAndExit("You cannot specify entity names if you specify more than one metadata type.")
+	}
+
 	var files ForceMetadataFiles
 	var err error
 	var expandResources bool = unpack
 
-	if strings.ToLower(metadataType) == "aura" {
+	if len(metadataTypes) == 1 && strings.ToLower(metadataTypes[0]) == "aura" {
 		if len(metadataName) > 0 {
 			for names := range metadataName {
 				runFetchAura2(cmd, metadataName[names])
@@ -204,7 +207,7 @@ func runFetch(cmd *Command, args []string) {
 		} else {
 			runFetchAura2(cmd, "")
 		}
-	} else if strings.ToLower(metadataType) == "package" {
+	} else if len(metadataTypes) == 1 && strings.ToLower(metadataTypes[0]) == "package" {
 		if len(metadataName) > 0 {
 			for names := range metadataName {
 				files, err = force.Metadata.RetrievePackage(metadataName[names])
@@ -217,17 +220,21 @@ func runFetch(cmd *Command, args []string) {
 			}
 		}
 	} else {
-		query := ForceMetadataQuery{}
-		if len(metadataName) > 0 {
-			mq := ForceMetadataQueryElement{metadataType, metadataName}
-			query = append(query, mq)
+		if len(packageXml) > 0 {
+			files, err = force.Metadata.RetrieveByPackageXml(packageXml)
 		} else {
-			mq := ForceMetadataQueryElement{metadataType, []string{"*"}}
-			query = append(query, mq)
-		}
-		files, err = force.Metadata.Retrieve(query)
-		if err != nil {
-			ErrorAndExit(err.Error())
+			query := ForceMetadataQuery{}
+			if len(metadataName) > 0 {
+				mq := ForceMetadataQueryElement{metadataTypes, metadataName}
+				query = append(query, mq)
+			} else {
+				mq := ForceMetadataQueryElement{metadataTypes, []string{"*"}}
+				query = append(query, mq)
+			}
+			files, err = force.Metadata.Retrieve(query)
+			if err != nil {
+				ErrorAndExit(err.Error())
+			}
 		}
 	}
 
@@ -242,7 +249,7 @@ func runFetch(cmd *Command, args []string) {
 	existingPackage, _ := pathExists(filepath.Join(root, "package.xml"))
 
 	if len(files) == 1 {
-		ErrorAndExit("Could not find any objects for " + metadataType + ". (Is the metadata type correct?)")
+		ErrorAndExit("Could not find any objects for " + strings.Join(metadataTypes, ", ") + ". (Is the metadata type correct?)")
 	}
 	for name, data := range files {
 		if !existingPackage || name != "package.xml" {
@@ -255,10 +262,12 @@ func runFetch(cmd *Command, args []string) {
 				ErrorAndExit(err.Error())
 			}
 			var isResource = false
-			if strings.ToLower(metadataType) == "staticresource" {
-				isResource = true
-			} else if strings.HasSuffix(file, ".resource-meta.xml") {
-				isResource = true
+			if len(packageXml) == 0 {
+				if strings.ToLower(metadataTypes[0]) == "staticresource" {
+					isResource = true
+				} else if strings.HasSuffix(file, ".resource-meta.xml") {
+					isResource = true
+				}
 			}
 			//Handle expanding static resources into a "bundle" folder
 			if isResource && expandResources {

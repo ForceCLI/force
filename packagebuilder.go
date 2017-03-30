@@ -33,36 +33,61 @@ type metapath struct {
 	name       string
 	hasFolder  bool
 	onlyFolder bool
+	extension  string
 }
 
 var metapaths = []metapath{
+	metapath{path: "actionLinkGroupTemplates", name: "ActionLinkGroupTemplate"},
+	metapath{path: "analyticSnapshots", name: "AnalyticSnapshot"},
 	metapath{path: "applications", name: "CustomApplication"},
+	metapath{path: "appMenus", name: "AppMenu"},
+	metapath{path: "approvalProcesses", name: "ApprovalProcess"},
 	metapath{path: "assignmentRules", name: "AssignmentRules"},
+	metapath{path: "authproviders", name: "AuthProvider"},
 	metapath{path: "aura", name: "AuraDefinitionBundle", hasFolder: true, onlyFolder: true},
 	metapath{path: "autoResponseRules", name: "AutoResponseRules"},
+	metapath{path: "callCenters", name: "CallCenter"},
+	metapath{path: "cachePartitions", name: "PlatformCachePartition"},
+	metapath{path: "certs", name: "Certificate"},
+	metapath{path: "channelLayouts", name: "ChannelLayout"},
 	metapath{path: "classes", name: "ApexClass"},
 	metapath{path: "communities", name: "Community"},
 	metapath{path: "components", name: "ApexComponent"},
 	metapath{path: "connectedApps", name: "ConnectedApp"},
+	metapath{path: "corsWhitelistOrigins", name: "CorsWhitelistOrigin"},
+	metapath{path: "customApplicationComponents", name: "CustomApplicationComponent"},
 	metapath{path: "customMetadata", name: "CustomMetadata"},
 	metapath{path: "customPermissions", name: "CustomPermission"},
 	metapath{path: "dashboards", name: "Dashboard", hasFolder: true},
+	metapath{path: "dataSources", name: "ExternalDataSource"},
+	metapath{path: "datacategorygroups", name: "DataCategoryGroup"},
+	metapath{path: "delegateGroups", name: "DelegateGroup"},
 	metapath{path: "documents", name: "Document", hasFolder: true},
+	metapath{path: "EmbeddedServiceConfig", name: "EmbeddedServiceConfig"},
 	metapath{path: "email", name: "EmailTemplate", hasFolder: true},
+	metapath{path: "escalationRules", name: "EscalationRules"},
+	metapath{path: "feedFilters", name: "CustomFeedFilter"},
 	metapath{path: "flexipages", name: "FlexiPage"},
 	metapath{path: "flowDefinitions", name: "FlowDefinition"},
 	metapath{path: "flows", name: "Flow"},
 	metapath{path: "globalPicklists", name: "GlobalPicklist"},
 	metapath{path: "groups", name: "Group"},
+	metapath{path: "homePageComponents", name: "HomePageComponent"},
 	metapath{path: "homePageLayouts", name: "HomePageLayout"},
 	metapath{path: "installedPackages", name: "InstalledPackage"},
 	metapath{path: "labels", name: "CustomLabels"},
 	metapath{path: "layouts", name: "Layout"},
+	metapath{path: "LeadConvertSettings", name: "LeadConvertSettings"},
+	metapath{path: "letterhead", name: "Letterhead"},
+	metapath{path: "matchingRules", name: "MatchingRules"},
+	metapath{path: "namedCredentials", name: "NamedCredential"},
 	metapath{path: "objects", name: "CustomObject"},
 	metapath{path: "objectTranslations", name: "CustomObjectTranslation"},
 	metapath{path: "pages", name: "ApexPage"},
+	metapath{path: "pathAssistants", name: "PathAssistant"},
 	metapath{path: "permissionsets", name: "PermissionSet"},
 	metapath{path: "postTemplates", name: "PostTemplate"},
+	metapath{path: "profiles", name: "Profile", extension: ".profile"},
 	metapath{path: "profiles", name: "Profile"},
 	metapath{path: "queues", name: "Queue"},
 	metapath{path: "quickActions", name: "QuickAction"},
@@ -73,9 +98,13 @@ var metapaths = []metapath{
 	metapath{path: "scontrols", name: "Scontrol"},
 	metapath{path: "settings", name: "Settings"},
 	metapath{path: "sharingRules", name: "SharingRules"},
+	metapath{path: "siteDotComSites", name: "SiteDotCom"},
+	metapath{path: "sites", name: "CustomSite"},
 	metapath{path: "staticresources", name: "StaticResource"},
+	metapath{path: "synonymDictionaries", name: "SynonymDictionary"},
 	metapath{path: "tabs", name: "CustomTab"},
 	metapath{path: "triggers", name: "ApexTrigger"},
+	metapath{path: "weblinks", name: "CustomPageWebLink"},
 	metapath{path: "workflows", name: "Workflow"},
 }
 
@@ -123,6 +152,20 @@ func (pb *PackageBuilder) ForceMetadataFiles() ForceMetadataFiles {
 	return pb.Files
 }
 
+// Returns the source file path for a given metadata file path.
+func MetaPathToSourcePath(mpath string) (spath string) {
+	spath = strings.TrimSuffix(mpath, "-meta.xml")
+	if spath == mpath {
+		return
+	}
+
+	_, err := os.Stat(spath)
+	if err != nil {
+		spath = mpath
+	}
+	return
+}
+
 // Add a file to the builder
 func (pb *PackageBuilder) AddFile(fpath string) (fname string, err error) {
 	fpath, err = filepath.Abs(fpath)
@@ -139,6 +182,7 @@ func (pb *PackageBuilder) AddFile(fpath string) (fname string, err error) {
 		return
 	}
 
+	fpath = MetaPathToSourcePath(fpath)
 	metaName, fname := getMetaTypeFromPath(fpath)
 	if !isDestructiveChanges && !strings.HasSuffix(fpath, "-meta.xml") {
 		pb.AddMetaToPackage(metaName, fname)
@@ -259,6 +303,30 @@ func getPathForMeta(metaname string) string {
 
 	// Unknown, so use metaname
 	return metaname
+}
+
+func findMetapathForFile(file string) (path metapath) {
+	parentDir := filepath.Dir(file)
+	parentName := filepath.Base(parentDir)
+	grandparentName := filepath.Base(filepath.Dir(parentDir))
+	fileExtension := filepath.Ext(file)
+
+	for _, mp := range metapaths {
+		if mp.hasFolder && grandparentName == mp.path {
+			return mp
+		}
+		if mp.path == parentName {
+			return mp
+		}
+	}
+
+	// Hmm, maybe we can use the extension to determine the type
+	for _, mp := range metapaths {
+		if mp.extension == fileExtension {
+			return mp
+		}
+	}
+	return
 }
 
 // Gets meta type and name based on a path

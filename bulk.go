@@ -59,84 +59,231 @@ import (
 )
 
 var cmdBulk = &Command{
-	Run:   runBulk,
-	Usage: "bulk insert Account [csv file]",
+	//	Run:   runBulk,
+	Usage: "bulk -[command, c]=[insert, update, ...] -flags args",
 	Short: "Load csv file use Bulk API",
 	Long: `
 Load csv file use Bulk API
 
-Examples:
+Commands:
+  insert   upload a .csv file to insert records
+  update   upload a .csv file to update records
+  upsert   upload a .csv file to upsert records
+  query    run a SOQL statement to generate a .csv file on the server
+  retrieve retrieve a query generated .csv file from the server
+  job      get information about a job based on job Id
+  batch    get detailed information about a batch within a job based on job Id and batch Id
+  batches  get a list of batches associated with a job based on job Id
 
-  force bulk insert Account [csv file]
+Examples using flags - more flexible, flags can be in any order with arguments after all flags.
 
-  force bulk update Account [csv file]
+  force bulk -c=insert -[concurrencyMode, m]=Serial -[objectType, o]=Account mydata.csv
+  force bulk -c=update -[concurrencyMode, m]=Parallel -[objectType, o]=Account mydata.csv
+  force bulk -c=query -[objectType, o]=Account "SOQL"
+  force bulk -c=job -[jobId, j]=jobid
+  force bulk -c=batches -[jobId, j]=jobid
+  force bulk -c=batch -[jobId, j]=jobid -[batchId, b]=batchid
+  force bulk -c=retrieve -[jobId, j]=jobid -[batchId, b]=batchid
+  force bulk -c=retrieve -j=jobid -b=batchid > mydata.csv
+  force bulk -c=upsert -[concurrencyMode, m]=Serial -[objectType, o]=Account -[externalId, e]=ExternalIdField__c mydata.csv
 
+Examples using positional arguments - less flexible, arguments must be in the correct order.
+
+  force bulk insert Account [csv file] [<concurrency mode>]
+  force bulk update Account [csv file] [<concurrency mode>]
+  force bulk upsert ExternalIdField__c Account [csv file] [<concurrency mode>]
   force bulk job [job id]
-
   force bulk batches [job id]
-
   force Bulk batch [job id] [batch id]
-
   force bulk batch retrieve [job id] [batch id]
-
   force bulk query Account [SOQL]
-
   force bulk query retrieve [job id] [batch id]
+
 `,
 }
 
-func runBulk(cmd *Command, args []string) {
-	if len(args) == 0 {
+var (
+	command         string
+	objectType      string
+	jobId           string
+	batchId         string
+	fileFormat      string
+	externalId      string
+	concurrencyMode string
+)
+var commandVersion = "old"
+
+func init() {
+	cmdBulk.Flag.StringVar(&command, "command", "", "Sub command for bulk api. Can be insert, update, job, batches, batch, retrieve or query.")
+	cmdBulk.Flag.StringVar(&command, "c", "", "Sub command for bulk api. Can be insert, update, job, batches, batch, retrieve or query.")
+	cmdBulk.Flag.StringVar(&objectType, "objectType", "", "Type of sObject for CRUD commands.")
+	cmdBulk.Flag.StringVar(&objectType, "o", "", "Type of sObject for CRUD commands.")
+	cmdBulk.Flag.StringVar(&jobId, "jobId", "", "A batch job id.")
+	cmdBulk.Flag.StringVar(&jobId, "j", "", "A batch job id.")
+	cmdBulk.Flag.StringVar(&batchId, "batchId", "", "A batch id.")
+	cmdBulk.Flag.StringVar(&batchId, "b", "", "A batch id.")
+	cmdBulk.Flag.StringVar(&fileFormat, "format", "CSV", "File format.")
+	cmdBulk.Flag.StringVar(&fileFormat, "f", "CSV", "File format.")
+	cmdBulk.Flag.StringVar(&externalId, "externalId", "", "The external Id field for upserts of data.")
+	cmdBulk.Flag.StringVar(&externalId, "e", "", "The External Id Field for upserts of data.")
+	cmdBulk.Flag.StringVar(&concurrencyMode, "m", "Parallel", "Concurrency mode for bulk api inserts, updates and upserts.  Valid options are `Serial` and `Parallel` (default).")
+	cmdBulk.Flag.StringVar(&concurrencyMode, "concurrencyMode", "Parallel", "Concurrency mode for bulk api inserts, updates and upserts.  Valid options are `Serial` and `Parallel` (default).")
+	cmdBulk.Run = runBulk
+}
+
+func runBulk2(cmd *Command, args []string) {
+	if len(command) == 0 {
 		cmd.printUsage()
-	} else if len(args) == 1 {
-		ErrorAndExit("Invalid command")
-	} else if len(args) == 2 {
-		if args[0] == "insert" {
-			ErrorAndExit("Missing argument for insert")
-		} else if args[0] == "update" {
-			ErrorAndExit("Missing argument for update")
-		} else if args[0] == "job" {
-			showJobDetails(args[1])
-		} else if args[0] == "batches" {
-			listBatches(args[1])
-		} else {
-			ErrorAndExit("Invalid command")
-		}
-	} else if len(args) == 3 {
-		if args[0] == "insert" {
-			createBulkInsertJob(args[2], args[1], "CSV")
-		} else if args[0] == "update" {
-			createBulkUpdateJob(args[2], args[1], "CSV")
-		} else if args[0] == "batch" {
-			showBatchDetails(args[1], args[2])
-		} else if args[0] == "query" {
-			if args[1] == "retrieve" {
-				ErrorAndExit("Query retrieve requires a job id and a batch id")
-			} else {
-				doBulkQuery(args[1], args[2], "CSV")
-			}
-		}
-	} else if len(args) == 4 {
-		if args[0] == "insert" {
-			createBulkInsertJob(args[2], args[1], args[3])
-		} else if args[0] == "update" {
-			createBulkUpdateJob(args[2], args[1], args[3])
-		} else if args[0] == "batch" {
-			getBatchResults(args[2], args[3])
-		} else if args[0] == "query" {
-			if args[1] == "retrieve" {
-				fmt.Println(string(getBulkQueryResults(args[2], args[3])))
-			} else if args[1] == "status" {
-				DisplayBatchInfo(getBatchDetails(args[2], args[3]))
-			} else {
-				doBulkQuery(args[1], args[2], args[3])
-			}
-		}
+		return
+	}
+	commandVersion = "new"
+	command = strings.ToLower(command)
+	switch command {
+	case "insert", "update", "upsert", "query":
+		runDBCommand(args[0])
+	case "job", "retrieve", "batch", "batches":
+		runBulkInfoCommand()
+	default:
+		ErrorAndExit("Unknown sub-command: " + command)
 	}
 }
 
-func doBulkQuery(objectType string, soql string, contenttype string) {
-	jobInfo, err := createBulkJob(objectType, "query", contenttype)
+func runBulkInfoCommand() {
+	if len(jobId) == 0 {
+		ErrorAndExit("For the " + command + " command you need to specify a job id.")
+	}
+	switch command {
+	case "job":
+		showJobDetails(jobId)
+	case "batches":
+		listBatches(jobId)
+	case "batch", "retrieve", "status":
+		if len(batchId) == 0 {
+			ErrorAndExit("For the " + command + " command you need to provide a batch id in addition to a job id.")
+		}
+		if command == "retrieve" {
+			fmt.Println(string(getBulkQueryResults(jobId, batchId)))
+		} else /* batch or status */ {
+			DisplayBatchInfo(getBatchDetails(jobId, batchId))
+		}
+	default:
+		ErrorAndExit("Unknown sub-command " + command + ".")
+	}
+}
+
+func runDBCommand(arg string) {
+	if len(objectType) == 0 {
+		ErrorAndExit("Database commands need to have an sObject specified.")
+	}
+	if len(arg) == 0 {
+		ErrorAndExit("You need to supply a path to a data file (csv) for insert and update or a SOQL statement for query.")
+	}
+	if command == "upsert" && len(externalId) == 0 {
+		ErrorAndExit("Upsert commands must have ExternalId specified. -[externalId, e]")
+	}
+
+	switch command {
+	case "insert":
+		createBulkInsertJob(arg, objectType, fileFormat, concurrencyMode)
+	case "update":
+		createBulkUpdateJob(arg, objectType, fileFormat, concurrencyMode)
+	case "upsert":
+		createBulkUpsertJob(arg, objectType, fileFormat, externalId, concurrencyMode)
+	case "query":
+		doBulkQuery(objectType, arg, fileFormat, concurrencyMode)
+	}
+}
+
+func runBulk(cmd *Command, args []string) {
+	if len(command) > 0 {
+		runBulk2(cmd, args)
+		return
+	}
+	if len(args) == 0 {
+		cmd.printUsage()
+		return
+	}
+
+	command = strings.ToLower(args[0])
+
+	switch command {
+	case "query":
+		handleQuery(args)
+	case "insert", "update":
+		handleDML(args)
+	case "batch", "batches", "job":
+		handleInfo(args)
+	default:
+		ErrorAndExit("Unknown command - " + command + ".")
+	}
+}
+
+func handleInfo(args []string) {
+	if len(args) == 4 && args[1] == "retrieve" {
+		jobId = args[2]
+		batchId = args[3]
+		command = "retrieve"
+	} else if len(args) == 3 && command == "batch" {
+		jobId = args[1]
+		batchId = args[2]
+	} else if len(args) == 2 {
+		jobId = args[1]
+	} else {
+		ErrorAndExit("Problem parsing the command.")
+	}
+	runBulkInfoCommand()
+}
+
+func handleDML(args []string) {
+	var argLength = len(args)
+	if args[0] == "upsert" {
+		externalId = args[1]
+		objectType = args[2]
+		file := args[3]
+		if argLength == 5 || argLength == 6 {
+			setConcurrencyModeOrFileFormat(args[4])
+			if argLength == 6 {
+				setConcurrencyModeOrFileFormat(args[5])
+			}
+		}
+		runDBCommand(file)
+	} else {
+		objectType = args[1]
+		file := args[2]
+		if argLength == 4 || argLength == 5 {
+			setConcurrencyModeOrFileFormat(args[3])
+			if argLength == 5 {
+				setConcurrencyModeOrFileFormat(args[4])
+			}
+		}
+		runDBCommand(file)
+	}
+}
+
+func handleQuery(args []string) {
+	if len(args) == 3 {
+		objectType = args[1]
+		runDBCommand(args[2])
+	} else if len(args) == 4 {
+		jobId = args[2]
+		batchId = args[3]
+		command = args[1]
+		runBulkInfoCommand()
+	} else {
+		ErrorAndExit("Bad command, check arguments...")
+	}
+}
+
+func setConcurrencyModeOrFileFormat(argument string) {
+	if strings.EqualFold(argument, "parallel") || strings.EqualFold(argument, "serial") {
+		concurrencyMode = argument
+	} else {
+		fileFormat = argument
+	}
+}
+
+func doBulkQuery(objectType string, soql string, contenttype string, concurrencyMode string) {
+	jobInfo, err := createBulkJob(objectType, "query", contenttype, "", concurrencyMode)
 	force, _ := ActiveForce()
 
 	result, err := force.BulkQuery(soql, jobInfo.Id, contenttype)
@@ -145,8 +292,13 @@ func doBulkQuery(objectType string, soql string, contenttype string) {
 		ErrorAndExit(err.Error())
 	}
 	fmt.Println("Query Submitted")
-	fmt.Printf("To retrieve query status use\nforce bulk query status %s %s\n\n", jobInfo.Id, result.Id)
-	fmt.Printf("To retrieve query data use\nforce bulk query retrieve %s %s\n\n", jobInfo.Id, result.Id)
+	if commandVersion == "new" {
+		fmt.Printf("To retrieve query status use\nforce bulk -c=batch -j=%s -b=%s\n\n", jobInfo.Id, result.Id)
+		fmt.Printf("To retrieve query data use\nforce bulk -c=retrieve -j=%s -b=%s\n\n", jobInfo.Id, result.Id)
+	} else {
+		fmt.Printf("To retrieve query status use\nforce bulk query status %s %s\n\n", jobInfo.Id, result.Id)
+		fmt.Printf("To retrieve query data use\nforce bulk query retrieve %s %s\n\n", jobInfo.Id, result.Id)
+	}
 	closeBulkJob(jobInfo.Id)
 }
 
@@ -206,11 +358,6 @@ func listBatches(jobId string) {
 	DisplayBatchList(batchInfos)
 }
 
-func showBatchDetails(jobId string, batchId string) {
-	batchInfo := getBatchDetails(jobId, batchId)
-	DisplayBatchInfo(batchInfo)
-}
-
 func getBatchResults(jobId string, batchId string) {
 	force, _ := ActiveForce()
 
@@ -255,8 +402,8 @@ func getBatchDetails(jobId string, batchId string) (batchInfo BatchInfo) {
 	return
 }
 
-func createBulkInsertJob(csvFilePath string, objectType string, format string) {
-	jobInfo, err := createBulkJob(objectType, "insert", format)
+func createBulkInsertJob(csvFilePath string, objectType string, format string, concurrencyMode string) {
+	jobInfo, err := createBulkJob(objectType, "insert", format, "", concurrencyMode)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	} else {
@@ -266,13 +413,17 @@ func createBulkInsertJob(csvFilePath string, objectType string, format string) {
 			ErrorAndExit(err.Error())
 		} else {
 			closeBulkJob(jobInfo.Id)
-			fmt.Printf("Job created ( %s ) - for job status use\n force bulk batch %s %s\n", jobInfo.Id, jobInfo.Id, batchInfo.Id)
+			if commandVersion == "old" {
+				fmt.Printf("Job created ( %s ) - for job status use\n force bulk batch %s %s\n", jobInfo.Id, jobInfo.Id, batchInfo.Id)
+			} else {
+				fmt.Printf("Job created ( %s ) - for job status use\n force bulk -c=batch -j=%s -b=%s\n", jobInfo.Id, jobInfo.Id, batchInfo.Id)
+			}
 		}
 	}
 }
 
-func createBulkUpdateJob(csvFilePath string, objectType string, format string) {
-	jobInfo, err := createBulkJob(objectType, "update", format)
+func createBulkUpdateJob(csvFilePath string, objectType string, format string, concurrencyMode string) {
+	jobInfo, err := createBulkJob(objectType, "update", format, "", concurrencyMode)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	} else {
@@ -282,7 +433,31 @@ func createBulkUpdateJob(csvFilePath string, objectType string, format string) {
 			ErrorAndExit(err.Error())
 		} else {
 			closeBulkJob(jobInfo.Id)
-			fmt.Printf("Job created ( %s ) - for job status use\n force bulk batch %s %s\n", jobInfo.Id, jobInfo.Id, batchInfo.Id)
+			if commandVersion == "old" {
+				fmt.Printf("Job created ( %s ) - for job status use\n force bulk batch %s %s\n", jobInfo.Id, jobInfo.Id, batchInfo.Id)
+			} else {
+				fmt.Printf("Job created ( %s ) - for job status use\n force bulk -c=batch -j=%s -b=%s\n", jobInfo.Id, jobInfo.Id, batchInfo.Id)
+			}
+		}
+	}
+}
+
+func createBulkUpsertJob(csvFilePath string, objectType string, format string, externalId string, concurrencyMode string) {
+	jobInfo, err := createBulkJob(objectType, "upsert", format, externalId, concurrencyMode)
+	if err != nil {
+		ErrorAndExit(err.Error())
+	} else {
+		batchInfo, err := addBatchToJob(csvFilePath, jobInfo.Id)
+		if err != nil {
+			closeBulkJob(jobInfo.Id)
+			ErrorAndExit(err.Error())
+		} else {
+			closeBulkJob(jobInfo.Id)
+			if commandVersion == "old" {
+				fmt.Printf("Job created ( %s ) - for job status use\n force bulk batch %s %s\n", jobInfo.Id, jobInfo.Id, batchInfo.Id)
+			} else {
+				fmt.Printf("Job created ( %s ) - for job status use\n force bulk -c=batch -j=%s -b=%s\n", jobInfo.Id, jobInfo.Id, batchInfo.Id)
+			}
 		}
 	}
 }
@@ -326,17 +501,40 @@ func getBatchInfo(jobId string, batchId string) (batchInfo BatchInfo, err error)
 	return
 }
 
-func createBulkJob(objectType string, operation string, fileFormat string) (jobInfo JobInfo, err error) {
+func createBulkJob(objectType string, operation string, fileFormat string, externalId string, concurrencyMode string) (jobInfo JobInfo, err error) {
+	if !(strings.EqualFold(concurrencyMode, "serial")) {
+		if !(strings.EqualFold(concurrencyMode, "parallel")) {
+			ErrorAndExit("Concurrency Mode must be set to either Serial or Parallel")
+		}
+	}
+
 	force, _ := ActiveForce()
 
 	xml := `
 	<jobInfo xmlns="http://www.force.com/2009/06/asyncapi/dataload">
  		<operation>%s</operation>
  		<object>%s</object>
- 		<contentType>%s</contentType>
+ 		`
+	if strings.EqualFold(concurrencyMode, "serial") {
+		xml += `<concurrencyMode>Serial</concurrencyMode>
+		`
+	}
+
+	if operation == "upsert" {
+		xml += `<externalIdFieldName>%s</externalIdFieldName>
+		`
+	}
+
+	xml += `<contentType>%s</contentType>
 	</jobInfo>
 	`
-	data := fmt.Sprintf(xml, operation, objectType, fileFormat)
+
+	data := ""
+	if operation == "upsert" {
+		data = fmt.Sprintf(xml, operation, objectType, externalId, fileFormat)
+	} else {
+		data = fmt.Sprintf(xml, operation, objectType, fileFormat)
+	}
 	jobInfo, err = force.CreateBulkJob(data)
 	return
 }

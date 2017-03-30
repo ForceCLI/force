@@ -22,7 +22,7 @@ var cmdPushAura = &Command{
 
 func init() {
 	cmdPushAura.Run = runPushAura
-	cmdPushAura.Flag.Var(&resourcepath, "f", "fully qualified file name for entity")
+	cmdPushAura.Flag.Var(&resourcepaths, "f", "fully qualified file name for entity")
 	cmdPushAura.Flag.StringVar(&metadataType, "t", "", "Type of entity or bundle to create")
 	cmdPushAura.Flag.StringVar(&metadataType, "type", "", "Type of entity or bundle to create")
 }
@@ -31,16 +31,18 @@ func runPushAura(cmd *Command, args []string) {
 	// For some reason, when called from sublime, the quotes are included
 	// in the resourcepath argument.  Quoting is needed if you have blank spaces
 	// in the path name. So need to strip them out.
-	if strings.Contains(resourcepath[0], "\"") || strings.Contains(resourcepath[0], "'") {
-		resourcepath[0] = strings.Replace(resourcepath[0], "\"", "", -1)
-		resourcepath[0] = strings.Replace(resourcepath[0], "'", "", -1)
+	if strings.Contains(resourcepaths[0], "\"") || strings.Contains(resourcepaths[0], "'") {
+		resourcepaths[0] = strings.Replace(resourcepaths[0], "\"", "", -1)
+		resourcepaths[0] = strings.Replace(resourcepaths[0], "'", "", -1)
 	}
-	absPath, _ := filepath.Abs(resourcepath[0])
+	absPath, _ := filepath.Abs(resourcepaths[0])
 	if _, err := os.Stat(absPath); os.IsNotExist(err) {
-		fmt.Println(err.Error())
 		ErrorAndExit("File does not exist\n" + absPath)
 	}
+	pushAuraComponentByPath(absPath)
+}
 
+func pushAuraComponentByPath(absPath string) {
 	// Verify that the file is in an aura bundles folder
 	if !InAuraBundlesFolder(absPath) {
 		ErrorAndExit("File is not in an aura bundle folder (aura)")
@@ -54,10 +56,8 @@ func runPushAura(cmd *Command, args []string) {
 		filepath.Walk(absPath, func(path string, inf os.FileInfo, err error) error {
 			info, err = os.Stat(filepath.Join(absPath, inf.Name()))
 			if err != nil {
-				fmt.Println(err.Error())
 			} else {
-				if info.IsDir() || inf.Name() == ".manifest" {
-					fmt.Println("\nSkip")
+				if info.IsDir() || inf.Name() == ".manifest" || strings.HasSuffix(inf.Name(), "-meta.xml") {
 				} else {
 					pushAuraComponent(filepath.Join(absPath, inf.Name()))
 				}
@@ -76,11 +76,15 @@ func pushAuraComponent(fname string) {
 	if _, err := os.Stat(filepath.Join(filepath.Dir(fname), ".manifest")); os.IsNotExist(err) {
 		// No manifest, but is in aurabundle folder, assume creating a new bundle with this file
 		// as the first artifact.
-		createNewAuraBundleAndDefinition(*force, fname)
+		if strings.ToLower(filepath.Base(fname)) != ".ds_store" {
+			createNewAuraBundleAndDefinition(*force, fname)
+		}
 	} else {
 		// Got the manifest, let's update the artifact
-		fmt.Println("Updating")
-		updateAuraDefinition(*force, fname)
+		if strings.ToLower(filepath.Base(fname)) != ".ds_store" {
+			fmt.Printf("\tUpdating %s ", filepath.Base(fname))
+			updateAuraDefinition(*force, fname)
+		}
 		return
 	}
 }
@@ -112,7 +116,7 @@ func createNewAuraBundleAndDefinition(force Force, fname string) {
 		// Create a bundle defintion
 		bundle, err, emessages := force.CreateAuraBundle(bundleName)
 		if err != nil {
-			if emessages[0].ErrorCode == "DUPLICATE_VALUE" {
+			if emessages[0].ErrorCode == "DUPLICATE_VALUE" || emessages[0].ErrorCode == "DUPLICATE_DEVELOPER_NAME" {
 				// Should look up the bundle and get it's id then update it.
 				FetchManifest(bundleName)
 				updateAuraDefinition(force, fname)
@@ -136,7 +140,7 @@ func SetTargetDirectory(fname string) (dir string, base string) {
 	for done == false {
 		base = filepath.Base(fname)
 		fname = filepath.Dir(fname)
-		if filepath.Base(fname) == "metadata" {
+		if filepath.Base(fname) == "metadata" || filepath.Base(fname) == "src" {
 			dir = filepath.Dir(fname)
 			done = true
 		}
@@ -203,7 +207,7 @@ func updateAuraDefinition(force Force, fname string) {
 			if err != nil {
 				ErrorAndExit(err.Error())
 			}
-			fmt.Printf("Aura definition updated: %s\n", filepath.Base(fname))
+			fmt.Printf("done\n")
 			return
 		}
 	}
@@ -293,7 +297,7 @@ func getDefinitionFormat(deftype string) (result string) {
 func InAuraBundlesFolder(fname string) bool {
 	info, _ := os.Stat(fname)
 	if info.IsDir() {
-		return strings.HasSuffix(filepath.Dir(fname), filepath.FromSlash("aura"))
+		return filepath.Base(fname) == "aura" || strings.HasSuffix(filepath.Dir(fname), filepath.FromSlash("aura"))
 	} else {
 		return strings.HasSuffix(filepath.Dir(filepath.Dir(fname)), filepath.FromSlash("aura"))
 	}

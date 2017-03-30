@@ -170,7 +170,7 @@ type ForceMetadataDeployProblem struct {
 }
 
 type ForceMetadataQueryElement struct {
-	Name    string
+	Name    []string
 	Members []string
 }
 
@@ -220,6 +220,7 @@ type AutoNumberFieldRequired struct {
 }
 
 type AutoNumberField struct {
+	Label          string `xml:"label"`
 	StartingNumber int    `xml:"startingNumber"`
 	DisplayFormat  string `xml:"displayFormat"`
 	Description    string `xml:"description"`
@@ -233,6 +234,7 @@ type FloatFieldRequired struct {
 }
 
 type FloatField struct {
+	Label                string `xml:"label"`
 	Description          string `xml:"description"`
 	HelpText             string `xml:"helpText"`
 	Unique               bool   `xml:"unique"`
@@ -250,6 +252,7 @@ type NumberFieldRequired struct {
 }
 
 type NumberField struct {
+	Label                string `xml:"label"`
 	Description          string `xml:"description"`
 	HelpText             string `xml:"helpText"`
 	Unique               bool   `xml:"unique"`
@@ -265,6 +268,7 @@ type DatetimeFieldRequired struct {
 }
 
 type DatetimeField struct {
+	Label                string    `xml:"label"`
 	Description          string    `xml:"description"`
 	HelpText             string    `xml:"helpText"`
 	DefaultValue         time.Time `xml:"defaultValue"`
@@ -283,6 +287,7 @@ type PicklistFieldRequired struct {
 }
 
 type PicklistField struct {
+	Label    string          `xml:"label"`
 	Picklist []PicklistValue `xml:"picklist>picklistValues"`
 }
 
@@ -291,6 +296,7 @@ type BoolFieldRequired struct {
 }
 
 type BoolField struct {
+	Label                string `xml:"label"`
 	Description          string `xml:"description"`
 	HelpText             string `xml:"helpText"`
 	DefaultValue         bool   `xml:"defaultValue"`
@@ -337,7 +343,7 @@ type MDFileProperties struct {
 	Id                 string    `xml:"id"`
 	LastModifiedById   string    `xml:"lastModifiedById"`
 	LastModifiedByName string    `xml:"lastModifiedByName"`
-	LastModifedByDate  time.Time `xml:"lastModifiedByDate"`
+	LastModifedDate    time.Time `xml:"lastModifiedDate"`
 	ManageableState    string    `xml:"manageableState"`
 	NamespacePrefix    string    `xml:"namespacePrefix"`
 	Type               string    `xml:"type"`
@@ -412,6 +418,10 @@ type UrlField struct {
 type EmailFieldRequired struct {
 }
 
+type EmailField struct {
+	Label string `xml:"label"`
+}
+
 type TextAreaFieldRequired struct {
 }
 
@@ -458,6 +468,7 @@ type RichTextAreaField struct {
 type LookupFieldRequired struct{}
 
 type LookupField struct {
+	Label             string `xml:"label"`
 	ReferenceTo       string `xml:"referenceTo"`
 	RelationshipLabel string `xml:"relationshipLabel"`
 	RelationshipName  string `xml:"relationshipName"`
@@ -466,10 +477,15 @@ type LookupField struct {
 type MasterDetailRequired struct{}
 
 type MasterDetail struct {
+	Label             string `xml:"label"`
 	ReferenceTo       string `xml:"referenceTo"`
 	RelationshipLabel string `xml:"relationshipLabel"`
 	RelationshipName  string `xml:"relationshipName"`
 }
+
+var (
+	metadataType string
+)
 
 // Example of how to use Go's reflection
 // Print the attributes of a Data Model
@@ -658,6 +674,7 @@ func (fm *ForceMetadata) CheckStatus(id string) (err error) {
 	switch {
 	case !status.Done:
 		fmt.Printf("Not done yet: %s  Will check again in five seconds.\n", status.State)
+		//fmt.Printf("ID: %s State: %s - message: %s\n", id, status.State, status.Message)
 		time.Sleep(5000 * time.Millisecond)
 		return fm.CheckStatus(id)
 	case status.State == "Error":
@@ -966,6 +983,60 @@ func (fm *ForceMetadata) CreateCustomField(object, field, typ string, options ma
 	if err = fm.CheckStatus(status.Id); err != nil {
 		return
 	}
+	serr := fm.UpdateFLSOnProfile(object, field)
+	if serr != nil {
+		fmt.Println("INFO: Failed to set FLS on new Field (field was created).")
+	}
+	return
+}
+
+func (fm *ForceMetadata) GetFLSUpdateXML(objectName string, fieldName string) (result string) {
+	if !strings.HasSuffix(fieldName, "__c") {
+		fieldName = fieldName + "__c"
+	}
+
+	result = fmt.Sprintf(
+		`<?xml version="1.0" encoding="UTF-8"?>
+	<Profile xmlns="http://soap.sforce.com/2006/04/metadata">
+    	<fieldPermissions>
+        	<editable>true</editable>
+        	<field>%s.%s</field>
+        	<readable>true</readable>
+    	</fieldPermissions>
+    	<objectPermissions>
+		    <allowCreate>true</allowCreate>
+    		<allowDelete>true</allowDelete>
+		    <allowEdit>true</allowEdit>
+    		<allowRead>true</allowRead>
+	    	<viewAllRecords>false</viewAllRecords>
+	    	<modifyAllRecords>false</modifyAllRecords>
+    		<object>%s</object>
+		</objectPermissions>
+
+	</Profile>
+	`, objectName, fieldName, objectName)
+	return
+}
+
+func (fm *ForceMetadata) UpdateFLSOnProfile(objectName string, fieldName string) (err error) {
+	res, err := fm.Force.QueryProfile("Id", "Name", "FullName")
+	profileFullName := fmt.Sprintf("%s", res.Records[0]["FullName"])
+
+	/*parts := strings.Split(args[1], ":")
+	if len(parts) != 2 {
+		ErrorAndExit("must specify name:type for fields")
+	}
+
+	field := strings.Replace(parts[0], " ", "_", -1) + "__c"
+	*/
+
+	/*if err := force.Metadata.UpdateFLSOnProfile(args[0], field); err != nil {
+		globalSilencer = "off"
+		ErrorAndExit(err.Error())
+	}*/
+	fm.DeployWithTempFile(
+		fm.GetFLSUpdateXML(objectName, fieldName),
+		fmt.Sprintf("%s.profile", profileFullName))
 	return
 }
 
@@ -1106,6 +1177,24 @@ func (fm *ForceMetadata) MakeZip(files ForceMetadataFiles) (zipdata []byte, err 
 	return
 }
 
+func (fm *ForceMetadata) DeployWithTempFile(soap string, filename string) {
+	// Create temp file and store the XML for the MD in the file
+	wd, _ := os.Getwd()
+	mpath := findMetapathForFile(filename)
+
+	tempdir, err := ioutil.TempDir(wd, "md_temp")
+	tempdir = filepath.Join(tempdir, mpath.path)
+
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
+
+	os.MkdirAll(tempdir, 0777)
+	xmlfile := filepath.Join(tempdir, filename)
+	ioutil.WriteFile(xmlfile, []byte(soap), 0777)
+	pushByPaths([]string{xmlfile})
+}
+
 func (fm *ForceMetadata) Deploy(files ForceMetadataFiles, options ForceDeployOptions) (results ForceCheckDeploymentStatusResult, err error) {
 	soap := fm.MakeDeploySoap(options)
 
@@ -1138,6 +1227,73 @@ func (fm *ForceMetadata) DeployZipFile(soap string, zipfile []byte) (results For
 	return
 }
 
+func (fm *ForceMetadata) RetrieveByPackageXml(package_xml string) (files ForceMetadataFiles, err error) {
+	// Need to crack open the xml file and pull out the <types> array
+	data, err := ioutil.ReadFile(package_xml)
+
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
+	soap := `
+		<retrieveRequest>
+			<apiVersion>%s</apiVersion>
+			<unpackaged>
+				%s
+			</unpackaged>
+		</retrieveRequest>
+	`
+
+	type types struct {
+		Name    string   `xml:"name"`
+		Members []string `xml:"members"`
+	}
+
+	var pxml struct {
+		Results []types `xml:"types"`
+	}
+
+	xml.Unmarshal(data, &pxml)
+
+	xml_types := ""
+	for _, p_xml := range pxml.Results {
+		xml, err := xml.MarshalIndent(p_xml, " ", "    ")
+		if err != nil {
+			ErrorAndExit(err.Error())
+		}
+		xml_types += fmt.Sprintf("%s\n", xml)
+	}
+
+	body, err := fm.soapExecute("retrieve", fmt.Sprintf(soap, apiVersionNumber, xml_types))
+	if err != nil {
+		fmt.Printf("Error: %s\n", err.Error())
+		return
+	}
+	var status struct {
+		Id string `xml:"Body>retrieveResponse>result>id"`
+	}
+	if err = xml.Unmarshal(body, &status); err != nil {
+		fmt.Printf("Error: %s\n", err.Error())
+		return
+	}
+
+	if err = fm.CheckStatus(status.Id); err != nil {
+		fmt.Printf("Error: %s\n", err.Error())
+		return
+	}
+	raw_files, err := fm.CheckRetrieveStatus(status.Id)
+	if err != nil {
+		fmt.Printf("Error: %s\n", err.Error())
+		return
+	}
+	files = make(ForceMetadataFiles)
+	for raw_name, data := range raw_files {
+		name := strings.Replace(raw_name, "unpackaged/", "", -1)
+		files[name] = data
+	}
+
+	return
+}
+
 func (fm *ForceMetadata) Retrieve(query ForceMetadataQuery) (files ForceMetadataFiles, err error) {
 
 	soap := `
@@ -1161,7 +1317,9 @@ func (fm *ForceMetadata) Retrieve(query ForceMetadataQuery) (files ForceMetadata
 		for _, member := range element.Members {
 			members += fmt.Sprintf(soapTypeMembers, member)
 		}
-		types += fmt.Sprintf(soapType, element.Name, members)
+		for _, atype := range element.Name {
+			types += fmt.Sprintf(soapType, atype, members)
+		}
 	}
 	body, err := fm.soapExecute("retrieve", fmt.Sprintf(soap, apiVersionNumber, types))
 	if err != nil {

@@ -17,12 +17,8 @@ var sourceDirs = []string{
 // IsSourceDir returns a boolean indicating that dir is actually a Salesforce
 // source directory.
 func IsSourceDir(dir string) bool {
-	for _, src := range sourceDirs {
-		// Look for src properly for case-insensitive filesystems
-		manifest := filepath.Join(filepath.Dir(dir), src, "package.xml")
-		if _, err := os.Stat(manifest); err == nil {
-			return true
-		}
+	if _, err := os.Stat(dir); err == nil {
+		return true
 	}
 	return false
 }
@@ -39,23 +35,36 @@ func GetSourceDir() (dir string, err error) {
 
 	// Look down to our nearest subdirectories
 	for _, src := range sourceDirs {
-		dir = filepath.Join(base, src)
-		if IsSourceDir(dir) {
-			return
+		if len(src) > 0 {
+			dir = filepath.Join(base, src)
+			if IsSourceDir(dir) {
+				return
+			}
 		}
 	}
 
 	// Check the current directory and then start looking up at our parents.
-	// When dir's parent is identical, it means we're at the root
+	// When dir's parent is identical, it means we're at the root.  If we blow
+	// past the actual root, we should drop to the next section of code
 	for dir != filepath.Dir(dir) {
 		dir = filepath.Dir(dir)
-		if IsSourceDir(dir) {
-			return
+		for _, src := range sourceDirs {
+			adir := filepath.Join(dir, src)
+			if IsSourceDir(adir) {
+				dir = adir
+				return
+			}
 		}
 	}
 
-	// Not a source directory
-	return "", os.ErrNotExist
+	// No source directory found, create a src directory and a symlinked "metadata"
+	// directory for backward compatibility and return that.
+	dir = filepath.Join(base, "src")
+	err = os.Mkdir(dir, 0777)
+	symlink := filepath.Join(base, "metadata")
+	os.Symlink(dir, symlink)
+	dir = symlink
+	return
 }
 
 func ExitIfNoSourceDir(err error) {

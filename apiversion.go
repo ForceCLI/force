@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
+	"regexp"
 )
 
-var apiVersion = "v37.0"
 var apiVersionNumber = "37.0"
+var apiVersion = fmt.Sprintf("v%s", apiVersionNumber)
 
 var cmdApiVersion = &Command{
 	Run:   runApiVersion,
@@ -27,11 +28,17 @@ func init() {
 func runApiVersion(cmd *Command, args []string) {
 	force, _ := ActiveForce()
 	if len(args) == 1 {
-		// Todo validate that the version is in the right format
 		apiVersionNumber = args[0]
-		apiVersion = "v" + apiVersionNumber
+		matched, err := regexp.MatchString("^\\d{2}\\.0$", apiVersionNumber)
+		if err != nil {
+			ErrorAndExit("%v", err)
+		}
+		if !matched {
+			ErrorAndExit("apiversion must be in the form of nn.0.")
+		}
+		apiVersion = fmt.Sprintf("v%s", apiVersionNumber)
 		force.Credentials.ApiVersion = apiVersionNumber
-		ForceSaveLogin(force.Credentials)
+		ForceSaveLogin(*force.Credentials)
 	} else if len(args) == 0 {
 		fmt.Println(apiVersion)
 	} else {

@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -19,7 +18,7 @@ var cmdPush = &Command{
 	Usage: "push -t <metadata type> -n <metadata name> -f <pathtometadata> [deployment options]",
 	Short: "Deploy artifact from a local directory",
 	Long: `
-Deploy artifact from a local directory
+Deploy artifact from a local directory 
 <metadata>: Accepts either actual directory name or Metadata type
 
 Examples:
@@ -43,16 +42,14 @@ Deployment Options
 }
 
 var (
-	namePaths = make(map[string]string)
-	byName    = false
-)
-
-var (
-	resourcepath metaName
-	metaFolder   string
+	namePaths     = make(map[string]string)
+	byName        = false
+	resourcepaths metaName
+	metaFolder    string
 )
 
 func init() {
+	// Deploy options
 	cmdPush.Flag.BoolVar(rollBackOnErrorFlag, "rollbackonerror", false, "set roll back on error")
 	cmdPush.Flag.BoolVar(rollBackOnErrorFlag, "r", false, "set roll back on error")
 	cmdPush.Flag.BoolVar(runAllTestsFlag, "runalltests", false, "set run all tests")
@@ -70,8 +67,9 @@ func init() {
 	cmdPush.Flag.BoolVar(ignoreWarningsFlag, "ignorewarnings", false, "set ignore warnings")
 	cmdPush.Flag.BoolVar(ignoreWarningsFlag, "i", false, "set ignore warnings")
 
-	cmdPush.Flag.Var(&resourcepath, "f", "Path to resource(s)")
-	cmdPush.Flag.Var(&resourcepath, "filepath", "Path to resource(s)")
+	// Ways to push
+	cmdPush.Flag.Var(&resourcepaths, "f", "Path to resource(s)")
+	cmdPush.Flag.Var(&resourcepaths, "filepath", "Path to resource(s)")
 	cmdPush.Flag.Var(&testsToRun, "test", "Test(s) to run")
 	cmdPush.Flag.StringVar(&metadataType, "t", "", "Metatdata type")
 	cmdPush.Flag.StringVar(&metadataType, "type", "", "Metatdata type")
@@ -88,60 +86,30 @@ func argIsFile(fpath string) bool {
 }
 
 func runPush(cmd *Command, args []string) {
-	var subcommand = strings.ToLower(metadataType)
-
-	switch subcommand {
-	case "package":
+	if strings.ToLower(metadataType) == "package" {
 		pushPackage()
-	default:
-		resourcepath = append(resourcepath, args...)
-		if len(resourcepath) != 0 {
-			// It's not a package but does have a path. This could be a path to a file
-			// or to a folder. If it is a folder, we pickup the resources a different
-			// way than if it's a file.
-			validatePushByMetadataTypeCommand()
+		return
+	}
+	// Treat trailing args as file paths
+	resourcepaths = append(resourcepaths, args...)
+	if len(resourcepaths) > 0 {
+		// It's not a package but does have a path. This could be a path to a file
+		// or to a folder. If it is a folder, we pickup the resources a different
+		// way than if it's a file.
+		validatePushByMetadataTypeCommand()
+		pushByPaths(resourcepaths)
+	} else {
+		if len(metadataName) > 0 {
 			if len(metadataType) != 0 {
-				pushByTypeAndPath()
-			} else {
-				pushByPathOnly()
-			}
-		} else {
-			if len(metadataName) > 0 {
-				if len(metadataType) != 0 {
-					validatePushByMetadataTypeCommand()
-					pushByMetadataType()
-				} else {
-					ErrorAndExit("The -type (-t) parameter is required.")
-					//isValidMetadataType()
-					//pushByName()
-					//validatePushByMetadataTypeCommand()
-					//pushByMetadataType()
-				}
-			} else {
 				validatePushByMetadataTypeCommand()
 				pushByMetadataType()
+			} else {
+				ErrorAndExit("The -type (-t) parameter is required.")
 			}
+		} else {
+			validatePushByMetadataTypeCommand()
+			pushByMetadataType()
 		}
-	}
-}
-
-func pushByPathOnly() {
-	pushByPath(resourcepath)
-}
-
-func pushByTypeAndPath() {
-	for _, name := range resourcepath {
-		fi, err := os.Stat(name)
-		if err != nil {
-			ErrorAndExit(err.Error())
-		}
-		if fi.IsDir() {
-
-		}
-
-		fn := filepath.Base(name)
-		fn = strings.Replace(fn, filepath.Ext(fn), "", -1)
-		metadataName = append(metadataName, fn)
 	}
 }
 
@@ -176,29 +144,26 @@ func metadataExists() {
 }
 
 func validatePushByMetadataTypeCommand() {
+	// TODO: Is this needed?
 	isValidMetadataType()
 	metadataExists()
 }
 
 func wildCardSearch(metaFolder string, name string) []string {
-	cmd := exec.Command("ls", metaFolder)
-	var out bytes.Buffer
-	cmd.Stdout = &out
-	err := cmd.Run()
+	files, err := ioutil.ReadDir(metaFolder)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
-	f := strings.Split(out.String(), "\n")
+
 	var ret []string
-	for _, s := range f {
-		ss := filepath.Base(s)
+	for _, s := range files {
+		ss := s.Name()
 		ss = strings.Split(ss, ".")[0]
 		if ss == name {
-			ret = append(ret, s)
+			ret = append(ret, ss)
 		}
 	}
 	return ret
-	//return contains(f, name)
 }
 
 func contains(s []string, e string) bool {
@@ -211,10 +176,10 @@ func contains(s []string, e string) bool {
 }
 
 func pushPackage() {
-	if len(resourcepath) == 0 {
+	if len(resourcepaths) == 0 {
 		var packageFolder = findPackageFolder(metadataName[0])
 		zipResource(packageFolder, metadataName[0])
-		resourcepath.Set(packageFolder + ".resource")
+		resourcepaths.Set(packageFolder + ".resource")
 		//var dir, _ = os.Getwd();
 		//ErrorAndExit(fmt.Sprintf("No resource path sepcified. %s, %s", metadataName[0], dir))
 	}
@@ -254,14 +219,19 @@ func getFirstXmlElement(xmlFile []byte) (firstElement string) {
 // passed in type, then folder is empty.
 func findMetadataTypeFolder(mdtype string, root string) (folder string) {
 	filepath.Walk(root, func(path string, f os.FileInfo, err error) error {
-		//base := filepath.Base(path)
-		//if filepath.Ext(base) == ".object" {
 		firstEl, _ := getMDTypeFromXml(path)
 		if firstEl == mdtype {
-			folder = filepath.Dir(path)
+			// This is sufficient for MD that does not have sub folders (classes, pages, etc)
+			// It is NOT sufficient for aura bundles
+			if mdtype == "AuraDefinitionBundle" {
+				// Need the parent of this folder to get all aura bundles in the directory
+				folder = filepath.Dir(filepath.Dir(path))
+			} else {
+				folder = filepath.Dir(path)
+			}
 			return errors.New("walk canceled")
 		}
-		//}
+
 		return nil
 	})
 	return
@@ -318,33 +288,55 @@ func FilenameMatchesMetadataName(filename string, metadataName string) bool {
 func pushByMetadataType() {
 	byName = true
 
+	// TODO: get all files that match these types and make a list out of them
+
 	// Walk the metaFolder obtained during validation and compile a list of resources
 	// to be added to the package.
 	var files []string
+
+	// Handle aura separately
+	if filepath.Base(metaFolder) == "aura" {
+		cur := ""
+		filepath.Walk(metaFolder, func(path string, f os.FileInfo, err error) error {
+			if f.IsDir() && cur != f.Name() {
+				cur = f.Name()
+				fmt.Printf("Pushing " + f.Name() + "\n")
+			}
+			if f.Name() != "aura" && strings.ToLower(f.Name()) != ".ds_store" && f.IsDir() {
+				absPath, _ := filepath.Abs(path)
+				pushAuraComponentByPath(absPath)
+			}
+			return nil
+		})
+		return
+	}
+
 	filepath.Walk(metaFolder, func(path string, f os.FileInfo, err error) error {
 		// Check to see if this is a folder. This will be the case with static resources
 		// that have been unpacked.  Not entirely sure if this is the only time we will
 		// find a folder inside a metadata type folder.
 		if f.IsDir() {
-			// Check to see if any names where specified in the -name flag
-			if len(metadataName) == 0 {
-				// Take all
-				zipResource(path, "")
-			} else {
-				for _, name := range metadataName {
-					fname := filepath.Base(path)
-					// Check to see if the resource name matches the one of the ones passed on the -name flag
-					if fname == name {
-						zipResource(path, "")
+			if f.Name() != "aura" && filepath.Base(filepath.Dir(path)) != "aura" && filepath.Base(filepath.Dir(filepath.Dir(path))) != "aura" {
+				// Check to see if any names where specified in the -name flag
+				if len(metadataName) == 0 {
+					// Take all
+					zipResource(path, "")
+				} else {
+					for _, name := range metadataName {
+						fname := filepath.Base(path)
+						// Check to see if the resource name matches the one of the ones passed on the -name flag
+						if fname == name {
+							zipResource(path, "")
+						}
 					}
 				}
+				return nil
 			}
-			return nil
 		}
 
 		// These should be file resources, but, could be child folders of unzipped resources in
 		// which case we will have handled them above.
-		if filepath.Dir(path) != metaFolder && !f.IsDir() {
+		if (filepath.Dir(path) != metaFolder && !f.IsDir()) || f.Name() == "aura" {
 			return nil
 		}
 		// Again, if no names where specifed on -name flag, just add the file.
@@ -378,7 +370,7 @@ func zipResource(path string, topLevelFolder string) {
 	zipper := zip.NewWriter(zipfile)
 	startPath := path + "/"
 	filepath.Walk(path, func(path string, f os.FileInfo, err error) error {
-		if filepath.Base(path) != ".DS_Store" {
+		if strings.ToLower(filepath.Base(path)) != ".ds_store" {
 			// Can skip dirs since the dirs will be created when the files are added
 			if !f.IsDir() {
 				file, err := ioutil.ReadFile(path)
@@ -405,9 +397,7 @@ func zipResource(path string, topLevelFolder string) {
 }
 
 func pushByName() {
-
 	byName = true
-
 	root, err := GetSourceDir()
 	ExitIfNoSourceDir(err)
 
@@ -424,6 +414,7 @@ func pushByName() {
 					fname := filepath.Base(path)
 					// Check to see if the resource name matches the one of the ones passed on the -name flag
 					if fname == name {
+						// TODO: Is thsi ToLower stuff needed?
 						metadataType = strings.ToLower(filepath.Base(filepath.Dir(path)))
 						if metadataType == "staticresources" {
 							metadataType = "StaticResource"
@@ -460,11 +451,6 @@ func pushByName() {
 
 }
 
-// Wrapper to handle a single resource path
-func pushByPath(fpath []string) {
-	pushByPaths(fpath)
-}
-
 // Creates a package that includes everything in the passed in string slice
 // and then deploys the package to salesforce
 func pushByPaths(fpaths []string) {
@@ -472,6 +458,7 @@ func pushByPaths(fpaths []string) {
 
 	var badPaths []string
 	for _, fpath := range fpaths {
+		// TODO: check for folder, if a folder, add all files in it
 		name, err := pb.AddFile(fpath)
 		if err != nil {
 			fmt.Println(err.Error())
@@ -499,10 +486,13 @@ func pushByPaths(fpaths []string) {
 func deployPackage() {
 	force, _ := ActiveForce()
 	DeploymentOptions := deployOpts()
-	for _, name := range resourcepath {
+	for _, name := range resourcepaths {
 		zipfile, err := ioutil.ReadFile(name)
 		result, err := force.Metadata.DeployZipFile(force.Metadata.MakeDeploySoap(*DeploymentOptions), zipfile)
-		processDeployResults(result, err)
+		err = processDeployResults(result, err)
+		if err != nil {
+			ErrorAndExit(err.Error())
+		}
 	}
 	return
 }
@@ -511,7 +501,10 @@ func deployFiles(files ForceMetadataFiles) {
 	force, _ := ActiveForce()
 	var DeploymentOptions = deployOpts()
 	result, err := force.Metadata.Deploy(files, *DeploymentOptions)
-	processDeployResults(result, err)
+	err = processDeployResults(result, err)
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
 	return
 }
 
@@ -532,9 +525,9 @@ func deployOpts() *ForceDeployOptions {
 }
 
 // Process and display the result of the push operation
-func processDeployResults(result ForceCheckDeploymentStatusResult, err error) {
-	if err != nil {
-		ErrorAndExit(err.Error())
+func processDeployResults(result ForceCheckDeploymentStatusResult, deployErr error) (err error) {
+	if deployErr != nil {
+		ErrorAndExit(deployErr.Error())
 	}
 
 	problems := result.Details.ComponentFailures
@@ -591,4 +584,10 @@ func processDeployResults(result ForceCheckDeploymentStatusResult, err error) {
 
 	// Handle notifications
 	notifySuccess("push", len(problems) == 0)
+	if len(problems) > 0 {
+		err = errors.New("Some components failed deployment")
+	} else if len(testFailures) > 0 {
+		err = errors.New("Some tests failed")
+	}
+	return
 }

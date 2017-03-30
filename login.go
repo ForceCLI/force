@@ -37,7 +37,6 @@ var (
 
 func runLogin(cmd *Command, args []string) {
 	var endpoint ForceEndpoint = EndpointProduction
-
 	// If no instance specified, try to get last endpoint used
 	if *instance == "" {
 		currentEndpoint, customUrl, err := CurrentEndpoint()
@@ -107,7 +106,7 @@ func runLogin(cmd *Command, args []string) {
 }
 
 func CurrentEndpoint() (endpoint ForceEndpoint, customUrl string, err error) {
-	creds, err := ActiveCredentials()
+	creds, err := ActiveCredentials(false)
 	if err != nil {
 		return
 	}
@@ -117,7 +116,7 @@ func CurrentEndpoint() (endpoint ForceEndpoint, customUrl string, err error) {
 }
 
 func ForceSaveLogin(creds ForceCredentials) (username string, err error) {
-	force := NewForce(creds)
+	force := NewForce(&creds)
 	login, err := force.Get(creds.Id)
 	if err != nil {
 		return
@@ -139,6 +138,7 @@ func ForceSaveLogin(creds ForceCredentials) (username string, err error) {
 	}
 	fmt.Printf("Logged in as '%s' (API %s)\n", me["Username"], apiVersion)
 	title := fmt.Sprintf("\033];%s\007", me["Username"])
+	creds.ProfileId = fmt.Sprintf("%s", me["ProfileId"])
 	fmt.Printf(title)
 
 	describe, err := force.Metadata.DescribeMetadata()

@@ -23,6 +23,38 @@ Examples:
 `,
 }
 
+func getMetadataType(metadataType string, folders map[string]string) (member []string) {
+	force, _ := ActiveForce()
+	var queryString string
+	if metadataType == "Report" {
+		queryString = "SELECT Id, OwnerId ,DeveloperName from Report"
+	} else {
+		queryString = "SELECT Id, DeveloperName, Folder.DeveloperName from " + metadataType
+	}
+	queryResult, _, _ := force.Query(fmt.Sprintf("%s", queryString), false)
+	metadataItems := make([]string, 1, 1000)
+	metadataItems[0] = "*"
+	for _, folderName := range folders {
+		metadataItems = append(metadataItems, folderName)
+	}
+
+	for _, metadataItem := range queryResult.Records {
+		folderName := ""
+		if metadataType == "Report" {
+			folderName, _ = folders[metadataItem["OwnerId"].(string)]
+		} else {
+			folderData, _ := metadataItem["Folder"].(map[string]interface{})
+			if folderData != nil {
+				folderName = folderData["DeveloperName"].(string)
+			}
+		}
+		if folderName != "" {
+			metadataItems = append(metadataItems, folderName+"/"+metadataItem["DeveloperName"].(string))
+		}
+	}
+	return metadataItems
+}
+
 func runExport(cmd *Command, args []string) {
 	// Get path from args if available
 	var err error
@@ -48,101 +80,120 @@ func runExport(cmd *Command, args []string) {
 		}
 	}
 	query := ForceMetadataQuery{
-		{Name: "AccountSettings", Members: []string{"*"}},
-		{Name: "ActivitiesSettings", Members: []string{"*"}},
-		{Name: "AddressSettings", Members: []string{"*"}},
-		{Name: "AnalyticSnapshot", Members: []string{"*"}},
-		{Name: "ApexClass", Members: []string{"*"}},
-		{Name: "ApexComponent", Members: []string{"*"}},
-		{Name: "ApexPage", Members: []string{"*"}},
-		{Name: "ApexTrigger", Members: []string{"*"}},
-		{Name: "ApprovalProcess", Members: []string{"*"}},
-		{Name: "AssignmentRules", Members: []string{"*"}},
-		{Name: "AuthProvider", Members: []string{"*"}},
-		{Name: "AutoResponseRules", Members: []string{"*"}},
-		{Name: "BusinessHoursSettings", Members: []string{"*"}},
-		{Name: "BusinessProcess", Members: []string{"*"}},
-		{Name: "CallCenter", Members: []string{"*"}},
-		{Name: "CaseSettings", Members: []string{"*"}},
-		{Name: "ChatterAnswersSettings", Members: []string{"*"}},
-		{Name: "CompanySettings", Members: []string{"*"}},
-		{Name: "Community", Members: []string{"*"}},
-		{Name: "CompactLayout", Members: []string{"*"}},
-		{Name: "ConnectedApp", Members: []string{"*"}},
-		{Name: "ContractSettings", Members: []string{"*"}},
-		{Name: "CustomApplication", Members: []string{"*"}},
-		{Name: "CustomApplicationComponent", Members: []string{"*"}},
-		{Name: "CustomApplication", Members: []string{"*"}},
-		{Name: "CustomField", Members: []string{"*"}},
-		{Name: "CustomLabels", Members: []string{"*"}},
-		{Name: "CustomObject", Members: stdObjects},
-		{Name: "CustomObjectTranslation", Members: []string{"*"}},
-		{Name: "CustomPageWebLink", Members: []string{"*"}},
-		{Name: "CustomPermission", Members: []string{"*"}},
-		{Name: "CustomSite", Members: []string{"*"}},
-		{Name: "CustomTab", Members: []string{"*"}},
-		{Name: "Dashboard", Members: []string{"*"}},
-		{Name: "DataCategoryGroup", Members: []string{"*"}},
-		{Name: "Document", Members: []string{"*"}},
-		{Name: "EmailTemplate", Members: []string{"*"}},
-		{Name: "EntitlementProcess", Members: []string{"*"}},
-		{Name: "EntitlementSettings", Members: []string{"*"}},
-		{Name: "EntitlementTemplate", Members: []string{"*"}},
-		{Name: "ExternalDataSource", Members: []string{"*"}},
-		{Name: "FieldSet", Members: []string{"*"}},
-		{Name: "Flow", Members: []string{"*"}},
-		{Name: "Folder", Members: []string{"*"}},
-		{Name: "ForecastingSettings", Members: []string{"*"}},
-		{Name: "Group", Members: []string{"*"}},
-		{Name: "HomePageComponent", Members: []string{"*"}},
-		{Name: "HomePageLayout", Members: []string{"*"}},
-		{Name: "IdeasSettings", Members: []string{"*"}},
-		{Name: "KnowledgeSettings", Members: []string{"*"}},
-		{Name: "Layout", Members: []string{"*"}},
-		{Name: "Letterhead", Members: []string{"*"}},
-		{Name: "ListView", Members: []string{"*"}},
-		{Name: "LiveAgentSettings", Members: []string{"*"}},
-		{Name: "LiveChatAgentConfig", Members: []string{"*"}},
-		{Name: "LiveChatButton", Members: []string{"*"}},
-		{Name: "LiveChatDeployment", Members: []string{"*"}},
-		{Name: "MilestoneType", Members: []string{"*"}},
-		{Name: "MobileSettings", Members: []string{"*"}},
-		{Name: "NamedFilter", Members: []string{"*"}},
-		{Name: "Network", Members: []string{"*"}},
-		{Name: "OpportunitySettings", Members: []string{"*"}},
-		{Name: "PermissionSet", Members: []string{"*"}},
-		{Name: "Portal", Members: []string{"*"}},
-		{Name: "PostTemplate", Members: []string{"*"}},
-		{Name: "ProductSettings", Members: []string{"*"}},
-		{Name: "Profile", Members: []string{"*"}},
-		{Name: "Queue", Members: []string{"*"}},
-		{Name: "QuickAction", Members: []string{"*"}},
-		{Name: "QuoteSettings", Members: []string{"*"}},
-		{Name: "RecordType", Members: []string{"*"}},
-		{Name: "RemoteSiteSetting", Members: []string{"*"}},
-		{Name: "Report", Members: []string{"*"}},
-		{Name: "ReportType", Members: []string{"*"}},
-		{Name: "Role", Members: []string{"*"}},
-		{Name: "SamlSsoConfig", Members: []string{"*"}},
-		{Name: "Scontrol", Members: []string{"*"}},
-		{Name: "SecuritySettings", Members: []string{"*"}},
-		{Name: "SharingReason", Members: []string{"*"}},
-		{Name: "SharingRules", Members: []string{"*"}},
-		{Name: "Skill", Members: []string{"*"}},
-		{Name: "StaticResource", Members: []string{"*"}},
-		{Name: "Territory", Members: []string{"*"}},
-		{Name: "Translations", Members: []string{"*"}},
-		{Name: "ValidationRule", Members: []string{"*"}},
-		{Name: "Workflow", Members: []string{"*"}},
+		{Name: []string{"AccountSettings"}, Members: []string{"*"}},
+		{Name: []string{"ActivitiesSettings"}, Members: []string{"*"}},
+		{Name: []string{"AddressSettings"}, Members: []string{"*"}},
+		{Name: []string{"AnalyticSnapshot"}, Members: []string{"*"}},
+		{Name: []string{"ApexClass"}, Members: []string{"*"}},
+		{Name: []string{"ApexComponent"}, Members: []string{"*"}},
+		{Name: []string{"ApexPage"}, Members: []string{"*"}},
+		{Name: []string{"ApexTrigger"}, Members: []string{"*"}},
+		{Name: []string{"ApprovalProcess"}, Members: []string{"*"}},
+		{Name: []string{"AssignmentRules"}, Members: []string{"*"}},
+		{Name: []string{"AuraDefinitionBundle"}, Members: []string{"*"}},
+		{Name: []string{"AuthProvider"}, Members: []string{"*"}},
+		{Name: []string{"AutoResponseRules"}, Members: []string{"*"}},
+		{Name: []string{"BusinessHoursSettings"}, Members: []string{"*"}},
+		{Name: []string{"BusinessProcess"}, Members: []string{"*"}},
+		{Name: []string{"CallCenter"}, Members: []string{"*"}},
+		{Name: []string{"CaseSettings"}, Members: []string{"*"}},
+		{Name: []string{"ChatterAnswersSettings"}, Members: []string{"*"}},
+		{Name: []string{"CompanySettings"}, Members: []string{"*"}},
+		{Name: []string{"Community"}, Members: []string{"*"}},
+		{Name: []string{"CompactLayout"}, Members: []string{"*"}},
+		{Name: []string{"ConnectedApp"}, Members: []string{"*"}},
+		{Name: []string{"ContractSettings"}, Members: []string{"*"}},
+		{Name: []string{"CustomApplication"}, Members: []string{"*"}},
+		{Name: []string{"CustomApplicationComponent"}, Members: []string{"*"}},
+		{Name: []string{"CustomField"}, Members: []string{"*"}},
+		{Name: []string{"CustomLabels"}, Members: []string{"*"}},
+		{Name: []string{"CustomMetadata"}, Members: []string{"*"}},
+		{Name: []string{"CustomObject"}, Members: stdObjects},
+		{Name: []string{"CustomObjectTranslation"}, Members: []string{"*"}},
+		{Name: []string{"CustomPageWebLink"}, Members: []string{"*"}},
+		{Name: []string{"CustomPermission"}, Members: []string{"*"}},
+		{Name: []string{"CustomSite"}, Members: []string{"*"}},
+		{Name: []string{"CustomTab"}, Members: []string{"*"}},
+		{Name: []string{"DataCategoryGroup"}, Members: []string{"*"}},
+		{Name: []string{"EntitlementProcess"}, Members: []string{"*"}},
+		{Name: []string{"EntitlementSettings"}, Members: []string{"*"}},
+		{Name: []string{"EntitlementTemplate"}, Members: []string{"*"}},
+		{Name: []string{"ExternalDataSource"}, Members: []string{"*"}},
+		{Name: []string{"FieldSet"}, Members: []string{"*"}},
+		{Name: []string{"Flow"}, Members: []string{"*"}},
+		{Name: []string{"Folder"}, Members: []string{"*"}},
+		{Name: []string{"ForecastingSettings"}, Members: []string{"*"}},
+		{Name: []string{"Group"}, Members: []string{"*"}},
+		{Name: []string{"HomePageComponent"}, Members: []string{"*"}},
+		{Name: []string{"HomePageLayout"}, Members: []string{"*"}},
+		{Name: []string{"IdeasSettings"}, Members: []string{"*"}},
+		{Name: []string{"KnowledgeSettings"}, Members: []string{"*"}},
+		{Name: []string{"Layout"}, Members: []string{"*"}},
+		{Name: []string{"Letterhead"}, Members: []string{"*"}},
+		{Name: []string{"ListView"}, Members: []string{"*"}},
+		{Name: []string{"LiveAgentSettings"}, Members: []string{"*"}},
+		{Name: []string{"LiveChatAgentConfig"}, Members: []string{"*"}},
+		{Name: []string{"LiveChatButton"}, Members: []string{"*"}},
+		{Name: []string{"LiveChatDeployment"}, Members: []string{"*"}},
+		{Name: []string{"MilestoneType"}, Members: []string{"*"}},
+		{Name: []string{"MobileSettings"}, Members: []string{"*"}},
+		{Name: []string{"NamedFilter"}, Members: []string{"*"}},
+		{Name: []string{"Network"}, Members: []string{"*"}},
+		{Name: []string{"OpportunitySettings"}, Members: []string{"*"}},
+		{Name: []string{"PermissionSet"}, Members: []string{"*"}},
+		{Name: []string{"Portal"}, Members: []string{"*"}},
+		{Name: []string{"PostTemplate"}, Members: []string{"*"}},
+		{Name: []string{"ProductSettings"}, Members: []string{"*"}},
+		{Name: []string{"Profile"}, Members: []string{"*"}},
+		{Name: []string{"Queue"}, Members: []string{"*"}},
+		{Name: []string{"QuickAction"}, Members: []string{"*"}},
+		{Name: []string{"QuoteSettings"}, Members: []string{"*"}},
+		{Name: []string{"RecordType"}, Members: []string{"*"}},
+		{Name: []string{"RemoteSiteSetting"}, Members: []string{"*"}},
+		{Name: []string{"ReportType"}, Members: []string{"*"}},
+		{Name: []string{"Role"}, Members: []string{"*"}},
+		{Name: []string{"SamlSsoConfig"}, Members: []string{"*"}},
+		{Name: []string{"Scontrol"}, Members: []string{"*"}},
+		{Name: []string{"SecuritySettings"}, Members: []string{"*"}},
+		{Name: []string{"SharingReason"}, Members: []string{"*"}},
+		{Name: []string{"SharingRules"}, Members: []string{"*"}},
+		{Name: []string{"Skill"}, Members: []string{"*"}},
+		{Name: []string{"StaticResource"}, Members: []string{"*"}},
+		{Name: []string{"Territory"}, Members: []string{"*"}},
+		{Name: []string{"Translations"}, Members: []string{"*"}},
+		{Name: []string{"ValidationRule"}, Members: []string{"*"}},
+		{Name: []string{"Workflow"}, Members: []string{"*"}},
+	}
+
+	folderResult, _, err := force.Query(fmt.Sprintf("%s", "SELECT Id, Type, DeveloperName from Folder Where Type in ('Dashboard', 'Document', 'Email', 'Report')"), false)
+	folders := make(map[string]map[string]string)
+	for _, folder := range folderResult.Records {
+		if folder["DeveloperName"] != nil {
+			folderType := folder["Type"].(string)
+			m, ok := folders[folderType]
+			if !ok {
+				m = make(map[string]string)
+				folders[folderType] = m
+			}
+			m[folder["Id"].(string)] = folder["DeveloperName"].(string)
+		}
+	}
+	for foldersType, foldersName := range folders {
+		if foldersType == "Email" {
+			foldersType = "EmailTemplate"
+		}
+		members := getMetadataType(foldersType, foldersName)
+		query = append(query, ForceMetadataQueryElement{Name: []string{foldersType}, Members: members})
+	}
+
+	root, err = GetSourceDir()
+	if err != nil {
+		fmt.Printf("Error obtaining root directory\n")
+		ErrorAndExit(err.Error())
 	}
 	files, err := force.Metadata.Retrieve(query)
 	if err != nil {
 		fmt.Printf("Encountered and error with retrieve...\n")
-		ErrorAndExit(err.Error())
-	}
-	root, err = GetSourceDir()
-	if err != nil {
-		fmt.Printf("Error obtaining root directory\n")
 		ErrorAndExit(err.Error())
 	}
 	for name, data := range files {

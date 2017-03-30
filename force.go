@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"container/list"
 	"encoding/json"
 	"encoding/xml"
 	"errors"
@@ -12,18 +13,17 @@ import (
 	"net/http"
 	"net/url"
 	"runtime"
+	"strconv"
 	"strings"
 )
 
 const (
-	ProductionClientId = "3MVG9JZ_r.QzrS7gAjO9uCs2VkO.hLOCrAG2XC8vlkhr652yEh8Y5VMiNsDzmCik.eryhf1C902FFULbk1m.i"
-	PrereleaseClientId = "3MVG9lKcPoNINVBIRgC7lsz5tIhlg0mtoEqkA9ZjDAwEMbBy43gsnfkzzdTdhFLeNnWS8M4bnRnVv1Qj0k9MD"
-	Mobile1ClientId    = "3MVG9Iu66FKeHhIPqCB9VWfYPxjfcb5Ube.v5L81BLhnJtDYVP2nkA.mDPwfm5FTLbvL6aMftfi8w0rL7Dv7f"
-	RedirectUri        = "https://force-cli.herokuapp.com/auth/callback"
-	RedirectUriStaging = "https://force-clistaging.herokuapp.com/auth/callback"
+	ClientId    = "3MVG9ytVT1SanXDnX_hOa9Ys5NxVp5C26JlyQjwr.xTJtUqoKonXY.M8CcjoEknMrV4YUvPvXLiMyzI.Aw23C"
+	RedirectUri = "http://localhost:3835/oauth/callback"
 )
 
 var CustomEndpoint = ``
+var SessionExpiredError = errors.New("Session expired")
 
 const (
 	EndpointProduction = iota
@@ -39,22 +39,26 @@ const (
 )*/
 
 type Force struct {
-	Credentials ForceCredentials
+	Credentials *ForceCredentials
 	Metadata    *ForceMetadata
 	Partner     *ForcePartner
 }
 
 type ForceCredentials struct {
-	AccessToken   string
-	Id            string
+	AccessToken   string `json:"access_token"`
+	Id            string `json:"id"`
 	UserId        string
-	InstanceUrl   string
-	IssuedAt      string
-	Scope         string
+	InstanceUrl   string `json:"instance_url"`
+	IssuedAt      string `json:"issued_at"`
+	Scope         string `json:"scope"`
 	IsCustomEP    bool
 	Namespace     string
 	ApiVersion    string
+	RefreshToken  string
+	ProfileId     string
 	ForceEndpoint ForceEndpoint
+	IsHourly      bool
+	HourlyCheck   bool
 }
 
 type LoginFault struct {
@@ -78,9 +82,17 @@ type ForceError struct {
 	ErrorCode string
 }
 
-type ForceEndpoint int
+type FieldName struct {
+	FieldName string
+	IsObject  bool
+}
 
-type ForceRecord map[string]interface{}
+type SelectStruct struct {
+	ObjectName string
+	FieldNames []FieldName
+}
+
+type ForceEndpoint int
 
 type ForceSobject map[string]interface{}
 
@@ -105,6 +117,8 @@ type ForcePasswordStatusResult struct {
 type ForcePasswordResetResult struct {
 	NewPassword string
 }
+
+type ForceRecord map[string]interface{}
 
 type ForceQueryResult struct {
 	Done           bool
@@ -214,7 +228,7 @@ type BundleManifest struct {
 	Files []ComponentFile
 }
 
-func NewForce(creds ForceCredentials) (force *Force) {
+func NewForce(creds *ForceCredentials) (force *Force) {
 	force = new(Force)
 	force.Credentials = creds
 	force.Metadata = NewForceMetadata(force)
@@ -261,22 +275,75 @@ func ForceSoapLogin(endpoint ForceEndpoint, username string, password string) (c
 	}
 	instanceUrl := u.Scheme + "://" + u.Host
 	identity := u.Scheme + "://" + u.Host + "/id/" + orgid + "/" + result.Id
-	creds = ForceCredentials{result.SessionId, identity, result.Id, instanceUrl, "", "", endpoint == EndpointCustom, "", apiVersionNumber, endpoint}
+	creds = ForceCredentials{AccessToken: result.SessionId, Id: identity, UserId: result.Id, InstanceUrl: instanceUrl, IsCustomEP: endpoint == EndpointCustom, ApiVersion: apiVersionNumber, ForceEndpoint: endpoint, IsHourly: false, HourlyCheck: false}
+	LogAuth()
+	return
+}
 
-	f := NewForce(creds)
-	url := "https://force-cli"
-	if version == "dev" {
-		url = fmt.Sprintf("%sstaging.herokuapp.com/auth/soaplogin/?id=%s&access_token=%s&instance_url=%s", url, creds.Id, creds.AccessToken, creds.InstanceUrl)
-	} else {
-		url = fmt.Sprintf("https://force-cli.herokuapp.com/auth/soaplogin/?id=%s&access_token=%s&instance_url=%s", creds.Id, creds.AccessToken, creds.InstanceUrl)
+// Log authentication for Salesforce usage tracking
+func LogAuth() {
+	http.Get("https://force-cli.herokuapp.com/auth/complete")
+}
+
+func (f *Force) UpdateCredentials(creds ForceCredentials) {
+	f.Credentials.AccessToken = creds.AccessToken
+	f.Credentials.IssuedAt = creds.IssuedAt
+	f.Credentials.InstanceUrl = creds.InstanceUrl
+	f.Credentials.Scope = creds.Scope
+	f.Credentials.Id = creds.Id
+	ForceSaveLogin(*f.Credentials)
+}
+
+func (f *Force) refreshTokenURL() string {
+	var refreshURL string
+	endpoint := f.Credentials.ForceEndpoint
+	switch endpoint {
+	case EndpointProduction:
+		refreshURL = fmt.Sprintf("https://login.salesforce.com/services/oauth2/token")
+	case EndpointTest:
+		refreshURL = fmt.Sprintf("https://test.salesforce.com/services/oauth2/token")
+	case EndpointPrerelease:
+		refreshURL = fmt.Sprintf("https://prerellogin.pre.salesforce.com/services/oauth2/token")
+	case EndpointMobile1:
+		refreshURL = fmt.Sprintf("https://EndpointMobile1.t.salesforce.com/services/oauth2/token")
+	default:
+		ErrorAndExit("no such endpoint type")
 	}
+	return refreshURL
+}
 
-	body, err := f.httpGet(url)
+func (f *Force) RefreshSession() (err error, emessages []ForceError) {
+	attrs := url.Values{}
+	attrs.Set("grant_type", "refresh_token")
+	attrs.Set("refresh_token", f.Credentials.RefreshToken)
+	attrs.Set("client_id", ClientId)
+	attrs.Set("format", "json")
+
+	postVars := attrs.Encode()
+	req, err := httpRequest("POST", f.refreshTokenURL(), bytes.NewReader([]byte(postVars)))
 	if err != nil {
-		fmt.Println(err.Error())
 		return
 	}
-	fmt.Println("Save login was ", string(body))
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	fmt.Println("Refreshing Session Token")
+	res, err := doRequest(req)
+	if err != nil {
+		return
+	}
+	defer res.Body.Close()
+	body, err := ioutil.ReadAll(res.Body)
+	if res.StatusCode != 200 {
+		ErrorAndExit("Failed to refresh session.  Please run `force login`.")
+		return
+	}
+	if err != nil {
+		return
+	}
+
+	var result ForceCredentials
+	json.Unmarshal(body, &result)
+	f.UpdateCredentials(result)
+	LogAuth()
 	return
 }
 
@@ -286,21 +353,18 @@ func ForceLogin(endpoint ForceEndpoint) (creds ForceCredentials, err error) {
 	var url string
 
 	Redir := RedirectUri
-	if Version == "dev" {
-		Redir = RedirectUriStaging
-	}
 
 	switch endpoint {
 	case EndpointProduction:
-		url = fmt.Sprintf("https://login.salesforce.com/services/oauth2/authorize?response_type=token&client_id=%s&redirect_uri=%s&state=%d&prompt=login", ProductionClientId, Redir, port)
+		url = fmt.Sprintf("https://login.salesforce.com/services/oauth2/authorize?response_type=token&client_id=%s&redirect_uri=%s&state=%d&prompt=login", ClientId, Redir, port)
 	case EndpointTest:
-		url = fmt.Sprintf("https://test.salesforce.com/services/oauth2/authorize?response_type=token&client_id=%s&redirect_uri=%s&state=%d&prompt=login", ProductionClientId, Redir, port)
+		url = fmt.Sprintf("https://test.salesforce.com/services/oauth2/authorize?response_type=token&client_id=%s&redirect_uri=%s&state=%d&prompt=login", ClientId, Redir, port)
 	case EndpointPrerelease:
-		url = fmt.Sprintf("https://prerellogin.pre.salesforce.com/services/oauth2/authorize?response_type=token&client_id=%s&redirect_uri=%s&state=%d&prompt=login", PrereleaseClientId, Redir, port)
+		url = fmt.Sprintf("https://prerellogin.pre.salesforce.com/services/oauth2/authorize?response_type=token&client_id=%s&redirect_uri=%s&state=%d&prompt=login", ClientId, Redir, port)
 	case EndpointMobile1:
-		url = fmt.Sprintf("https://EndpointMobile1.t.salesforce.com/services/oauth2/authorize?response_type=token&client_id=%s&redirect_uri=%s&state=%d&prompt=login", Mobile1ClientId, Redir, port)
+		url = fmt.Sprintf("https://EndpointMobile1.t.salesforce.com/services/oauth2/authorize?response_type=token&client_id=%s&redirect_uri=%s&state=%d&prompt=login", ClientId, Redir, port)
 	case EndpointCustom:
-		url = fmt.Sprintf("%s/services/oauth2/authorize?response_type=token&client_id=%s&redirect_uri=%s&state=%d&prompt=login", CustomEndpoint, ProductionClientId, Redir, port)
+		url = fmt.Sprintf("%s/services/oauth2/authorize?response_type=token&client_id=%s&redirect_uri=%s&state=%d&prompt=login", CustomEndpoint, ClientId, Redir, port)
 	default:
 		ErrorAndExit("Unable to login with OAuth. Unknown endpoint type")
 	}
@@ -575,33 +639,246 @@ func (f *Force) GetSobject(name string) (sobject ForceSobject, err error) {
 	return
 }
 
-func (f *Force) Query(query string, isTooling bool) (result ForceQueryResult, err error) {
-	vurl := ""
-	if isTooling == true {
-		vurl = fmt.Sprintf("%s/services/data/%s/tooling/query?q=%s", f.Credentials.InstanceUrl, apiVersion, url.QueryEscape(query))
-	} else {
-		vurl = fmt.Sprintf("%s/services/data/%s/query?q=%s", f.Credentials.InstanceUrl, apiVersion, url.QueryEscape(query))
+func (f *Force) Query(query string, isTooling bool) (result ForceQueryResult, fieldList *list.List, err error) {
+	toolingPath := ""
+	if isTooling {
+		toolingPath = "tooling/"
 	}
-	body, err := f.httpGet(vurl)
-	if err != nil {
-		return
-	}
-	json.Unmarshal(body, &result)
-	if result.Done == false {
-		var nextResult ForceQueryResult
-		nextResult.NextRecordsUrl = result.NextRecordsUrl
-		for nextResult.Done == false {
-			nextUrl := fmt.Sprintf("%s%s", f.Credentials.InstanceUrl, nextResult.NextRecordsUrl)
-			nextBody, nextErr := f.httpGet(nextUrl)
-			if nextErr != nil {
-				return
-			}
-			nextResult.Records = []ForceRecord{}
-			json.Unmarshal(nextBody, &nextResult)
 
-			result.Records = append(result.Records, nextResult.Records...)
+	result = ForceQueryResult{
+		Done:           false,
+		NextRecordsUrl: fmt.Sprintf("%s/services/data/%s/%squery?q=%s", f.Credentials.InstanceUrl, apiVersion, toolingPath, url.QueryEscape(query)),
+		TotalSize:      0,
+		Records:        []ForceRecord{},
+	}
+
+	/* The Force API will split queries returning large result sets into
+	 * multiple pieces (generally every 200 records). We need to repeatedly
+	 * query until we've retrieved all of them. */
+	for !result.Done {
+		body, err := f.httpGet(result.NextRecordsUrl)
+
+		if err != nil {
+			ErrorAndExit(err.Error())
+		}
+
+		var currResult ForceQueryResult
+		json.Unmarshal(body, &currResult)
+		result.Update(currResult, f)
+	}
+
+	return
+}
+
+func (f *Force) DecodeMe2(jsonStream string) (result ForceQueryResult) {
+	dec := json.NewDecoder(strings.NewReader(jsonStream))
+	dec.UseNumber()
+	recordsFound := false
+
+	for {
+		t, err := dec.Token()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			ErrorAndExit(err.Error())
+		}
+
+		var tokenType = fmt.Sprintf("%T", t)
+		var token = fmt.Sprintf("%v", t)
+		//fmt.Printf("%s: %s\n", tokenType, token)
+		if tokenType == "json.Delim" {
+
+		} else {
+			if !recordsFound {
+				switch token {
+				case "totalSize":
+					t, _ = dec.Token()
+					v, _ := strconv.Atoi(t.(json.Number).String())
+					result.TotalSize = v
+				case "done":
+					t, _ = dec.Token()
+					v, _ := t.(bool)
+					result.Done = v
+				case "nextRecordsUrl":
+					t, _ = dec.Token()
+					result.NextRecordsUrl = fmt.Sprintf("%v", t)
+				case "records":
+					recordsFound = true
+				}
+
+			}
+		}
+		switch tokenType {
+		case "{":
+			if !recordsFound {
+				// This should be the start of the entire json
+			} else {
+				// Need to set a flag that in the next loop we are adding fields
+				// to a child object
+			}
+		default:
+
 		}
 	}
+	return
+}
+
+func (f *Force) DecodeMe(jsonStream string) (result *list.List) {
+	type val interface{}
+	type keyval struct {
+		Key string
+		Val val
+	}
+	dec := json.NewDecoder(strings.NewReader(jsonStream))
+	dec.UseNumber()
+	//var records = list.New()
+	//var currentContainer = new(val)
+	var recordsFound = false
+	//var stack = make([]string, 0, 0)
+	result = list.New()
+	SObjecttype := ""
+	var isAttributes = false
+	for {
+		t, err := dec.Token()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			ErrorAndExit(err.Error())
+		}
+
+		var tokenType = fmt.Sprintf("%T", t)
+		var token = fmt.Sprintf("%v", t)
+		//fmt.Printf("tokenType: %s, token: %s\n", tokenType, token)
+		if token == "type" {
+			t, err = dec.Token()
+			token = fmt.Sprintf("%v", t)
+			SObjecttype = token
+			//fmt.Printf("case token=type %s\n", SObjecttype)
+			spec := f.GetObjectSpec(SObjecttype, result)
+			spec.ObjectName = token
+		} else if token == "totalSize" {
+			t, err = dec.Token()
+		} else if token == "done" {
+			t, err = dec.Token()
+		} else if token == "records" {
+			//fmt.Println("Records have been found...")
+			recordsFound = true
+		} else if token == "attributes" {
+			isAttributes = true
+		} else if tokenType != "json.Delim" && recordsFound && token != "attributes" && token != "url" {
+			//fmt.Printf("\ncase fieldName: %v.%v\n", SObjecttype, token)
+			spec := f.GetObjectSpec(SObjecttype, result)
+			//fmt.Printf("%v:", token)
+			t, err = dec.Token()
+			tt := fmt.Sprintf("%T", t)
+			//if /*t != nil &&*/ tt != "json.Delim" {
+			//fmt.Printf("%T\n", t)
+			f.PushFieldName(token, spec, (tt == "json.Delim" || t == nil))
+			/*if tt == "json.Number" {
+				fmt.Printf("Value: %#v\n",  JSONNumberToString(t, ','))
+			} else {
+				fmt.Printf("Value: %s\n", t)
+			}*/
+			//}
+			//fmt.Printf("\n")
+		} else {
+			if err != nil {
+				ErrorAndExit(err.Error())
+			}
+			if token == "url" {
+				t, err = dec.Token()
+			} else if token == "[" {
+				//fmt.Println("Starting Array...")
+			} else if token == "]" {
+				//fmt.Println("Ending Array...")
+			} else if token == "}" {
+				if isAttributes {
+					isAttributes = false
+				} else {
+					prev := f.GetPrevObjectSpec(SObjecttype, result)
+					if prev != nil {
+						SObjecttype = prev.ObjectName
+						//fmt.Printf("Prev Obj: %s\n\n", prev.ObjectName)
+					} else {
+						//fmt.Printf("NO PREV OBJ\n\n")
+					}
+					//fmt.Println("Ending Object...")
+				}
+			} else if token == "{" {
+				//spec := f.GetObjectSpec(SObjecttype, result)
+				//result.PushFront(spec)
+				//fmt.Println("Starting Object...")
+			}
+		}
+		f.DumpListStack(result)
+	}
+	f.DumpListStack(result)
+	return
+}
+
+func (f *Force) DumpListStack(l *list.List) {
+	fmt.Printf("\nDecode Results:\n")
+	for e := l.Front(); e != nil; e = e.Next() {
+		spec := e.Value.(*SelectStruct)
+		fmt.Println(spec.ObjectName)
+		for _, v := range spec.FieldNames {
+			fmt.Printf("\t%v", v.FieldName)
+			if v.IsObject {
+				fmt.Printf(" (Object)\n")
+			} else {
+				fmt.Printf("\n")
+			}
+		}
+	}
+	fmt.Printf("\n\n")
+}
+
+func (f *Force) PushFieldName(fieldName string, spec *SelectStruct, IsObject bool) {
+	//fmt.Println("Pushing fieldname: ", fieldName)
+	for _, v := range spec.FieldNames {
+		if v.FieldName == fieldName {
+			return
+		}
+	}
+	spec.FieldNames = append(spec.FieldNames, FieldName{fieldName, IsObject})
+	return
+}
+
+func (f *Force) GetPrevObjectSpec(objectName string, l *list.List) (foundItem *SelectStruct) {
+	for e := l.Front(); e != nil; e = e.Next() {
+		if e.Value.(*SelectStruct).ObjectName == objectName {
+			p := e.Prev()
+			if p != nil {
+				foundItem = e.Prev().Value.(*SelectStruct)
+				return
+			}
+		}
+	}
+	return
+}
+
+func (f *Force) GetObjectSpec(objectName string, l *list.List) (result *SelectStruct) {
+	//fmt.Println("Looking for Spec", objectName)
+	found, result := f.HasObject(objectName, l)
+	if !found {
+		result = new(SelectStruct)
+		result.ObjectName = objectName
+		l.PushBack(result)
+	}
+	return
+}
+
+func (f *Force) HasObject(objectName string, l *list.List) (result bool, foundItem *SelectStruct) {
+	for e := l.Front(); e != nil; e = e.Next() {
+		if e.Value.(*SelectStruct).ObjectName == objectName {
+			result = true
+			foundItem = e.Value.(*SelectStruct)
+			return
+		}
+	}
+	result = false
 	return
 }
 
@@ -811,8 +1088,20 @@ func (f *Force) RetrieveBulkBatchResults(jobId string, batchId string) (results 
 	return
 }
 
-func (f *Force) QueryTraceFlags() (results ForceQueryResult, err error) {
-	url := fmt.Sprintf("%s/services/data/%s/tooling/query/?q=Select+Id,+ApexCode,+ApexProfiling,+Callout,+CreatedDate,+Database,+ExpirationDate,+Scope.Name,+System,+TracedEntity.Name,+Validation,+Visualforce,+Workflow+From+TraceFlag+Order+By+ExpirationDate,TracedEntity.Name,Scope.Name", f.Credentials.InstanceUrl, apiVersion)
+func (f *Force) SetFLS(profileId string, objectName string, fieldName string) {
+	// First, write out a file to a temporary location with a package.xml
+
+	f.Metadata.UpdateFLSOnProfile(objectName, fieldName)
+}
+
+func (f *Force) QueryProfile(fields ...string) (results ForceQueryResult, err error) {
+
+	url := fmt.Sprintf("%s/services/data/%s/tooling/query?q=Select+%s+From+Profile+Where+Id='%s'",
+		f.Credentials.InstanceUrl,
+		apiVersion,
+		strings.Join(fields, ","),
+		f.Credentials.ProfileId)
+
 	body, err := f.httpGet(url)
 	if err != nil {
 		return
@@ -821,13 +1110,41 @@ func (f *Force) QueryTraceFlags() (results ForceQueryResult, err error) {
 	return
 }
 
-func (f *Force) StartTrace(userId ...string) (result ForceCreateRecordResult, err error, emessages []ForceError) {
-	url := fmt.Sprintf("%s/services/data/%s/tooling/sobjects/TraceFlag", f.Credentials.InstanceUrl, apiVersion)
+func (f *Force) QueryTraceFlags() (results ForceQueryResult, err error) {
+	url := fmt.Sprintf("%s/services/data/%s/tooling/query/?q=Select+Id,+DebugLevel.DeveloperName,++ApexCode,+ApexProfiling,+Callout,+CreatedDate,+Database,+ExpirationDate,+System,+TracedEntity.Name,+Validation,+Visualforce,+Workflow+From+TraceFlag+Order+By+ExpirationDate,TracedEntity.Name", f.Credentials.InstanceUrl, apiVersion)
+	body, err := f.httpGet(url)
+	if err != nil {
+		return
+	}
+	json.Unmarshal(body, &results)
+	return
+}
+
+func (f *Force) QueryDefaultDebugLevel() (id string, err error) {
+	url := fmt.Sprintf("%s/services/data/%s/tooling/query/?q=Select+Id+From+DebugLevel+Where+DeveloperName+=+'Force_CLI'", f.Credentials.InstanceUrl, apiVersion)
+	body, err := f.httpGet(url)
+	if err != nil {
+		return
+	}
+	var results ForceQueryResult
+	json.Unmarshal(body, &results)
+	if len(results.Records) == 1 {
+		id = results.Records[0]["Id"].(string)
+	}
+	return
+}
+
+func (f *Force) DefaultDebugLevel() (id string, err error, emessages []ForceError) {
+	id, err = f.QueryDefaultDebugLevel()
+	if err != nil || id != "" {
+		return
+	}
+	url := fmt.Sprintf("%s/services/data/%s/tooling/sobjects/DebugLevel", f.Credentials.InstanceUrl, apiVersion)
 
 	// The log levels are currently hard-coded to a useful level of logging
 	// without hitting the maximum log size of 2MB in most cases, hopefully.
 	attrs := make(map[string]string)
-	attrs["ApexCode"] = "Debug"
+	attrs["ApexCode"] = "Fine"
 	attrs["ApexProfiling"] = "Error"
 	attrs["Callout"] = "Info"
 	attrs["Database"] = "Info"
@@ -835,10 +1152,37 @@ func (f *Force) StartTrace(userId ...string) (result ForceCreateRecordResult, er
 	attrs["Validation"] = "Warn"
 	attrs["Visualforce"] = "Info"
 	attrs["Workflow"] = "Info"
+	attrs["DeveloperName"] = "Force_CLI"
+	attrs["MasterLabel"] = "Force_CLI"
+
+	body, err, emessages := f.httpPost(url, attrs)
+	if err != nil {
+		return
+	}
+	var result ForceCreateRecordResult
+	json.Unmarshal(body, &result)
+	if result.Success {
+		id = result.Id
+	}
+
+	return
+}
+
+func (f *Force) StartTrace(userId ...string) (result ForceCreateRecordResult, err error, emessages []ForceError) {
+	debugLevel, err, emessages := f.DefaultDebugLevel()
+	if err != nil {
+		return
+	}
+	url := fmt.Sprintf("%s/services/data/%s/tooling/sobjects/TraceFlag", f.Credentials.InstanceUrl, apiVersion)
+
+	attrs := make(map[string]string)
+	attrs["DebugLevelId"] = debugLevel
 	if len(userId) == 1 {
 		attrs["TracedEntityId"] = userId[0]
+		attrs["LogType"] = "USER_DEBUG"
 	} else {
 		attrs["TracedEntityId"] = f.Credentials.UserId
+		attrs["LogType"] = "DEVELOPER_LOG"
 	}
 
 	body, err, emessages := f.httpPost(url, attrs)
@@ -847,6 +1191,19 @@ func (f *Force) StartTrace(userId ...string) (result ForceCreateRecordResult, er
 	}
 	json.Unmarshal(body, &result)
 
+	return
+}
+
+func (f *Force) GetConsoleLogLevelId() (result string, err error) {
+	url := fmt.Sprintf("%s/services/data/%s/tooling/query?q=Select+Id+From+DebugLevel+Where+DeveloperName+=+'SFDC_DevConsole'", f.Credentials.InstanceUrl, apiVersion)
+	body, err := f.httpGet(url)
+	var res ForceQueryResult
+	if err != nil {
+		return
+	}
+	json.Unmarshal(body, &res)
+	result = res.Records[0]["Id"].(string)
+	fmt.Println(result)
 	return
 }
 
@@ -877,8 +1234,40 @@ func (f *Force) RetrieveEventLogFile(elfId string) (result string, err error) {
 	return
 }
 
+func (force *Force) setHourlyPerm() {
+	force.Credentials.HourlyCheck = true
+	const EventLogFile string = "EventLogFile"
+	const HourlyEnabledField string = "Sequence"
+	force.Credentials.IsHourly = false
+	sobject, err := force.GetSobject(EventLogFile)
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
+	fields := ForceSobjectFields(sobject["fields"].([]interface{}))
+	for _, f := range fields {
+		field := f.(map[string]interface{})
+		if field["name"] == HourlyEnabledField {
+			force.Credentials.IsHourly = true
+			break
+		}
+	}
+	return
+}
+
 func (f *Force) QueryEventLogFiles() (results ForceQueryResult, err error) {
-	url := fmt.Sprintf("%s/services/data/%s/query/?q=Select+Id,+LogDate,+EventType,+LogFileLength+FROM+EventLogFile+ORDER+BY+LogDate+DESC,+EventType", f.Credentials.InstanceUrl, apiVersion)
+	if !f.Credentials.HourlyCheck {
+		f.setHourlyPerm()
+	}
+	url := ""
+	currApi, e := strconv.ParseFloat(f.Credentials.ApiVersion, 64)
+	if e != nil {
+		ErrorAndExit(e.Error())
+	}
+	if f.Credentials.IsHourly && currApi >= 37.0 {
+		url = fmt.Sprintf("%s/services/data/%s/query/?q=Select+Id,+LogDate,+EventType,+LogFileLength,+Sequence,+Interval+FROM+EventLogFile+ORDER+BY+LogDate+DESC,+EventType,+Sequence,+Interval", f.Credentials.InstanceUrl, apiVersion)
+	} else {
+		url = fmt.Sprintf("%s/services/data/%s/query/?q=Select+Id,+LogDate,+EventType,+LogFileLength+FROM+EventLogFile+ORDER+BY+LogDate+DESC,+EventType", f.Credentials.InstanceUrl, apiVersion)
+	}
 	body, err := f.httpGet(url)
 	if err != nil {
 		return
@@ -896,6 +1285,20 @@ func (f *Force) UpdateAuraComponent(source map[string]string, id string) (err er
 func (f *Force) DeleteToolingRecord(objecttype string, id string) (err error) {
 	url := fmt.Sprintf("%s/services/data/%s/tooling/sobjects/%s/%s", f.Credentials.InstanceUrl, apiVersion, objecttype, id)
 	_, err = f.httpDelete(url)
+	return
+}
+
+func (f *Force) CreateToolingRecord(objecttype string, attrs map[string]string) (result ForceCreateRecordResult, err error) {
+	aurl := fmt.Sprintf("%s/services/data/%s/tooling/sobjects/%s", f.Credentials.InstanceUrl, apiVersion, objecttype)
+	fmt.Println(attrs)
+	body, err, _ := f.httpPost(aurl, attrs)
+
+	if err != nil {
+		return
+	}
+	fmt.Println(string(body))
+	json.Unmarshal(body, &result)
+
 	return
 }
 
@@ -935,11 +1338,19 @@ func (f *Force) Whoami() (me ForceRecord, err error) {
 
 func (f *Force) httpGet(url string) (body []byte, err error) {
 	body, err = f.httpGetRequest(url, "Authorization", fmt.Sprintf("Bearer %s", f.Credentials.AccessToken))
+	if err == SessionExpiredError {
+		f.RefreshSession()
+		return f.httpGet(url)
+	}
 	return
 }
 
 func (f *Force) httpGetBulk(url string) (body []byte, err error) {
 	body, err = f.httpGetRequest(url, "X-SFDC-Session", fmt.Sprintf("Bearer %s", f.Credentials.AccessToken))
+	if err == SessionExpiredError {
+		f.RefreshSession()
+		return f.httpGetBulk(url)
+	}
 	return
 }
 
@@ -954,22 +1365,31 @@ func (f *Force) httpGetRequest(url string, headerName string, headerValue string
 		return
 	}
 	defer res.Body.Close()
-	if res.StatusCode == 401 {
-		err = errors.New("authorization expired, please run `force login`")
-		return
-	}
-	if res.StatusCode == 403 {
-		err = errors.New("Forbidden; Your authorization may have expired, or you do not have access. Please run `force login` and try again")
+	if res.StatusCode == 401 || res.StatusCode == 403 {
+		err = SessionExpiredError
 		return
 	}
 	body, err = ioutil.ReadAll(res.Body)
+	if err != nil {
+		return
+	}
+
 	if res.StatusCode/100 != 2 {
-		var messages []ForceError
-		json.Unmarshal(body, &messages)
-		if len(messages) > 0 {
-			err = errors.New(messages[0].Message)
+		contentType := res.Header.Get("Content-Type")
+		if strings.HasPrefix(contentType, "application/xml") {
+			var fault LoginFault
+			xml.Unmarshal(body, &fault)
+			if fault.ExceptionCode == "InvalidSessionId" {
+				err = SessionExpiredError
+			}
 		} else {
-			err = errors.New(string(body))
+			var messages []ForceError
+			json.Unmarshal(body, &messages)
+			if len(messages) > 0 {
+				err = errors.New(messages[0].Message)
+			} else {
+				err = errors.New(string(body))
+			}
 		}
 		return
 	}
@@ -978,11 +1398,19 @@ func (f *Force) httpGetRequest(url string, headerName string, headerValue string
 
 func (f *Force) httpPostCSV(url string, data string) (body []byte, err error) {
 	body, err = f.httpPostWithContentType(url, data, "text/csv")
+	if err == SessionExpiredError {
+		f.RefreshSession()
+		return f.httpPostCSV(url, data)
+	}
 	return
 }
 
 func (f *Force) httpPostXML(url string, data string) (body []byte, err error) {
 	body, err = f.httpPostWithContentType(url, data, "application/xml")
+	if err == SessionExpiredError {
+		f.RefreshSession()
+		return f.httpPostXML(url, data)
+	}
 	return
 }
 
@@ -1001,16 +1429,27 @@ func (f *Force) httpPostWithContentType(url string, data string, contenttype str
 	}
 	defer res.Body.Close()
 	if res.StatusCode == 401 {
-		err = errors.New("authorization expired, please run `force login`")
+		err = SessionExpiredError
 		return
 	}
 	body, err = ioutil.ReadAll(res.Body)
+	if err != nil {
+		return
+	}
 
 	if res.StatusCode/100 != 2 {
-		var messages []ForceError
-		json.Unmarshal(body, &messages)
-		if messages != nil {
-			err = errors.New(messages[0].Message)
+		if contenttype == "application/xml" {
+			var fault LoginFault
+			xml.Unmarshal(body, &fault)
+			if fault.ExceptionCode == "InvalidSessionId" {
+				err = SessionExpiredError
+			}
+		} else {
+			var messages []ForceError
+			json.Unmarshal(body, &messages)
+			if messages != nil {
+				err = errors.New(messages[0].Message)
+			}
 		}
 		return
 	}
@@ -1018,6 +1457,15 @@ func (f *Force) httpPostWithContentType(url string, data string, contenttype str
 }
 
 func (f *Force) httpPost(url string, attrs map[string]string) (body []byte, err error, emessages []ForceError) {
+	body, err, emessages = f.httpPostAttributes(url, attrs)
+	if err == SessionExpiredError {
+		f.RefreshSession()
+		return f.httpPost(url, attrs)
+	}
+	return
+}
+
+func (f *Force) httpPostAttributes(url string, attrs map[string]string) (body []byte, err error, emessages []ForceError) {
 	rbody, _ := json.Marshal(attrs)
 	req, err := httpRequest("POST", url, bytes.NewReader(rbody))
 	if err != nil {
@@ -1031,7 +1479,7 @@ func (f *Force) httpPost(url string, attrs map[string]string) (body []byte, err 
 	}
 	defer res.Body.Close()
 	if res.StatusCode == 401 {
-		err = errors.New("authorization expired, please run `force login`")
+		err = SessionExpiredError
 		return
 	}
 	body, err = ioutil.ReadAll(res.Body)
@@ -1046,6 +1494,15 @@ func (f *Force) httpPost(url string, attrs map[string]string) (body []byte, err 
 }
 
 func (f *Force) httpPatch(url string, attrs map[string]string) (body []byte, err error) {
+	body, err = f.httpPatchAttributes(url, attrs)
+	if err == SessionExpiredError {
+		f.RefreshSession()
+		return f.httpPatchAttributes(url, attrs)
+	}
+	return
+}
+
+func (f *Force) httpPatchAttributes(url string, attrs map[string]string) (body []byte, err error) {
 	rbody, _ := json.Marshal(attrs)
 	req, err := httpRequest("PATCH", url, bytes.NewReader(rbody))
 	if err != nil {
@@ -1059,7 +1516,7 @@ func (f *Force) httpPatch(url string, attrs map[string]string) (body []byte, err
 	}
 	defer res.Body.Close()
 	if res.StatusCode == 401 {
-		err = errors.New("Authorization expired, please run `force login`")
+		err = SessionExpiredError
 		return
 	}
 	body, err = ioutil.ReadAll(res.Body)
@@ -1073,6 +1530,15 @@ func (f *Force) httpPatch(url string, attrs map[string]string) (body []byte, err
 }
 
 func (f *Force) httpDelete(url string) (body []byte, err error) {
+	body, err = f.httpDeleteUrl(url)
+	if err == SessionExpiredError {
+		f.RefreshSession()
+		return f.httpDeleteUrl(url)
+	}
+	return
+}
+
+func (f *Force) httpDeleteUrl(url string) (body []byte, err error) {
 	req, err := httpRequest("DELETE", url, nil)
 	if err != nil {
 		return
@@ -1084,7 +1550,7 @@ func (f *Force) httpDelete(url string) (body []byte, err error) {
 	}
 	defer res.Body.Close()
 	if res.StatusCode == 401 {
-		err = errors.New("authorization expired, please run `force login`")
+		err = SessionExpiredError
 		return
 	}
 	body, err = ioutil.ReadAll(res.Body)
@@ -1095,6 +1561,13 @@ func (f *Force) httpDelete(url string) (body []byte, err error) {
 		return
 	}
 	return
+}
+
+func (result *ForceQueryResult) Update(other ForceQueryResult, force *Force) {
+	result.Done = other.Done
+	result.Records = append(result.Records, other.Records...)
+	result.TotalSize = len(result.Records)
+	result.NextRecordsUrl = fmt.Sprintf("%s%s", force.Credentials.InstanceUrl, other.NextRecordsUrl)
 }
 
 func doRequest(request *http.Request) (res *http.Response, err error) {
@@ -1112,36 +1585,66 @@ func httpRequest(method, url string, body io.Reader) (request *http.Request, err
 }
 
 func startLocalHttpServer(ch chan ForceCredentials) (port int, err error) {
-	listener, err := net.Listen("tcp", ":0")
+	listener, err := net.Listen("tcp", ":3835")
 	if err != nil {
 		return
 	}
 	port = listener.Addr().(*net.TCPAddr).Port
 	h := http.NewServeMux()
-	url := "https://force-cli"
-	if Version == "dev" {
-		url = fmt.Sprintf("%s%s", url, "staging")
-	}
-	url = fmt.Sprintf("%s%s", url, ".herokuapp.com")
-	h.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", url)
-		if r.Method == "OPTIONS" {
-			w.Header().Set("Access-Control-Allow-Headers", "X-Requested-With")
-		} else {
-			query := r.URL.Query()
+	h.HandleFunc("/oauth/callback", func(w http.ResponseWriter, r *http.Request) {
+		query := r.URL.Query()
+		if r.Method == "POST" {
 			var creds ForceCredentials
 			creds.AccessToken = query.Get("access_token")
+			creds.RefreshToken = query.Get("refresh_token")
 			creds.Id = query.Get("id")
 			creds.InstanceUrl = query.Get("instance_url")
 			creds.IssuedAt = query.Get("issued_at")
 			creds.Scope = query.Get("scope")
 			ch <- creds
-			if _, ok := r.Header["X-Requested-With"]; ok == false {
-				http.Redirect(w, r, fmt.Sprintf("%s/auth/complete", url), http.StatusSeeOther)
-			}
+			LogAuth()
 			listener.Close()
+		} else {
+			io.WriteString(w, oauthCallbackHtml())
 		}
 	})
 	go http.Serve(listener, h)
 	return
+}
+
+func oauthCallbackHtml() string {
+	return `
+<!doctype html>
+<html>
+  <head>
+	  <title>Force CLI OAuth Callback</title>
+  </head>
+  <body>
+	  <h1>OAuth Callback</h1>
+	  <p id="status">Status: Idle</p>
+	  <script type="text/javascript">
+	  window.onload = function() {
+		  var url = window.location.href.replace('#', '?');
+		  var req = new XMLHttpRequest();
+		  var completeText = 'Complete! You may now close this window';
+		  var errorText = 'Something went wrong!';
+		  var statusEl = document.getElementById('status');
+
+		  req.onreadystatechange=function() {
+
+			  if(req.readyState==4 && req.status==200) {
+				  statusEl.innerHTML = completeText;
+			  } else {
+				  statusEl.innerHTML = errorText;
+			  }
+		  }
+
+		  req.open('POST', url, true);
+		  req.setRequestHeader('Content-Type', 'text/plain');
+		  statusEl.innerHTML = 'Status: Sending Auth...';
+		  req.send();
+	  }
+	  </script>
+  </body>
+</html>`
 }
