@@ -18,7 +18,8 @@ var cmdLogin = &Command{
     force login -i=test
     force login -u=un -p=pw
     force login -i=test -u=un -p=pw
-    force login -i=na1-blitz01.soma.salesforce.com -u=un -p=pw
+    force login -i=na1-blitz01.soma.salesforce.com -u=un -p=pw -v 37.0
+    force login -i my-domain.my.salesforce.com -u username -p password
 `,
 }
 

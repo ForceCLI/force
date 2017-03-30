@@ -58,6 +58,10 @@ func (s *Soap) ExecuteLogin(username, password string) (response []byte, err err
 		err = errors.New("authorization expired, please run `force login`")
 		return
 	}
+	if res.StatusCode == 405 {
+		err = errors.New("Getting a 405 error. If you are using the my domain feature and the instance flag, please check that your url matches the url on the My Domain setup page in your org.")
+		return
+	}
 	response, err = ioutil.ReadAll(res.Body)
 	if err != nil {
 		return

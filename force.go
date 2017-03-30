@@ -256,6 +256,9 @@ func ForceSoapLogin(endpoint ForceEndpoint, username string, password string) (c
 
 	soap := NewSoap(surl, "", "")
 	response, err := soap.ExecuteLogin(username, password)
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
 	var result struct {
 		SessionId    string `xml:"Body>loginResponse>result>sessionId"`
 		Id           string `xml:"Body>loginResponse>result>userId"`
