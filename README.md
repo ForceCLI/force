@@ -171,3 +171,12 @@ The list is limited to those exposed by the REST API.
     # to compile and test modifications
     $ go get .
     $ force
+
+
+
+### Windows Subsystem Linux (aka Bash on Windows)
+Starting from Windows 10 Creator Update (version 1703), you now can use force cli within Windows Bash. To access force cli from WSL, you can call `force.exe`
+
+For ease of use you can add the following simple alias
+
+      alias force=force.exe
