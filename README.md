@@ -122,10 +122,29 @@ Import allows you to import code from local directory. This makes a lot of sense
 
     force import
 
+    Sample folder structure
+    ```
+    |-metadata
+    |  |-aura
+    |  |-corsWhitelistOrigins
+    |  |-remoteSiteSettings
+    |  |-staticresources
+    |  |package.xml
+    ```
+
 ### export
 Export allows you to fetch all codes from your org to local machine. This command will export all the codes to a local folder called `src`
 
     force export
+
+    ```
+    |-src
+    |  |-aura
+    |  |-corsWhitelistOrigins
+    |  |-remoteSiteSettings
+    |  |-staticresources
+    |  |package.xml
+    ```
 
 
 ### notify
