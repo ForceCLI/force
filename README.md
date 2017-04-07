@@ -113,6 +113,39 @@ You can also push all of a specific type of resource from a given folder.
       force push -t ApexClass -f metadata/classes/
       force push -t ApexPage -f metadata/pages/
 
+
+### import
+Import allows you to import code from local directory. This makes a lot of senses when you want to import code from local directory to a brand new org. This import method import codes from `metadata` folder not from your `src` folder
+
+
+    Make sure you have the metadata folder, in case you only have src folder, simply replicate it
+
+    force import
+
+    Sample folder structure
+
+
+    |-metadata
+    |  |-aura
+    |  |-corsWhitelistOrigins
+    |  |-remoteSiteSettings
+    |  |-staticresources
+    |  |package.xml
+
+
+### export
+Export allows you to fetch all codes from your org to local machine. This command will export all the codes to a local folder called `src`
+
+    force export
+
+    |-src
+    |  |-aura
+    |  |-corsWhitelistOrigins
+    |  |-remoteSiteSettings
+    |  |-staticresources
+    |  |package.xml
+
+
 ### notify
 Includes notification library, [gotifier](https://github.com/ViViDboarder/gotifier), that will display notifications for using either Using [terminal-notifier](https://github.com/julienXX/terminal-notifier) on OSX or [notify-send](http://manpages.ubuntu.com/manpages/saucy/man1/notify-send.1.html) on Ubuntu. Currently, only the `push` and `test` methods are displaying notifications.
 
@@ -122,7 +155,7 @@ Limits will display limits information for your organization.
 - Remaining is the total number of calls or events left for the organization
 
 The list is limited to those exposed by the REST API.
-	
+
       force limits
 
 ### Hacking
@@ -138,3 +171,12 @@ The list is limited to those exposed by the REST API.
     # to compile and test modifications
     $ go get .
     $ force
+
+
+
+### Windows Subsystem Linux (aka Bash on Windows)
+Starting from Windows 10 Creator Update (version 1703), you now can use force cli within Windows Bash. To access force cli from WSL, you can call `force.exe`
+
+For ease of use you can add the following simple alias
+
+      alias force=force.exe
