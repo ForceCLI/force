@@ -186,10 +186,12 @@ func runExport(cmd *Command, args []string) {
 		query = append(query, ForceMetadataQueryElement{Name: []string{foldersType}, Members: members})
 	}
 
-	root, err = GetSourceDir()
-	if err != nil {
-		fmt.Printf("Error obtaining root directory\n")
-		ErrorAndExit(err.Error())
+	if root == "" {
+		root, err = GetSourceDir()
+		if err != nil {
+			fmt.Printf("Error obtaining root directory\n")
+			ErrorAndExit(err.Error())
+		}
 	}
 	files, err := force.Metadata.Retrieve(query)
 	if err != nil {
