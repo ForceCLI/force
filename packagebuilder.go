@@ -108,6 +108,7 @@ var metapaths = []metapath{
 	metapath{path: "triggers", name: "ApexTrigger"},
 	metapath{path: "weblinks", name: "CustomPageWebLink"},
 	metapath{path: "workflows", name: "Workflow"},
+	metapath{path: "cspTrustedSites", name: "CspTrustedSite"},
 }
 
 type PackageBuilder struct {
