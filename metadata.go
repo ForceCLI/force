@@ -566,7 +566,7 @@ func (fm *ForceMetadata) ValidateFieldOptions(typ string, options map[string]str
 	var attrs map[string]reflect.StructField
 	var s reflect.Value
 
-	switch typ {
+	switch strings.ToLower(typ) {
 	case "picklist":
 		attrs = getAttributes(&PicklistField{})
 		s = reflect.ValueOf(&PicklistFieldRequired{}).Elem()
