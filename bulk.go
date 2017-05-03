@@ -69,6 +69,7 @@ Commands:
   insert   upload a .csv file to insert records
   update   upload a .csv file to update records
   upsert   upload a .csv file to upsert records
+  delete   upload a .csv file to delete records
   query    run a SOQL statement to generate a .csv file on the server
   retrieve retrieve a query generated .csv file from the server
   job      get information about a job based on job Id
@@ -79,6 +80,7 @@ Examples using flags - more flexible, flags can be in any order with arguments a
 
   force bulk -c=insert -[concurrencyMode, m]=Serial -[objectType, o]=Account mydata.csv
   force bulk -c=update -[concurrencyMode, m]=Parallel -[objectType, o]=Account mydata.csv
+  force bulk -c=delete -[concurrencyMode, m]=Parallel -[objectType, o]=Account mydata.csv
   force bulk -c=query -[objectType, o]=Account "SOQL"
   force bulk -c=job -[jobId, j]=jobid
   force bulk -c=batches -[jobId, j]=jobid
@@ -91,6 +93,7 @@ Examples using positional arguments - less flexible, arguments must be in the co
 
   force bulk insert Account [csv file] [<concurrency mode>]
   force bulk update Account [csv file] [<concurrency mode>]
+  force bulk delete Account [csv file] [<concurrency mode>]
   force bulk upsert ExternalIdField__c Account [csv file] [<concurrency mode>]
   force bulk job [job id]
   force bulk batches [job id]
@@ -114,8 +117,8 @@ var (
 var commandVersion = "old"
 
 func init() {
-	cmdBulk.Flag.StringVar(&command, "command", "", "Sub command for bulk api. Can be insert, update, job, batches, batch, retrieve or query.")
-	cmdBulk.Flag.StringVar(&command, "c", "", "Sub command for bulk api. Can be insert, update, job, batches, batch, retrieve or query.")
+	cmdBulk.Flag.StringVar(&command, "command", "", "Sub command for bulk api. Can be insert, update, delete, job, batches, batch, retrieve or query.")
+	cmdBulk.Flag.StringVar(&command, "c", "", "Sub command for bulk api. Can be insert, update, delete, job, batches, batch, retrieve or query.")
 	cmdBulk.Flag.StringVar(&objectType, "objectType", "", "Type of sObject for CRUD commands.")
 	cmdBulk.Flag.StringVar(&objectType, "o", "", "Type of sObject for CRUD commands.")
 	cmdBulk.Flag.StringVar(&jobId, "jobId", "", "A batch job id.")
@@ -126,8 +129,8 @@ func init() {
 	cmdBulk.Flag.StringVar(&fileFormat, "f", "CSV", "File format.")
 	cmdBulk.Flag.StringVar(&externalId, "externalId", "", "The external Id field for upserts of data.")
 	cmdBulk.Flag.StringVar(&externalId, "e", "", "The External Id Field for upserts of data.")
-	cmdBulk.Flag.StringVar(&concurrencyMode, "m", "Parallel", "Concurrency mode for bulk api inserts, updates and upserts.  Valid options are `Serial` and `Parallel` (default).")
-	cmdBulk.Flag.StringVar(&concurrencyMode, "concurrencyMode", "Parallel", "Concurrency mode for bulk api inserts, updates and upserts.  Valid options are `Serial` and `Parallel` (default).")
+	cmdBulk.Flag.StringVar(&concurrencyMode, "m", "Parallel", "Concurrency mode for bulk api inserts, updates, deletes and upserts.  Valid options are `Serial` and `Parallel` (default).")
+	cmdBulk.Flag.StringVar(&concurrencyMode, "concurrencyMode", "Parallel", "Concurrency mode for bulk api inserts, updates, deletes and upserts.  Valid options are `Serial` and `Parallel` (default).")
 	cmdBulk.Run = runBulk
 }
 
@@ -139,7 +142,7 @@ func runBulk2(cmd *Command, args []string) {
 	commandVersion = "new"
 	command = strings.ToLower(command)
 	switch command {
-	case "insert", "update", "upsert", "query":
+	case "insert", "update", "delete", "upsert", "query":
 		runDBCommand(args[0])
 	case "job", "retrieve", "batch", "batches":
 		runBulkInfoCommand()
@@ -187,6 +190,8 @@ func runDBCommand(arg string) {
 		createBulkInsertJob(arg, objectType, fileFormat, concurrencyMode)
 	case "update":
 		createBulkUpdateJob(arg, objectType, fileFormat, concurrencyMode)
+	case "delete":
+		createBulkDeleteJob(arg, objectType, fileFormat, concurrencyMode)
 	case "upsert":
 		createBulkUpsertJob(arg, objectType, fileFormat, externalId, concurrencyMode)
 	case "query":
@@ -209,7 +214,7 @@ func runBulk(cmd *Command, args []string) {
 	switch command {
 	case "query":
 		handleQuery(args)
-	case "insert", "update":
+	case "insert", "update", "delete":
 		handleDML(args)
 	case "batch", "batches", "job":
 		handleInfo(args)
@@ -424,6 +429,26 @@ func createBulkInsertJob(csvFilePath string, objectType string, format string, c
 
 func createBulkUpdateJob(csvFilePath string, objectType string, format string, concurrencyMode string) {
 	jobInfo, err := createBulkJob(objectType, "update", format, "", concurrencyMode)
+	if err != nil {
+		ErrorAndExit(err.Error())
+	} else {
+		batchInfo, err := addBatchToJob(csvFilePath, jobInfo.Id)
+		if err != nil {
+			closeBulkJob(jobInfo.Id)
+			ErrorAndExit(err.Error())
+		} else {
+			closeBulkJob(jobInfo.Id)
+			if commandVersion == "old" {
+				fmt.Printf("Job created ( %s ) - for job status use\n force bulk batch %s %s\n", jobInfo.Id, jobInfo.Id, batchInfo.Id)
+			} else {
+				fmt.Printf("Job created ( %s ) - for job status use\n force bulk -c=batch -j=%s -b=%s\n", jobInfo.Id, jobInfo.Id, batchInfo.Id)
+			}
+		}
+	}
+}
+
+func createBulkDeleteJob(csvFilePath string, objectType string, format string, concurrencyMode string) {
+	jobInfo, err := createBulkJob(objectType, "delete", format, "", concurrencyMode)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	} else {
