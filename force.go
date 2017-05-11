@@ -15,6 +15,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const (
@@ -22,6 +23,7 @@ const (
 	RedirectUri = "http://localhost:3835/oauth/callback"
 )
 
+var Timeout int64 = 0
 var CustomEndpoint = ``
 var SessionExpiredError = errors.New("Session expired")
 
@@ -1575,6 +1577,7 @@ func (result *ForceQueryResult) Update(other ForceQueryResult, force *Force) {
 
 func doRequest(request *http.Request) (res *http.Response, err error) {
 	client := &http.Client{}
+	client.Timeout = time.Duration(Timeout) * time.Millisecond
 	return client.Do(request)
 }
 

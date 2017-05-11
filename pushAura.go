@@ -197,6 +197,7 @@ func updateAuraDefinition(force Force, fname string) {
 
 	//Get the manifest
 	manifest, err := GetManifest(fname)
+	Timeout = 20000
 
 	for i := range manifest.Files {
 		component := manifest.Files[i]
@@ -205,7 +206,11 @@ func updateAuraDefinition(force Force, fname string) {
 			mbody, _ := readFile(fname)
 			err := force.UpdateAuraComponent(map[string]string{"source": mbody}, component.ComponentId)
 			if err != nil {
-				ErrorAndExit(err.Error())
+				if strings.Contains(err.Error(), "request canceled") {
+					ErrorAndExit("\n\nRequest has timed out.")
+				} else {
+					ErrorAndExit(err.Error())
+				}
 			}
 			fmt.Printf("done\n")
 			return
