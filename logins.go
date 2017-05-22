@@ -75,12 +75,16 @@ func ActiveCredentials(requireCredentials bool) (creds ForceCredentials, err err
 	if requireCredentials && err != nil {
 		ErrorAndExit("Failed to load credentials. %v", err)
 	}
-	_ = json.Unmarshal([]byte(data), &creds)
-	if creds.ApiVersion != "" {
-		apiVersionNumber = creds.ApiVersion
-		apiVersion = "v" + apiVersionNumber
+	if err == nil {
+		_ = json.Unmarshal([]byte(data), &creds)
+		if creds.ApiVersion != "" {
+			apiVersionNumber = creds.ApiVersion
+			apiVersion = "v" + apiVersionNumber
+		}
 	}
-
+	if !requireCredentials && err != nil {
+		err = nil
+	}
 	return
 }
 

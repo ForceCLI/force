@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/bgentry/speakeasy"
 	"net/url"
+	"strings"
 )
 
 var cmdLogin = &Command{
@@ -140,6 +141,7 @@ func ForceSaveLogin(creds ForceCredentials) (username string, err error) {
 	fmt.Printf("Logged in as '%s' (API %s)\n", me["Username"], apiVersion)
 	title := fmt.Sprintf("\033];%s\007", me["Username"])
 	creds.ProfileId = fmt.Sprintf("%s", me["ProfileId"])
+	creds.ApiVersion = strings.TrimPrefix(apiVersion, "v")
 	fmt.Printf(title)
 
 	describe, err := force.Metadata.DescribeMetadata()
