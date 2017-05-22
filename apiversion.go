@@ -25,18 +25,21 @@ Examples:
 func init() {
 }
 
+func parseApiVersion(args []string) {
+	matcher := regexp.MustCompile(`^v?(\d+\.0)$`)
+	matched := matcher.FindStringSubmatch(args[0])
+	if matched == nil {
+		ErrorAndExit("apiversion must be in the form of nn.0.")
+	}
+
+	apiVersionNumber = matched[1]
+	apiVersion = fmt.Sprintf("v%s", apiVersionNumber)
+}
+
 func runApiVersion(cmd *Command, args []string) {
 	force, _ := ActiveForce()
 	if len(args) == 1 {
-		apiVersionNumber = args[0]
-		matched, err := regexp.MatchString("^\\d{2}\\.0$", apiVersionNumber)
-		if err != nil {
-			ErrorAndExit("%v", err)
-		}
-		if !matched {
-			ErrorAndExit("apiversion must be in the form of nn.0.")
-		}
-		apiVersion = fmt.Sprintf("v%s", apiVersionNumber)
+		parseApiVersion(args)
 		force.Credentials.ApiVersion = apiVersionNumber
 		ForceSaveLogin(*force.Credentials)
 	} else if len(args) == 0 {

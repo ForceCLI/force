@@ -35,11 +35,6 @@ const (
 	EndpointCustom     = iota
 )
 
-/*const (
-	apiVersion       = "v34.0"
-	apiVersionNumber = "34.0"
-)*/
-
 type Force struct {
 	Credentials *ForceCredentials
 	Metadata    *ForceMetadata

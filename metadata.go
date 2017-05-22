@@ -1192,7 +1192,7 @@ func (fm *ForceMetadata) DeployWithTempFile(soap string, filename string) {
 	os.MkdirAll(tempdir, 0777)
 	xmlfile := filepath.Join(tempdir, filename)
 	ioutil.WriteFile(xmlfile, []byte(soap), 0777)
-	pushByPaths([]string{xmlfile})
+	pushByPaths(fm.Force, []string{xmlfile})
 }
 
 func (fm *ForceMetadata) Deploy(files ForceMetadataFiles, options ForceDeployOptions) (results ForceCheckDeploymentStatusResult, err error) {

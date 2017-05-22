@@ -86,8 +86,10 @@ func argIsFile(fpath string) bool {
 }
 
 func runPush(cmd *Command, args []string) {
+	force, _ := ActiveForce()
+
 	if strings.ToLower(metadataType) == "package" {
-		pushPackage()
+		pushPackage(force)
 		return
 	}
 	// Treat trailing args as file paths
@@ -97,18 +99,18 @@ func runPush(cmd *Command, args []string) {
 		// or to a folder. If it is a folder, we pickup the resources a different
 		// way than if it's a file.
 		validatePushByMetadataTypeCommand()
-		pushByPaths(resourcepaths)
+		pushByPaths(force, resourcepaths)
 	} else {
 		if len(metadataName) > 0 {
 			if len(metadataType) != 0 {
 				validatePushByMetadataTypeCommand()
-				pushByMetadataType()
+				pushByMetadataType(force)
 			} else {
 				ErrorAndExit("The -type (-t) parameter is required.")
 			}
 		} else {
 			validatePushByMetadataTypeCommand()
-			pushByMetadataType()
+			pushByMetadataType(force)
 		}
 	}
 }
@@ -175,7 +177,7 @@ func contains(s []string, e string) bool {
 	return false
 }
 
-func pushPackage() {
+func pushPackage(force *Force) {
 	if len(resourcepaths) == 0 {
 		var packageFolder = findPackageFolder(metadataName[0])
 		zipResource(packageFolder, metadataName[0])
@@ -183,7 +185,7 @@ func pushPackage() {
 		//var dir, _ = os.Getwd();
 		//ErrorAndExit(fmt.Sprintf("No resource path sepcified. %s, %s", metadataName[0], dir))
 	}
-	deployPackage()
+	deployPackage(force)
 }
 
 // Return the name of the first element of an XML file. We need this
@@ -285,7 +287,7 @@ func FilenameMatchesMetadataName(filename string, metadataName string) bool {
 // name(s) passed on the -name flag(s). This method also looks for unpacked
 // static resource so that it can repack them and update the actual ".resource"
 // file.
-func pushByMetadataType() {
+func pushByMetadataType(force *Force) {
 	byName = true
 
 	// TODO: get all files that match these types and make a list out of them
@@ -361,7 +363,7 @@ func pushByMetadataType() {
 	})
 
 	// Push these files to the package maker/sender
-	pushByPaths(files)
+	pushByPaths(force, files)
 }
 
 // Just zip up what ever is in the path
@@ -453,7 +455,7 @@ func pushByName() {
 
 // Creates a package that includes everything in the passed in string slice
 // and then deploys the package to salesforce
-func pushByPaths(fpaths []string) {
+func pushByPaths(force *Force, fpaths []string) {
 	pb := NewPushBuilder()
 
 	var badPaths []string
@@ -472,7 +474,7 @@ func pushByPaths(fpaths []string) {
 	if len(badPaths) == 0 {
 		fmt.Println("Deploying now...")
 		t0 := time.Now()
-		deployFiles(pb.ForceMetadataFiles())
+		deployFiles(force, pb.ForceMetadataFiles())
 		t1 := time.Now()
 		fmt.Printf("The deployment took %v to run.\n", t1.Sub(t0))
 	} else {
@@ -483,8 +485,7 @@ func pushByPaths(fpaths []string) {
 // Deploy a previously create package. This is used for "force push package". In this case the
 // --path flag should be pointing to a zip file that may or may not have come from a different
 // org altogether
-func deployPackage() {
-	force, _ := ActiveForce()
+func deployPackage(force *Force) {
 	DeploymentOptions := deployOpts()
 	for _, name := range resourcepaths {
 		zipfile, err := ioutil.ReadFile(name)
@@ -497,8 +498,7 @@ func deployPackage() {
 	return
 }
 
-func deployFiles(files ForceMetadataFiles) {
-	force, _ := ActiveForce()
+func deployFiles(force *Force, files ForceMetadataFiles) {
 	var DeploymentOptions = deployOpts()
 	result, err := force.Metadata.Deploy(files, *DeploymentOptions)
 	err = processDeployResults(result, err)
