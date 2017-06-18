@@ -126,12 +126,18 @@ type TestSuccess struct {
 	Time       float32 `xml:"time"`
 }
 
+type CodeCoverageWarning struct {
+	Name    string `xml:"name"`
+	Message string `xml:"message"`
+}
+
 type RunTestResult struct {
-	NumberOfFailures int           `xml:"numFailures"`
-	NumberOfTestsRun int           `xml:"numTestsRun"`
-	TotalTime        float32       `xml:"totalTime"`
-	TestFailures     []TestFailure `xml:"failures"`
-	TestSuccesses    []TestSuccess `xml:"successes"`
+	NumberOfFailures     int                   `xml:"numFailures"`
+	NumberOfTestsRun     int                   `xml:"numTestsRun"`
+	TotalTime            float32               `xml:"totalTime"`
+	TestFailures         []TestFailure         `xml:"failures"`
+	TestSuccesses        []TestSuccess         `xml:"successes"`
+	CodeCoverageWarnings []CodeCoverageWarning `xml:"codeCoverageWarnings"`
 }
 
 type ComponentDetails struct {

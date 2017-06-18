@@ -534,6 +534,7 @@ func processDeployResults(result ForceCheckDeploymentStatusResult, deployErr err
 	successes := result.Details.ComponentSuccesses
 	testFailures := result.Details.RunTestResult.TestFailures
 	testSuccesses := result.Details.RunTestResult.TestSuccesses
+	codeCoverageWarnings := result.Details.RunTestResult.CodeCoverageWarnings
 
 	if len(problems) > 0 {
 		fmt.Printf("\nFailures - %d\n", len(problems))
@@ -582,12 +583,21 @@ func processDeployResults(result ForceCheckDeploymentStatusResult, deployErr err
 		fmt.Println(failure.StackTrace)
 	}
 
+	if len(codeCoverageWarnings) > 0 {
+		fmt.Printf("\nCode Coverage Warnings - %d\n", len(codeCoverageWarnings))
+		for _, warning := range codeCoverageWarnings {
+			fmt.Printf("\n %s: %s\n", warning.Name, warning.Message)
+		}
+	}
+
 	// Handle notifications
 	notifySuccess("push", len(problems) == 0)
 	if len(problems) > 0 {
 		err = errors.New("Some components failed deployment")
 	} else if len(testFailures) > 0 {
 		err = errors.New("Some tests failed")
+	} else if !result.Success {
+		err = errors.New(fmt.Sprintf("Status: %s", result.Status))
 	}
 	return
 }
