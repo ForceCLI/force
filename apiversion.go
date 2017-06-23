@@ -5,7 +5,7 @@ import (
 	"regexp"
 )
 
-var apiVersionNumber = "39.0"
+var apiVersionNumber = "40.0"
 var apiVersion = fmt.Sprintf("v%s", apiVersionNumber)
 
 var cmdApiVersion = &Command{
@@ -18,7 +18,7 @@ Display/Set current API version
 Examples:
 
   force apiversion
-  force apiversion 39.0
+  force apiversion 40.0
 `,
 }
 
