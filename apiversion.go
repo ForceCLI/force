@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"regexp"
 )
 
@@ -38,7 +39,7 @@ func runApiVersion(cmd *Command, args []string) {
 		}
 		apiVersion = fmt.Sprintf("v%s", apiVersionNumber)
 		force.Credentials.ApiVersion = apiVersionNumber
-		ForceSaveLogin(*force.Credentials)
+		ForceSaveLogin(*force.Credentials, os.Stdout)
 	} else if len(args) == 0 {
 		fmt.Println(apiVersion)
 	} else {

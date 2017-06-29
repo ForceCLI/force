@@ -12,6 +12,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"runtime"
 	"strconv"
 	"strings"
@@ -296,7 +297,7 @@ func (f *Force) UpdateCredentials(creds ForceCredentials) {
 	f.Credentials.InstanceUrl = creds.InstanceUrl
 	f.Credentials.Scope = creds.Scope
 	f.Credentials.Id = creds.Id
-	ForceSaveLogin(*f.Credentials)
+	ForceSaveLogin(*f.Credentials, os.Stderr)
 }
 
 func (f *Force) refreshTokenURL() string {
@@ -330,7 +331,7 @@ func (f *Force) RefreshSession() (err error, emessages []ForceError) {
 		return
 	}
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	fmt.Println("Refreshing Session Token")
+	fmt.Fprintln(os.Stderr, "Refreshing Session Token")
 	res, err := doRequest(req)
 	if err != nil {
 		return
