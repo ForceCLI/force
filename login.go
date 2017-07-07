@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/bgentry/speakeasy"
 	"net/url"
+	"os"
 	"strings"
 )
 
@@ -95,12 +96,12 @@ func runLogin(cmd *Command, args []string) {
 				ErrorAndExit(err.Error())
 			}
 		}
-		_, err := ForceLoginAndSaveSoap(endpoint, *userName, *password)
+		_, err := ForceLoginAndSaveSoap(endpoint, *userName, *password, os.Stdout)
 		if err != nil {
 			ErrorAndExit(err.Error())
 		}
 	} else { // Do OAuth login
-		_, err := ForceLoginAndSave(endpoint)
+		_, err := ForceLoginAndSave(endpoint, os.Stdout)
 		if err != nil {
 			ErrorAndExit(err.Error())
 		}
@@ -117,7 +118,7 @@ func CurrentEndpoint() (endpoint ForceEndpoint, customUrl string, err error) {
 	return
 }
 
-func ForceSaveLogin(creds ForceCredentials) (username string, err error) {
+func ForceSaveLogin(creds ForceCredentials, output *os.File) (username string, err error) {
 	force := NewForce(&creds)
 	login, err := force.Get(creds.Id)
 	if err != nil {
@@ -135,21 +136,21 @@ func ForceSaveLogin(creds ForceCredentials) (username string, err error) {
 
 	me, err := force.Whoami()
 	if err != nil {
-		fmt.Println("Problem getting user data, continuing...")
+		fmt.Fprintln(output, "Problem getting user data, continuing...")
 		//return
 	}
-	fmt.Printf("Logged in as '%s' (API %s)\n", me["Username"], apiVersion)
+	fmt.Fprintf(output, "Logged in as '%s' (API %s)\n", me["Username"], apiVersion)
 	title := fmt.Sprintf("\033];%s\007", me["Username"])
 	creds.ProfileId = fmt.Sprintf("%s", me["ProfileId"])
 	creds.ApiVersion = strings.TrimPrefix(apiVersion, "v")
-	fmt.Printf(title)
+	fmt.Fprintf(output, title)
 
 	describe, err := force.Metadata.DescribeMetadata()
 
 	if err == nil {
 		creds.Namespace = describe.NamespacePrefix
 	} else {
-		fmt.Printf("Your profile does not have Modify All Data enabled. Functionallity will be limited.\n")
+		fmt.Fprintf(output, "Your profile does not have Modify All Data enabled. Functionallity will be limited.\n")
 		err = nil
 	}
 
@@ -162,22 +163,22 @@ func ForceSaveLogin(creds ForceCredentials) (username string, err error) {
 	return
 }
 
-func ForceLoginAndSaveSoap(endpoint ForceEndpoint, user_name string, password string) (username string, err error) {
+func ForceLoginAndSaveSoap(endpoint ForceEndpoint, user_name string, password string, output *os.File) (username string, err error) {
 	creds, err := ForceSoapLogin(endpoint, user_name, password)
 	if err != nil {
 		return
 	}
 
-	username, err = ForceSaveLogin(creds)
+	username, err = ForceSaveLogin(creds, output)
 	//fmt.Printf("Creds %+v", creds)
 	return
 }
 
-func ForceLoginAndSave(endpoint ForceEndpoint) (username string, err error) {
+func ForceLoginAndSave(endpoint ForceEndpoint, output *os.File) (username string, err error) {
 	creds, err := ForceLogin(endpoint)
 	if err != nil {
 		return
 	}
-	username, err = ForceSaveLogin(creds)
+	username, err = ForceSaveLogin(creds, output)
 	return
 }
