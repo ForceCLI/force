@@ -312,6 +312,8 @@ func (f *Force) refreshTokenURL() string {
 		refreshURL = fmt.Sprintf("https://prerellogin.pre.salesforce.com/services/oauth2/token")
 	case EndpointMobile1:
 		refreshURL = fmt.Sprintf("https://EndpointMobile1.t.salesforce.com/services/oauth2/token")
+	case EndpointCustom:
+		refreshURL = fmt.Sprintf("%s/services/oauth2/token", CustomEndpoint)
 	default:
 		ErrorAndExit("no such endpoint type")
 	}
@@ -320,7 +322,7 @@ func (f *Force) refreshTokenURL() string {
 
 func (f *Force) RefreshSession() (err error, emessages []ForceError) {
 	attrs := url.Values{}
-	attrs.Set("grant_type", "refresh_token")
+	attrs.Set("grant_type", "refresh_token api web")
 	attrs.Set("refresh_token", f.Credentials.RefreshToken)
 	attrs.Set("client_id", ClientId)
 	attrs.Set("format", "json")
