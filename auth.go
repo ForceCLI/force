@@ -3,8 +3,8 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"os/exec"
 	"os"
+	"os/exec"
 	"path"
 )
 
@@ -98,7 +98,7 @@ func setActiveCreds(authData UserAuth) {
 	Config.Save("current", "account", configName)
 }
 
-func getDefaultItem()(data map[string]interface{}, err error) {
+func getDefaultItem() (data map[string]interface{}, err error) {
 	md, err := getOrgList()
 	defUsers, err := findDefaultUserInOrgList(md)
 
@@ -107,7 +107,7 @@ func getDefaultItem()(data map[string]interface{}, err error) {
 	}
 
 	if len(defUsers) == 1 {
-		data = defUsers[0] 
+		data = defUsers[0]
 	} else {
 		var hubUser map[string]interface{}
 		var scrUser map[string]interface{}
@@ -122,7 +122,7 @@ func getDefaultItem()(data map[string]interface{}, err error) {
 			data = scrUser
 		} else {
 			data = hubUser
-		}	
+		}
 	}
 	if len(fmt.Sprintf("%s", data["alias"])) > 0 {
 		fmt.Printf("Getting auth for %s (%s)...\n", data["username"], data["alias"])
@@ -132,14 +132,14 @@ func getDefaultItem()(data map[string]interface{}, err error) {
 	return
 }
 
-func inProjectDir()(bool) {
+func inProjectDir() bool {
 	dir, err := os.Getwd()
 	_, err = os.Stat(path.Join(dir, ".sfdx"))
-				
+
 	return err == nil
 }
 
-func getOrgListItem(user string)(data map[string]interface{}, err error) {
+func getOrgListItem(user string) (data map[string]interface{}, err error) {
 	md, err := getOrgList()
 	data, err = findUserInOrgList(user, md)
 	return
@@ -170,7 +170,7 @@ func getOrgList() (data map[string]interface{}, err error) {
 	return
 }
 
-func findUserInOrgList(user string, md map[string]interface{})(data map[string]interface{}, err error) {
+func findUserInOrgList(user string, md map[string]interface{}) (data map[string]interface{}, err error) {
 	for k, v := range md {
 		fmt.Println(v)
 		switch vv := v.(type) {
@@ -200,7 +200,7 @@ func findUserInOrgList(user string, md map[string]interface{})(data map[string]i
 	return
 }
 
-func findDefaultUserInOrgList(md map[string]interface{})(data []map[string]interface{}, err error) {
+func findDefaultUserInOrgList(md map[string]interface{}) (data []map[string]interface{}, err error) {
 	for k, v := range md {
 		switch vv := v.(type) {
 		case float64:
@@ -209,7 +209,7 @@ func findDefaultUserInOrgList(md map[string]interface{})(data []map[string]inter
 				for _, y := range u.([]interface{}) {
 					auth := y.(map[string]interface{})
 					//check if user matches alias or username
-					if auth["isDefaultUsername"] == true || auth["isDefaultDevHubUsername"] == true {						
+					if auth["isDefaultUsername"] == true || auth["isDefaultDevHubUsername"] == true {
 						// Add auth to slice
 						data = append(data, auth)
 					}
