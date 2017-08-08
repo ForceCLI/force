@@ -172,7 +172,6 @@ func getOrgList() (data map[string]interface{}, err error) {
 
 func findUserInOrgList(user string, md map[string]interface{}) (data map[string]interface{}, err error) {
 	for k, v := range md {
-		fmt.Println(v)
 		switch vv := v.(type) {
 		case float64:
 		case interface{}:
