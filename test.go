@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"path/filepath"
 	"strconv"
 )
 
@@ -19,6 +20,7 @@ Examples:
 
   force test all
   force test Test1 Test2 Test3
+  force test classes/MyClass_Test.cls
   force test -namespace=ns Test4 
   force test -v Test1
 `,
@@ -51,7 +53,13 @@ func runTests(cmd *Command, args []string) {
 		ErrorAndExit("must specify tests to run")
 	}
 	force, _ := ActiveForce()
-	output, err := RunTests(force.Partner, args, *namespaceTestFlag)
+	var testClasses []string
+	for _, arg := range args {
+		_, filename := filepath.Split(arg)
+		extension := filepath.Ext(arg)
+		testClasses = append(testClasses, filename[:len(filename)-len(extension)])
+	}
+	output, err := RunTests(force.Partner, testClasses, *namespaceTestFlag)
 	success := false
 	if err != nil {
 		ErrorAndExit(err.Error())
