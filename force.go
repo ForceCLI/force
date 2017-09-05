@@ -322,7 +322,7 @@ func (f *Force) refreshTokenURL() string {
 
 func (f *Force) RefreshSession() (err error, emessages []ForceError) {
 	attrs := url.Values{}
-	attrs.Set("grant_type", "refresh_token api web")
+	attrs.Set("grant_type", "refresh_token")
 	attrs.Set("refresh_token", f.Credentials.RefreshToken)
 	attrs.Set("client_id", ClientId)
 	attrs.Set("format", "json")
