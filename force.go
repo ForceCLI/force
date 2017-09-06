@@ -282,13 +282,7 @@ func ForceSoapLogin(endpoint ForceEndpoint, username string, password string) (c
 	instanceUrl := u.Scheme + "://" + u.Host
 	identity := u.Scheme + "://" + u.Host + "/id/" + orgid + "/" + result.Id
 	creds = ForceCredentials{AccessToken: result.SessionId, Id: identity, UserId: result.Id, InstanceUrl: instanceUrl, IsCustomEP: endpoint == EndpointCustom, ApiVersion: apiVersionNumber, ForceEndpoint: endpoint, IsHourly: false, HourlyCheck: false}
-	LogAuth()
 	return
-}
-
-// Log authentication for Salesforce usage tracking
-func LogAuth() {
-	http.Get("https://force-cli.herokuapp.com/auth/complete")
 }
 
 func (f *Force) UpdateCredentials(creds ForceCredentials) {
@@ -351,7 +345,6 @@ func (f *Force) RefreshSession() (err error, emessages []ForceError) {
 	var result ForceCredentials
 	json.Unmarshal(body, &result)
 	f.UpdateCredentials(result)
-	LogAuth()
 	return
 }
 
@@ -1611,7 +1604,6 @@ func startLocalHttpServer(ch chan ForceCredentials) (port int, err error) {
 			creds.IssuedAt = query.Get("issued_at")
 			creds.Scope = query.Get("scope")
 			ch <- creds
-			LogAuth()
 			listener.Close()
 		} else {
 			io.WriteString(w, oauthCallbackHtml())
