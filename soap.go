@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/xml"
 	"errors"
 	"fmt"
@@ -28,20 +29,23 @@ func NewSoap(endpoint, namespace, accessToken string) (s *Soap) {
 	return
 }
 func (s *Soap) ExecuteLogin(username, password string) (response []byte, err error) {
-	soap := `
-		<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
-  				xmlns:urn="urn:partner.soap.sforce.com">
-  			<soapenv:Body>
-    			<urn:login>
-      				<urn:username>%s</urn:username>
-      				<urn:password>%s</urn:password>
-    			</urn:login>
-  			</soapenv:Body>
-		</soapenv:Envelope>
-		`
-	rbody := fmt.Sprintf(soap, username, password)
+	type SoapLogin struct {
+		XMLName  xml.Name `xml:"soapenv:Envelope"`
+		SoapNS   string   `xml:"xmlns:soapenv,attr"`
+		UrnNS    string   `xml:"xmlns:urn,attr"`
+		Username string   `xml:"soapenv:Body>urn:login>urn:username"`
+		Password string   `xml:"soapenv:Body>urn:login>urn:password"`
+	}
 
-	req, err := httpRequest("POST", s.Endpoint, strings.NewReader(rbody))
+	v := &SoapLogin{SoapNS: "http://schemas.xmlsoap.org/soap/envelope/", UrnNS: "urn:partner.soap.sforce.com", Username: username, Password: password}
+	rbody := new(bytes.Buffer)
+	enc := xml.NewEncoder(rbody)
+	err = enc.Encode(v)
+	if err != nil {
+		return
+	}
+
+	req, err := httpRequest("POST", s.Endpoint, rbody)
 	if err != nil {
 		return
 	}
