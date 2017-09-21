@@ -22,8 +22,8 @@ script:
 - git config --global user.name "Your Name"
 - test -z "$(go fmt)"
 - go vet
-- go test -v
-- go test -v -race
+- go test -v ./...
+- go test -v -race ./...
 - export OS_TARGETS="darwin windows linux"
 - export ARCH_TARGETS="386 amd64"
 - export GO_LINKER_VALUE=$(git describe --tags --always)

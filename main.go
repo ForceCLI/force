@@ -2,55 +2,22 @@ package main
 
 import (
 	"os"
-)
 
-var commands = []*Command{
-	cmdApiVersion,
-	cmdUseDXAuth,
-	cmdLogin,
-	cmdLogout,
-	cmdLogins,
-	cmdActive,
-	cmdWhoami,
-	cmdDescribe,
-	cmdCreate,
-	cmdSobject,
-	cmdBigObject,
-	cmdField,
-	cmdRecord,
-	cmdBulk,
-	cmdFetch,
-	cmdImport,
-	cmdExport,
-	cmdQuery,
-	cmdApex,
-	cmdTrace,
-	cmdLog,
-	cmdEventLogFile,
-	cmdOauth,
-	cmdTest,
-	cmdSecurity,
-	cmdVersion,
-	cmdUpdate,
-	cmdPush,
-	cmdAura,
-	cmdPassword,
-	cmdNotifySet,
-	cmdLimits,
-	cmdHelp,
-	cmdDataPipe,
-}
+	"github.com/heroku/force/command"
+	. "github.com/heroku/force/error"
+	. "github.com/heroku/force/lib"
+)
 
 func main() {
 	args := os.Args[1:]
 	if len(args) < 1 {
-		usage()
+		command.Usage()
 	}
 
-	for _, cmd := range commands {
+	for _, cmd := range command.Commands {
 		if cmd.Name() == args[0] && cmd.Run != nil {
 			cmd.Flag.Usage = func() {
-				cmd.printUsage()
+				cmd.PrintUsage()
 			}
 			if err := cmd.Flag.Parse(args[1:]); err != nil {
 				os.Exit(2)
@@ -59,11 +26,11 @@ func main() {
 			if err != nil {
 				ErrorAndExit(err.Error())
 			}
-			apiVersionNumber = creds.ApiVersion
+			SetApiVersion(creds.ApiVersion)
 
 			cmd.Run(cmd, cmd.Flag.Args())
 			return
 		}
 	}
-	usage()
+	command.Usage()
 }
