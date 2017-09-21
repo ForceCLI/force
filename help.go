@@ -58,5 +58,5 @@ func printUsage() {
 func usage() {
 	flag.PrintDefaults()
 	printUsage()
-	os.Exit(2)
+	os.Exit(0)
 }
