@@ -8,7 +8,6 @@ import (
 	. "github.com/heroku/force/lib"
 )
 
-
 func main() {
 	args := os.Args[1:]
 	if len(args) < 1 {
