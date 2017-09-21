@@ -634,16 +634,6 @@ func (f *Force) GetSobject(name string) (sobject ForceSobject, err error) {
 	return
 }
 
-func (f *Force) RestQuery(url string) (result string) {
-	fmt.Println(fmt.Sprintf("%s/services/data/%s/%s", f.Credentials.InstanceUrl, apiVersion, url))
-	body, err := f.httpGet(fmt.Sprintf("%s/services/data/%s/%s", f.Credentials.InstanceUrl, apiVersion, url))
-	if err != nil {
-		ErrorAndExit(err.Error())
-	}
-	result = string(body)
-	return
-}
-
 func (f *Force) Query(query string, isTooling bool) (result ForceQueryResult, fieldList *list.List, err error) {
 	toolingPath := ""
 	if isTooling {
@@ -1342,7 +1332,8 @@ func (f *Force) Whoami() (me ForceRecord, err error) {
 }
 
 func (f *Force) GetREST(url string) (result string, err error) {
-	fullUrl := fmt.Sprintf("%s/services/data/%s%s", f.Credentials.InstanceUrl, apiVersion, url)
+	fullUrl := fmt.Sprintf("%s/services/data/%s/%s", f.Credentials.InstanceUrl, apiVersion, url)
+	fmt.Println(fullUrl)
 	body, err := f.httpGetRequest(fullUrl, "Authorization", fmt.Sprintf("Bearer %s", f.Credentials.AccessToken))
 	if err == SessionExpiredError {
 		f.RefreshSession()

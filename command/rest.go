@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	. "github.com/heroku/force/lib"
-	
+	. "github.com/heroku/force/error"	
 )
 
 var cmdRest = &Command{
@@ -25,10 +25,15 @@ Examples:
 
 func runRest(cmd *Command, args []string) {
 	force, _ := ActiveForce()
-	if len(args) != 1 {
+	if len(args) != 2 {
 		cmd.PrintUsage()
 	} else {
-		data := force.RestQuery(args[0])
+		// TODO parse args looking for get, post etc
+		// and handle other than get
+		data, err := force.GetREST(args[1])
+		if err != nil {
+			ErrorAndExit(err.Error())
+		}
 		data = strings.Replace(data, "null", "\"null\"", -1)
 		fmt.Println(data)
 	}

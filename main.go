@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	//"fmt"
 
 	"github.com/heroku/force/command"
 	. "github.com/heroku/force/error"
