@@ -16,6 +16,9 @@ var cmdApex = &Command{
 	Long: `
 Execute anonymous Apex code
 
+Apex Options
+  -test                      Run in test context
+
 Examples:
 
   force apex ~/test.apex
@@ -27,7 +30,12 @@ Examples:
 }
 
 func init() {
+	cmdApex.Flag.BoolVar(&testContext, "test", false, "run apex from in a test context")
 }
+
+var (
+	testContext bool
+)
 
 func runApex(cmd *Command, args []string) {
 	var code []byte
@@ -45,7 +53,13 @@ func runApex(cmd *Command, args []string) {
 		ErrorAndExit(err.Error())
 	}
 	force, _ := ActiveForce()
-	if len(args) <= 1 {
+	if testContext {
+		output, err := force.Partner.ExecuteAnonymousTest(string(code))
+		if err != nil {
+			ErrorAndExit(err.Error())
+		}
+		fmt.Println(output)
+	} else if len(args) <= 1 {
 		output, err := force.Partner.ExecuteAnonymous(string(code))
 		if err != nil {
 			ErrorAndExit(err.Error())
