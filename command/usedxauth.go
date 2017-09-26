@@ -45,14 +45,15 @@ func runUseDXAuth(cmd *Command, args []string) {
 
 	connStatus := fmt.Sprintf("%s", auth["connectedStatus"])
 	username := fmt.Sprintf("%s", auth["username"])
-	alias := fmt.Sprintf("%s", auth["alias"])
 	if connStatus == "Connected" || connStatus == "Unknown" {
 		authData := getSFDXAuth(username)
-		authData.Alias = alias
+		if val, ok := auth["alias"]; ok {
+			authData.Alias = val.(string)
+		}
 		authData.Username = username
 		SetActiveCreds(authData)
 		if len(authData.Alias) > 0 {
-			fmt.Printf("Now using DX credentials for %s (%s)\n", username, alias)
+			fmt.Printf("Now using DX credentials for %s (%s)\n", username, authData.Alias)
 		} else {
 			fmt.Printf("Now using DX credentials for %s\n", username)
 		}
@@ -109,7 +110,7 @@ func findUserInOrgList(user string, md map[string]interface{}) (data map[string]
 					auth := y.(map[string]interface{})
 					//check if user matches alias or username
 					if auth["username"] == user || auth["alias"] == user {
-						if len(fmt.Sprintf("%s", auth["alias"])) > 0 {
+						if _, ok := auth["alias"]; ok {
 							fmt.Printf("Getting auth for %s (%s)...\n", auth["username"], auth["alias"])
 						} else {
 							fmt.Printf("Getting auth for %s\n...", auth["username"])
@@ -179,7 +180,7 @@ func getDefaultItem() (data map[string]interface{}, err error) {
 			data = hubUser
 		}
 	}
-	if len(fmt.Sprintf("%s", data["alias"])) > 0 {
+	if _, ok := data["alias"]; ok {
 		fmt.Printf("Getting auth for %s (%s)...\n", data["username"], data["alias"])
 	} else {
 		fmt.Printf("Getting auth for %s\n...", data["username"])
