@@ -1425,11 +1425,17 @@ func (fm *ForceMetadata) ListConnectedApps() (apps ForceConnectedApps, err error
 }
 
 func (fm *ForceMetadata) soapExecute(action, query string) (response []byte, err error) {
-	login, err := fm.Force.Get(fm.Force.Credentials.Id)
-	if err != nil {
-		return
+	url := ""
+	if len(fm.Force.Credentials.Id) > 0 {
+		login, err1 := fm.Force.Get(fm.Force.Credentials.Id)
+		if err1 != nil {
+			err = err1
+			return
+		}
+		url = strings.Replace(login["urls"].(map[string]interface{})["metadata"].(string), "{version}", fm.ApiVersion, 1)
+	} else {
+		url = fmt.Sprintf("%s/%s/%s", fm.Force.Credentials.InstanceUrl, "services/Soap/m", fm.ApiVersion)//, "/00DB00000000lWZ"
 	}
-	url := strings.Replace(login["urls"].(map[string]interface{})["metadata"].(string), "{version}", fm.ApiVersion, 1)
 	soap := NewSoap(url, "http://soap.sforce.com/2006/04/metadata", fm.Force.Credentials.AccessToken)
 	response, err = soap.Execute(action, query)
 	return
