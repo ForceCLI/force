@@ -1342,7 +1342,7 @@ func (f *Force) GetREST(url string) (result string, err error) {
 	return
 }
 
-func (f *Force) PostPatchREST(url string, content string, method string) (body []byte, err error) {
+func (f *Force) PostPatchREST(url string, content string, method string) (result string, err error) {
 	if method == "POST" {
 		return f.PostREST(url, content)
 	} else {
@@ -1350,23 +1350,25 @@ func (f *Force) PostPatchREST(url string, content string, method string) (body [
 	}
 }
 
-func (f *Force) PostREST(url string, content string) (body []byte, err error) {
+func (f *Force) PostREST(url string, content string) (result string, err error) {
 	fullUrl := fmt.Sprintf("%s/services/data/%s/%s", f.Credentials.InstanceUrl, apiVersion, url)
-	body, err = f.httpPostJSON(fullUrl, content)
+	body, err := f.httpPostJSON(fullUrl, content)
 	if err == SessionExpiredError {
 		f.RefreshSession()
 		return f.PostREST(url, content)
 	}
+	result = string(body)
 	return
 }
 
-func (f *Force) PatchREST(url string, content string) (body []byte, err error) {
+func (f *Force) PatchREST(url string, content string) (result string, err error) {
 	fullUrl := fmt.Sprintf("%s/services/data/%s/%s", f.Credentials.InstanceUrl, apiVersion, url)
-	body, err = f.httpPatchJSON(fullUrl, content)
+	body, err := f.httpPatchJSON(fullUrl, content)
 	if err == SessionExpiredError {
 		f.RefreshSession()
 		return f.PatchREST(url, content)
 	}
+	result = string(body)
 	return
 }
 

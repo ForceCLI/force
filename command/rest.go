@@ -31,25 +31,30 @@ func runRest(cmd *Command, args []string) {
 	} else {
 		// TODO parse args looking for get, post etc
 		// and handle other than get
+		var (
+			data = ""
+			msg = ""
+		)
+		var err error
 		if strings.ToLower(args[0]) == "get" {
-			data, err := force.GetREST(args[1])
+			data, err = force.GetREST(args[1])
 			if err != nil {
 				ErrorAndExit(err.Error())
 			}
-			data = strings.Replace(data, "null", "\"null\"", -1)
-			fmt.Println(data)
+			msg = strings.Replace(data, "null", "\"null\"", -1)
 		} else if strings.ToLower(args[0]) == "post" ||
 			strings.ToLower(args[0]) == "patch" {
 			url := args[1]
 			datafile, err := ioutil.ReadFile(args[2])
-			data, err := force.PostPatchREST(url, string(datafile), strings.ToUpper(args[0]))
+			data, err = force.PostPatchREST(url, string(datafile), strings.ToUpper(args[0]))
 			if err != nil {
 				ErrorAndExit(err.Error())
 			}
-			strData := string(data)
-			strData = strings.Replace(strData, "null", "\"null\"", -1)
-			msg := fmt.Sprintf("%s %s\n%s", strings.ToUpper(args[0]), url, strData)
-			fmt.Println(msg)
+			data = string(data)
+			data = strings.Replace(data, "null", "\"null\"", -1)
+			msg = fmt.Sprintf("%s %s\n%s", strings.ToUpper(args[0]), url, data)
 		}
+		fmt.Println(msg)
+
 	}
 }
