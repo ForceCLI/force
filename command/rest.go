@@ -21,6 +21,9 @@ Examples:
   force rest get "tooling/query?q=Select id From Account"
 
   force rest get appMenu/AppSwitcher
+
+  force rest post "tooling/sobjects/CustomField/00D9A0000000TgcUAE" path/to/definition.json
+  
 `,
 }
 
