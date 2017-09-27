@@ -1333,7 +1333,6 @@ func (f *Force) Whoami() (me ForceRecord, err error) {
 
 func (f *Force) GetREST(url string) (result string, err error) {
 	fullUrl := fmt.Sprintf("%s/services/data/%s/%s", f.Credentials.InstanceUrl, apiVersion, url)
-	fmt.Println(fullUrl)
 	body, err := f.httpGetRequest(fullUrl, "Authorization", fmt.Sprintf("Bearer %s", f.Credentials.AccessToken))
 	if err == SessionExpiredError {
 		f.RefreshSession()
@@ -1343,12 +1342,30 @@ func (f *Force) GetREST(url string) (result string, err error) {
 	return
 }
 
+func (f *Force) PostPatchREST(url string, content string, method string) (body []byte, err error) {
+	if method == "POST" {
+		return f.PostREST(url, content)
+	} else {
+		return f.PatchREST(url, content)
+	}
+}
+
 func (f *Force) PostREST(url string, content string) (body []byte, err error) {
-	fullUrl := fmt.Sprintf("%s/services/data/%s%s", f.Credentials.InstanceUrl, apiVersion, url)
+	fullUrl := fmt.Sprintf("%s/services/data/%s/%s", f.Credentials.InstanceUrl, apiVersion, url)
 	body, err = f.httpPostJSON(fullUrl, content)
 	if err == SessionExpiredError {
 		f.RefreshSession()
 		return f.PostREST(url, content)
+	}
+	return
+}
+
+func (f *Force) PatchREST(url string, content string) (body []byte, err error) {
+	fullUrl := fmt.Sprintf("%s/services/data/%s/%s", f.Credentials.InstanceUrl, apiVersion, url)
+	body, err = f.httpPatchJSON(fullUrl, content)
+	if err == SessionExpiredError {
+		f.RefreshSession()
+		return f.PatchREST(url, content)
 	}
 	return
 }
@@ -1440,9 +1457,28 @@ func (f *Force) httpPostJSON(url string, data string) (body []byte, err error) {
 	return
 }
 
+func (f *Force) httpPatchJSON(url string, data string) (body []byte, err error) {
+	body, err = f.httpPatchWithContentType(url, data, "application/json")
+	if err == SessionExpiredError {
+		f.RefreshSession()
+		return f.httpPatchJSON(url, data)
+	}
+	return
+}
+
+func (f *Force) httpPatchWithContentType(url string, data string, contenttype string) (body []byte, err error) {
+	body, err = f.httpPostPatchWithContentType(url, data, contenttype, "PATCH")
+	return
+}
+
 func (f *Force) httpPostWithContentType(url string, data string, contenttype string) (body []byte, err error) {
+	body, err = f.httpPostPatchWithContentType(url, data, contenttype, "POST")
+	return
+}
+
+func (f *Force) httpPostPatchWithContentType(url string, data string, contenttype string, method string) (body []byte, err error) {
 	rbody := data
-	req, err := httpRequest("POST", url, bytes.NewReader([]byte(rbody)))
+	req, err := httpRequest(strings.ToUpper(method), url, bytes.NewReader([]byte(rbody)))
 	if err != nil {
 		return
 	}
@@ -1463,7 +1499,6 @@ func (f *Force) httpPostWithContentType(url string, data string, contenttype str
 	if err != nil {
 		return
 	}
-
 	if res.StatusCode/100 != 2 {
 		if contenttype == "application/xml" {
 			var fault LoginFault
@@ -1479,6 +1514,8 @@ func (f *Force) httpPostWithContentType(url string, data string, contenttype str
 			}
 		}
 		return
+	} else if res.StatusCode == 204 {
+		body = []byte("Patch command succeeded....")
 	}
 	return
 }

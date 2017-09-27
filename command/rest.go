@@ -3,6 +3,7 @@ package command
 import (
 	"fmt"
 	"strings"
+	"io/ioutil"
 
 	. "github.com/heroku/force/lib"
 	. "github.com/heroku/force/error"	
@@ -25,16 +26,30 @@ Examples:
 
 func runRest(cmd *Command, args []string) {
 	force, _ := ActiveForce()
-	if len(args) != 2 {
+	if len(args) != 3 {
 		cmd.PrintUsage()
 	} else {
 		// TODO parse args looking for get, post etc
 		// and handle other than get
-		data, err := force.GetREST(args[1])
-		if err != nil {
-			ErrorAndExit(err.Error())
+		if strings.ToLower(args[0]) == "get" {
+			data, err := force.GetREST(args[1])
+			if err != nil {
+				ErrorAndExit(err.Error())
+			}
+			data = strings.Replace(data, "null", "\"null\"", -1)
+			fmt.Println(data)
+		} else if strings.ToLower(args[0]) == "post" ||
+			strings.ToLower(args[0]) == "patch" {
+			url := args[1]
+			datafile, err := ioutil.ReadFile(args[2])
+			data, err := force.PostPatchREST(url, string(datafile), strings.ToUpper(args[0]))
+			if err != nil {
+				ErrorAndExit(err.Error())
+			}
+			strData := string(data)
+			strData = strings.Replace(strData, "null", "\"null\"", -1)
+			msg := fmt.Sprintf("%s %s\n%s", strings.ToUpper(args[0]), url, strData)
+			fmt.Println(msg)
 		}
-		data = strings.Replace(data, "null", "\"null\"", -1)
-		fmt.Println(data)
 	}
 }
