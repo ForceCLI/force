@@ -46,12 +46,15 @@ func runUseDXAuth(cmd *Command, args []string) {
 	connStatus := fmt.Sprintf("%s", auth["connectedStatus"])
 	username := fmt.Sprintf("%s", auth["username"])
 	if connStatus == "Connected" || connStatus == "Unknown" {
-		authData := getSFDXAuth(username)
+		authData, err := GetSFDXAuth(username)
+		if err != nil {
+			ErrorAndExit(err.Error())
+		}
 		if val, ok := auth["alias"]; ok {
 			authData.Alias = val.(string)
 		}
 		authData.Username = username
-		SetActiveCreds(authData)
+		UseSFDXSession(authData)
 		if len(authData.Alias) > 0 {
 			fmt.Printf("Now using DX credentials for %s (%s)\n", username, authData.Alias)
 		} else {
@@ -186,28 +189,4 @@ func getDefaultItem() (data map[string]interface{}, err error) {
 		fmt.Printf("Getting auth for %s\n...", data["username"])
 	}
 	return
-}
-
-func getSFDXAuth(user string) (auth UserAuth) {
-	cmd := exec.Command("sfdx", "force:org:display", "-u"+user, "--json")
-
-	stdout, err := cmd.StdoutPipe()
-	if err != nil {
-		ErrorAndExit(err.Error())
-	}
-	if err := cmd.Start(); err != nil {
-		ErrorAndExit(err.Error())
-	}
-
-	type authData struct {
-		Result UserAuth
-	}
-	var aData authData
-	if err := json.NewDecoder(stdout).Decode(&aData); err != nil {
-		ErrorAndExit(err.Error())
-	}
-	if err := cmd.Wait(); err != nil {
-		ErrorAndExit(err.Error())
-	}
-	return aData.Result
 }

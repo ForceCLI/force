@@ -1,7 +1,6 @@
 package command
 
 import (
-	"encoding/json"
 	"fmt"
 	"os/exec"
 	"runtime"
@@ -39,14 +38,14 @@ func init() {
 
 func runActive(cmd *Command, args []string) {
 	if account == "" {
-		account, _ := Config.Load("current", "account")
-		data, _ := Config.Load("accounts", account)
-		var creds ForceCredentials
-		json.Unmarshal([]byte(data), &creds)
+		creds, err := ActiveCredentials(true)
+		if err != nil {
+			ErrorAndExit(err.Error())
+		}
 		if tojson {
-			fmt.Printf(fmt.Sprintf("{ \"login\": \"%s\", \"instanceUrl\": \"%s\", \"namespace\":\"%s\" }", account, creds.InstanceUrl, creds.Namespace))
+			fmt.Printf(fmt.Sprintf("{ \"login\": \"%s\", \"instanceUrl\": \"%s\", \"namespace\":\"%s\" }", creds.SessionName(), creds.InstanceUrl, creds.UserInfo.OrgNamespace))
 		} else {
-			fmt.Println(fmt.Sprintf("%s - %s - ns:%s", account, creds.InstanceUrl, creds.Namespace))
+			fmt.Println(fmt.Sprintf("%s - %s - ns:%s", creds.SessionName(), creds.InstanceUrl, creds.UserInfo.OrgNamespace))
 		}
 	} else {
 		//account := args[0]

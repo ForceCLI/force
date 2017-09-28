@@ -12,7 +12,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"os"
 	"runtime"
 	"strconv"
 	"strings"
@@ -39,32 +38,43 @@ const (
 	EndpointCustom     = iota
 )
 
-/*const (
-	apiVersion       = "v34.0"
-	apiVersionNumber = "34.0"
-)*/
+const (
+	RefreshUnavailable = iota
+	RefreshOauth       = iota
+	RefreshSFDX        = iota
+)
+
+type RefreshMethod int
 
 type Force struct {
-	Credentials *ForceCredentials
+	Credentials *ForceSession
 	Metadata    *ForceMetadata
 	Partner     *ForcePartner
 }
 
-type ForceCredentials struct {
-	AccessToken   string `json:"access_token"`
-	Id            string `json:"id"`
-	UserId        string
-	InstanceUrl   string `json:"instance_url"`
-	IssuedAt      string `json:"issued_at"`
-	Scope         string `json:"scope"`
-	IsCustomEP    bool
-	Namespace     string
+type UserInfo struct {
+	UserName     string `json:"preferred_username"`
+	OrgId        string `json:"organization_id"`
+	UserId       string `json:"user_id"`
+	ProfileId    string
+	OrgNamespace string
+}
+
+type SessionOptions struct {
 	ApiVersion    string
-	RefreshToken  string
-	ProfileId     string
-	ForceEndpoint ForceEndpoint
-	IsHourly      bool
-	HourlyCheck   bool
+	Alias         string
+	RefreshMethod RefreshMethod
+}
+
+type ForceSession struct {
+	AccessToken    string `json:"access_token"`
+	InstanceUrl    string `json:"instance_url"`
+	IssuedAt       string `json:"issued_at"`
+	Scope          string `json:"scope"`
+	RefreshToken   string
+	ForceEndpoint  ForceEndpoint
+	UserInfo       *UserInfo
+	SessionOptions *SessionOptions
 }
 
 type LoginFault struct {
@@ -234,7 +244,7 @@ type BundleManifest struct {
 	Files []ComponentFile
 }
 
-func NewForce(creds *ForceCredentials) (force *Force) {
+func NewForce(creds *ForceSession) (force *Force) {
 	force = new(Force)
 	force.Credentials = creds
 	force.Metadata = NewForceMetadata(force)
@@ -242,7 +252,7 @@ func NewForce(creds *ForceCredentials) (force *Force) {
 	return
 }
 
-func ForceSoapLogin(endpoint ForceEndpoint, username string, password string) (creds ForceCredentials, err error) {
+func ForceSoapLogin(endpoint ForceEndpoint, username string, password string) (creds ForceSession, err error) {
 	var surl string
 	version := strings.Split(apiVersion, "v")[1]
 	switch endpoint {
@@ -283,8 +293,18 @@ func ForceSoapLogin(endpoint ForceEndpoint, username string, password string) (c
 		return
 	}
 	instanceUrl := u.Scheme + "://" + u.Host
-	identity := u.Scheme + "://" + u.Host + "/id/" + orgid + "/" + result.Id
-	creds = ForceCredentials{AccessToken: result.SessionId, Id: identity, UserId: result.Id, InstanceUrl: instanceUrl, IsCustomEP: endpoint == EndpointCustom, ApiVersion: apiVersionNumber, ForceEndpoint: endpoint, IsHourly: false, HourlyCheck: false}
+	creds = ForceSession{
+		AccessToken:   result.SessionId,
+		InstanceUrl:   instanceUrl,
+		ForceEndpoint: endpoint,
+		UserInfo: &UserInfo{
+			OrgId:  orgid,
+			UserId: result.Id,
+		},
+		SessionOptions: &SessionOptions{
+			ApiVersion: apiVersionNumber,
+		},
+	}
 	return
 }
 
@@ -308,42 +328,8 @@ func (f *Force) refreshTokenURL() string {
 	return refreshURL
 }
 
-func (f *Force) RefreshSession() (err error, emessages []ForceError) {
-	attrs := url.Values{}
-	attrs.Set("grant_type", "refresh_token")
-	attrs.Set("refresh_token", f.Credentials.RefreshToken)
-	attrs.Set("client_id", ClientId)
-	attrs.Set("format", "json")
-
-	postVars := attrs.Encode()
-	req, err := httpRequest("POST", f.refreshTokenURL(), bytes.NewReader([]byte(postVars)))
-	if err != nil {
-		return
-	}
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	fmt.Fprintln(os.Stderr, "Refreshing Session Token")
-	res, err := doRequest(req)
-	if err != nil {
-		return
-	}
-	defer res.Body.Close()
-	body, err := ioutil.ReadAll(res.Body)
-	if res.StatusCode != 200 {
-		ErrorAndExit("Failed to refresh session.  Please run `force login`.")
-		return
-	}
-	if err != nil {
-		return
-	}
-
-	var result ForceCredentials
-	json.Unmarshal(body, &result)
-	f.UpdateCredentials(result)
-	return
-}
-
-func ForceLogin(endpoint ForceEndpoint) (creds ForceCredentials, err error) {
-	ch := make(chan ForceCredentials)
+func ForceLogin(endpoint ForceEndpoint) (creds ForceSession, err error) {
+	ch := make(chan ForceSession)
 	port, err := startLocalHttpServer(ch)
 	var url string
 
@@ -366,6 +352,11 @@ func ForceLogin(endpoint ForceEndpoint) (creds ForceCredentials, err error) {
 
 	err = desktop.Open(url)
 	creds = <-ch
+	if creds.RefreshToken != "" {
+		creds.SessionOptions = &SessionOptions{
+			RefreshMethod: RefreshOauth,
+		}
+	}
 	creds.ForceEndpoint = endpoint
 	return
 }
@@ -1095,7 +1086,7 @@ func (f *Force) QueryProfile(fields ...string) (results ForceQueryResult, err er
 		f.Credentials.InstanceUrl,
 		apiVersion,
 		strings.Join(fields, ","),
-		f.Credentials.ProfileId)
+		f.Credentials.UserInfo.ProfileId)
 
 	body, err := f.httpGet(url)
 	if err != nil {
@@ -1176,7 +1167,7 @@ func (f *Force) StartTrace(userId ...string) (result ForceCreateRecordResult, er
 		attrs["TracedEntityId"] = userId[0]
 		attrs["LogType"] = "USER_DEBUG"
 	} else {
-		attrs["TracedEntityId"] = f.Credentials.UserId
+		attrs["TracedEntityId"] = f.Credentials.UserInfo.UserId
 		attrs["LogType"] = "DEVELOPER_LOG"
 	}
 
@@ -1229,11 +1220,9 @@ func (f *Force) RetrieveEventLogFile(elfId string) (result string, err error) {
 	return
 }
 
-func (force *Force) setHourlyPerm() {
-	force.Credentials.HourlyCheck = true
+func (force *Force) useHourlyLogs() bool {
 	const EventLogFile string = "EventLogFile"
 	const HourlyEnabledField string = "Sequence"
-	force.Credentials.IsHourly = false
 	sobject, err := force.GetSobject(EventLogFile)
 	if err != nil {
 		ErrorAndExit(err.Error())
@@ -1242,23 +1231,19 @@ func (force *Force) setHourlyPerm() {
 	for _, f := range fields {
 		field := f.(map[string]interface{})
 		if field["name"] == HourlyEnabledField {
-			force.Credentials.IsHourly = true
-			break
+			return true
 		}
 	}
-	return
+	return false
 }
 
 func (f *Force) QueryEventLogFiles() (results ForceQueryResult, err error) {
-	if !f.Credentials.HourlyCheck {
-		f.setHourlyPerm()
-	}
 	url := ""
-	currApi, e := strconv.ParseFloat(f.Credentials.ApiVersion, 64)
+	currApi, e := strconv.ParseFloat(f.Credentials.SessionOptions.ApiVersion, 64)
 	if e != nil {
 		ErrorAndExit(e.Error())
 	}
-	if f.Credentials.IsHourly && currApi >= 37.0 {
+	if f.useHourlyLogs() && currApi >= 37.0 {
 		url = fmt.Sprintf("%s/services/data/%s/query/?q=Select+Id,+LogDate,+EventType,+LogFileLength,+Sequence,+Interval+FROM+EventLogFile+ORDER+BY+LogDate+DESC,+EventType,+Sequence,+Interval", f.Credentials.InstanceUrl, apiVersion)
 	} else {
 		url = fmt.Sprintf("%s/services/data/%s/query/?q=Select+Id,+LogDate,+EventType,+LogFileLength+FROM+EventLogFile+ORDER+BY+LogDate+DESC,+EventType", f.Credentials.InstanceUrl, apiVersion)
@@ -1326,8 +1311,7 @@ func (f *Force) DeleteRecord(sobject string, id string) (err error) {
 }
 
 func (f *Force) Whoami() (me ForceRecord, err error) {
-	parts := strings.Split(f.Credentials.Id, "/")
-	me, err = f.GetRecord("User", parts[len(parts)-1])
+	me, err = f.GetRecord("User", f.Credentials.UserInfo.UserId)
 	return
 }
 
@@ -1335,7 +1319,7 @@ func (f *Force) GetREST(url string) (result string, err error) {
 	fullUrl := fmt.Sprintf("%s/services/data/%s/%s", f.Credentials.InstanceUrl, apiVersion, url)
 	body, err := f.httpGetRequest(fullUrl, "Authorization", fmt.Sprintf("Bearer %s", f.Credentials.AccessToken))
 	if err == SessionExpiredError {
-		f.RefreshSession()
+		f.RefreshSessionOrExit()
 		return f.GetREST(url)
 	}
 	result = string(body)
@@ -1354,7 +1338,7 @@ func (f *Force) PostREST(url string, content string) (result string, err error) 
 	fullUrl := fmt.Sprintf("%s/services/data/%s/%s", f.Credentials.InstanceUrl, apiVersion, url)
 	body, err := f.httpPostJSON(fullUrl, content)
 	if err == SessionExpiredError {
-		f.RefreshSession()
+		f.RefreshSessionOrExit()
 		return f.PostREST(url, content)
 	}
 	result = string(body)
@@ -1365,7 +1349,7 @@ func (f *Force) PatchREST(url string, content string) (result string, err error)
 	fullUrl := fmt.Sprintf("%s/services/data/%s/%s", f.Credentials.InstanceUrl, apiVersion, url)
 	body, err := f.httpPatchJSON(fullUrl, content)
 	if err == SessionExpiredError {
-		f.RefreshSession()
+		f.RefreshSessionOrExit()
 		return f.PatchREST(url, content)
 	}
 	result = string(body)
@@ -1375,7 +1359,7 @@ func (f *Force) PatchREST(url string, content string) (result string, err error)
 func (f *Force) httpGet(url string) (body []byte, err error) {
 	body, err = f.httpGetRequest(url, "Authorization", fmt.Sprintf("Bearer %s", f.Credentials.AccessToken))
 	if err == SessionExpiredError {
-		f.RefreshSession()
+		f.RefreshSessionOrExit()
 		return f.httpGet(url)
 	}
 	return
@@ -1384,7 +1368,7 @@ func (f *Force) httpGet(url string) (body []byte, err error) {
 func (f *Force) httpGetBulk(url string) (body []byte, err error) {
 	body, err = f.httpGetRequest(url, "X-SFDC-Session", fmt.Sprintf("Bearer %s", f.Credentials.AccessToken))
 	if err == SessionExpiredError {
-		f.RefreshSession()
+		f.RefreshSessionOrExit()
 		return f.httpGetBulk(url)
 	}
 	return
@@ -1435,7 +1419,7 @@ func (f *Force) httpGetRequest(url string, headerName string, headerValue string
 func (f *Force) httpPostCSV(url string, data string) (body []byte, err error) {
 	body, err = f.httpPostWithContentType(url, data, "text/csv")
 	if err == SessionExpiredError {
-		f.RefreshSession()
+		f.RefreshSessionOrExit()
 		return f.httpPostCSV(url, data)
 	}
 	return
@@ -1444,7 +1428,7 @@ func (f *Force) httpPostCSV(url string, data string) (body []byte, err error) {
 func (f *Force) httpPostXML(url string, data string) (body []byte, err error) {
 	body, err = f.httpPostWithContentType(url, data, "application/xml")
 	if err == SessionExpiredError {
-		f.RefreshSession()
+		f.RefreshSessionOrExit()
 		return f.httpPostXML(url, data)
 	}
 	return
@@ -1453,7 +1437,7 @@ func (f *Force) httpPostXML(url string, data string) (body []byte, err error) {
 func (f *Force) httpPostJSON(url string, data string) (body []byte, err error) {
 	body, err = f.httpPostWithContentType(url, data, "application/json")
 	if err == SessionExpiredError {
-		f.RefreshSession()
+		f.RefreshSessionOrExit()
 		return f.httpPostJSON(url, data)
 	}
 	return
@@ -1462,7 +1446,7 @@ func (f *Force) httpPostJSON(url string, data string) (body []byte, err error) {
 func (f *Force) httpPatchJSON(url string, data string) (body []byte, err error) {
 	body, err = f.httpPatchWithContentType(url, data, "application/json")
 	if err == SessionExpiredError {
-		f.RefreshSession()
+		f.RefreshSessionOrExit()
 		return f.httpPatchJSON(url, data)
 	}
 	return
@@ -1525,7 +1509,7 @@ func (f *Force) httpPostPatchWithContentType(url string, data string, contenttyp
 func (f *Force) httpPost(url string, attrs map[string]string) (body []byte, err error, emessages []ForceError) {
 	body, err, emessages = f.httpPostAttributes(url, attrs)
 	if err == SessionExpiredError {
-		f.RefreshSession()
+		f.RefreshSessionOrExit()
 		return f.httpPost(url, attrs)
 	}
 	return
@@ -1562,7 +1546,7 @@ func (f *Force) httpPostAttributes(url string, attrs map[string]string) (body []
 func (f *Force) httpPatch(url string, attrs map[string]string) (body []byte, err error) {
 	body, err = f.httpPatchAttributes(url, attrs)
 	if err == SessionExpiredError {
-		f.RefreshSession()
+		f.RefreshSessionOrExit()
 		return f.httpPatchAttributes(url, attrs)
 	}
 	return
@@ -1598,7 +1582,7 @@ func (f *Force) httpPatchAttributes(url string, attrs map[string]string) (body [
 func (f *Force) httpDelete(url string) (body []byte, err error) {
 	body, err = f.httpDeleteUrl(url)
 	if err == SessionExpiredError {
-		f.RefreshSession()
+		f.RefreshSessionOrExit()
 		return f.httpDeleteUrl(url)
 	}
 	return
@@ -1651,7 +1635,7 @@ func httpRequest(method, url string, body io.Reader) (request *http.Request, err
 	return
 }
 
-func startLocalHttpServer(ch chan ForceCredentials) (port int, err error) {
+func startLocalHttpServer(ch chan ForceSession) (port int, err error) {
 	listener, err := net.Listen("tcp", ":3835")
 	if err != nil {
 		return
@@ -1661,10 +1645,9 @@ func startLocalHttpServer(ch chan ForceCredentials) (port int, err error) {
 	h.HandleFunc("/oauth/callback", func(w http.ResponseWriter, r *http.Request) {
 		query := r.URL.Query()
 		if r.Method == "POST" {
-			var creds ForceCredentials
+			var creds ForceSession
 			creds.AccessToken = query.Get("access_token")
 			creds.RefreshToken = query.Get("refresh_token")
-			creds.Id = query.Get("id")
 			creds.InstanceUrl = query.Get("instance_url")
 			creds.IssuedAt = query.Get("issued_at")
 			creds.Scope = query.Get("scope")

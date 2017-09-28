@@ -10,63 +10,85 @@ import (
 	. "github.com/heroku/force/error"
 )
 
-type UserAuth struct {
-	AccessToken string
-	Alias       string
-	ClientId    string
-	CreatedBy   string
-	DevHubId    string
-	Edition     string
-	Id          string
-	InstanceUrl string
-	OrgName     string
-	Password    string
-	Status      string
-	Username    string
-}
-
-func ForceSaveLogin(creds ForceCredentials, output *os.File) (username string, err error) {
-	force := NewForce(&creds)
-	login, err := force.Get(creds.Id)
+func (f *Force) userInfo() (userinfo UserInfo, err error) {
+	url := fmt.Sprintf("%s/services/oauth2/userinfo", f.Credentials.InstanceUrl)
+	login, err := f.httpGet(url)
 	if err != nil {
 		return
 	}
+	err = json.Unmarshal([]byte(login), &userinfo)
+	return
+}
 
+func getUserInfo(creds ForceSession) (userinfo UserInfo, err error) {
+	force := NewForce(&creds)
+	userinfo, err = force.userInfo()
+	if err != nil {
+		return
+	}
+	me, err := force.GetRecord("User", userinfo.UserId)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Problem getting user data, continuing...")
+		err = nil
+	}
+	userinfo.ProfileId = fmt.Sprintf("%s", me["ProfileId"])
+
+	namespace, err := force.getOrgNamespace()
+	if err == nil {
+		userinfo.OrgNamespace = namespace
+	} else {
+		fmt.Fprintf(os.Stderr, "Your profile does not have Modify All Data enabled. Functionallity will be limited.\n")
+		err = nil
+	}
+	return
+}
+
+func (f *Force) getOrgNamespace() (namespace string, err error) {
+	describe, err := f.Metadata.DescribeMetadata()
+	if err != nil {
+		return
+	}
+	namespace = describe.NamespacePrefix
+	return
+}
+
+// Save the credentials as the active session with the UserInfo and with the
+// default current API version.
+func ForceSaveLogin(creds ForceSession, output *os.File) (sessionName string, err error) {
+	userinfo, err := getUserInfo(creds)
+	if err != nil {
+		return
+	}
+	creds.UserInfo = &userinfo
+	creds.SessionOptions.ApiVersion = ApiVersionNumber()
+
+	fmt.Fprintf(output, "Logged in as '%s' (API %s)\n", creds.UserInfo.UserName, ApiVersionNumber())
+	title := fmt.Sprintf("\033];%s\007", creds.UserInfo.UserName)
+	fmt.Fprintf(output, title)
+
+	if err = SaveLogin(creds); err != nil {
+		return
+	}
+	sessionName = creds.SessionName()
+	err = SetActiveLogin(sessionName)
+	return
+}
+
+func (creds *ForceSession) SessionName() string {
+	sessionName := creds.UserInfo.UserName
+	if creds.SessionOptions.Alias != "" {
+		sessionName = creds.SessionOptions.Alias
+	}
+	return sessionName
+}
+
+func SaveLogin(creds ForceSession) (err error) {
 	body, err := json.Marshal(creds)
 	if err != nil {
 		return
 	}
-
-	userId := login["user_id"].(string)
-	creds.UserId = userId
-	username = login["username"].(string)
-
-	me, err := force.Whoami()
-	if err != nil {
-		fmt.Fprintln(output, "Problem getting user data, continuing...")
-		//return
-	}
-	fmt.Fprintf(output, "Logged in as '%s' (API %s)\n", me["Username"], apiVersion)
-	title := fmt.Sprintf("\033];%s\007", me["Username"])
-	creds.ProfileId = fmt.Sprintf("%s", me["ProfileId"])
-	creds.ApiVersion = strings.TrimPrefix(apiVersion, "v")
-	fmt.Fprintf(output, title)
-
-	describe, err := force.Metadata.DescribeMetadata()
-
-	if err == nil {
-		creds.Namespace = describe.NamespacePrefix
-	} else {
-		fmt.Fprintf(output, "Your profile does not have Modify All Data enabled. Functionallity will be limited.\n")
-		err = nil
-	}
-
-	body, err = json.Marshal(creds)
-	if err != nil {
-		return
-	}
-	Config.Save("accounts", username, string(body))
-	Config.Save("current", "account", username)
+	sessionName := creds.SessionName()
+	err = Config.Save("accounts", sessionName, string(body))
 	return
 }
 
@@ -77,7 +99,6 @@ func ForceLoginAndSaveSoap(endpoint ForceEndpoint, user_name string, password st
 	}
 
 	username, err = ForceSaveLogin(creds, output)
-	//fmt.Printf("Creds %+v", creds)
 	return
 }
 
@@ -90,12 +111,11 @@ func ForceLoginAndSave(endpoint ForceEndpoint, output *os.File) (username string
 	return
 }
 
-func (f *Force) UpdateCredentials(creds ForceCredentials) {
+func (f *Force) UpdateCredentials(creds ForceSession) {
 	f.Credentials.AccessToken = creds.AccessToken
 	f.Credentials.IssuedAt = creds.IssuedAt
 	f.Credentials.InstanceUrl = creds.InstanceUrl
 	f.Credentials.Scope = creds.Scope
-	f.Credentials.Id = creds.Id
 	ForceSaveLogin(*f.Credentials, os.Stderr)
 }
 
@@ -108,7 +128,37 @@ func ActiveForce() (force *Force, err error) {
 	return
 }
 
-func ActiveCredentials(requireCredentials bool) (creds ForceCredentials, err error) {
+// Add UserInfo and SessionOptions to old ForceSession
+func upgradeCredentials(creds *ForceSession) (err error) {
+	if creds.SessionOptions != nil && creds.UserInfo != nil {
+		return
+	}
+	if creds.SessionOptions == nil {
+		creds.SessionOptions = &SessionOptions{
+			ApiVersion: ApiVersionNumber(),
+		}
+		if creds.RefreshToken != "" {
+			creds.SessionOptions.RefreshMethod = RefreshOauth
+		}
+	}
+	if creds.UserInfo == nil || creds.UserInfo.UserName == "" {
+		force := NewForce(creds)
+		err = force.RefreshSession()
+		if err != nil {
+			return
+		}
+		var userinfo UserInfo
+		userinfo, err = getUserInfo(*creds)
+		if err != nil {
+			return
+		}
+		creds.UserInfo = &userinfo
+		_, err = ForceSaveLogin(*creds, os.Stderr)
+	}
+	return
+}
+
+func ActiveCredentials(requireCredentials bool) (creds ForceSession, err error) {
 	account, err := ActiveLogin()
 	if requireCredentials && (err != nil || strings.TrimSpace(account) == "") {
 		ErrorAndExit("Please login before running this command.")
@@ -118,10 +168,18 @@ func ActiveCredentials(requireCredentials bool) (creds ForceCredentials, err err
 		ErrorAndExit("Failed to load credentials. %v", err)
 	}
 	if err == nil {
-		_ = json.Unmarshal([]byte(data), &creds)
-		if creds.ApiVersion != "" {
-			apiVersionNumber = creds.ApiVersion
-			apiVersion = "v" + apiVersionNumber
+		err = json.Unmarshal([]byte(data), &creds)
+		if err != nil {
+			ErrorAndExit(err.Error())
+		}
+		err = upgradeCredentials(&creds)
+		if err != nil {
+			// Couldn't update the credentials.  Force re-login.
+			err = Config.Delete("current", "account")
+			ErrorAndExit("Cannot update stored session.  Please log in again.")
+		}
+		if creds.SessionOptions.ApiVersion != "" && creds.SessionOptions.ApiVersion != ApiVersionNumber() {
+			SetApiVersion(creds.SessionOptions.ApiVersion)
 		}
 	}
 	if !requireCredentials && err != nil {
@@ -153,28 +211,4 @@ func SetActiveLoginDefault() (account string) {
 func SetActiveLogin(account string) (err error) {
 	err = Config.Save("current", "account", account)
 	return
-}
-
-func SetActiveCreds(authData UserAuth) {
-	creds := ForceCredentials{}
-	creds.AccessToken = authData.AccessToken
-	creds.InstanceUrl = authData.InstanceUrl
-	creds.IsCustomEP = true
-	creds.ApiVersion = "40.0"
-	creds.ForceEndpoint = 4
-	creds.IsHourly = false
-	creds.HourlyCheck = false
-
-	body, err := json.Marshal(creds)
-	if err != nil {
-		ErrorAndExit(err.Error())
-	}
-
-	configName := authData.Alias
-	if len(configName) == 0 {
-		configName = authData.Username
-	}
-
-	Config.Save("accounts", configName, string(body))
-	Config.Save("current", "account", configName)
 }

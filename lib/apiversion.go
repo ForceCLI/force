@@ -16,12 +16,11 @@ func ApiVersionNumber() string {
 	return apiVersionNumber
 }
 
-func UpdateApiVersion(version string) {
-	apiVersion = "v" + version
-	apiVersionNumber = version
-	force, _ := ActiveForce()
-	force.Credentials.ApiVersion = apiVersionNumber
-	ForceSaveLogin(*force.Credentials, os.Stdout)
+func (f *Force) UpdateApiVersion(version string) (err error) {
+	SetApiVersion(version)
+	f.Credentials.SessionOptions.ApiVersion = version
+	_, err = ForceSaveLogin(*f.Credentials, os.Stdout)
+	return
 }
 
 func SetApiVersion(version string) {
