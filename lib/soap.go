@@ -154,8 +154,18 @@ func (s *Soap) Execute(action, query string) (response []byte, err error) {
 	if err != nil {
 		return
 	}
+	if isSoapInvalidSessionError(response) {
+		err = SessionExpiredError
+		return
+	}
 	err = processError(response)
 	return
+}
+
+func isSoapInvalidSessionError(body []byte) bool {
+	var soapError SoapError
+	xml.Unmarshal(body, &soapError)
+	return soapError.FaultCode == "sf:INVALID_SESSION_ID"
 }
 
 func processError(body []byte) (err error) {

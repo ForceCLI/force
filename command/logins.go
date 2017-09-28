@@ -35,7 +35,7 @@ func runLogins(cmd *Command, args []string) {
 
 		for _, account := range accounts {
 			if !strings.HasPrefix(account, ".") {
-				var creds ForceCredentials
+				var creds ForceSession
 				data, err := Config.Load("accounts", account)
 				json.Unmarshal([]byte(data), &creds)
 

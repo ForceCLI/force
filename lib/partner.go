@@ -84,13 +84,7 @@ func (partner *ForcePartner) ExecuteAnonymous(apex string) (output string, err e
 }
 
 func (partner *ForcePartner) SoapExecuteCore(action, query string) (response []byte, err error) {
-	login, err := partner.Force.Get(partner.Force.Credentials.Id)
-	if err != nil {
-		return
-	}
-	version := strings.Replace(apiVersion, "v", "", 1)
-	url := strings.Replace(login["urls"].(map[string]interface{})["partner"].(string), "{version}", version, 1)
-	//url = strings.Replace(url, "/u/", "/s/", 1) // seems dirty
+	url := fmt.Sprintf("%s/services/Soap/u/%s/%s", partner.Force.Credentials.InstanceUrl, partner.Force.Credentials.SessionOptions.ApiVersion, partner.Force.Credentials.UserInfo.OrgId)
 	soap := NewSoap(url, "urn:partner.soap.sforce.com", partner.Force.Credentials.AccessToken)
 	soap.Header = "<apex:DebuggingHeader><apex:debugLevel>DEBUGONLY</apex:debugLevel></apex:DebuggingHeader>"
 	response, err = soap.Execute(action, query)
@@ -123,15 +117,13 @@ func (partner *ForcePartner) RunTests(tests []string, namespace string) (output 
 }
 
 func (partner *ForcePartner) soapExecute(action, query string) (response []byte, err error) {
-	login, err := partner.Force.Get(partner.Force.Credentials.Id)
-	if err != nil {
-		return
-	}
-	version := strings.Replace(apiVersion, "v", "", 1)
-	url := strings.Replace(login["urls"].(map[string]interface{})["partner"].(string), "{version}", version, 1)
-	url = strings.Replace(url, "/u/", "/s/", 1) // seems dirty
+	url := fmt.Sprintf("%s/services/Soap/s/%s/%s", partner.Force.Credentials.InstanceUrl, partner.Force.Credentials.SessionOptions.ApiVersion, partner.Force.Credentials.UserInfo.OrgId)
 	soap := NewSoap(url, "http://soap.sforce.com/2006/08/apex", partner.Force.Credentials.AccessToken)
 	soap.Header = "<apex:DebuggingHeader><apex:debugLevel>DEBUGONLY</apex:debugLevel></apex:DebuggingHeader>"
 	response, err = soap.Execute(action, query)
+	if err == SessionExpiredError {
+		partner.Force.RefreshSessionOrExit()
+		return partner.soapExecute(action, query)
+	}
 	return
 }

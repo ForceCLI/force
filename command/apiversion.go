@@ -35,7 +35,14 @@ func runApiVersion(cmd *Command, args []string) {
 		if !matched {
 			ErrorAndExit("apiversion must be in the form of nn.0.")
 		}
-		UpdateApiVersion(apiVersionNumber)
+		force, err := ActiveForce()
+		if err != nil {
+			ErrorAndExit(err.Error())
+		}
+		err = force.UpdateApiVersion(apiVersionNumber)
+		if err != nil {
+			ErrorAndExit("%v", err)
+		}
 	} else if len(args) == 0 {
 		fmt.Println(ApiVersion())
 	} else {

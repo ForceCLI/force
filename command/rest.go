@@ -2,11 +2,11 @@ package command
 
 import (
 	"fmt"
-	"strings"
 	"io/ioutil"
+	"strings"
 
+	. "github.com/heroku/force/error"
 	. "github.com/heroku/force/lib"
-	. "github.com/heroku/force/error"	
 )
 
 var cmdRest = &Command{
@@ -36,7 +36,7 @@ func runRest(cmd *Command, args []string) {
 		// and handle other than get
 		var (
 			data = ""
-			msg = ""
+			msg  = ""
 		)
 		var err error
 		if strings.ToLower(args[0]) == "get" {
