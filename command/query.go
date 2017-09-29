@@ -54,7 +54,7 @@ func runQuery(cmd *Command, args []string) {
 
 		soql := strings.Join(args, " ")
 
-		records, _, err := force.Query(fmt.Sprintf("%s", soql), isTooling)
+		records, err := force.Query(fmt.Sprintf("%s", soql), isTooling)
 
 		if err != nil {
 			ErrorAndExit(err.Error())
