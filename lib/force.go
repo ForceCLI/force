@@ -625,7 +625,7 @@ func (f *Force) GetSobject(name string) (sobject ForceSobject, err error) {
 	return
 }
 
-func (f *Force) Query(query string, isTooling bool) (result ForceQueryResult, fieldList *list.List, err error) {
+func (f *Force) Query(query string, isTooling bool) (result ForceQueryResult, err error) {
 	toolingPath := ""
 	if isTooling {
 		toolingPath = "tooling/"
@@ -642,10 +642,11 @@ func (f *Force) Query(query string, isTooling bool) (result ForceQueryResult, fi
 	 * multiple pieces (generally every 200 records). We need to repeatedly
 	 * query until we've retrieved all of them. */
 	for !result.Done {
-		body, err := f.httpGet(result.NextRecordsUrl)
+		var body []byte
+		body, err = f.httpGet(result.NextRecordsUrl)
 
 		if err != nil {
-			ErrorAndExit(err.Error())
+			return
 		}
 
 		var currResult ForceQueryResult

@@ -35,7 +35,10 @@ func getMetadataType(metadataType string, folders map[string]string) (member []s
 	} else {
 		queryString = "SELECT Id, DeveloperName, Folder.DeveloperName from " + metadataType
 	}
-	queryResult, _, _ := force.Query(fmt.Sprintf("%s", queryString), false)
+	queryResult, err := force.Query(fmt.Sprintf("%s", queryString), false)
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
 	metadataItems := make([]string, 1, 1000)
 	metadataItems[0] = "*"
 	for _, folderName := range folders {
@@ -169,7 +172,7 @@ func runExport(cmd *Command, args []string) {
 		{Name: []string{"Workflow"}, Members: []string{"*"}},
 	}
 
-	folderResult, _, err := force.Query(fmt.Sprintf("%s", "SELECT Id, Type, DeveloperName from Folder Where Type in ('Dashboard', 'Document', 'Email', 'Report')"), false)
+	folderResult, err := force.Query(fmt.Sprintf("%s", "SELECT Id, Type, DeveloperName from Folder Where Type in ('Dashboard', 'Document', 'Email', 'Report')"), false)
 	folders := make(map[string]map[string]string)
 	for _, folder := range folderResult.Records {
 		if folder["DeveloperName"] != nil {
