@@ -2,6 +2,7 @@ package lib
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -103,6 +104,26 @@ func ForceLoginAtEndpointAndSaveSoap(endpoint string, user_name string, password
 	}
 
 	username, err = ForceSaveLogin(creds, output)
+	return
+}
+
+// Create a new scratch org, login, and make it active
+func ForceScratchLoginAndSave(output *os.File) (username string, err error) {
+	force, err := ActiveForce()
+	if err != nil {
+		err = errors.New("You must be logged into a Dev Hub org to authenticate as a scratch org user.")
+		return
+	}
+	fmt.Fprintln(os.Stderr, "Creating new Scratch Org...")
+	scratchOrgId, err := force.CreateScratchOrg()
+	if err != nil {
+		return
+	}
+	session, err := force.ForceLoginNewScratch(scratchOrgId)
+	if err != nil {
+		return
+	}
+	username, err = ForceSaveLogin(session, output)
 	return
 }
 
