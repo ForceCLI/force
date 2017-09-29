@@ -182,6 +182,21 @@ func DisplayForceRecordsf(records []ForceRecord, format string) {
 	}
 }
 
+func (f *Force) DisplayAllForceRecords(result ForceQueryResult) {
+	currentResult := result
+	var err error
+	for {
+		DisplayForceRecords(currentResult)
+		if currentResult.Done {
+			return
+		}
+		currentResult, err = f.getForceResult(currentResult.NextRecordsUrl)
+		if err != nil {
+			ErrorAndExit(err.Error())
+		}
+	}
+}
+
 func DisplayForceRecords(result ForceQueryResult) {
 	if len(result.Records) > 0 {
 		fmt.Print(RenderForceRecords(result.Records))

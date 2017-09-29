@@ -34,7 +34,7 @@ func getLog(cmd *Command, args []string) {
 		if err != nil {
 			ErrorAndExit(err.Error())
 		}
-		DisplayForceRecords(records)
+		force.DisplayAllForceRecords(records)
 	} else if args[0] == "delete" {
 		if len(args) != 2 {
 			ErrorAndExit("You need to provide the id of a debug log to delete.")
