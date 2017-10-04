@@ -1316,8 +1316,12 @@ func (f *Force) Whoami() (me ForceRecord, err error) {
 	return
 }
 
+func (f *Force) fullRestUrl(url string) string {
+	return fmt.Sprintf("%s/services/data/%s/%s", f.Credentials.InstanceUrl, apiVersion, strings.TrimLeft(url, "/"))
+}
+
 func (f *Force) GetREST(url string) (result string, err error) {
-	fullUrl := fmt.Sprintf("%s/services/data/%s/%s", f.Credentials.InstanceUrl, apiVersion, url)
+	fullUrl := f.fullRestUrl(url)
 	body, err := f.httpGetRequest(fullUrl, "Authorization", fmt.Sprintf("Bearer %s", f.Credentials.AccessToken))
 	if err == SessionExpiredError {
 		f.RefreshSessionOrExit()
@@ -1336,7 +1340,7 @@ func (f *Force) PostPatchREST(url string, content string, method string) (result
 }
 
 func (f *Force) PostREST(url string, content string) (result string, err error) {
-	fullUrl := fmt.Sprintf("%s/services/data/%s/%s", f.Credentials.InstanceUrl, apiVersion, url)
+	fullUrl := f.fullRestUrl(url)
 	body, err := f.httpPostJSON(fullUrl, content)
 	if err == SessionExpiredError {
 		f.RefreshSessionOrExit()
@@ -1347,7 +1351,7 @@ func (f *Force) PostREST(url string, content string) (result string, err error) 
 }
 
 func (f *Force) PatchREST(url string, content string) (result string, err error) {
-	fullUrl := fmt.Sprintf("%s/services/data/%s/%s", f.Credentials.InstanceUrl, apiVersion, url)
+	fullUrl := f.fullRestUrl(url)
 	body, err := f.httpPatchJSON(fullUrl, content)
 	if err == SessionExpiredError {
 		f.RefreshSessionOrExit()
