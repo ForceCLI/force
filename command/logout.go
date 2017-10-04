@@ -6,18 +6,22 @@ import (
 	"runtime"
 
 	. "github.com/heroku/force/config"
+	. "github.com/heroku/force/error"
 	. "github.com/heroku/force/lib"
 )
 
 var cmdLogout = &Command{
-	Usage: "logout",
-	Short: "Log out from force.com",
+	Usage: "logout [-u=username]",
+	Short: "Log out from Force.com",
 	Long: `
-  force logout -u=username
+Log out from Force.com
 
-  Example:
+The username may be omitted when only one account is logged in, in which case
+that single logged-in account will be logged out.
 
-    force logout -u=user@example.org
+Examples:
+  force logout
+  force logout -u=user@example.org
 `,
 }
 
@@ -26,17 +30,24 @@ func init() {
 }
 
 var (
-	userName1 = cmdLogout.Flag.String("u", "", "Username for Soap Login")
+	logoutUserName = cmdLogout.Flag.String("u", "", "Username to log out")
 )
 
 func runLogout(cmd *Command, args []string) {
-	if *userName1 == "" {
-		fmt.Println("Missing required argument...")
-		cmd.Flag.Usage()
-		return
+	/* If a username was specified, we will use it regardless of logins.
+	 * Otherwise, if there's only one login, we'll use that. */
+	if *logoutUserName == "" {
+		accounts, _ := Config.List("accounts")
+		if len(accounts) == 0 {
+			ErrorAndExit("No logins, so a username cannot be assumed.")
+		} else if len(accounts) > 1 {
+			ErrorAndExit("More than one login. Please specify a username.")
+		} else {
+			logoutUserName = &accounts[0]
+		}
 	}
-	Config.Delete("accounts", *userName1)
-	if active, _ := Config.Load("current", "account"); active == *userName1 {
+	Config.Delete("accounts", *logoutUserName)
+	if active, _ := Config.Load("current", "account"); active == *logoutUserName {
 		Config.Delete("current", "account")
 		SetActiveLoginDefault()
 	}
