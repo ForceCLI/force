@@ -1,0 +1,16 @@
+{
+	"name": "Force CLI Download Page",
+	"description": "Briefly describes Force CLI and provides download links",
+	"keywords": [
+		"salesforce",
+		"force cli",
+		"cli"
+	],
+	"repository": "https://github.com/cwarden/force",
+	"buildpacks": [
+		{
+			"url": "http://github.com/leafo/heroku-buildpack-lua.git"
+		}
+	],
+	"stack": "cedar-14"
+}

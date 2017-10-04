@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<htm>
+	<head>
+
+	    <title>
+	    Force.com CLI
+	    </title>
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+		<meta name="description" content="">
+		<meta name="keywords" content="">
+
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+		<link rel="stylesheet" type="text/css" href="styles.css">
+
+		<script type="text/javascript" src="modernizr.custom.25713.js"></script>
+		<script type="text/javascript" src="jquery-1.10.2.min.js"></script>
+	</head>
+
+	<body>
+
+	    <div id="stage" class="home">
+
+
+			<!-- ================================================== -->
+			<!--                    BEGIN: PAGE                     -->
+			<!-- ================================================== -->
+
+		    <div id="page" class="">
+
+				<!-- ================================================== -->
+				<!--                 BEGIN: PAGE HEADER                 -->
+				<!-- ================================================== -->
+
+				<div id="page-header" class="stage-pod stage-pod-purple">
+
+					<div class="container container-pod container-pod-tall">
+
+						<h1 class="flush-top centered inverse short">
+
+							Force.com CLI
+
+						</h1>
+
+						<p class="lead inverse centered">
+
+							Command-line interface to Force.com.
+
+						</p>
+
+						<div class="os-selector">
+
+							<div class="os-selector-item os-selector-item-osx active" data-os="osx">
+
+								<a href="/#">
+
+									<span class="os-selector-item-icon">
+									</span>
+
+									<span class="os-selector-item-label h5-clone inverse flush-top flush-bottom">
+
+										Mac OS X
+
+									</span>
+
+								</a>
+
+							</div>
+
+							<div class="os-selector-item os-selector-item-windows" data-os="windows">
+
+								<a href="/#">
+
+									<span class="os-selector-item-icon">
+									</span>
+
+									<span class="os-selector-item-label h5-clone inverse flush-top flush-bottom">
+
+										Windows
+
+									</span>
+
+								</a>
+
+							</div>
+
+							<div class="os-selector-item os-selector-item-debian-ubuntu" data-os="debian-ubuntu">
+
+								<a href="/#">
+
+									<span class="os-selector-item-icon">
+									</span>
+
+									<span class="os-selector-item-label h5-clone inverse flush-top flush-bottom">
+
+										Debian/Ubuntu
+
+									</span>
+
+								</a>
+
+							</div>
+
+							<div class="os-selector-item os-selector-item-standalone" data-os="standalone">
+
+								<a href="/#">
+
+									<span class="os-selector-item-icon">
+									</span>
+
+									<span class="os-selector-item-label h5-clone inverse flush-top flush-bottom">
+
+										Standalone
+
+									</span>
+
+								</a>
+
+							</div>
+
+						</div>
+
+						<div class="button-toolbar button-toolbar-centered flush-bottom download-buttons">
+
+							<div class="button button-primary inverse" id="button-download-osx">
+								<a href="/releases/v0.22.79/darwin-amd64/force" style="color:#58488a;">	Download for Mac OS X
+								</a>
+							</div>
+
+							<div class="button button-primary inverse hide" id="button-download-windows">
+								<a href="/releases/v0.22.79/windows-amd64/force.exe" style="color:#58488a;">	Download for Windows
+								</a>
+							</div>
+
+
+							<div class="button button-primary inverse hide" id="button-download-debian-ubuntu">
+								<a href="/releases/v0.22.79/linux-amd64/force" style="color:#58488a;">	Download for Debian/Ubuntu
+								</a>
+							</div>
+
+							<div class="button button-primary inverse hide" id="button-download-standalone">
+								<a href="https://github.com/heroku/force" style="color:#58488a;">
+								Download from Github
+								</a>
+							</div>
+
+						</div>
+						<p></p>
+
+					</div>
+
+				</div>
+
+				<!-- ================================================== -->
+				<!--                   END: PAGE HEADER                 -->
+				<!-- ================================================== -->
+
+				<!-- ================================================== -->
+				<!--                 BEGIN: PAGE CONTENT                -->
+				<!-- ================================================== -->
+
+				<div id="page-content" class="stage-pod">
+
+					<div class="container container-pod container-pod-tall">
+
+						<!-- ================================================== -->
+						<!--         BEGIN: TOOLBELT INSTRUCTIONS (OS X)        -->
+						<!-- ================================================== -->
+
+						<div class="toolbelt-instructions-osx">
+
+							<h2>
+
+								What is it?
+
+							</h2>
+
+							<p>
+								The Force.com CLI allows you to work with Force.com data directly from the command line. You can Browse and Create Force.com objects, view, edit, create, and delete records, execute APEX code and SOQL queries, and more.
+							</p>
+							<hr>
+
+							<h2>
+
+								Getting started
+
+							</h2>
+
+							<p>
+
+								Once installed, you'll have access to the `force` command from your command shell. A Salesforce.com account is required. If you do not have one, <a href="https://events.developerforce.com/signup">sign-up for a free developer account</a>:
+
+							</p>
+
+							<div class="terminal-window">
+
+								<div class="terminal-window-header-buttons">
+
+									<div class="terminal-window-header-button"></div>
+									<div class="terminal-window-header-button"></div>
+									<div class="terminal-window-header-button"></div>
+
+								</div>
+
+								<div class="terminal-window-content">
+
+									<p class="flush-bottom">
+
+										<span class="emphasis">$ force login</span><br>
+
+									</p>
+
+								</div>
+
+							</div>
+
+							<p>
+
+								You're now ready to use the Force.com CLI:
+
+							</p>
+
+							<div class="terminal-window flush-bottom">
+
+								<div class="terminal-window-header-buttons">
+
+									<div class="terminal-window-header-button"></div>
+									<div class="terminal-window-header-button"></div>
+									<div class="terminal-window-header-button"></div>
+
+								</div>
+
+
+								<pre class="terminal-window-content"><span class="emphasis">$ force help</span>
+
+Available commands:
+  login     Log in to force.com
+  logout    Log out from force.com
+  whoami    Show information about the active account
+  sobject   Manage sobjects
+  field     Manage sobject fields
+  record    Create, modify, or view records
+  export    Export metadata to a local directory
+  import    Import metadata from a local directory
+  query     Execute a SOQL query
+  apex      Execute anonymous Apex code
+  version   Display current version
+  update    Update to the latest version
+  help      Show this help
+
+Run 'force help [command]' for details.
+								</pre>
+
+							</div>
+
+
+						</div>
+
+
+				</div>
+
+				<!-- ================================================== -->
+				<!--                  END: PAGE CONTENT                 -->
+				<!-- ================================================== -->
+
+		    </div>
+
+			<!-- ================================================== -->
+			<!--                     END: PAGE                      -->
+			<!-- ================================================== -->
+
+
+
+	    </div>
+
+		<!-- ================================================== -->
+		<!--                    END: STAGE                      -->
+		<!-- ================================================== -->
+
+		<!-- ================================================== -->
+		<!--                 BEGIN: BODY FOOT                   -->
+		<!-- ================================================== -->
+
+		<!-- +++++++++++++++++ PRETTY PRINT +++++++++++++++++++ -->
+
+		<script type="text/javascript" src="prettify.js"></script>
+
+		<!-- +++++++++++++++++++ RETINA.JS ++++++++++++++++++++ -->
+
+		<script type="text/javascript" src="jquery.retina.js"></script>
+
+		<!-- +++++++++++++++++ APPLICATION.JS +++++++++++++++++ -->
+
+		<script type="text/javascript" src="app.js"></script>
+
+		<!-- ++++++++++++++++++++ CSS3PIE +++++++++++++++++++++ -->
+
+		<!--[if lt IE 7 ]>
+
+			<script type="text/javascript" src="/resources/javascript/libraries/CSS3Pie/PIE_IE678.js"></script>
+
+		<![endif]-->
+
+		<!--[if IE 7 ]>
+
+			<script type="text/javascript" src="/resources/javascript/libraries/CSS3Pie/PIE_IE678.js"></script>
+
+		<![endif]-->
+
+		<!--[if IE 8 ]>
+
+			<script type="text/javascript" src="/resources/javascript/libraries/CSS3Pie/PIE_IE678.js"></script>
+
+		<![endif]-->
+
+		<!--[if IE 9 ]>
+
+			<script type="text/javascript" src="/resources/javascript/libraries/CSS3Pie/PIE_IE9.js"></script>
+
+		<![endif]-->
+
+		<!-- ================================================== -->
+		<!-- END: BODY FOOT                                     -->
+		<!-- ================================================== -->
+
+	<!-- ================================================== -->
+	<!--                      END: BODY                     -->
+	<!-- ================================================== -->
+
+
+</body></html>
