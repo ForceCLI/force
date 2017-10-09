@@ -52,9 +52,12 @@ force bulk batch <batchId>
 */
 
 import (
+	"bufio"
+	"bytes"
+	"encoding/csv"
 	"encoding/xml"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"strings"
 
 	. "github.com/heroku/force/error"
@@ -494,8 +497,7 @@ func addBatchToJob(csvFilePath string, jobId string) (result BatchInfo, err erro
 
 	force, _ := ActiveForce()
 
-	filedata, err := ioutil.ReadFile(csvFilePath)
-	batches := splitFileIntoBatches(filedata)
+	batches := SplitCSV(csvFilePath, 10000)
 	for b := range batches {
 		result, err = force.AddBatchToJob(batches[b], jobId)
 		if err != nil {
@@ -507,17 +509,32 @@ func addBatchToJob(csvFilePath string, jobId string) (result BatchInfo, err erro
 	return
 }
 
-func splitFileIntoBatches(filedata []byte) (batches []string) {
-	batchsize := 10000
-	rows := strings.Split(string(filedata), "\n")
+func SplitCSV(csvFilePath string, batchsize int) (batches []string) {
+	f, err := os.Open(csvFilePath)
+	if err != nil {
+		return
+	}
+	r := csv.NewReader(bufio.NewReader(f))
+	filedata, err := r.ReadAll()
+	if err != nil {
+		return
+	}
+
+	return splitFileIntoBatches(filedata, batchsize)
+}
+
+func splitFileIntoBatches(rows [][]string, batchsize int) (batches []string) {
 	headerRow, rows := rows[0], rows[1:]
-	for len(rows) > 1 {
+	for len(rows) > 0 {
 		if len(rows) < batchsize {
 			batchsize = len(rows)
 		}
-		batch := []string{headerRow}
-		batch = append(batch, rows[0:batchsize]...)
-		batches = append(batches, strings.Join(batch, "\n"))
+		buf := new(bytes.Buffer)
+		w := csv.NewWriter(buf)
+		w.Write(headerRow)
+		w.WriteAll(rows[0:batchsize])
+		batch := buf.String()
+		batches = append(batches, batch)
 		rows = rows[batchsize:]
 	}
 	return
