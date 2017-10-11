@@ -32,7 +32,8 @@ var _ = Describe("Bulk", func() {
 value"`
 			ioutil.WriteFile(csvFilePath, []byte(csvContents), 0644)
 
-			batches := SplitCSV(csvFilePath, 2)
+			batches, err := SplitCSV(csvFilePath, 2)
+			Expect(err).To(BeNil())
 
 			Expect(len(batches)).To(Equal(2))
 			Expect(batches[0]).To(HavePrefix("Id,Description"))
@@ -47,11 +48,29 @@ value"`
 001000000000000000,single value`
 			ioutil.WriteFile(csvFilePath, []byte(csvContents), 0644)
 
-			batches := SplitCSV(csvFilePath, 2)
+			batches, err := SplitCSV(csvFilePath, 2)
+			Expect(err).To(BeNil())
 
 			Expect(len(batches)).To(Equal(1))
 			Expect(batches[0]).To(HavePrefix("Id,Description"))
 			Expect(batches[0]).To(HaveSuffix("single value\n"))
+		})
+
+		It("should return an error for an invalid file", func() {
+			csvFilePath := tempDir + "/bulk.csv"
+			csvContents := `Column 1
+001000000000000000,single value`
+			ioutil.WriteFile(csvFilePath, []byte(csvContents), 0644)
+
+			_, err := SplitCSV(csvFilePath, 2)
+			Expect(err).To(MatchError(MatchRegexp("wrong number of fields")))
+		})
+
+		It("should return an error for a missing file", func() {
+			csvFilePath := tempDir + "/no-such-file.csv"
+
+			_, err := SplitCSV(csvFilePath, 2)
+			Expect(err).To(MatchError(MatchRegexp("no such file or directory")))
 		})
 	})
 })

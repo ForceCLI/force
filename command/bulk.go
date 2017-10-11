@@ -494,10 +494,12 @@ func createBulkUpsertJob(csvFilePath string, objectType string, format string, e
 }
 
 func addBatchToJob(csvFilePath string, jobId string) (result BatchInfo, err error) {
-
 	force, _ := ActiveForce()
 
-	batches := SplitCSV(csvFilePath, 10000)
+	batches, err := SplitCSV(csvFilePath, 10000)
+	if err != nil {
+		return
+	}
 	for b := range batches {
 		result, err = force.AddBatchToJob(batches[b], jobId)
 		if err != nil {
@@ -509,7 +511,7 @@ func addBatchToJob(csvFilePath string, jobId string) (result BatchInfo, err erro
 	return
 }
 
-func SplitCSV(csvFilePath string, batchsize int) (batches []string) {
+func SplitCSV(csvFilePath string, batchsize int) (batches []string, err error) {
 	f, err := os.Open(csvFilePath)
 	if err != nil {
 		return
@@ -520,7 +522,8 @@ func SplitCSV(csvFilePath string, batchsize int) (batches []string) {
 		return
 	}
 
-	return splitFileIntoBatches(filedata, batchsize)
+	batches = splitFileIntoBatches(filedata, batchsize)
+	return
 }
 
 func splitFileIntoBatches(rows [][]string, batchsize int) (batches []string) {
