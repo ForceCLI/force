@@ -83,6 +83,46 @@ func (partner *ForcePartner) ExecuteAnonymous(apex string) (output string, err e
 	return
 }
 
+func (partner *ForcePartner) ExecuteAnonymousTest(apex string) (output string, err error) {
+	soap := fmt.Sprintf(`<CompileAndTestRequest>
+		<classes><![CDATA[
+		@IsTest(seeAllData=true)
+		class AnonymousTestClass {
+			@IsTest
+			public static void test() {
+				%s
+			}
+		}
+		]]></classes>
+		<checkOnly>true</checkOnly>
+		<runTestsRequest><classes>AnonymousTestClass</classes></runTestsRequest>
+		</CompileAndTestRequest>
+		`, apex)
+	body, err := partner.soapExecute("compileAndTest", soap)
+	if err != nil {
+		return
+	}
+	var result struct {
+		Log             string   `xml:"Header>DebuggingInfo>debugLog"`
+		Success         bool     `xml:"Body>compileAndTestResponse>result>success"`
+		CompileProblems []string `xml:"Body>compileAndTestResponse>result>classes>problem"`
+		TestFailures    []string `xml:"Body>compileAndTestResponse>result>runTestsResult>failures>message"`
+	}
+	if err = xml.Unmarshal(body, &result); err != nil {
+		return
+	}
+	if !result.Success {
+		if len(result.CompileProblems) > 0 {
+			err = errors.New(result.CompileProblems[0])
+		} else {
+			err = errors.New(result.TestFailures[0])
+		}
+		return
+	}
+	output = result.Log
+	return
+}
+
 func (partner *ForcePartner) SoapExecuteCore(action, query string) (response []byte, err error) {
 	url := fmt.Sprintf("%s/services/Soap/u/%s/%s", partner.Force.Credentials.InstanceUrl, partner.Force.Credentials.SessionOptions.ApiVersion, partner.Force.Credentials.UserInfo.OrgId)
 	soap := NewSoap(url, "urn:partner.soap.sforce.com", partner.Force.Credentials.AccessToken)
