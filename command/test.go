@@ -10,7 +10,7 @@ import (
 )
 
 var cmdTest = &Command{
-	Usage: "test (all | classname...)",
+	Usage: "test (all | classname... | classname.method...)",
 	Short: "Run apex tests",
 	Long: `
 Run apex tests
@@ -23,7 +23,8 @@ Examples:
 
   force test all
   force test Test1 Test2 Test3
-  force test -namespace=ns Test4 
+  force test Test1.method1 Test1.method2
+  force test -namespace=ns Test4
   force test -v Test1
 `,
 }
