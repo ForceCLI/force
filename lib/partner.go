@@ -11,25 +11,6 @@ type ForcePartner struct {
 	Force *Force
 }
 
-type TestRunner interface {
-	RunTests(tests []string, namespace string) (output TestCoverage, err error)
-}
-
-type TestCoverage struct {
-	Log                       string   `xml:"Header>DebuggingInfo>debugLog"`
-	NumberRun                 int      `xml:"Body>runTestsResponse>result>numTestsRun"`
-	NumberFailures            int      `xml:"Body>runTestsResponse>result>numFailures"`
-	NumberLocations           []int    `xml:"Body>runTestsResponse>result>codeCoverage>numLocations"`
-	NumberLocationsNotCovered []int    `xml:"Body>runTestsResponse>result>codeCoverage>numLocationsNotCovered"`
-	Name                      []string `xml:"Body>runTestsResponse>result>codeCoverage>name"`
-	SMethodNames              []string `xml:"Body>runTestsResponse>result>successes>methodName"`
-	SClassNames               []string `xml:"Body>runTestsResponse>result>successes>name"`
-	FMethodNames              []string `xml:"Body>runTestsResponse>result>failures>methodName"`
-	FClassNames               []string `xml:"Body>runTestsResponse>result>failures>name"`
-	FMessage                  []string `xml:"Body>runTestsResponse>result>failures>message"`
-	FStackTrace               []string `xml:"Body>runTestsResponse>result>failures>stackTrace"`
-}
-
 func NewForcePartner(force *Force) (partner *ForcePartner) {
 	partner = &ForcePartner{Force: force}
 	return
@@ -128,31 +109,6 @@ func (partner *ForcePartner) SoapExecuteCore(action, query string) (response []b
 	soap := NewSoap(url, "urn:partner.soap.sforce.com", partner.Force.Credentials.AccessToken)
 	soap.Header = "<apex:DebuggingHeader><apex:debugLevel>DEBUGONLY</apex:debugLevel></apex:DebuggingHeader>"
 	response, err = soap.Execute(action, query)
-	return
-}
-
-func (partner *ForcePartner) RunTests(tests []string, namespace string) (output TestCoverage, err error) {
-	soap := "<RunTestsRequest>\n"
-	if strings.EqualFold(tests[0], "all") {
-		soap += "<allTests>True</allTests>\n"
-	} else {
-		for _, element := range tests {
-			soap += "<classes>" + element + "</classes>\n"
-		}
-	}
-	if namespace != "" {
-		soap += "<namespace>" + namespace + "</namespace>\n"
-	}
-	soap += "</RunTestsRequest>"
-	body, err := partner.soapExecute("runTests", soap)
-	if err != nil {
-		return
-	}
-	var result TestCoverage
-	if err = xml.Unmarshal(body, &result); err != nil {
-		return
-	}
-	output = result
 	return
 }
 
