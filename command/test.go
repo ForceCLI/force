@@ -17,6 +17,7 @@ Run apex tests
 
 Test Options
   -namespace=<namespace>     Select namespace to run test from
+  -class=class               Select class to run tests from
   -v                         Verbose logging
 
 Examples:
@@ -25,6 +26,7 @@ Examples:
   force test Test1 Test2 Test3
   force test Test1.method1 Test1.method2
   force test -namespace=ns Test4
+  force test -class=Test1 method1 method2
   force test -v Test1
 `,
 }
@@ -36,6 +38,7 @@ func init() {
 
 var (
 	namespaceTestFlag = cmdTest.Flag.String("namespace", "", "namespace to run tests in")
+	classFlag         = cmdTest.Flag.String("class", "", "class to run tests from")
 	verboselogging    bool
 )
 
@@ -51,11 +54,25 @@ func RunTests(testRunner TestRunner, tests []string, namespace string) (output T
 	return
 }
 
+func QualifyMethods(class string, methods []string) []string {
+	if len(methods) == 0 {
+		return []string{class}
+	}
+	var qualified []string
+	for _, method := range methods {
+		qualified = append(qualified, fmt.Sprintf("%s.%s", class, method))
+	}
+	return qualified
+}
+
 func runTests(cmd *Command, args []string) {
-	if len(args) < 1 {
+	if len(args) < 1 && *classFlag == "" {
 		ErrorAndExit("must specify tests to run")
 	}
 	force, _ := ActiveForce()
+	if *classFlag != "" {
+		args = QualifyMethods(*classFlag, args)
+	}
 	output, err := RunTests(force.Partner, args, *namespaceTestFlag)
 	success := false
 	if err != nil {

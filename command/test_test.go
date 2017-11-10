@@ -46,4 +46,15 @@ var _ = Describe("Test", func() {
 		})
 	})
 
+	Describe("QualifyMethods", func() {
+		It("should prepend class to method names", func() {
+			methods := QualifyMethods("MyClass", []string{"method1", "method2"})
+			Expect(methods).To(Equal([]string{"MyClass.method1", "MyClass.method2"}))
+		})
+		It("should return class if no methods", func() {
+			methods := QualifyMethods("MyClass", make([]string, 0, 0))
+			Expect(methods).To(Equal([]string{"MyClass"}))
+		})
+	})
+
 })
