@@ -31,9 +31,9 @@ func getMetadataType(metadataType string, folders map[string]string) (member []s
 	force, _ := ActiveForce()
 	var queryString string
 	if metadataType == "Report" {
-		queryString = "SELECT Id, OwnerId ,DeveloperName from Report"
+		queryString = "SELECT Id, OwnerId, DeveloperName, NamespacePrefix FROM Report"
 	} else {
-		queryString = "SELECT Id, DeveloperName, Folder.DeveloperName from " + metadataType
+		queryString = "SELECT Id, DeveloperName, Folder.DeveloperName, Folder.NamespacePrefix, NamespacePrefix FROM " + metadataType
 	}
 	queryResult, err := force.Query(fmt.Sprintf("%s", queryString), false)
 	if err != nil {
@@ -53,10 +53,17 @@ func getMetadataType(metadataType string, folders map[string]string) (member []s
 			folderData, _ := metadataItem["Folder"].(map[string]interface{})
 			if folderData != nil {
 				folderName = folderData["DeveloperName"].(string)
+				if folderData["NamespacePrefix"] != nil {
+					folderName = fmt.Sprintf("%s__%s", folderData["NamespacePrefix"].(string), folderName)
+				}
 			}
 		}
+		itemName := metadataItem["DeveloperName"].(string)
+		if metadataItem["NamespacePrefix"] != nil {
+			itemName = fmt.Sprintf("%s__%s", metadataItem["NamespacePrefix"].(string), itemName)
+		}
 		if folderName != "" {
-			metadataItems = append(metadataItems, folderName+"/"+metadataItem["DeveloperName"].(string))
+			metadataItems = append(metadataItems, folderName+"/"+itemName)
 		}
 	}
 	return metadataItems
@@ -172,7 +179,7 @@ func runExport(cmd *Command, args []string) {
 		{Name: []string{"Workflow"}, Members: []string{"*"}},
 	}
 
-	folderResult, err := force.Query(fmt.Sprintf("%s", "SELECT Id, Type, DeveloperName from Folder Where Type in ('Dashboard', 'Document', 'Email', 'Report')"), false)
+	folderResult, err := force.Query(fmt.Sprintf("%s", "SELECT Id, Type, NamespacePrefix, DeveloperName from Folder Where Type in ('Dashboard', 'Document', 'Email', 'Report')"), false)
 	folders := make(map[string]map[string]string)
 	for _, folder := range folderResult.Records {
 		if folder["DeveloperName"] != nil {
@@ -182,7 +189,11 @@ func runExport(cmd *Command, args []string) {
 				m = make(map[string]string)
 				folders[folderType] = m
 			}
-			m[folder["Id"].(string)] = folder["DeveloperName"].(string)
+			folderFullName := folder["DeveloperName"].(string)
+			if folder["NamespacePrefix"] != nil {
+				folderFullName = fmt.Sprintf("%s__%s", folder["NamespacePrefix"].(string), folderFullName)
+			}
+			m[folder["Id"].(string)] = folderFullName
 		}
 	}
 	for foldersType, foldersName := range folders {
