@@ -27,48 +27,6 @@ Examples:
 `,
 }
 
-func getMetadataType(metadataType string, folders map[string]string) (member []string) {
-	force, _ := ActiveForce()
-	var queryString string
-	if metadataType == "Report" {
-		queryString = "SELECT Id, OwnerId, DeveloperName, NamespacePrefix FROM Report"
-	} else {
-		queryString = "SELECT Id, DeveloperName, Folder.DeveloperName, Folder.NamespacePrefix, NamespacePrefix FROM " + metadataType
-	}
-	queryResult, err := force.Query(fmt.Sprintf("%s", queryString), QueryOptions{IsTooling: false})
-	if err != nil {
-		ErrorAndExit(err.Error())
-	}
-	metadataItems := make([]string, 1, 1000)
-	metadataItems[0] = "*"
-	for _, folderName := range folders {
-		metadataItems = append(metadataItems, folderName)
-	}
-
-	for _, metadataItem := range queryResult.Records {
-		folderName := ""
-		if metadataType == "Report" {
-			folderName, _ = folders[metadataItem["OwnerId"].(string)]
-		} else {
-			folderData, _ := metadataItem["Folder"].(map[string]interface{})
-			if folderData != nil {
-				folderName = folderData["DeveloperName"].(string)
-				if folderData["NamespacePrefix"] != nil {
-					folderName = fmt.Sprintf("%s__%s", folderData["NamespacePrefix"].(string), folderName)
-				}
-			}
-		}
-		itemName := metadataItem["DeveloperName"].(string)
-		if metadataItem["NamespacePrefix"] != nil {
-			itemName = fmt.Sprintf("%s__%s", metadataItem["NamespacePrefix"].(string), itemName)
-		}
-		if folderName != "" {
-			metadataItems = append(metadataItems, folderName+"/"+itemName)
-		}
-	}
-	return metadataItems
-}
-
 func runExport(cmd *Command, args []string) {
 	// Get path from args if available
 	var err error
@@ -179,29 +137,21 @@ func runExport(cmd *Command, args []string) {
 		{Name: []string{"Workflow"}, Members: []string{"*"}},
 	}
 
-	folderResult, err := force.Query(fmt.Sprintf("%s", "SELECT Id, Type, NamespacePrefix, DeveloperName from Folder Where Type in ('Dashboard', 'Document', 'Email', 'Report')"), QueryOptions{IsTooling: false})
-	folders := make(map[string]map[string]string)
-	for _, folder := range folderResult.Records {
-		if folder["DeveloperName"] != nil {
-			folderType := folder["Type"].(string)
-			m, ok := folders[folderType]
-			if !ok {
-				m = make(map[string]string)
-				folders[folderType] = m
-			}
-			folderFullName := folder["DeveloperName"].(string)
-			if folder["NamespacePrefix"] != nil {
-				folderFullName = fmt.Sprintf("%s__%s", folder["NamespacePrefix"].(string), folderFullName)
-			}
-			m[folder["Id"].(string)] = folderFullName
-		}
+	folders, err := force.GetAllFolders()
+	if err != nil {
+		err = fmt.Errorf("Could not get folders: %s", err.Error())
+		ErrorAndExit(err.Error())
 	}
 	for foldersType, foldersName := range folders {
 		if foldersType == "Email" {
 			foldersType = "EmailTemplate"
 		}
-		members := getMetadataType(foldersType, foldersName)
-		query = append(query, ForceMetadataQueryElement{Name: []string{foldersType}, Members: members})
+		members, err := force.GetMetadataInFolders(foldersType, foldersName)
+		if err != nil {
+			err = fmt.Errorf("Could not get metadata in folders: %s", err.Error())
+			ErrorAndExit(err.Error())
+		}
+		query = append(query, ForceMetadataQueryElement{Name: []string{string(foldersType)}, Members: members})
 	}
 
 	if root == "" {
