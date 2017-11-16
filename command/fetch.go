@@ -188,6 +188,40 @@ func persistBundles(bundles AuraDefinitionBundleResult, definitions AuraDefiniti
 	return
 }
 
+func getWildcardQuery(force *Force, metadataTypes metaName) (query ForceMetadataQuery, err error) {
+	var folders FolderedMetadata
+	// For foldered metadata types, which don't support wildcards, get the list
+	// of folders and all metadata within each folder.
+	for _, metadataType := range metadataTypes {
+		switch metadataType {
+		case "EmailTemplate":
+			fallthrough
+		case "Dashboard":
+			fallthrough
+		case "Report":
+			fallthrough
+		case "Document":
+			if folders == nil {
+				folders, err = force.GetAllFolders()
+			}
+			if err != nil {
+				ErrorAndExit(err.Error())
+			}
+			folderType := FolderType(metadataType)
+			members, err := force.GetMetadataInFolders(folderType, folders[folderType])
+			if err != nil {
+				err = fmt.Errorf("Could not get metadata in folders: %s", err.Error())
+				ErrorAndExit(err.Error())
+			}
+			query = append(query, ForceMetadataQueryElement{Name: []string{string(folderType)}, Members: members})
+		default:
+			mq := ForceMetadataQueryElement{[]string{metadataType}, []string{"*"}}
+			query = append(query, mq)
+		}
+	}
+	return
+}
+
 func runFetch(cmd *Command, args []string) {
 
 	force, _ := ActiveForce()
@@ -232,8 +266,10 @@ func runFetch(cmd *Command, args []string) {
 				mq := ForceMetadataQueryElement{metadataTypes, metadataName}
 				query = append(query, mq)
 			} else {
-				mq := ForceMetadataQueryElement{metadataTypes, []string{"*"}}
-				query = append(query, mq)
+				query, err = getWildcardQuery(force, metadataTypes)
+				if err != nil {
+					ErrorAndExit(err.Error())
+				}
 			}
 			files, err = force.Metadata.Retrieve(query)
 			if err != nil {
