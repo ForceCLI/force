@@ -156,6 +156,10 @@ type Result struct {
 	Message string
 }
 
+type QueryOptions struct {
+	IsTooling bool
+}
+
 type BatchResult struct {
 	Results []Result
 }
@@ -625,9 +629,9 @@ func (f *Force) GetSobject(name string) (sobject ForceSobject, err error) {
 	return
 }
 
-func (f *Force) Query(query string, isTooling bool) (result ForceQueryResult, err error) {
+func (f *Force) Query(query string, options QueryOptions) (result ForceQueryResult, err error) {
 	toolingPath := ""
-	if isTooling {
+	if options.IsTooling {
 		toolingPath = "tooling/"
 	}
 
