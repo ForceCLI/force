@@ -50,7 +50,7 @@ func runPasswordStatus(args []string) {
 		ErrorAndExit("must specify user name")
 	}
 	force, _ := ActiveForce()
-	records, err := force.Query(fmt.Sprintf("select Id From User Where UserName = '%s'", args[0]), QueryOptions{IsTooling: false})
+	records, err := force.Query(fmt.Sprintf("select Id From User Where UserName = '%s'", args[0]))
 	if err != nil {
 		ErrorAndExit(err.Error())
 	} else {
@@ -68,7 +68,7 @@ func runPasswordReset(args []string) {
 		ErrorAndExit("must specify user name")
 	}
 	force, _ := ActiveForce()
-	records, err := force.Query(fmt.Sprintf("select Id From User Where UserName = '%s'", args[0]), QueryOptions{IsTooling: false})
+	records, err := force.Query(fmt.Sprintf("select Id From User Where UserName = '%s'", args[0]))
 	object, err := force.ResetPassword(records.Records[0]["Id"].(string))
 	if err != nil {
 		ErrorAndExit(err.Error())
@@ -82,7 +82,7 @@ func runPasswordChange(args []string) {
 		ErrorAndExit("must specify user name")
 	}
 	force, _ := ActiveForce()
-	records, err := force.Query(fmt.Sprintf("select Id From User Where UserName = '%s'", args[0]), QueryOptions{IsTooling: false})
+	records, err := force.Query(fmt.Sprintf("select Id From User Where UserName = '%s'", args[0]))
 	if err != nil {
 		ErrorAndExit(err.Error())
 	} else {

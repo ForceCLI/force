@@ -13,7 +13,7 @@ type Folders map[FolderId]FolderName
 type FolderedMetadata map[FolderType]Folders
 
 func (force *Force) GetAllFolders() (folders FolderedMetadata, err error) {
-	folderResult, err := force.Query(fmt.Sprintf("%s", "SELECT Id, Type, NamespacePrefix, DeveloperName from Folder Where Type in ('Dashboard', 'Document', 'Email', 'Report')"), QueryOptions{IsTooling: false})
+	folderResult, err := force.Query(fmt.Sprintf("%s", "SELECT Id, Type, NamespacePrefix, DeveloperName from Folder Where Type in ('Dashboard', 'Document', 'Email', 'Report')"))
 	if err != nil {
 		return
 	}
@@ -43,7 +43,7 @@ func (force *Force) GetMetadataInFolders(metadataType FolderType, folders Folder
 	} else {
 		queryString = "SELECT Id, DeveloperName, Folder.DeveloperName, Folder.NamespacePrefix, NamespacePrefix FROM " + string(metadataType)
 	}
-	queryResult, err := force.Query(fmt.Sprintf("%s", queryString), QueryOptions{IsTooling: false})
+	queryResult, err := force.Query(fmt.Sprintf("%s", queryString))
 	if err != nil {
 		return
 	}

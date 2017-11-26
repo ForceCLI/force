@@ -629,9 +629,13 @@ func (f *Force) GetSobject(name string) (sobject ForceSobject, err error) {
 	return
 }
 
-func (f *Force) Query(query string, options QueryOptions) (result ForceQueryResult, err error) {
+func (f *Force) Query(query string, options ...func(*QueryOptions)) (result ForceQueryResult, err error) {
+	queryOptions := QueryOptions{}
+	for _, option := range options {
+		option(&queryOptions)
+	}
 	toolingPath := ""
-	if options.IsTooling {
+	if queryOptions.IsTooling {
 		toolingPath = "tooling/"
 	}
 
