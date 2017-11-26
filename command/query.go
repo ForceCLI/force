@@ -37,14 +37,17 @@ func runQuery(cmd *Command, args []string) {
 			format = "csv"
 		}
 		var formatArg = ""
-		var isTooling = false
 		var formatIndex = 1
+		var queryOptions []func(*QueryOptions)
 		if len(args) == 2 {
 			formatArg = args[len(args)-formatIndex]
 		} else if len(args) == 3 {
 			formatIndex = 2
 			formatArg = args[len(args)-formatIndex]
-			isTooling = true
+			tooling := func(options *QueryOptions) {
+				options.IsTooling = true
+			}
+			queryOptions = append(queryOptions, tooling)
 		}
 
 		if strings.Contains(formatArg, "format:") {
@@ -54,7 +57,7 @@ func runQuery(cmd *Command, args []string) {
 
 		soql := strings.Join(args, " ")
 
-		records, err := force.Query(fmt.Sprintf("%s", soql), QueryOptions{isTooling})
+		records, err := force.Query(fmt.Sprintf("%s", soql), queryOptions...)
 
 		if err != nil {
 			ErrorAndExit(err.Error())
