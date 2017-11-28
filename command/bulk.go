@@ -558,44 +558,28 @@ func createBulkJob(objectType string, operation string, fileFormat string, exter
 
 	force, _ := ActiveForce()
 
-	xml := `
-	<jobInfo xmlns="http://www.force.com/2009/06/asyncapi/dataload">
- 		<operation>%s</operation>
- 		<object>%s</object>
- 		`
+	job := JobInfo{
+		Operation:   operation,
+		Object:      objectType,
+		ContentType: fileFormat,
+	}
+
 	if strings.EqualFold(concurrencyMode, "serial") {
-		xml += `<concurrencyMode>Serial</concurrencyMode>
-		`
+		job.ConcurrencyMode = "serial"
 	}
 
 	if operation == "upsert" {
-		xml += `<externalIdFieldName>%s</externalIdFieldName>
-		`
+		job.ExternalIdFieldName = externalId
 	}
 
-	xml += `<contentType>%s</contentType>
-	</jobInfo>
-	`
-
-	data := ""
-	if operation == "upsert" {
-		data = fmt.Sprintf(xml, operation, objectType, externalId, fileFormat)
-	} else {
-		data = fmt.Sprintf(xml, operation, objectType, fileFormat)
-	}
-	jobInfo, err = force.CreateBulkJob(data)
+	jobInfo, err = force.CreateBulkJob(job)
 	return
 }
 
 func closeBulkJob(jobId string) (jobInfo JobInfo, err error) {
 	force, _ := ActiveForce()
 
-	xml := `
-	<jobInfo xmlns="http://www.force.com/2009/06/asyncapi/dataload">
- 		<state>Closed</state>
-	</jobInfo>
-	`
-	jobInfo, err = force.CloseBulkJob(jobId, xml)
+	jobInfo, err = force.CloseBulkJob(jobId)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
