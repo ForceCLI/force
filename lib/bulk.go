@@ -109,9 +109,24 @@ func (f *Force) BulkQuery(soql string, jobId string, contettype string) (result 
 	return
 }
 
-func (f *Force) AddBatchToJob(xmlbody string, jobId string) (result BatchInfo, err error) {
-	url := fmt.Sprintf("%s/services/async/%s/job/%s/batch", f.Credentials.InstanceUrl, apiVersionNumber, jobId)
-	body, err := f.httpPostCSV(url, xmlbody)
+func (f *Force) AddBatchToJob(content string, job JobInfo) (result BatchInfo, err error) {
+	url := fmt.Sprintf("%s/services/async/%s/job/%s/batch", f.Credentials.InstanceUrl, apiVersionNumber, job.Id)
+	var body []byte
+	switch job.ContentType {
+	case "CSV":
+		body, err = f.httpPostCSV(url, content)
+	case "JSON":
+		body, err = f.httpPostJSON(url, content)
+	case "XML":
+		body, err = f.httpPostXML(url, content)
+	default:
+		err = fmt.Errorf("Invalid content type for bulk API: " + job.ContentType)
+	}
+	if err != nil {
+		err = fmt.Errorf("Failed to add batch to bulk job: " + err.Error())
+		return
+	}
+
 	xml.Unmarshal(body, &result)
 	if len(result.Id) == 0 {
 		var fault LoginFault
