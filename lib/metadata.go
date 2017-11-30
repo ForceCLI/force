@@ -194,6 +194,7 @@ type ForceMetadata struct {
 }
 
 type ForceDeployOptions struct {
+	XMLName           xml.Name `xml:"deployOptions"`
 	AllowMissingFiles bool     `xml:"allowMissingFiles"`
 	AutoUpdatePackage bool     `xml:"autoUpdatePackage"`
 	CheckOnly         bool     `xml:"checkOnly"`
@@ -201,7 +202,7 @@ type ForceDeployOptions struct {
 	PerformRetrieve   bool     `xml:"performRetrieve"`
 	PurgeOnDelete     bool     `xml:"purgeOnDelete"`
 	RollbackOnError   bool     `xml:"rollbackOnError"`
-	TestLevel         string   `xml:"testLevel"`
+	TestLevel         string   `xml:"testLevel,omitempty"`
 	RunTests          []string `xml:"runTests"`
 	SinglePackage     bool     `xml:"singlePackage"`
 }
@@ -1145,29 +1146,11 @@ func (fm *ForceMetadata) DeleteCustomObject(object string) (err error) {
 }
 
 func (fm *ForceMetadata) MakeDeploySoap(options ForceDeployOptions) (soap string) {
-	tests := ""
-	for _, test := range options.RunTests {
-		tests += "<runTests>" + test + "</runTests>\n"
+	if len(options.RunTests) > 0 {
+		options.TestLevel = "RunSpecifiedTests"
 	}
-	var testLevel string
-	if tests == "" {
-		testLevel = options.TestLevel
-	} else {
-		testLevel = "RunSpecifiedTests"
-	}
-	soap = fmt.Sprintf(`
-		<zipFile>%s</zipFile>
-		<deployOptions>
-			<allowMissingFiles>%t</allowMissingFiles>
-			<autoUpdatePackage>%t</autoUpdatePackage>
-			<checkOnly>%t</checkOnly>
-			<ignoreWarnings>%t</ignoreWarnings>
-			<purgeOnDelete>%t</purgeOnDelete>
-			<rollbackOnError>%t</rollbackOnError>
-			<testLevel>%s</testLevel>
-			%s
-		</deployOptions>
-		`, "%s", options.AllowMissingFiles, options.AutoUpdatePackage, options.CheckOnly, options.IgnoreWarnings, options.PurgeOnDelete, options.RollbackOnError, testLevel, tests)
+	deployOptions, _ := xml.Marshal(options)
+	soap = fmt.Sprintf("<zipFile>%s</zipFile>%s", "%s", string(deployOptions))
 	return
 }
 
