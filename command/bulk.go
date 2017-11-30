@@ -418,7 +418,7 @@ func createBulkInsertJob(csvFilePath string, objectType string, format string, c
 	if err != nil {
 		ErrorAndExit(err.Error())
 	} else {
-		batchInfo, err := addBatchToJob(csvFilePath, jobInfo.Id)
+		batchInfo, err := addBatchToJob(csvFilePath, jobInfo)
 		if err != nil {
 			closeBulkJob(jobInfo.Id)
 			ErrorAndExit(err.Error())
@@ -438,7 +438,7 @@ func createBulkUpdateJob(csvFilePath string, objectType string, format string, c
 	if err != nil {
 		ErrorAndExit(err.Error())
 	} else {
-		batchInfo, err := addBatchToJob(csvFilePath, jobInfo.Id)
+		batchInfo, err := addBatchToJob(csvFilePath, jobInfo)
 		if err != nil {
 			closeBulkJob(jobInfo.Id)
 			ErrorAndExit(err.Error())
@@ -458,7 +458,7 @@ func createBulkDeleteJob(csvFilePath string, objectType string, format string, c
 	if err != nil {
 		ErrorAndExit(err.Error())
 	} else {
-		batchInfo, err := addBatchToJob(csvFilePath, jobInfo.Id)
+		batchInfo, err := addBatchToJob(csvFilePath, jobInfo)
 		if err != nil {
 			closeBulkJob(jobInfo.Id)
 			ErrorAndExit(err.Error())
@@ -478,7 +478,7 @@ func createBulkUpsertJob(csvFilePath string, objectType string, format string, e
 	if err != nil {
 		ErrorAndExit(err.Error())
 	} else {
-		batchInfo, err := addBatchToJob(csvFilePath, jobInfo.Id)
+		batchInfo, err := addBatchToJob(csvFilePath, jobInfo)
 		if err != nil {
 			closeBulkJob(jobInfo.Id)
 			ErrorAndExit(err.Error())
@@ -493,7 +493,7 @@ func createBulkUpsertJob(csvFilePath string, objectType string, format string, e
 	}
 }
 
-func addBatchToJob(csvFilePath string, jobId string) (result BatchInfo, err error) {
+func addBatchToJob(csvFilePath string, job JobInfo) (result BatchInfo, err error) {
 	force, _ := ActiveForce()
 
 	batches, err := SplitCSV(csvFilePath, 10000)
@@ -501,7 +501,7 @@ func addBatchToJob(csvFilePath string, jobId string) (result BatchInfo, err erro
 		return
 	}
 	for b := range batches {
-		result, err = force.AddBatchToJob(batches[b], jobId)
+		result, err = force.AddBatchToJob(batches[b], job)
 		if err != nil {
 			break
 		} else {

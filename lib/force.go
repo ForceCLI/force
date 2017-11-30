@@ -1160,7 +1160,10 @@ func (f *Force) fullRestUrl(url string) string {
 
 func (f *Force) GetREST(url string) (result string, err error) {
 	fullUrl := f.fullRestUrl(url)
-	body, err := f.httpGetRequest(fullUrl, "Authorization", fmt.Sprintf("Bearer %s", f.Credentials.AccessToken))
+	headers := map[string]string{
+		"Authorization": fmt.Sprintf("Bearer %s", f.Credentials.AccessToken),
+	}
+	body, err := f.httpGetRequest(fullUrl, headers)
 	if err == SessionExpiredError {
 		f.RefreshSessionOrExit()
 		return f.GetREST(url)
@@ -1209,7 +1212,10 @@ func (f *Force) getForceResult(url string) (results ForceQueryResult, err error)
 }
 
 func (f *Force) httpGet(url string) (body []byte, err error) {
-	body, err = f.httpGetRequest(url, "Authorization", fmt.Sprintf("Bearer %s", f.Credentials.AccessToken))
+	headers := map[string]string{
+		"Authorization": fmt.Sprintf("Bearer %s", f.Credentials.AccessToken),
+	}
+	body, err = f.httpGetRequest(url, headers)
 	if err == SessionExpiredError {
 		f.RefreshSessionOrExit()
 		return f.httpGet(url)
@@ -1218,7 +1224,11 @@ func (f *Force) httpGet(url string) (body []byte, err error) {
 }
 
 func (f *Force) httpGetBulk(url string) (body []byte, err error) {
-	body, err = f.httpGetRequest(url, "X-SFDC-Session", fmt.Sprintf("Bearer %s", f.Credentials.AccessToken))
+	headers := map[string]string{
+		"X-SFDC-Session": fmt.Sprintf("Bearer %s", f.Credentials.AccessToken),
+		"Content-Type":   "application/xml",
+	}
+	body, err = f.httpGetRequest(url, headers)
 	if err == SessionExpiredError {
 		f.RefreshSessionOrExit()
 		return f.httpGetBulk(url)
@@ -1226,12 +1236,14 @@ func (f *Force) httpGetBulk(url string) (body []byte, err error) {
 	return
 }
 
-func (f *Force) httpGetRequest(url string, headerName string, headerValue string) (body []byte, err error) {
+func (f *Force) httpGetRequest(url string, headers map[string]string) (body []byte, err error) {
 	req, err := httpRequest("GET", url, nil)
 	if err != nil {
 		return
 	}
-	req.Header.Add(headerName, headerValue)
+	for headerName, headerValue := range headers {
+		req.Header.Add(headerName, headerValue)
+	}
 	res, err := doRequest(req)
 	if err != nil {
 		return
