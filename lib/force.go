@@ -592,6 +592,39 @@ func (f *Force) GetSobject(name string) (sobject ForceSobject, err error) {
 	return
 }
 
+func (f *Force) QueryAndSend(query string, processor chan<- ForceRecord) (err error) {
+	processResults := func(body []byte) (result ForceQueryResult, err error) {
+		err = json.Unmarshal(body, &result)
+		if err != nil {
+			return
+		}
+		for _, row := range result.Records {
+			processor <- row
+		}
+		return
+	}
+
+	var body []byte
+	url := fmt.Sprintf("%s/services/data/%s/query?q=%s", f.Credentials.InstanceUrl, apiVersion, url.QueryEscape(query))
+	for {
+		body, err = f.httpGet(url)
+		if err != nil {
+			return
+		}
+		var result ForceQueryResult
+		result, err = processResults(body)
+		if err != nil {
+			return
+		}
+		if result.Done {
+			break
+		}
+		url = fmt.Sprintf("%s%s", f.Credentials.InstanceUrl, result.NextRecordsUrl)
+	}
+	close(processor)
+	return
+}
+
 func (f *Force) Query(query string, options ...func(*QueryOptions)) (result ForceQueryResult, err error) {
 	queryOptions := QueryOptions{}
 	for _, option := range options {
