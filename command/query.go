@@ -12,7 +12,7 @@ import (
 
 var cmdQuery = &Command{
 	Run:   runQuery,
-	Usage: "query <soql statement> [output format]",
+	Usage: "query [--all | -a] <soql statement> [output format]",
 	Short: "Execute a SOQL statement",
 	Long: `
 Execute a SOQL statement
@@ -24,7 +24,18 @@ Examples:
   force query "select Id, Name, Account.Name From Contact" --format:csv
 
   force query "select Id, Name From Account Where MailingState IN ('CA', 'NY')"
+
+  force query -a "select Id, Name From Account Where IsDeleted = true"
 `,
+}
+
+var (
+	queryAll bool
+)
+
+func init() {
+	cmdQuery.Flag.BoolVar(&queryAll, "all", false, "use queryAll to include deleted and archived records in query results")
+	cmdQuery.Flag.BoolVar(&queryAll, "a", false, "use queryAll to include deleted and archived records in query results")
 }
 
 func runQuery(cmd *Command, args []string) {
@@ -48,6 +59,11 @@ func runQuery(cmd *Command, args []string) {
 				options.IsTooling = true
 			}
 			queryOptions = append(queryOptions, tooling)
+		}
+		if queryAll {
+			queryOptions = append(queryOptions, func(options *QueryOptions) {
+				options.QueryAll = true
+			})
 		}
 
 		if strings.Contains(formatArg, "format:") {

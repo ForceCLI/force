@@ -158,6 +158,7 @@ type Result struct {
 
 type QueryOptions struct {
 	IsTooling bool
+	QueryAll  bool
 }
 
 type AuraDefinitionBundleResult struct {
@@ -630,14 +631,17 @@ func (f *Force) Query(query string, options ...func(*QueryOptions)) (result Forc
 	for _, option := range options {
 		option(&queryOptions)
 	}
-	toolingPath := ""
+	cmd := "query"
+	if queryOptions.QueryAll {
+		cmd = "queryAll"
+	}
 	if queryOptions.IsTooling {
-		toolingPath = "tooling/"
+		cmd = "tooling/" + cmd
 	}
 
 	result = ForceQueryResult{
 		Done:           false,
-		NextRecordsUrl: fmt.Sprintf("%s/services/data/%s/%squery?q=%s", f.Credentials.InstanceUrl, apiVersion, toolingPath, url.QueryEscape(query)),
+		NextRecordsUrl: fmt.Sprintf("%s/services/data/%s/%s?q=%s", f.Credentials.InstanceUrl, apiVersion, cmd, url.QueryEscape(query)),
 		TotalSize:      0,
 		Records:        []ForceRecord{},
 	}
