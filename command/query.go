@@ -12,30 +12,38 @@ import (
 
 var cmdQuery = &Command{
 	Run:   runQuery,
-	Usage: "query [--all | -a] <soql statement> [output format]",
+	Usage: "query [options] <soql statement>",
 	Short: "Execute a SOQL statement",
 	Long: `
 Execute a SOQL statement
 
 Examples:
 
-  force query "select Id, Name, Account.Name From Contact"
+  force query "SELECT Id, Name, Account.Name FROM Contact"
+  force query --format csv "SELECT Id, Name, Account.Name FROM Contact"
+  force query --all "SELECT Id, Name FROM Account WHERE IsDeleted = true"
+  force query --tooling "SELECT Id, TracedEntity.Name, ApexCode FROM TraceFlag"
 
-  force query "select Id, Name, Account.Name From Contact" --format:csv
-
-  force query "select Id, Name From Account Where MailingState IN ('CA', 'NY')"
-
-  force query -a "select Id, Name From Account Where IsDeleted = true"
+Query Options
+  --all, -a      Use QueryAll to include deleted and archived records in query results
+  --tooling, -t  Use Tooling API
+  --format, -f   Output format: csv, json, json-pretty, console
 `,
 }
 
 var (
-	queryAll bool
+	queryAll          bool
+	useTooling        bool
+	queryOutputFormat string
 )
 
 func init() {
 	cmdQuery.Flag.BoolVar(&queryAll, "all", false, "use queryAll to include deleted and archived records in query results")
 	cmdQuery.Flag.BoolVar(&queryAll, "a", false, "use queryAll to include deleted and archived records in query results")
+	cmdQuery.Flag.BoolVar(&useTooling, "tooling", false, "use Tooling API")
+	cmdQuery.Flag.BoolVar(&useTooling, "t", false, "use Tooling API")
+	cmdQuery.Flag.StringVar(&queryOutputFormat, "format", "console", "output format: csv, json, json-pretty, console")
+	cmdQuery.Flag.StringVar(&queryOutputFormat, "f", "console", "output format: csv, json, json-pretty, console")
 }
 
 func runQuery(cmd *Command, args []string) {
@@ -43,32 +51,36 @@ func runQuery(cmd *Command, args []string) {
 	if len(args) < 1 {
 		cmd.PrintUsage()
 	} else {
-		format := "console"
 		if !terminal.IsTerminal(int(os.Stdout.Fd())) {
-			format = "csv"
+			queryOutputFormat = "csv"
 		}
 		var formatArg = ""
 		var formatIndex = 1
 		var queryOptions []func(*QueryOptions)
 		if len(args) == 2 {
+			fmt.Fprintln(os.Stderr, "Deprecated use of format argument.  Use --format before query.")
 			formatArg = args[len(args)-formatIndex]
 		} else if len(args) == 3 {
+			fmt.Fprintln(os.Stderr, "Deprecated use of tooling argument.  Use --tooling.")
+
 			formatIndex = 2
 			formatArg = args[len(args)-formatIndex]
-			tooling := func(options *QueryOptions) {
-				options.IsTooling = true
-			}
-			queryOptions = append(queryOptions, tooling)
+			useTooling = true
 		}
 		if queryAll {
 			queryOptions = append(queryOptions, func(options *QueryOptions) {
 				options.QueryAll = true
 			})
 		}
+		if useTooling {
+			queryOptions = append(queryOptions, func(options *QueryOptions) {
+				options.IsTooling = true
+			})
+		}
 
 		if strings.Contains(formatArg, "format:") {
 			args = args[:len(args)-formatIndex]
-			format = strings.SplitN(formatArg, ":", 2)[1]
+			queryOutputFormat = strings.SplitN(formatArg, ":", 2)[1]
 		}
 
 		soql := strings.Join(args, " ")
@@ -78,10 +90,10 @@ func runQuery(cmd *Command, args []string) {
 		if err != nil {
 			ErrorAndExit(err.Error())
 		} else {
-			if format == "console" {
+			if queryOutputFormat == "console" {
 				DisplayForceRecords(records)
 			} else {
-				DisplayForceRecordsf(records.Records, format)
+				DisplayForceRecordsf(records.Records, queryOutputFormat)
 			}
 		}
 	}
