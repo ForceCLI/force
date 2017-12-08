@@ -38,7 +38,6 @@ Can be downloaded from the [Current Release Page](https://github.com/heroku/forc
        test      Run apex tests
        security  Displays the OLS and FLS for a given SObject
        version   Display current version
-       update    Update to the latest version
        push      Deploy single artifact from a local directory
        aura      Retrieve or deploy Aura components
        password  See password status or reset password

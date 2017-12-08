@@ -41,7 +41,6 @@ var Commands = []*Command{
 	cmdSobject,
 	cmdTest,
 	cmdTrace,
-	cmdUpdate,
 	cmdUseDXAuth,
 	cmdVersion,
 	cmdWhoami,
