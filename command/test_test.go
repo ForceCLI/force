@@ -57,4 +57,19 @@ var _ = Describe("Test", func() {
 		})
 	})
 
+	Describe("GenerateResults", func() {
+		var (
+			results = TestCoverage{
+				NumberRun:                 5,
+				NumberFailures:            2,
+				NumberLocations:           []int{1, 1, 1, 1, 1},
+				NumberLocationsNotCovered: []int{0, 0, 1, 0, 1},
+				Name: []string{"Test1", "Test2", "Test3", "Test4", "Test5"}}
+		)
+
+		It("should ignore test classes with 0% coverage", func() {
+			output := GenerateResults(results)
+			Expect(output).ToNot(MatchRegexp(`\D0%`))
+		})
+	})
 })
