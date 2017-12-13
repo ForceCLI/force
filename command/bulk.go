@@ -565,7 +565,7 @@ func createBulkJob(objectType string, operation string, fileFormat string, exter
 	}
 
 	if strings.EqualFold(concurrencyMode, "serial") {
-		job.ConcurrencyMode = "serial"
+		job.ConcurrencyMode = "Serial"
 	}
 
 	if operation == "upsert" {
