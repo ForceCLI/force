@@ -1,6 +1,7 @@
 package lib
 
 import (
+	"encoding/json"
 	"encoding/xml"
 	"errors"
 	"fmt"
@@ -109,29 +110,59 @@ func (f *Force) BulkQuery(soql string, jobId string, contettype string) (result 
 	return
 }
 
-func (f *Force) AddBatchToJob(content string, job JobInfo) (result BatchInfo, err error) {
+func (f *Force) addCSVBatchToJob(content string, job JobInfo) (result BatchInfo, err error) {
 	url := fmt.Sprintf("%s/services/async/%s/job/%s/batch", f.Credentials.InstanceUrl, apiVersionNumber, job.Id)
-	var body []byte
-	switch job.ContentType {
-	case "CSV":
-		body, err = f.httpPostCSV(url, content)
-	case "JSON":
-		body, err = f.httpPostJSON(url, content)
-	case "XML":
-		body, err = f.httpPostXML(url, content)
-	default:
-		err = fmt.Errorf("Invalid content type for bulk API: " + job.ContentType)
-	}
+	body, err := f.httpPostCSV(url, content)
 	if err != nil {
-		err = fmt.Errorf("Failed to add batch to bulk job: " + err.Error())
+		err = fmt.Errorf("Failed to add batch: " + err.Error())
 		return
 	}
-
-	xml.Unmarshal(body, &result)
+	err = xml.Unmarshal(body, &result)
 	if len(result.Id) == 0 {
 		var fault LoginFault
 		xml.Unmarshal(body, &fault)
 		err = errors.New(fmt.Sprintf("%s: %s", fault.ExceptionCode, fault.ExceptionMessage))
+	}
+	return
+}
+
+func (f *Force) addXMLBatchToJob(content string, job JobInfo) (result BatchInfo, err error) {
+	url := fmt.Sprintf("%s/services/async/%s/job/%s/batch", f.Credentials.InstanceUrl, apiVersionNumber, job.Id)
+	body, err := f.httpPostXML(url, content)
+	if err != nil {
+		err = fmt.Errorf("Failed to add batch: " + err.Error())
+		return
+	}
+	err = xml.Unmarshal(body, &result)
+	if len(result.Id) == 0 {
+		var fault LoginFault
+		xml.Unmarshal(body, &fault)
+		err = errors.New(fmt.Sprintf("%s: %s", fault.ExceptionCode, fault.ExceptionMessage))
+	}
+	return
+}
+
+func (f *Force) addJSONBatchToJob(content string, job JobInfo) (result BatchInfo, err error) {
+	url := fmt.Sprintf("%s/services/async/%s/job/%s/batch", f.Credentials.InstanceUrl, apiVersionNumber, job.Id)
+	body, err := f.httpPostJSON(url, content)
+	if err != nil {
+		err = fmt.Errorf("Failed to add batch: " + err.Error())
+		return
+	}
+	err = json.Unmarshal(body, &result)
+	return
+}
+
+func (f *Force) AddBatchToJob(content string, job JobInfo) (result BatchInfo, err error) {
+	switch job.ContentType {
+	case "CSV":
+		return f.addCSVBatchToJob(content, job)
+	case "JSON":
+		return f.addJSONBatchToJob(content, job)
+	case "XML":
+		return f.addXMLBatchToJob(content, job)
+	default:
+		err = fmt.Errorf("Invalid content type for bulk API: " + job.ContentType)
 	}
 	return
 }
