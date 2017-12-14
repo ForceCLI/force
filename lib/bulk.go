@@ -29,8 +29,8 @@ type JobInfo struct {
 	CreatedDate             string   `xml:"createdDate,omitempty"`
 	SystemModStamp          string   `xml:"systemModstamp,omitempty"`
 	State                   string   `xml:"state,omitempty"`
-	ContentType             string   `xml:"contentType,omitempty"`
 	ConcurrencyMode         string   `xml:"concurrencyMode,omitempty"`
+	ContentType             string   `xml:"contentType,omitempty"`
 	NumberBatchesQueued     int      `xml:"numberBatchesQueued,omitempty"`
 	NumberBatchesInProgress int      `xml:"numberBatchesInProgress,omitempty"`
 	NumberBatchesCompleted  int      `xml:"numberBatchesCompleted,omitempty"`
