@@ -220,7 +220,7 @@ func runBulk(cmd *Command, args []string) {
 	switch command {
 	case "query":
 		handleQuery(args)
-	case "insert", "update", "delete":
+	case "insert", "update", "upsert", "delete":
 		handleDML(args)
 	case "batch", "batches", "job":
 		handleInfo(args)
