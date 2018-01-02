@@ -165,6 +165,7 @@ type ForceCheckDeploymentStatusResult struct {
 	NumberTestsTotal         int              `xml:"numberTestsTotal"`
 	RollbackOnError          bool             `xml:"rollbackOnError"`
 	Status                   string           `xml:"status"`
+	StateDetail              string           `xml:"stateDetail"`
 	Success                  bool             `xml:"success"`
 }
 
@@ -694,6 +695,18 @@ func (fm *ForceMetadata) CheckStatus(id string) (err error) {
 	return
 }
 
+func (results ForceCheckDeploymentStatusResult) String() string {
+	complete := ""
+	if results.Status == "InProgress" {
+		complete = fmt.Sprintf(" (%d/%d)", results.NumberComponentsDeployed, results.NumberComponentsTotal)
+	}
+	if results.NumberTestsCompleted > 0 {
+		complete = fmt.Sprintf(" (%d/%d)", results.NumberTestsCompleted, results.NumberTestsTotal)
+	}
+
+	return fmt.Sprintf("Status: %s%s %s", results.Status, complete, results.StateDetail)
+}
+
 func (fm *ForceMetadata) CheckDeployStatus(id string) (results ForceCheckDeploymentStatusResult, err error) {
 	body, err := fm.soapExecute("checkDeployStatus", fmt.Sprintf("<id>%s</id><includeDetails>true</includeDetails>", id))
 	if err != nil {
@@ -1214,10 +1227,14 @@ func (fm *ForceMetadata) DeployZipFile(soap string, zipfile []byte) (results For
 	if err = xml.Unmarshal(body, &status); err != nil {
 		return
 	}
-	if err = fm.CheckStatus(status.Id); err != nil {
-		return
+	for {
+		results, err = fm.CheckDeployStatus(status.Id)
+		if err != nil || results.Done {
+			return
+		}
+		fmt.Println(results)
+		time.Sleep(5000 * time.Millisecond)
 	}
-	results, err = fm.CheckDeployStatus(status.Id)
 
 	return
 }
