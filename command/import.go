@@ -1,6 +1,7 @@
 package command
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -138,6 +139,9 @@ func runImport(cmd *Command, args []string) {
 	result, err := force.Metadata.Deploy(files, DeploymentOptions)
 	problems := result.Details.ComponentFailures
 	successes := result.Details.ComponentSuccesses
+	testFailures := result.Details.RunTestResult.TestFailures
+	testSuccesses := result.Details.RunTestResult.TestSuccesses
+	codeCoverageWarnings := result.Details.RunTestResult.CodeCoverageWarnings
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
@@ -168,6 +172,34 @@ func runImport(cmd *Command, args []string) {
 				fmt.Printf("%s\n\tstatus: %s\n\tid=%s\n", success.FullName, verb, success.Id)
 			}
 		}
+		fmt.Printf("\nTest Successes - %d\n", len(testSuccesses))
+		for _, failure := range testSuccesses {
+			fmt.Printf("  [PASS]  %s::%s\n", failure.Name, failure.MethodName)
+		}
+
+		fmt.Printf("\nTest Failures - %d\n", len(testFailures))
+		for _, failure := range testFailures {
+			fmt.Printf("\n  [FAIL]  %s::%s: %s\n", failure.Name, failure.MethodName, failure.Message)
+			fmt.Println(failure.StackTrace)
+		}
+
+		if len(codeCoverageWarnings) > 0 {
+			fmt.Printf("\nCode Coverage Warnings - %d\n", len(codeCoverageWarnings))
+			for _, warning := range codeCoverageWarnings {
+				fmt.Printf("\n %s: %s\n", warning.Name, warning.Message)
+			}
+		}
+
+	}
+	if len(problems) > 0 {
+		err = errors.New("Some components failed deployment")
+	} else if len(testFailures) > 0 {
+		err = errors.New("Some tests failed")
+	} else if !result.Success {
+		err = errors.New(fmt.Sprintf("Status: %s", result.Status))
+	}
+	if err != nil {
+		ErrorAndExit(err.Error())
 	}
 	fmt.Printf("Imported from %s\n", root)
 }
