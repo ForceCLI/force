@@ -7,8 +7,8 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	. "github.com/heroku/force/config"
-	. "github.com/heroku/force/lib"
+	. "github.com/ForceCLI/force/config"
+	. "github.com/ForceCLI/force/lib"
 )
 
 var cmdLogins = &Command{

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	. "github.com/heroku/force/error"
-	. "github.com/heroku/force/lib"
+	. "github.com/ForceCLI/force/error"
+	. "github.com/ForceCLI/force/lib"
 )
 
 var cmdField = &Command{

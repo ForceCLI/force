@@ -7,11 +7,11 @@ A command-line interface to force.com
 
 ##### Precompiled Binaries
 
-Can be downloaded from the [Current Release Page](https://github.com/heroku/force/releases/latest) or by visiting the [CLI Home Page](http://force-cli.herokuapp.com/).
+Can be downloaded from the [Current Release Page](https://github.com/ForceCLI/force/releases/latest) or by visiting the [CLI Home Page](http://force-cli.herokuapp.com/).
 
 ##### Compile from Source
 
-    $ go get -u github.com/heroku/force
+    $ go get -u github.com/ForceCLI/force
 
 ### Usage
 
@@ -164,8 +164,8 @@ The list is limited to those exposed by the REST API.
     export PATH="$GOPATH/bin:$PATH"
 
     # download the source and all dependencies
-    $ go get -u github.com/heroku/force
-    $ cd $GOPATH/src/github.com/heroku/force
+    $ go get -u github.com/ForceCLI/force
+    $ cd $GOPATH/src/github.com/ForceCLI/force
 
     # to compile and test modifications
     $ go get .

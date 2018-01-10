@@ -5,9 +5,9 @@ import (
 	"os/exec"
 	"runtime"
 
-	. "github.com/heroku/force/config"
-	. "github.com/heroku/force/error"
-	. "github.com/heroku/force/lib"
+	. "github.com/ForceCLI/force/config"
+	. "github.com/ForceCLI/force/error"
+	. "github.com/ForceCLI/force/lib"
 )
 
 var cmdLogout = &Command{

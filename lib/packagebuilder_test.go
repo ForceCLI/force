@@ -1,7 +1,7 @@
 package lib_test
 
 import (
-	. "github.com/heroku/force/lib"
+	. "github.com/ForceCLI/force/lib"
 	"io/ioutil"
 	"os"
 

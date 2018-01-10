@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	. "github.com/heroku/force/error"
+	. "github.com/ForceCLI/force/error"
 	"io/ioutil"
 	"net/url"
 	"os"

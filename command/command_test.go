@@ -1,8 +1,8 @@
 package command_test
 
 import (
+	. "github.com/ForceCLI/force/command"
 	"github.com/bmizerany/assert"
-	. "github.com/heroku/force/command"
 	"testing"
 )
 

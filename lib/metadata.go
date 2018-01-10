@@ -18,7 +18,7 @@ import (
 	"strings"
 	"time"
 
-	. "github.com/heroku/force/error"
+	. "github.com/ForceCLI/force/error"
 )
 
 type BigObject struct {

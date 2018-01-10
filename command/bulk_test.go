@@ -1,7 +1,7 @@
 package command_test
 
 import (
-	. "github.com/heroku/force/command"
+	. "github.com/ForceCLI/force/command"
 	"io/ioutil"
 	"os"
 

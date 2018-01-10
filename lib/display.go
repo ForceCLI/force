@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strings"
 
-	. "github.com/heroku/force/error"
+	. "github.com/ForceCLI/force/error"
 )
 
 var BatchInfoTemplate = `

@@ -1,8 +1,8 @@
 package command_test
 
 import (
-	. "github.com/heroku/force/command"
-	. "github.com/heroku/force/lib"
+	. "github.com/ForceCLI/force/command"
+	. "github.com/ForceCLI/force/lib"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
