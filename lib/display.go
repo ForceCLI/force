@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"sort"
 	"strings"
 
@@ -95,7 +96,7 @@ func DisplayBatchInfo(batchInfo BatchInfo) {
 		batchInfo.NumberRecordsProcessed)
 }
 
-func DisplayJobInfo(jobInfo JobInfo) {
+func DisplayJobInfo(jobInfo JobInfo, w io.Writer) {
 	var msg = `
 Id				%s
 State 				%s
@@ -122,7 +123,7 @@ Total Processing Time 		%d
 Api Active Processing Time 	%d
 Apex Processing Time 		%d
 `
-	fmt.Printf(msg, jobInfo.Id, jobInfo.State, jobInfo.Operation, jobInfo.Object, jobInfo.ApiVersion,
+	fmt.Fprintf(w, msg, jobInfo.Id, jobInfo.State, jobInfo.Operation, jobInfo.Object, jobInfo.ApiVersion,
 		jobInfo.CreatedById, jobInfo.CreatedDate, jobInfo.SystemModStamp,
 		jobInfo.ContentType, jobInfo.ConcurrencyMode,
 		jobInfo.NumberBatchesQueued, jobInfo.NumberBatchesInProgress,
