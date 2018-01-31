@@ -299,6 +299,9 @@ func setConcurrencyModeOrFileFormat(argument string) {
 
 func doBulkQuery(objectType string, soql string, contenttype string, concurrencyMode string) {
 	jobInfo, err := createBulkJob(objectType, "query", contenttype, "", concurrencyMode)
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
 	force, _ := ActiveForce()
 
 	result, err := force.BulkQuery(soql, jobInfo.Id, contenttype)
