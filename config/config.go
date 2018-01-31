@@ -4,7 +4,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/devangel/config"
+	"github.com/ForceCLI/config"
 )
 
 var Config = config.NewConfig("force")
