@@ -12,7 +12,7 @@ import (
 
 var cmdRest = &Command{
 	Run:   runRest,
-	Usage: "rest <method> <url>",
+	Usage: "rest [-absolute | -a] <method> <url>",
 	Short: "Execute a REST request",
 	Long: `
 Execute a REST request
@@ -23,9 +23,20 @@ Examples:
 
   force rest get /appMenu/AppSwitcher
 
+  force rest get -a /services/data/
+
   force rest post "/tooling/sobjects/CustomField/00D9A0000000TgcUAE" path/to/definition.json
 
 `,
+}
+
+var (
+	absoluteURLFlag bool
+)
+
+func init() {
+	cmdRest.Flag.BoolVar(&absoluteURLFlag, "absolute", false, "use URL as-is (do not prepend /services/data/vXX.0)")
+	cmdRest.Flag.BoolVar(&absoluteURLFlag, "a", false, "use URL as-is (do not prepend /services/data/vXX.0)")
 }
 
 func runRest(cmd *Command, args []string) {
@@ -42,7 +53,11 @@ func runRest(cmd *Command, args []string) {
 		if len(args) > 1 {
 			url = args[1]
 		}
-		data, err = force.GetREST(url)
+		if absoluteURLFlag {
+			data, err = force.GetAbsolute(url)
+		} else {
+			data, err = force.GetREST(url)
+		}
 		if err != nil {
 			ErrorAndExit(err.Error())
 		}
@@ -63,7 +78,11 @@ func runRest(cmd *Command, args []string) {
 		if err != nil {
 			ErrorAndExit(err.Error())
 		}
-		data, err = force.PostPatchREST(url, string(input), strings.ToUpper(args[0]))
+		if absoluteURLFlag {
+			data, err = force.PostPatchAbsolute(url, string(input), strings.ToUpper(args[0]))
+		} else {
+			data, err = force.PostPatchREST(url, string(input), strings.ToUpper(args[0]))
+		}
 		if err != nil {
 			ErrorAndExit(err.Error())
 		}

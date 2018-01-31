@@ -1191,22 +1191,41 @@ func (f *Force) Whoami() (me ForceRecord, err error) {
 	return
 }
 
+// Prepend /services/data/vXX.0 to URL
 func (f *Force) fullRestUrl(url string) string {
-	return fmt.Sprintf("%s/services/data/%s/%s", f.Credentials.InstanceUrl, apiVersion, strings.TrimLeft(url, "/"))
+	return fmt.Sprintf("/services/data/%s/%s", apiVersion, strings.TrimLeft(url, "/"))
 }
 
-func (f *Force) GetREST(url string) (result string, err error) {
-	fullUrl := f.fullRestUrl(url)
+// Prepend https schema and instance to URL
+func (f *Force) qualifyUrl(url string) string {
+	return fmt.Sprintf("%s/%s", f.Credentials.InstanceUrl, strings.TrimLeft(url, "/"))
+}
+
+func (f *Force) GetAbsolute(url string) (result string, err error) {
+	qualifiedUrl := f.qualifyUrl(url)
 	headers := map[string]string{
 		"Authorization": fmt.Sprintf("Bearer %s", f.Credentials.AccessToken),
 	}
-	body, err := f.httpGetRequest(fullUrl, headers)
+	body, err := f.httpGetRequest(qualifiedUrl, headers)
 	if err == SessionExpiredError {
 		f.RefreshSessionOrExit()
 		return f.GetREST(url)
 	}
 	result = string(body)
 	return
+}
+
+func (f *Force) GetREST(url string) (result string, err error) {
+	fullUrl := f.fullRestUrl(url)
+	return f.GetAbsolute(fullUrl)
+}
+
+func (f *Force) PostPatchAbsolute(url string, content string, method string) (result string, err error) {
+	if method == "POST" {
+		return f.PostAbsolute(url, content)
+	} else {
+		return f.PatchAbsolute(url, content)
+	}
 }
 
 func (f *Force) PostPatchREST(url string, content string, method string) (result string, err error) {
@@ -1217,9 +1236,9 @@ func (f *Force) PostPatchREST(url string, content string, method string) (result
 	}
 }
 
-func (f *Force) PostREST(url string, content string) (result string, err error) {
-	fullUrl := f.fullRestUrl(url)
-	body, err := f.httpPostJSON(fullUrl, content)
+func (f *Force) PostAbsolute(url string, content string) (result string, err error) {
+	qualifiedUrl := f.qualifyUrl(url)
+	body, err := f.httpPostJSON(qualifiedUrl, content)
 	if err == SessionExpiredError {
 		f.RefreshSessionOrExit()
 		return f.PostREST(url, content)
@@ -1228,15 +1247,25 @@ func (f *Force) PostREST(url string, content string) (result string, err error) 
 	return
 }
 
-func (f *Force) PatchREST(url string, content string) (result string, err error) {
+func (f *Force) PostREST(url string, content string) (result string, err error) {
 	fullUrl := f.fullRestUrl(url)
-	body, err := f.httpPatchJSON(fullUrl, content)
+	return f.PostAbsolute(fullUrl, content)
+}
+
+func (f *Force) PatchAbsolute(url string, content string) (result string, err error) {
+	qualifiedUrl := f.qualifyUrl(url)
+	body, err := f.httpPatchJSON(qualifiedUrl, content)
 	if err == SessionExpiredError {
 		f.RefreshSessionOrExit()
 		return f.PatchREST(url, content)
 	}
 	result = string(body)
 	return
+}
+
+func (f *Force) PatchREST(url string, content string) (result string, err error) {
+	fullUrl := f.fullRestUrl(url)
+	return f.PatchAbsolute(fullUrl, content)
 }
 
 func (f *Force) getForceResult(url string) (results ForceQueryResult, err error) {
