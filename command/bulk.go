@@ -59,6 +59,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	. "github.com/ForceCLI/force/error"
 	. "github.com/ForceCLI/force/lib"
@@ -105,20 +106,21 @@ Examples using positional arguments - less flexible, arguments must be in the co
   force bulk batches [job id]
   force Bulk batch [job id] [batch id]
   force bulk batch retrieve [job id] [batch id]
-  force bulk query Account [SOQL]
+  force bulk query [-wait | -w] Account [SOQL]
   force bulk query retrieve [job id] [batch id]
 
 `,
 }
 
 var (
-	command         string
-	objectType      string
-	jobId           string
-	batchId         string
-	fileFormat      string
-	externalId      string
-	concurrencyMode string
+	command           string
+	objectType        string
+	jobId             string
+	batchId           string
+	fileFormat        string
+	externalId        string
+	concurrencyMode   string
+	waitForCompletion bool
 )
 var commandVersion = "old"
 
@@ -137,6 +139,8 @@ func init() {
 	cmdBulk.Flag.StringVar(&externalId, "e", "", "The External Id Field for upserts of data.")
 	cmdBulk.Flag.StringVar(&concurrencyMode, "m", "Parallel", "Concurrency mode for bulk api inserts, updates, deletes and upserts.  Valid options are `Serial` and `Parallel` (default).")
 	cmdBulk.Flag.StringVar(&concurrencyMode, "concurrencyMode", "Parallel", "Concurrency mode for bulk api inserts, updates, deletes and upserts.  Valid options are `Serial` and `Parallel` (default).")
+	cmdBulk.Flag.BoolVar(&waitForCompletion, "wait", false, "Wait for job to complete")
+	cmdBulk.Flag.BoolVar(&waitForCompletion, "w", false, "Wait for job to complete")
 	cmdBulk.Run = runBulk
 }
 
@@ -298,19 +302,36 @@ func doBulkQuery(objectType string, soql string, contenttype string, concurrency
 	force, _ := ActiveForce()
 
 	result, err := force.BulkQuery(soql, jobInfo.Id, contenttype)
+	batchId := result.Id
 	if err != nil {
 		closeBulkJob(jobInfo.Id)
 		ErrorAndExit(err.Error())
 	}
-	fmt.Println("Query Submitted")
-	if commandVersion == "new" {
-		fmt.Printf("To retrieve query status use\nforce bulk -c=batch -j=%s -b=%s\n\n", jobInfo.Id, result.Id)
-		fmt.Printf("To retrieve query data use\nforce bulk -c=retrieve -j=%s -b=%s\n\n", jobInfo.Id, result.Id)
-	} else {
-		fmt.Printf("To retrieve query status use\nforce bulk query status %s %s\n\n", jobInfo.Id, result.Id)
-		fmt.Printf("To retrieve query data use\nforce bulk query retrieve %s %s\n\n", jobInfo.Id, result.Id)
-	}
 	closeBulkJob(jobInfo.Id)
+	if !waitForCompletion {
+		fmt.Println("Query Submitted")
+		if commandVersion == "new" {
+			fmt.Printf("To retrieve query status use\nforce bulk -c=batch -j=%s -b=%s\n\n", jobInfo.Id, batchId)
+			fmt.Printf("To retrieve query data use\nforce bulk -c=retrieve -j=%s -b=%s\n\n", jobInfo.Id, batchId)
+		} else {
+			fmt.Printf("To retrieve query status use\nforce bulk query status %s %s\n\n", jobInfo.Id, batchId)
+			fmt.Printf("To retrieve query data use\nforce bulk query retrieve %s %s\n\n", jobInfo.Id, batchId)
+		}
+		return
+	}
+	for {
+		status, err := force.GetJobInfo(jobInfo.Id)
+		if err != nil {
+			fmt.Println("Failed to get bulk job status: " + err.Error())
+			os.Exit(1)
+		}
+		DisplayJobInfo(status, os.Stderr)
+		if status.NumberBatchesCompleted+status.NumberBatchesFailed == status.NumberBatchesTotal {
+			break
+		}
+		time.Sleep(2000 * time.Millisecond)
+	}
+	fmt.Println(string(getBulkQueryResults(jobInfo.Id, batchId)))
 }
 
 func getBulkQueryResults(jobId string, batchId string) (data []byte) {
@@ -361,7 +382,7 @@ func retrieveBulkQueryResults(jobId string, batchId string, resultId string) (da
 
 func showJobDetails(jobId string) {
 	jobInfo := getJobDetails(jobId)
-	DisplayJobInfo(jobInfo)
+	DisplayJobInfo(jobInfo, os.Stdout)
 }
 
 func listBatches(jobId string) {
