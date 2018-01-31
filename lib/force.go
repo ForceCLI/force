@@ -17,8 +17,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/heroku/force/desktop"
-	. "github.com/heroku/force/error"
+	"github.com/ForceCLI/force/desktop"
+	. "github.com/ForceCLI/force/error"
 )
 
 const (

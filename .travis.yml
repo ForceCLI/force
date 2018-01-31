@@ -1,22 +1,10 @@
 language: go
 go:
-- 1.7
+- 1.9
+go_import_path: github.com/ForceCLI/force
 before_install:
 - go get golang.org/x/tools/cmd/goimports
 - go get github.com/mitchellh/gox
-install:
-- go get github.com/bmizerany/assert
-- go get github.com/ddollar/dist
-- go get github.com/devangel/config
-- go get github.com/ViViDboarder/gotifier
-- go get github.com/bgentry/speakeasy
-- go get bitbucket.org/pkg/inflect
-- go get github.com/onsi/ginkgo
-- go get github.com/onsi/gomega
-- go get github.com/kr/binarydist
-- go get github.com/kr/pretty
-- go get github.com/kr/text
-- go get golang.org/x/crypto/ssh/terminal
 script:
 - git config --global user.email "you@example.com"
 - git config --global user.name "Your Name"
@@ -49,76 +37,4 @@ deploy:
     - force_windows_386.exe
   on:
     tags: true
-    repo: heroku/force
-- provider: s3
-  skip_cleanup: true
-  access_key_id: AKIAITTRSYTRTVZLGNQQ
-  secret_access_key:
-    secure: bAiAyCQKHlEiIA3Uz1yOE+kPieydEoXMlJX5gkdOImiH2oyDXPtmZJzqogl2mMqPO1g6Syjb+W5z3FARmp8gg/Yz9OELvUGKoMdPB7m3Z7oZ3+CR/uj3OSGzwK2Yoa7StjPIZrUHvxGQ+rMpcOfEcR2dJC/coDefvzxzrBHzDf8=
-  local_dir: darwin/amd64
-  bucket: force-cli
-  upload-dir: heroku/force/$GO_LINKER_VALUE/darwin-amd64
-  acl: public_read
-  on:
-    tags: true
-    repo: heroku/force
-- provider: s3
-  skip_cleanup: true
-  access_key_id: AKIAITTRSYTRTVZLGNQQ
-  secret_access_key:
-    secure: bAiAyCQKHlEiIA3Uz1yOE+kPieydEoXMlJX5gkdOImiH2oyDXPtmZJzqogl2mMqPO1g6Syjb+W5z3FARmp8gg/Yz9OELvUGKoMdPB7m3Z7oZ3+CR/uj3OSGzwK2Yoa7StjPIZrUHvxGQ+rMpcOfEcR2dJC/coDefvzxzrBHzDf8=
-  local_dir: darwin/386
-  bucket: force-cli
-  upload-dir: heroku/force/$GO_LINKER_VALUE/darwin-386
-  acl: public_read
-  on:
-    tags: true
-    repo: heroku/force
-- provider: s3
-  skip_cleanup: true
-  access_key_id: AKIAITTRSYTRTVZLGNQQ
-  secret_access_key:
-    secure: bAiAyCQKHlEiIA3Uz1yOE+kPieydEoXMlJX5gkdOImiH2oyDXPtmZJzqogl2mMqPO1g6Syjb+W5z3FARmp8gg/Yz9OELvUGKoMdPB7m3Z7oZ3+CR/uj3OSGzwK2Yoa7StjPIZrUHvxGQ+rMpcOfEcR2dJC/coDefvzxzrBHzDf8=
-  local_dir: windows/amd64
-  bucket: force-cli
-  upload-dir: heroku/force/$GO_LINKER_VALUE/windows-amd64
-  acl: public_read
-  on:
-    tags: true
-    repo: heroku/force
-- provider: s3
-  skip_cleanup: true
-  access_key_id: AKIAITTRSYTRTVZLGNQQ
-  secret_access_key:
-    secure: bAiAyCQKHlEiIA3Uz1yOE+kPieydEoXMlJX5gkdOImiH2oyDXPtmZJzqogl2mMqPO1g6Syjb+W5z3FARmp8gg/Yz9OELvUGKoMdPB7m3Z7oZ3+CR/uj3OSGzwK2Yoa7StjPIZrUHvxGQ+rMpcOfEcR2dJC/coDefvzxzrBHzDf8=
-  local_dir: windows/386
-  bucket: force-cli
-  upload-dir: heroku/force/$GO_LINKER_VALUE/windows-386
-  acl: public_read
-  on:
-    tags: true
-    repo: heroku/force
-- provider: s3
-  skip_cleanup: true
-  access_key_id: AKIAITTRSYTRTVZLGNQQ
-  secret_access_key:
-    secure: bAiAyCQKHlEiIA3Uz1yOE+kPieydEoXMlJX5gkdOImiH2oyDXPtmZJzqogl2mMqPO1g6Syjb+W5z3FARmp8gg/Yz9OELvUGKoMdPB7m3Z7oZ3+CR/uj3OSGzwK2Yoa7StjPIZrUHvxGQ+rMpcOfEcR2dJC/coDefvzxzrBHzDf8=
-  local_dir: linux/amd64
-  bucket: force-cli
-  upload-dir: heroku/force/$GO_LINKER_VALUE/linux-amd64
-  acl: public_read
-  on:
-    tags: true
-    repo: heroku/force
-- provider: s3
-  skip_cleanup: true
-  access_key_id: AKIAITTRSYTRTVZLGNQQ
-  secret_access_key:
-    secure: bAiAyCQKHlEiIA3Uz1yOE+kPieydEoXMlJX5gkdOImiH2oyDXPtmZJzqogl2mMqPO1g6Syjb+W5z3FARmp8gg/Yz9OELvUGKoMdPB7m3Z7oZ3+CR/uj3OSGzwK2Yoa7StjPIZrUHvxGQ+rMpcOfEcR2dJC/coDefvzxzrBHzDf8=
-  local_dir: linux/386
-  bucket: force-cli
-  upload-dir: heroku/force/$GO_LINKER_VALUE/linux-386
-  acl: public_read
-  on:
-    tags: true
-    repo: heroku/force
+    repo: ForceCLI/force

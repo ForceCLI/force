@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/heroku/force/desktop"
+	"github.com/ForceCLI/force/desktop"
 )
 
 var cmdNotifySet = &Command{

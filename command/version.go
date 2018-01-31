@@ -3,7 +3,7 @@ package command
 import (
 	"fmt"
 
-	. "github.com/heroku/force/lib"
+	. "github.com/ForceCLI/force/lib"
 )
 
 //Dood, what

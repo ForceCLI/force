@@ -3,7 +3,7 @@ package lib
 import (
 	"encoding/json"
 	"fmt"
-	. "github.com/heroku/force/error"
+	. "github.com/ForceCLI/force/error"
 	"os"
 	"os/exec"
 )

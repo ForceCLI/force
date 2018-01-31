@@ -3,8 +3,8 @@ package command
 import (
 	"encoding/json"
 	"fmt"
-	. "github.com/heroku/force/error"
-	. "github.com/heroku/force/lib"
+	. "github.com/ForceCLI/force/error"
+	. "github.com/ForceCLI/force/lib"
 	"os"
 	"os/exec"
 	"path"

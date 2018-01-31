@@ -3,9 +3,9 @@ package main
 import (
 	"os"
 
-	"github.com/heroku/force/command"
-	. "github.com/heroku/force/error"
-	. "github.com/heroku/force/lib"
+	"github.com/ForceCLI/force/command"
+	. "github.com/ForceCLI/force/error"
+	. "github.com/ForceCLI/force/lib"
 )
 
 func main() {

@@ -12,7 +12,7 @@
 8. [Submit a pull request.][pr] Please be specific with your message, detailing what the why/how of your contribution. 
 9. Please expect and facilitate feedback and discussion :)
 
-[hacking]: https://github.com/heroku/force#hacking
+[hacking]: https://github.com/ForceCLI/force#hacking
 [fork]: https://help.github.com/articles/fork-a-repo
 [branch]: http://learn.github.com/p/branching.html
 [pr]: https://help.github.com/articles/using-pull-requests

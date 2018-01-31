@@ -3,8 +3,8 @@ package desktop
 import (
 	"strconv"
 
+	. "github.com/ForceCLI/force/config"
 	"github.com/ViViDboarder/gotifier"
-	. "github.com/heroku/force/config"
 )
 
 func Notify(method string, message string) {

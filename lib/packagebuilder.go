@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"strings"
 
-	. "github.com/heroku/force/error"
+	. "github.com/ForceCLI/force/error"
 )
 
 // Structs for XML building

@@ -1,9 +1,9 @@
 package command_test
 
 import (
+	. "github.com/ForceCLI/force/lib"
 	"github.com/bmizerany/assert"
 	"github.com/devangel/config"
-	. "github.com/heroku/force/lib"
 	"os"
 	"os/exec"
 	"testing"
