@@ -173,12 +173,15 @@ func (f *Force) DisplayAllForceRecordsf(result ForceQueryResult, format string) 
 	currentResult := result
 	var err error
 	records := make(chan ForceRecord)
-	go DisplayForceRecordsf(records, format)
+	done := make(chan bool)
+	go DisplayForceRecordsf(records, format, done)
 	for {
 		for _, record := range currentResult.Records {
 			records <- record
 		}
 		if currentResult.Done {
+			close(records)
+			<-done
 			return
 		}
 		currentResult, err = f.getForceResult(currentResult.NextRecordsUrl)
@@ -188,22 +191,25 @@ func (f *Force) DisplayAllForceRecordsf(result ForceQueryResult, format string) 
 	}
 }
 
-func DisplayForceRecordsf(records <-chan ForceRecord, format string) {
+func DisplayForceRecordsf(records <-chan ForceRecord, format string, done chan<- bool) {
 	switch format {
 	case "csv":
-		RenderForceRecordsCSV(records)
+		RenderForceRecordsCSV(records, done)
 	case "json":
 		for record := range records {
 			recs, _ := json.Marshal(record)
 			fmt.Println(string(recs))
 		}
+		done <- true
 	case "json-pretty":
 		for record := range records {
 			recs, _ := json.MarshalIndent(record, "", "  ")
 			fmt.Println(string(recs))
 		}
+		done <- true
 	default:
 		fmt.Printf("Format %s not supported\n\n", format)
+		done <- true
 	}
 }
 
@@ -383,7 +389,7 @@ func recordKeys(record ForceRecord) []string {
 	return keys
 }
 
-func RenderForceRecordsCSV(records <-chan ForceRecord) {
+func RenderForceRecordsCSV(records <-chan ForceRecord, done chan<- bool) {
 	var keys []string
 
 	firstRow := true
@@ -404,6 +410,7 @@ func RenderForceRecordsCSV(records <-chan ForceRecord) {
 		}
 		os.Stdout.WriteString(fmt.Sprintf(`"%s"%s`, strings.Join(myvalues, `","`), "\n"))
 	}
+	done <- true
 }
 
 func flattenForceRecord(record ForceRecord) (flattened ForceRecord) {
