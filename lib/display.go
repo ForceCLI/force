@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 	"sort"
 	"strings"
 
@@ -168,16 +169,39 @@ func DisplayForceSobjectsJson(sobjects []ForceSobject) {
 	fmt.Printf("%s\n", string(b))
 }
 
-func DisplayForceRecordsf(records []ForceRecord, format string) {
+func (f *Force) DisplayAllForceRecordsf(result ForceQueryResult, format string) {
+	currentResult := result
+	var err error
+	records := make(chan ForceRecord)
+	go DisplayForceRecordsf(records, format)
+	for {
+		for _, record := range currentResult.Records {
+			records <- record
+		}
+		if currentResult.Done {
+			return
+		}
+		currentResult, err = f.getForceResult(currentResult.NextRecordsUrl)
+		if err != nil {
+			ErrorAndExit(err.Error())
+		}
+	}
+}
+
+func DisplayForceRecordsf(records <-chan ForceRecord, format string) {
 	switch format {
 	case "csv":
-		fmt.Println(RenderForceRecordsCSV(records, format))
+		RenderForceRecordsCSV(records)
 	case "json":
-		recs, _ := json.Marshal(records)
-		fmt.Println(string(recs))
+		for record := range records {
+			recs, _ := json.Marshal(record)
+			fmt.Println(string(recs))
+		}
 	case "json-pretty":
-		recs, _ := json.MarshalIndent(records, "", "  ")
-		fmt.Println(string(recs))
+		for record := range records {
+			recs, _ := json.MarshalIndent(record, "", "  ")
+			fmt.Println(string(recs))
+		}
 	default:
 		fmt.Printf("Format %s not supported\n\n", format)
 	}
@@ -348,39 +372,38 @@ func StringSliceContains(slice []string, value string) bool {
 	return StringSlicePos(slice, value) > -1
 }
 
-func RenderForceRecordsCSV(records []ForceRecord, format string) string {
-	var out bytes.Buffer
-
+func recordKeys(record ForceRecord) []string {
 	var keys []string
-	var flattenedRecords []map[string]interface{}
-	for _, record := range records {
-		flattenedRecord := flattenForceRecord(record)
-		flattenedRecords = append(flattenedRecords, flattenedRecord)
-		for key, _ := range flattenedRecord {
-			if !StringSliceContains(keys, key) {
-				keys = append(keys, key)
-			}
+	for key, _ := range record {
+		if !StringSliceContains(keys, key) {
+			keys = append(keys, key)
 		}
 	}
 	sort.Strings(keys)
+	return keys
+}
 
-	if len(records) > 0 {
-		// Write out header
-		out.WriteString(fmt.Sprintf(`"%s"%s`, strings.Join(keys, `","`), "\n"))
+func RenderForceRecordsCSV(records <-chan ForceRecord) {
+	var keys []string
 
-		// Write out each record
-		for _, record := range flattenedRecords {
-			myvalues := make([]string, len(keys))
-			for i, key := range keys {
-				var value = fmt.Sprintf(`%v`, record[key])
-				value = strings.Replace(value, "<nil>", "", -1)
-				value = strings.Replace(value, `"`, `""`, -1)
-				myvalues[i] = value
-			}
-			out.WriteString(fmt.Sprintf(`"%s"%s`, strings.Join(myvalues, `","`), "\n"))
+	firstRow := true
+
+	for record := range records {
+		flattenedRecord := flattenForceRecord(record)
+		if firstRow {
+			keys = recordKeys(flattenedRecord)
+			os.Stdout.WriteString(fmt.Sprintf(`"%s"%s`, strings.Join(keys, `","`), "\n"))
+			firstRow = false
 		}
+		myvalues := make([]string, len(keys))
+		for i, key := range keys {
+			var value = fmt.Sprintf(`%v`, flattenedRecord[key])
+			value = strings.Replace(value, "<nil>", "", -1)
+			value = strings.Replace(value, `"`, `""`, -1)
+			myvalues[i] = value
+		}
+		os.Stdout.WriteString(fmt.Sprintf(`"%s"%s`, strings.Join(myvalues, `","`), "\n"))
 	}
-	return out.String()
 }
 
 func flattenForceRecord(record ForceRecord) (flattened ForceRecord) {

@@ -144,7 +144,7 @@ func runDataPipelineListJobs() {
 		ErrorAndExit(err.Error())
 	}
 
-	DisplayForceRecordsf(result.Records, "csv")
+	force.DisplayAllForceRecordsf(result, "csv")
 }
 
 func runDataPipelineQueryJob() {
@@ -156,7 +156,7 @@ func runDataPipelineQueryJob() {
 		ErrorAndExit(err.Error())
 	}
 
-	DisplayForceRecordsf(result.Records, "csv")
+	force.DisplayAllForceRecordsf(result, "csv")
 }
 
 func runDataPipelineQuery() {
@@ -272,5 +272,5 @@ func runDataPipelineList() {
 		ErrorAndExit(err.Error())
 	}
 
-	DisplayForceRecordsf(result.Records, format)
+	force.DisplayAllForceRecordsf(result, format)
 }

@@ -84,17 +84,22 @@ func runQuery(cmd *Command, args []string) {
 		}
 
 		soql := strings.Join(args, " ")
-
-		records, err := force.Query(fmt.Sprintf("%s", soql), queryOptions...)
-
-		if err != nil {
-			ErrorAndExit(err.Error())
-		} else {
-			if queryOutputFormat == "console" {
-				DisplayForceRecords(records)
-			} else {
-				DisplayForceRecordsf(records.Records, queryOutputFormat)
+		if queryOutputFormat == "console" {
+			// All records have be queried before they are displayed so that
+			// column widths can be calculated
+			records, err := force.Query(fmt.Sprintf("%s", soql), queryOptions...)
+			if err != nil {
+				ErrorAndExit(err.Error())
 			}
+			DisplayForceRecords(records)
+		} else {
+			records := make(chan ForceRecord)
+			go DisplayForceRecordsf(records, queryOutputFormat)
+			err := force.QueryAndSend(fmt.Sprintf("%s", soql), records, queryOptions...)
+			if err != nil {
+				ErrorAndExit(err.Error())
+			}
+
 		}
 	}
 }

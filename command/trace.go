@@ -57,7 +57,7 @@ func runQueryTrace() {
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
-	DisplayForceRecordsf(result.Records, "json-pretty")
+	force.DisplayAllForceRecordsf(result, "json-pretty")
 }
 
 func runStartTrace(userId ...string) {

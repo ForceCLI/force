@@ -593,7 +593,18 @@ func (f *Force) GetSobject(name string) (sobject ForceSobject, err error) {
 	return
 }
 
-func (f *Force) QueryAndSend(query string, processor chan<- ForceRecord) (err error) {
+func (f *Force) QueryAndSend(query string, processor chan<- ForceRecord, options ...func(*QueryOptions)) (err error) {
+	queryOptions := QueryOptions{}
+	for _, option := range options {
+		option(&queryOptions)
+	}
+	cmd := "query"
+	if queryOptions.QueryAll {
+		cmd = "queryAll"
+	}
+	if queryOptions.IsTooling {
+		cmd = "tooling/" + cmd
+	}
 	processResults := func(body []byte) (result ForceQueryResult, err error) {
 		err = json.Unmarshal(body, &result)
 		if err != nil {
@@ -606,7 +617,7 @@ func (f *Force) QueryAndSend(query string, processor chan<- ForceRecord) (err er
 	}
 
 	var body []byte
-	url := fmt.Sprintf("%s/services/data/%s/query?q=%s", f.Credentials.InstanceUrl, apiVersion, url.QueryEscape(query))
+	url := fmt.Sprintf("%s/services/data/%s/%s?q=%s", f.Credentials.InstanceUrl, apiVersion, cmd, url.QueryEscape(query))
 	for {
 		body, err = f.httpGet(url)
 		if err != nil {
