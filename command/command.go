@@ -32,6 +32,7 @@ var Commands = []*Command{
 	cmdLogout,
 	cmdNotifySet,
 	cmdOauth,
+	cmdOpen,
 	cmdPassword,
 	cmdPush,
 	cmdQuery,
