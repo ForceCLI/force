@@ -281,7 +281,10 @@ func runFetch(cmd *Command, args []string) {
 	var resourcesMap map[string]string
 	resourcesMap = make(map[string]string)
 
-	root, err := config.GetSourceDir()
+	root := targetDirectory
+	if root == "" {
+		root, err = config.GetSourceDir()
+	}
 	if err != nil {
 		fmt.Printf("Error obtaining root directory\n")
 		ErrorAndExit(err.Error())
