@@ -24,11 +24,13 @@ Examples:
 
 Options:
   -json, -j    Output in JSON format
+  -local, -l   Set active account locally, for current directory
 `,
 }
 var (
 	tojson  bool
 	account string
+	local   bool
 )
 
 func init() {
@@ -36,6 +38,8 @@ func init() {
 	cmdActive.Flag.BoolVar(&tojson, "json", false, "output to json")
 	cmdActive.Flag.StringVar(&account, "a", "", "deprecated: set active account")
 	cmdActive.Flag.StringVar(&account, "account", "", "deprecated: set active account")
+	cmdActive.Flag.BoolVar(&local, "l", false, "set active account for current directory")
+	cmdActive.Flag.BoolVar(&local, "local", false, "set active account for current directory")
 	cmdActive.Run = runActive
 }
 
@@ -65,7 +69,11 @@ func runActive(cmd *Command, args []string) {
 				fmt.Printf(title)
 			}
 			fmt.Printf("%s now active\n", account)
-			Config.Save("current", "account", account)
+			if local {
+				Config.SaveLocal("current", "account", account)
+			} else {
+				Config.SaveGlobal("current", "account", account)
+			}
 		} else {
 			ErrorAndExit(fmt.Sprintf("no such account %s\n", account))
 		}
