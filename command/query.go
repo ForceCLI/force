@@ -94,12 +94,13 @@ func runQuery(cmd *Command, args []string) {
 			DisplayForceRecords(records)
 		} else {
 			records := make(chan ForceRecord)
-			go DisplayForceRecordsf(records, queryOutputFormat)
+			done := make(chan bool)
+			go DisplayForceRecordsf(records, queryOutputFormat, done)
 			err := force.QueryAndSend(fmt.Sprintf("%s", soql), records, queryOptions...)
 			if err != nil {
 				ErrorAndExit(err.Error())
 			}
-
+			<-done
 		}
 	}
 }
