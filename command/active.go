@@ -12,7 +12,7 @@ import (
 )
 
 var cmdActive = &Command{
-	Usage: "active -a [account]",
+	Usage: "active [account]",
 	Short: "Show or set the active force.com account",
 	Long: `
 Set the active force.com account
@@ -20,7 +20,10 @@ Set the active force.com account
 Examples:
 
   force active
-  force active -a user@example.org
+  force active user@example.org
+
+Options:
+  -json, -j    Output in JSON format
 `,
 }
 var (
@@ -31,13 +34,13 @@ var (
 func init() {
 	cmdActive.Flag.BoolVar(&tojson, "j", false, "output to json")
 	cmdActive.Flag.BoolVar(&tojson, "json", false, "output to json")
-	cmdActive.Flag.StringVar(&account, "a", "", "output to json")
-	cmdActive.Flag.StringVar(&account, "account", "", "output to json")
+	cmdActive.Flag.StringVar(&account, "a", "", "deprecated: set active account")
+	cmdActive.Flag.StringVar(&account, "account", "", "deprecated: set active account")
 	cmdActive.Run = runActive
 }
 
 func runActive(cmd *Command, args []string) {
-	if account == "" {
+	if account == "" && len(args) == 0 {
 		creds, err := ActiveCredentials(true)
 		if err != nil {
 			ErrorAndExit(err.Error())
@@ -48,7 +51,9 @@ func runActive(cmd *Command, args []string) {
 			fmt.Println(fmt.Sprintf("%s - %s - ns:%s", creds.SessionName(), creds.InstanceUrl, creds.UserInfo.OrgNamespace))
 		}
 	} else {
-		//account := args[0]
+		if account == "" {
+			account = args[0]
+		}
 		accounts, _ := Config.List("accounts")
 		i := sort.SearchStrings(accounts, account)
 		if i < len(accounts) && accounts[i] == account {
