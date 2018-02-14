@@ -189,7 +189,7 @@ func ActiveCredentials(requireCredentials bool) (creds ForceSession, err error) 
 }
 
 func ActiveLogin() (account string, err error) {
-	account, err = Config.Load("current", "account")
+	account, err = Config.LoadLocalOrGlobal("current", "account")
 	if err != nil {
 		accounts, _ := Config.List("accounts")
 		if len(accounts) > 0 {
