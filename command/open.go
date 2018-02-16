@@ -8,12 +8,13 @@ import (
 )
 
 var cmdOpen = &Command{
-	Usage: "open",
-	Short: "Open a browser window, logged into the active Salesforce org",
+	Usage: "open [account]",
+	Short: "Open a browser window, logged into an authenticated Salesforce org",
 	Long: `
-Open a browser window, logged into the active Salesforce org
+Open a browser window, logged into an authenticated Salesforce org.
+By default, the active account is used.
 
-  force open
+  force open [account]
 `,
 }
 
@@ -22,8 +23,17 @@ func init() {
 }
 
 func runOpen(cmd *Command, args []string) {
-	force, _ := ActiveForce()
-	_, err := force.Whoami()
+	var force *Force
+	var err error
+	if len(args) > 0 {
+		force, err = GetForce(args[0])
+	} else {
+		force, err = ActiveForce()
+	}
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
+	_, err = force.Whoami()
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
