@@ -62,25 +62,6 @@ func processDeployResults(result ForceCheckDeploymentStatusResult, byName bool, 
 	testSuccesses := result.Details.RunTestResult.TestSuccesses
 	codeCoverageWarnings := result.Details.RunTestResult.CodeCoverageWarnings
 
-	if len(problems) > 0 {
-		fmt.Printf("\nFailures - %d\n", len(problems))
-		for _, problem := range problems {
-			if problem.FullName == "" {
-				fmt.Println(problem.Problem)
-			} else {
-				if byName {
-					fmt.Printf("ERROR with %s, line %d\n %s\n", problem.FullName, problem.LineNumber, problem.Problem)
-				} else {
-					fname, found := namePaths[problem.FullName]
-					if !found {
-						fname = problem.FullName
-					}
-					fmt.Printf("\"%s\", line %d: %s %s\n", fname, problem.LineNumber, problem.ProblemType, problem.Problem)
-				}
-			}
-		}
-	}
-
 	if len(successes) > 0 {
 		fmt.Printf("\nSuccesses - %d\n", len(successes)-1)
 		for _, success := range successes {
@@ -101,6 +82,25 @@ func processDeployResults(result ForceCheckDeploymentStatusResult, byName bool, 
 	fmt.Printf("\nTest Successes - %d\n", len(testSuccesses))
 	for _, failure := range testSuccesses {
 		fmt.Printf("  [PASS]  %s::%s\n", failure.Name, failure.MethodName)
+	}
+
+	if len(problems) > 0 {
+		fmt.Printf("\nFailures - %d\n", len(problems))
+		for _, problem := range problems {
+			if problem.FullName == "" {
+				fmt.Println(problem.Problem)
+			} else {
+				if byName {
+					fmt.Printf("ERROR with %s, line %d\n %s\n", problem.FullName, problem.LineNumber, problem.Problem)
+				} else {
+					fname, found := namePaths[problem.FullName]
+					if !found {
+						fname = problem.FullName
+					}
+					fmt.Printf("\"%s\", line %d: %s %s\n", fname, problem.LineNumber, problem.ProblemType, problem.Problem)
+				}
+			}
+		}
 	}
 
 	fmt.Printf("\nTest Failures - %d\n", len(testFailures))
