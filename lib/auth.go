@@ -128,6 +128,15 @@ func ActiveForce() (force *Force, err error) {
 	return
 }
 
+func GetForce(accountName string) (force *Force, err error) {
+	creds, err := GetAccountCredentials(accountName)
+	if err != nil {
+		return
+	}
+	force = NewForce(&creds)
+	return
+}
+
 // Add UserInfo and SessionOptions to old ForceSession
 func upgradeCredentials(creds *ForceSession) (err error) {
 	if creds.SessionOptions != nil && creds.UserInfo != nil {
@@ -158,29 +167,36 @@ func upgradeCredentials(creds *ForceSession) (err error) {
 	return
 }
 
+func GetAccountCredentials(accountName string) (creds ForceSession, err error) {
+	data, err := Config.Load("accounts", accountName)
+	if err != nil {
+		err = fmt.Errorf("Could not find account, %s.  Please log in first.", accountName)
+		return
+	}
+	err = json.Unmarshal([]byte(data), &creds)
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
+	err = upgradeCredentials(&creds)
+	if err != nil {
+		// Couldn't update the credentials.  Force re-login.
+		err = Config.Delete("current", "account")
+		ErrorAndExit("Cannot update stored session.  Please log in again.")
+	}
+	if creds.SessionOptions.ApiVersion != "" && creds.SessionOptions.ApiVersion != ApiVersionNumber() {
+		SetApiVersion(creds.SessionOptions.ApiVersion)
+	}
+	return
+}
+
 func ActiveCredentials(requireCredentials bool) (creds ForceSession, err error) {
 	account, err := ActiveLogin()
 	if requireCredentials && (err != nil || strings.TrimSpace(account) == "") {
 		ErrorAndExit("Please login before running this command.")
 	}
-	data, err := Config.Load("accounts", strings.TrimSpace(account))
+	creds, err = GetAccountCredentials(strings.TrimSpace(account))
 	if requireCredentials && err != nil {
 		ErrorAndExit("Failed to load credentials. %v", err)
-	}
-	if err == nil {
-		err = json.Unmarshal([]byte(data), &creds)
-		if err != nil {
-			ErrorAndExit(err.Error())
-		}
-		err = upgradeCredentials(&creds)
-		if err != nil {
-			// Couldn't update the credentials.  Force re-login.
-			err = Config.Delete("current", "account")
-			ErrorAndExit("Cannot update stored session.  Please log in again.")
-		}
-		if creds.SessionOptions.ApiVersion != "" && creds.SessionOptions.ApiVersion != ApiVersionNumber() {
-			SetApiVersion(creds.SessionOptions.ApiVersion)
-		}
 	}
 	if !requireCredentials && err != nil {
 		err = nil
