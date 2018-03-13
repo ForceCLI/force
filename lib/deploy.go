@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"strings"
 	"time"
 
@@ -15,17 +16,49 @@ import (
 // and then deploys the package to salesforce
 func PushByPaths(fpaths []string, byName bool, namePaths map[string]string, opts *ForceDeployOptions) {
 	pb := NewPushBuilder()
-
+	fmt.Println("directory")
 	var badPaths []string
 	for _, fpath := range fpaths {
 		// TODO: check for folder, if a folder, add all files in it
-		name, err := pb.AddFile(fpath)
+
+		fi, err := os.Stat(fpath)
 		if err != nil {
-			fmt.Println(err.Error())
+			fmt.Println(err)
 			badPaths = append(badPaths, fpath)
-		} else {
-			// Store paths by name for error messages
-			namePaths[name] = fpath
+			continue
+		}
+
+		mode := fi.Mode()
+
+		if mode.IsDir() {
+			fmt.Println("directory")
+			files, err := ioutil.ReadDir(fpath)
+			if err != nil {
+				fmt.Println(err)
+				badPaths = append(badPaths, fpath)
+			}
+
+			for _, f := range files {
+				filename := f.Name()
+				fmt.Println(filename)
+				name, err := pb.AddFile(filename)
+				if err != nil {
+					fmt.Println(err.Error())
+					badPaths = append(badPaths, filename)
+				} else {
+					// Store paths by name for error messages
+					namePaths[name] = filename
+				}
+			}
+		} else if mode.IsRegular() {
+			name, err := pb.AddFile(fpath)
+			if err != nil {
+				fmt.Println(err.Error())
+				badPaths = append(badPaths, fpath)
+			} else {
+				// Store paths by name for error messages
+				namePaths[name] = fpath
+			}
 		}
 	}
 
