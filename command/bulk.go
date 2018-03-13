@@ -106,7 +106,7 @@ Examples using positional arguments - less flexible, arguments must be in the co
   force bulk batches [job id]
   force Bulk batch [job id] [batch id]
   force bulk batch retrieve [job id] [batch id]
-  force bulk query [-wait | -w] Account [SOQL]
+  force bulk [-wait | -w] query Account [SOQL]
   force bulk query retrieve [job id] [batch id]
 
 `,
