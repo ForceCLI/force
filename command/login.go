@@ -34,9 +34,10 @@ var (
 	instance = cmdLogin.Flag.String("i", "", `Defaults to 'login' or last
 		logged in system. non-production server to login to (values are 'pre',
 		'test', or full instance url`)
-	userName    = cmdLogin.Flag.String("u", "", "Username for Soap Login")
-	password    = cmdLogin.Flag.String("p", "", "Password for Soap Login")
-	api_version = cmdLogin.Flag.String("v", "", "API Version to use")
+	userName             = cmdLogin.Flag.String("u", "", "Username for Soap Login")
+	password             = cmdLogin.Flag.String("p", "", "Password for Soap Login")
+	api_version          = cmdLogin.Flag.String("v", "", "API Version to use")
+	connectedAppClientId = cmdLogin.Flag.String("connected-app-client-id", "", "Client Id (aka Consumer Key) to use instead of default")
 )
 
 func runLogin(cmd *Command, args []string) {
@@ -55,6 +56,10 @@ func runLogin(cmd *Command, args []string) {
 	if *api_version != "" {
 		// Todo verify format of version is 30.0
 		SetApiVersion(*api_version)
+	}
+
+	if *connectedAppClientId != "" {
+		ClientId = *connectedAppClientId
 	}
 
 	switch *instance {
