@@ -1313,6 +1313,19 @@ func (f *Force) httpGetBulk(url string) (body []byte, err error) {
 	return
 }
 
+func (f *Force) httpGetBulkJSON(url string) (body []byte, err error) {
+	headers := map[string]string{
+		"X-SFDC-Session": fmt.Sprintf("Bearer %s", f.Credentials.AccessToken),
+		"Content-Type":   "application/json",
+	}
+	body, err = f.httpGetRequest(url, headers)
+	if err == SessionExpiredError {
+		f.RefreshSessionOrExit()
+		return f.httpGetBulkJSON(url)
+	}
+	return
+}
+
 func (f *Force) httpGetRequest(url string, headers map[string]string) (body []byte, err error) {
 	req, err := httpRequest("GET", url, nil)
 	if err != nil {
