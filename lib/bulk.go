@@ -12,12 +12,12 @@ type BatchResult struct {
 }
 
 type BatchInfo struct {
-	Id                     string `xml:"id"`
-	JobId                  string `xml:"jobId"`
-	State                  string `xml:"state"`
-	CreatedDate            string `xml:"createdDate"`
-	SystemModstamp         string `xml:"systemModstamp"`
-	NumberRecordsProcessed int    `xml:"numberRecordsProcessed"`
+	Id                     string `xml:"id" json:"id"`
+	JobId                  string `xml:"jobId" json:"jobId"`
+	State                  string `xml:"state" json:"state"`
+	CreatedDate            string `xml:"createdDate" json:"createdDate"`
+	SystemModstamp         string `xml:"systemModstamp" json:"systemModstamp"`
+	NumberRecordsProcessed int    `xml:"numberRecordsProcessed" json:"numberRecordsProcessed"`
 }
 
 type JobInfo struct {
@@ -46,6 +46,8 @@ type JobInfo struct {
 	ApexProcessingTime      int      `xml:"apexProcessingTime,omitempty"`
 }
 
+var InvalidBulkObject = errors.New("Object Does Not Support Bulk API")
+
 func (f *Force) CreateBulkJob(jobInfo JobInfo) (result JobInfo, err error) {
 	xmlbody, err := xml.Marshal(jobInfo)
 	if err != nil {
@@ -58,7 +60,11 @@ func (f *Force) CreateBulkJob(jobInfo JobInfo) (result JobInfo, err error) {
 	if len(result.Id) == 0 {
 		var fault LoginFault
 		xml.Unmarshal(body, &fault)
-		err = errors.New(fmt.Sprintf("%s: %s", fault.ExceptionCode, fault.ExceptionMessage))
+		if fault.ExceptionCode == "InvalidEntity" {
+			err = InvalidBulkObject
+		} else {
+			err = errors.New(fmt.Sprintf("%s: %s", fault.ExceptionCode, fault.ExceptionMessage))
+		}
 	}
 	return
 }
@@ -98,6 +104,9 @@ func (f *Force) BulkQuery(soql string, jobId string, contettype string) (result 
 	if contettype == "CSV" {
 		body, err = f.httpPostCSV(url, soql)
 		xml.Unmarshal(body, &result)
+	} else if contettype == "JSON" {
+		body, err = f.httpPostJSON(url, soql)
+		json.Unmarshal(body, &result)
 	} else {
 		body, err = f.httpPostXML(url, soql)
 		xml.Unmarshal(body, &result)
@@ -209,6 +218,25 @@ func (f *Force) GetJobInfo(jobId string) (result JobInfo, err error) {
 	return
 }
 
+func (f *Force) retrieveBulkResult(url string, contentType string) (result []byte, err error) {
+	switch contentType {
+	case "JSON":
+		return f.httpGetBulkJSON(url)
+	case "CSV":
+		fallthrough
+	case "XML":
+		return f.httpGetBulk(url)
+	default:
+		err = fmt.Errorf("Invalid content type for bulk API: " + contentType)
+	}
+	return nil, err
+}
+
+func (f *Force) RetrieveBulkQueryResultList(job JobInfo, batchId string) ([]byte, error) {
+	url := fmt.Sprintf("%s/services/async/%s/job/%s/batch/%s/result", f.Credentials.InstanceUrl, apiVersionNumber, job.Id, batchId)
+	return f.retrieveBulkResult(url, job.ContentType)
+}
+
 func (f *Force) RetrieveBulkQuery(jobId string, batchId string) (result []byte, err error) {
 	url := fmt.Sprintf("%s/services/async/%s/job/%s/batch/%s/result", f.Credentials.InstanceUrl, apiVersionNumber, jobId, batchId)
 	result, err = f.httpGetBulk(url)
@@ -219,6 +247,11 @@ func (f *Force) RetrieveBulkQueryResults(jobId string, batchId string, resultId 
 	url := fmt.Sprintf("%s/services/async/%s/job/%s/batch/%s/result/%s", f.Credentials.InstanceUrl, apiVersionNumber, jobId, batchId, resultId)
 	result, err = f.httpGetBulk(url)
 	return
+}
+
+func (f *Force) RetrieveBulkJobQueryResults(job JobInfo, batchId string, resultId string) ([]byte, error) {
+	url := fmt.Sprintf("%s/services/async/%s/job/%s/batch/%s/result/%s", f.Credentials.InstanceUrl, apiVersionNumber, job.Id, batchId, resultId)
+	return f.retrieveBulkResult(url, job.ContentType)
 }
 
 func (f *Force) RetrieveBulkBatchResults(jobId string, batchId string) (results BatchResult, err error) {
