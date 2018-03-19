@@ -209,14 +209,18 @@ func (pb *PackageBuilder) AddFile(fpath string) (fname string, err error) {
 
 //AddDirectory Recursively add files contained in provided directory
 func (pb *PackageBuilder) AddDirectory(fpath string) (namePaths map[string]string, badPaths []string, err error) {
+	namePaths = make(map[string]string)
+
 	files, err := ioutil.ReadDir(fpath)
 	if err != nil {
 		badPaths = append(badPaths, fpath)
+		return
 	}
 
 	for _, f := range files {
+		dirOrFilePath := fpath + "/" + f.Name()
 		if f.IsDir() {
-			dirNamePaths, dirBadPath, err := pb.AddDirectory(fpath)
+			dirNamePaths, dirBadPath, err := pb.AddDirectory(dirOrFilePath)
 			if err != nil {
 				badPaths = append(badPaths, dirBadPath...)
 			} else {
@@ -225,12 +229,13 @@ func (pb *PackageBuilder) AddDirectory(fpath string) (namePaths map[string]strin
 				}
 			}
 		}
-		filename := fpath + "/" + f.Name()
-		name, err := pb.AddFile(filename)
-		if err != nil {
-			badPaths = append(badPaths, filename)
+
+		name, err := pb.AddFile(dirOrFilePath)
+
+		if (err != nil) || (name == "") {
+			badPaths = append(badPaths, dirOrFilePath)
 		} else {
-			namePaths[name] = filename
+			namePaths[name] = dirOrFilePath
 		}
 	}
 	return
