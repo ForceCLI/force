@@ -29,23 +29,13 @@ func PushByPaths(fpaths []string, byName bool, namePaths map[string]string, opts
 		mode := fi.Mode()
 		//If path provided is dir we are adding all containing files to deployment
 		if mode.IsDir() {
-			files, err := ioutil.ReadDir(fpath)
+			dirNamePaths, dirBadPath, err := pb.AddDirectory(fpath)
 			if err != nil {
-				fmt.Println(err)
-				badPaths = append(badPaths, fpath)
-			}
-
-			for _, f := range files {
-				if f.IsDir() {
-					continue
-				}
-				filename := fpath + "/" + f.Name()
-				name, err := pb.AddFile(filename)
-				if err != nil {
-					fmt.Println(err.Error())
-					badPaths = append(badPaths, filename)
-				} else {
-					namePaths[name] = filename
+				fmt.Println(err.Error())
+				badPaths = append(badPaths, dirBadPath...)
+			} else {
+				for dirContentName, dirContentPath := range dirNamePaths {
+					namePaths[dirContentName] = dirContentPath
 				}
 			}
 		} else if mode.IsRegular() { // single file processing

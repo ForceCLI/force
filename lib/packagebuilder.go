@@ -207,6 +207,35 @@ func (pb *PackageBuilder) AddFile(fpath string) (fname string, err error) {
 	return
 }
 
+//AddDirectory Recursively add files contained in provided directory
+func (pb *PackageBuilder) AddDirectory(fpath string) (namePaths map[string]string, badPaths []string, err error) {
+	files, err := ioutil.ReadDir(fpath)
+	if err != nil {
+		badPaths = append(badPaths, fpath)
+	}
+
+	for _, f := range files {
+		if f.IsDir() {
+			dirNamePaths, dirBadPath, err := pb.AddDirectory(fpath)
+			if err != nil {
+				badPaths = append(badPaths, dirBadPath...)
+			} else {
+				for dirContentName, dirContentPath := range dirNamePaths {
+					namePaths[dirContentName] = dirContentPath
+				}
+			}
+		}
+		filename := fpath + "/" + f.Name()
+		name, err := pb.AddFile(filename)
+		if err != nil {
+			badPaths = append(badPaths, filename)
+		} else {
+			namePaths[name] = filename
+		}
+	}
+	return
+}
+
 // Adds the file to a temp directory for deploy
 func (pb *PackageBuilder) addFileToWorkingDir(metaName string, fpath string) (err error) {
 	// Get relative dir from source
