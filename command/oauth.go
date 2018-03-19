@@ -20,7 +20,7 @@ Usage:
 
 Examples:
 
-  force oauth create MyApp https://myapp.herokuapp.com/auth/callback
+  force oauth create MyApp http://localhost:3835/oauth/callback
 `,
 }
 

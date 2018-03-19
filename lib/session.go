@@ -16,6 +16,9 @@ func (f *Force) refreshOauth() (err error) {
 	attrs.Set("grant_type", "refresh_token")
 	attrs.Set("refresh_token", f.Credentials.RefreshToken)
 	attrs.Set("client_id", ClientId)
+	if f.Credentials.ClientId != "" {
+		attrs.Set("client_id", f.Credentials.ClientId)
+	}
 	attrs.Set("format", "json")
 
 	postVars := attrs.Encode()

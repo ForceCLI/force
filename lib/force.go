@@ -21,7 +21,7 @@ import (
 	. "github.com/ForceCLI/force/error"
 )
 
-const (
+var (
 	ClientId    = "3MVG9ytVT1SanXDnX_hOa9Ys5NxVp5C26JlyQjwr.xTJtUqoKonXY.M8CcjoEknMrV4YUvPvXLiMyzI.Aw23C"
 	RedirectUri = "http://localhost:3835/oauth/callback"
 )
@@ -71,6 +71,7 @@ type ForceSession struct {
 	InstanceUrl    string `json:"instance_url"`
 	IssuedAt       string `json:"issued_at"`
 	Scope          string `json:"scope"`
+	ClientId       string
 	RefreshToken   string
 	ForceEndpoint  ForceEndpoint
 	UserInfo       *UserInfo
@@ -326,6 +327,7 @@ func ForceLogin(endpoint ForceEndpoint) (creds ForceSession, err error) {
 		}
 	}
 	creds.ForceEndpoint = endpoint
+	creds.ClientId = ClientId
 	return
 }
 
