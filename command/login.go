@@ -23,6 +23,7 @@ var cmdLogin = &Command{
     force login -i=test -u=un -p=pw
     force login -i=na1-blitz01.soma.salesforce.com -u=un -p=pw -v 39.0
     force login -i my-domain.my.salesforce.com -u username -p password
+    force login --connected-app-client-id <my-consumer-key>
 `,
 }
 
