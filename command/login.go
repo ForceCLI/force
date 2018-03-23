@@ -23,7 +23,7 @@ var cmdLogin = &Command{
     force login -i=test -u=un -p=pw
     force login -i=na1-blitz01.soma.salesforce.com -u=un -p=pw -v 39.0
     force login -i my-domain.my.salesforce.com -u username -p password
-    force login --connected-app-client-id <my-consumer-key>
+    force login --connected-app-client-id <my-consumer-key> -u username -key jwt.key
 `,
 }
 
@@ -39,6 +39,7 @@ var (
 	password             = cmdLogin.Flag.String("p", "", "Password for Soap Login")
 	api_version          = cmdLogin.Flag.String("v", "", "API Version to use")
 	connectedAppClientId = cmdLogin.Flag.String("connected-app-client-id", "", "Client Id (aka Consumer Key) to use instead of default")
+	keyFile              = cmdLogin.Flag.String("key", "", "JWT Signing Key Filename")
 )
 
 func runLogin(cmd *Command, args []string) {
@@ -94,23 +95,39 @@ func runLogin(cmd *Command, args []string) {
 		}
 	}
 
-	if len(*userName) != 0 { // Do SOAP login
-		if len(*password) == 0 {
-			var err error
-			*password, err = speakeasy.Ask("Password: ")
-			if err != nil {
-				ErrorAndExit(err.Error())
-			}
-		}
-		_, err := ForceLoginAndSaveSoap(endpoint, *userName, *password, os.Stdout)
-		if err != nil {
-			ErrorAndExit(err.Error())
-		}
-	} else { // Do OAuth login
+	if len(*userName) == 0 {
+		// OAuth Login
 		_, err := ForceLoginAndSave(endpoint, os.Stdout)
 		if err != nil {
 			ErrorAndExit(err.Error())
 		}
+		return
+	}
+
+	if len(*keyFile) != 0 {
+		// JWT Login
+		assertion, err := JwtAssertion(endpoint, *userName, *keyFile, ClientId)
+		if err != nil {
+			ErrorAndExit(err.Error())
+		}
+		_, err = ForceLoginAndSaveJWT(endpoint, assertion, os.Stdout)
+		if err != nil {
+			ErrorAndExit(err.Error())
+		}
+		return
+	}
+
+	// Username/Password Login
+	if len(*password) == 0 {
+		var err error
+		*password, err = speakeasy.Ask("Password: ")
+		if err != nil {
+			ErrorAndExit(err.Error())
+		}
+	}
+	_, err := ForceLoginAndSaveSoap(endpoint, *userName, *password, os.Stdout)
+	if err != nil {
+		ErrorAndExit(err.Error())
 	}
 }
 
