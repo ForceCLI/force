@@ -66,6 +66,11 @@ type SessionOptions struct {
 	RefreshMethod RefreshMethod
 }
 
+type OAuthError struct {
+	Error            string `json:"error"`
+	ErrorDescription string `json:"error_description"`
+}
+
 type ForceSession struct {
 	AccessToken    string `json:"access_token"`
 	InstanceUrl    string `json:"instance_url"`
@@ -277,22 +282,30 @@ func ForceSoapLogin(endpoint ForceEndpoint, username string, password string) (c
 	return
 }
 
+func tokenURL(endpoint ForceEndpoint) (tokenURL string, err error) {
+	switch endpoint {
+	case EndpointProduction:
+		tokenURL = fmt.Sprintf("https://login.salesforce.com/services/oauth2/token")
+	case EndpointTest:
+		tokenURL = fmt.Sprintf("https://test.salesforce.com/services/oauth2/token")
+	case EndpointPrerelease:
+		tokenURL = fmt.Sprintf("https://prerellogin.pre.salesforce.com/services/oauth2/token")
+	case EndpointMobile1:
+		tokenURL = fmt.Sprintf("https://EndpointMobile1.t.salesforce.com/services/oauth2/token")
+	case EndpointCustom:
+		tokenURL = fmt.Sprintf("%s/services/oauth2/token", CustomEndpoint)
+	default:
+		err = fmt.Errorf("no such endpoint type")
+	}
+	return
+}
+
 func (f *Force) refreshTokenURL() string {
 	var refreshURL string
 	endpoint := f.Credentials.ForceEndpoint
-	switch endpoint {
-	case EndpointProduction:
-		refreshURL = fmt.Sprintf("https://login.salesforce.com/services/oauth2/token")
-	case EndpointTest:
-		refreshURL = fmt.Sprintf("https://test.salesforce.com/services/oauth2/token")
-	case EndpointPrerelease:
-		refreshURL = fmt.Sprintf("https://prerellogin.pre.salesforce.com/services/oauth2/token")
-	case EndpointMobile1:
-		refreshURL = fmt.Sprintf("https://EndpointMobile1.t.salesforce.com/services/oauth2/token")
-	case EndpointCustom:
-		refreshURL = fmt.Sprintf("%s/services/oauth2/token", CustomEndpoint)
-	default:
-		ErrorAndExit("no such endpoint type")
+	refreshURL, err := tokenURL(endpoint)
+	if err != nil {
+		ErrorAndExit(err.Error())
 	}
 	return refreshURL
 }
