@@ -23,14 +23,16 @@ Examples:
   force active user@example.org
 
 Options:
-  -json, -j    Output in JSON format
-  -local, -l   Set active account locally, for current directory
+  -json, -j     Output in JSON format
+  -local, -l    Set active account locally, for current directory
+  -session, -s  Output session id
 `,
 }
 var (
-	tojson  bool
-	account string
-	local   bool
+	tojson    bool
+	account   string
+	local     bool
+	sessionId bool
 )
 
 func init() {
@@ -40,6 +42,8 @@ func init() {
 	cmdActive.Flag.StringVar(&account, "account", "", "deprecated: set active account")
 	cmdActive.Flag.BoolVar(&local, "l", false, "set active account for current directory")
 	cmdActive.Flag.BoolVar(&local, "local", false, "set active account for current directory")
+	cmdActive.Flag.BoolVar(&sessionId, "session", false, "display session id")
+	cmdActive.Flag.BoolVar(&sessionId, "s", false, "display session id")
 	cmdActive.Run = runActive
 }
 
@@ -49,7 +53,9 @@ func runActive(cmd *Command, args []string) {
 		if err != nil {
 			ErrorAndExit(err.Error())
 		}
-		if tojson {
+		if sessionId {
+			fmt.Println(creds.AccessToken)
+		} else if tojson {
 			fmt.Printf(fmt.Sprintf("{ \"login\": \"%s\", \"instanceUrl\": \"%s\", \"namespace\":\"%s\" }", creds.SessionName(), creds.InstanceUrl, creds.UserInfo.OrgNamespace))
 		} else {
 			fmt.Println(fmt.Sprintf("%s - %s - ns:%s", creds.SessionName(), creds.InstanceUrl, creds.UserInfo.OrgNamespace))
