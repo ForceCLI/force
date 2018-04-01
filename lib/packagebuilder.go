@@ -65,6 +65,7 @@ var metapaths = []metapath{
 	metapath{path: "datacategorygroups", name: "DataCategoryGroup"},
 	metapath{path: "delegateGroups", name: "DelegateGroup"},
 	metapath{path: "documents", name: "Document", hasFolder: true},
+	metapath{path: "duplicateRules", name: "DuplicateRule"},
 	metapath{path: "EmbeddedServiceConfig", name: "EmbeddedServiceConfig"},
 	metapath{path: "email", name: "EmailTemplate", hasFolder: true},
 	metapath{path: "escalationRules", name: "EscalationRules"},

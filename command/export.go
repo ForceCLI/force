@@ -87,6 +87,7 @@ func runExport(cmd *Command, args []string) {
 		{Name: []string{"CustomSite"}, Members: []string{"*"}},
 		{Name: []string{"CustomTab"}, Members: []string{"*"}},
 		{Name: []string{"DataCategoryGroup"}, Members: []string{"*"}},
+		{Name: []string{"DuplicateRule"}, Members: []string{"*"}},
 		{Name: []string{"EntitlementProcess"}, Members: []string{"*"}},
 		{Name: []string{"EntitlementSettings"}, Members: []string{"*"}},
 		{Name: []string{"EntitlementTemplate"}, Members: []string{"*"}},
