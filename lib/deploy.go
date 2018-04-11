@@ -57,7 +57,7 @@ func PushByPaths(fpaths []string, byName bool, namePaths map[string]string, opts
 		t1 := time.Now()
 		fmt.Printf("The deployment took %v to run.\n", t1.Sub(t0))
 	} else {
-		ErrorAndExit("Could not add the following files:\n {}", strings.Join(badPaths, "\n"))
+		ErrorAndExit("Could not add the following files:\n {%v}", strings.Join(badPaths, "\n"))
 	}
 }
 

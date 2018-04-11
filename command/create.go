@@ -9,16 +9,16 @@ import (
 )
 
 var cmdCreate = &Command{
-	Usage: "create what=<apexclass, visualforce> name=<item name>",
+	Usage: "create what=<ApexClass, ApexPage> name=<item name>",
 	Short: "Creates a new, empty Apex Class or Visualforce page.",
 	Long: `
 Creates a new, empty Apex Class or Visualforce page.
 
 Examples (both flags are required):
 
-  force create -w apexclass -n NewController
+  force create -w ApexClass -n NewController
 
-  force create -w visualforce -n CoolPage
+  force create -w ApexPage -n CoolPage
 `,
 }
 var (
@@ -40,10 +40,10 @@ func runCreate(cmd *Command, args []string) {
 		cmd.PrintUsage()
 	} else {
 		attrs := make(map[string]string)
-		switch what {
+		switch strings.ToLower(what) {
 		case "apexclass":
 			attrs = getApexDefinition()
-		case "visualforce":
+		case "visualforce", "apexpage":
 			what = "apexpage"
 			attrs = getVFDefinition()
 		}
