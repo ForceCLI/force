@@ -109,6 +109,7 @@ func runExport(cmd *Command, args []string) {
 		{Name: []string{"LiveChatAgentConfig"}, Members: []string{"*"}},
 		{Name: []string{"LiveChatButton"}, Members: []string{"*"}},
 		{Name: []string{"LiveChatDeployment"}, Members: []string{"*"}},
+		{Name: []string{"MatchingRules"}, Members: []string{"*"}},
 		{Name: []string{"MilestoneType"}, Members: []string{"*"}},
 		{Name: []string{"MobileSettings"}, Members: []string{"*"}},
 		{Name: []string{"NamedFilter"}, Members: []string{"*"}},

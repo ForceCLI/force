@@ -84,6 +84,7 @@ var metapaths = []metapath{
 	metapath{path: "LeadConvertSettings", name: "LeadConvertSettings"},
 	metapath{path: "letterhead", name: "Letterhead"},
 	metapath{path: "matchingRules", name: "MatchingRules"},
+	metapath{path: "matchingRules", name: "MatchingRule"},
 	metapath{path: "namedCredentials", name: "NamedCredential"},
 	metapath{path: "objects", name: "CustomObject"},
 	metapath{path: "objectTranslations", name: "CustomObjectTranslation"},
