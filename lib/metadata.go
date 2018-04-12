@@ -1239,6 +1239,30 @@ func (fm *ForceMetadata) DeployZipFile(soap string, zipfile []byte) (results For
 	return
 }
 
+func (fm *ForceMetadata) DeployRecentValidation(validationId string) (results ForceCheckDeploymentStatusResult, err error) {
+	body, err := fm.soapExecute("deployRecentValidation", fmt.Sprintf("<validationID>%s</validationID>", validationId))
+	if err != nil {
+		return
+	}
+
+	var status struct {
+		Id string `xml:"Body>deployRecentValidationResponse>result"`
+	}
+	if err = xml.Unmarshal(body, &status); err != nil {
+		return
+	}
+	for {
+		results, err = fm.CheckDeployStatus(status.Id)
+		if err != nil || results.Done {
+			return
+		}
+		fmt.Println(results)
+		time.Sleep(5000 * time.Millisecond)
+	}
+
+	return
+}
+
 func (fm *ForceMetadata) RetrieveByPackageXml(package_xml string) (files ForceMetadataFiles, err error) {
 	// Need to crack open the xml file and pull out the <types> array
 	data, err := ioutil.ReadFile(package_xml)

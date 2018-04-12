@@ -36,6 +36,7 @@ var Commands = []*Command{
 	cmdPassword,
 	cmdPush,
 	cmdQuery,
+	cmdQuickDeploy,
 	cmdRecord,
 	cmdRest,
 	cmdSecurity,
