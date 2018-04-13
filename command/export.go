@@ -118,6 +118,7 @@ func runExport(cmd *Command, args []string) {
 		{Name: []string{"PostTemplate"}, Members: []string{"*"}},
 		{Name: []string{"ProductSettings"}, Members: []string{"*"}},
 		{Name: []string{"Profile"}, Members: []string{"*"}},
+		{Name: []string{"ProfileSessionSetting"}, Members: []string{"*"}},
 		{Name: []string{"Queue"}, Members: []string{"*"}},
 		{Name: []string{"QuickAction"}, Members: []string{"*"}},
 		{Name: []string{"QuoteSettings"}, Members: []string{"*"}},

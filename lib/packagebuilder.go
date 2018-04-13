@@ -94,6 +94,7 @@ var metapaths = []metapath{
 	metapath{path: "postTemplates", name: "PostTemplate"},
 	metapath{path: "postTemplates", name: "PostTemplate"},
 	metapath{path: "profiles", name: "Profile"},
+	metapath{path: "profileSessionSettings", name: "ProfileSessionSetting"},
 	metapath{path: "queues", name: "Queue"},
 	metapath{path: "quickActions", name: "QuickAction"},
 	metapath{path: "remoteSiteSettings", name: "RemoteSiteSetting"},
