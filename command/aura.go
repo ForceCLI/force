@@ -43,7 +43,7 @@ var cmdAura = &Command{
 							MyComponentHelper.js
 							MyComponentStyle.css
 
-	force aura push -f <fullFilePath> -b <bundle name>
+	force aura push -f <fullFilePath>
 
 	force aura create -t=<entity type> <entityName>
 
