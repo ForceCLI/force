@@ -725,14 +725,15 @@ func (fm *ForceMetadata) CheckDeployStatus(id string) (results ForceCheckDeploym
 	return
 }
 
-func (fm *ForceMetadata) CheckRetrieveStatus(id string) (files ForceMetadataFiles, err error) {
+func (fm *ForceMetadata) CheckRetrieveStatus(id string) (files ForceMetadataFiles, problems []string, err error) {
 	body, err := fm.soapExecute("checkRetrieveStatus", fmt.Sprintf("<id>%s</id>", id))
 	if err != nil {
 		fmt.Printf("Hrm... will probably try again\n")
 		return
 	}
 	var status struct {
-		ZipFile string `xml:"Body>checkRetrieveStatusResponse>result>zipFile"`
+		ZipFile  string   `xml:"Body>checkRetrieveStatusResponse>result>zipFile"`
+		Problems []string `xml:"Body>checkRetrieveStatusResponse>result>messages>problem"`
 	}
 	if err = xml.Unmarshal(body, &status); err != nil {
 		return
@@ -741,6 +742,7 @@ func (fm *ForceMetadata) CheckRetrieveStatus(id string) (files ForceMetadataFile
 	if err != nil {
 		return
 	}
+	problems = status.Problems
 
 	zipfiles, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
 	if preserveZip == true {
@@ -1239,7 +1241,7 @@ func (fm *ForceMetadata) DeployZipFile(soap string, zipfile []byte) (results For
 	return
 }
 
-func (fm *ForceMetadata) RetrieveByPackageXml(package_xml string) (files ForceMetadataFiles, err error) {
+func (fm *ForceMetadata) RetrieveByPackageXml(package_xml string) (files ForceMetadataFiles, problems []string, err error) {
 	// Need to crack open the xml file and pull out the <types> array
 	data, err := ioutil.ReadFile(package_xml)
 
@@ -1292,7 +1294,7 @@ func (fm *ForceMetadata) RetrieveByPackageXml(package_xml string) (files ForceMe
 		fmt.Printf("Error: %s\n", err.Error())
 		return
 	}
-	raw_files, err := fm.CheckRetrieveStatus(status.Id)
+	raw_files, problems, err := fm.CheckRetrieveStatus(status.Id)
 	if err != nil {
 		fmt.Printf("Error: %s\n", err.Error())
 		return
@@ -1306,7 +1308,7 @@ func (fm *ForceMetadata) RetrieveByPackageXml(package_xml string) (files ForceMe
 	return
 }
 
-func (fm *ForceMetadata) Retrieve(query ForceMetadataQuery) (files ForceMetadataFiles, err error) {
+func (fm *ForceMetadata) Retrieve(query ForceMetadataQuery) (files ForceMetadataFiles, problems []string, err error) {
 
 	soap := `
 		<retrieveRequest>
@@ -1347,7 +1349,7 @@ func (fm *ForceMetadata) Retrieve(query ForceMetadataQuery) (files ForceMetadata
 	if err = fm.CheckStatus(status.Id); err != nil {
 		return
 	}
-	raw_files, err := fm.CheckRetrieveStatus(status.Id)
+	raw_files, problems, err := fm.CheckRetrieveStatus(status.Id)
 	if err != nil {
 		return
 	}
@@ -1359,7 +1361,7 @@ func (fm *ForceMetadata) Retrieve(query ForceMetadataQuery) (files ForceMetadata
 	return
 }
 
-func (fm *ForceMetadata) RetrievePackage(packageName string) (files ForceMetadataFiles, err error) {
+func (fm *ForceMetadata) RetrievePackage(packageName string) (files ForceMetadataFiles, problems []string, err error) {
 	soap := `
 		<retrieveRequest>
 			<apiVersion>%s</apiVersion>
@@ -1380,7 +1382,7 @@ func (fm *ForceMetadata) RetrievePackage(packageName string) (files ForceMetadat
 	if err = fm.CheckStatus(status.Id); err != nil {
 		return
 	}
-	raw_files, err := fm.CheckRetrieveStatus(status.Id)
+	raw_files, problems, err := fm.CheckRetrieveStatus(status.Id)
 	if err != nil {
 		return
 	}
