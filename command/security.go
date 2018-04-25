@@ -265,9 +265,12 @@ func runSecurity(cmd *Command, args []string) {
 	force, _ := ActiveForce()
 
 	// Step 1: retrieve the desired metadata
-	files, err := force.Metadata.Retrieve(query)
+	files, problems, err := force.Metadata.Retrieve(query)
 	if err != nil {
 		ErrorAndExit(err.Error())
+	}
+	for _, problem := range problems {
+		fmt.Fprintln(os.Stderr, problem)
 	}
 
 	// Step 2: go through the metadata and construct a list of Profile (profiles) and a CustomObject (theObject)

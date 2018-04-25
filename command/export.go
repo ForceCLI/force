@@ -14,10 +14,13 @@ import (
 
 var cmdExport = &Command{
 	Run:   runExport,
-	Usage: "export [dir]",
+	Usage: "export [options] [dir]",
 	Short: "Export metadata to a local directory",
 	Long: `
 Export metadata to a local directory
+
+Export Options
+  -w, -warnings  # Display warnings about metadata that cannot be retrieved
 
 Examples:
 
@@ -25,6 +28,15 @@ Examples:
 
   force export org/schema
 `,
+}
+
+var (
+	showWarnings bool
+)
+
+func init() {
+	cmdExport.Flag.BoolVar(&showWarnings, "w", false, "show warnings")
+	cmdExport.Flag.BoolVar(&showWarnings, "warnings", false, "show warnings")
 }
 
 func runExport(cmd *Command, args []string) {
@@ -163,10 +175,15 @@ func runExport(cmd *Command, args []string) {
 			ErrorAndExit(err.Error())
 		}
 	}
-	files, err := force.Metadata.Retrieve(query)
+	files, problems, err := force.Metadata.Retrieve(query)
 	if err != nil {
 		fmt.Printf("Encountered and error with retrieve...\n")
 		ErrorAndExit(err.Error())
+	}
+	if showWarnings {
+		for _, problem := range problems {
+			fmt.Fprintln(os.Stderr, problem)
+		}
 	}
 	for name, data := range files {
 		file := filepath.Join(root, name)

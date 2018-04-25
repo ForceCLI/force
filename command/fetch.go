@@ -234,6 +234,7 @@ func runFetch(cmd *Command, args []string) {
 	}
 
 	var files ForceMetadataFiles
+	var problems []string
 	var err error
 	var expandResources bool = unpack
 
@@ -248,7 +249,7 @@ func runFetch(cmd *Command, args []string) {
 	} else if len(metadataTypes) == 1 && strings.ToLower(metadataTypes[0]) == "package" {
 		if len(metadataName) > 0 {
 			for names := range metadataName {
-				files, err = force.Metadata.RetrievePackage(metadataName[names])
+				files, problems, err = force.Metadata.RetrievePackage(metadataName[names])
 				if err != nil {
 					ErrorAndExit(err.Error())
 				}
@@ -259,7 +260,7 @@ func runFetch(cmd *Command, args []string) {
 		}
 	} else {
 		if len(packageXml) > 0 {
-			files, err = force.Metadata.RetrieveByPackageXml(packageXml)
+			files, problems, err = force.Metadata.RetrieveByPackageXml(packageXml)
 		} else {
 			query := ForceMetadataQuery{}
 			if len(metadataName) > 0 {
@@ -271,7 +272,7 @@ func runFetch(cmd *Command, args []string) {
 					ErrorAndExit(err.Error())
 				}
 			}
-			files, err = force.Metadata.Retrieve(query)
+			files, problems, err = force.Metadata.Retrieve(query)
 			if err != nil {
 				ErrorAndExit(err.Error())
 			}
@@ -291,6 +292,9 @@ func runFetch(cmd *Command, args []string) {
 	}
 	existingPackage, _ := pathExists(filepath.Join(root, "package.xml"))
 
+	for _, problem := range problems {
+		fmt.Fprintln(os.Stderr, problem)
+	}
 	if len(files) == 1 {
 		ErrorAndExit("Could not find any objects for " + strings.Join(metadataTypes, ", ") + ". (Is the metadata type correct?)")
 	}
