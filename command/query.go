@@ -38,12 +38,16 @@ var (
 )
 
 func init() {
+	defaultOutputFormat := "console"
+	if !terminal.IsTerminal(int(os.Stdout.Fd())) {
+		defaultOutputFormat = "csv"
+	}
 	cmdQuery.Flag.BoolVar(&queryAll, "all", false, "use queryAll to include deleted and archived records in query results")
 	cmdQuery.Flag.BoolVar(&queryAll, "a", false, "use queryAll to include deleted and archived records in query results")
 	cmdQuery.Flag.BoolVar(&useTooling, "tooling", false, "use Tooling API")
 	cmdQuery.Flag.BoolVar(&useTooling, "t", false, "use Tooling API")
-	cmdQuery.Flag.StringVar(&queryOutputFormat, "format", "console", "output format: csv, json, json-pretty, console")
-	cmdQuery.Flag.StringVar(&queryOutputFormat, "f", "console", "output format: csv, json, json-pretty, console")
+	cmdQuery.Flag.StringVar(&queryOutputFormat, "format", defaultOutputFormat, "output format: csv, json, json-pretty, console")
+	cmdQuery.Flag.StringVar(&queryOutputFormat, "f", defaultOutputFormat, "output format: csv, json, json-pretty, console")
 }
 
 func runQuery(cmd *Command, args []string) {
@@ -51,9 +55,6 @@ func runQuery(cmd *Command, args []string) {
 	if len(args) < 1 {
 		cmd.PrintUsage()
 	} else {
-		if !terminal.IsTerminal(int(os.Stdout.Fd())) {
-			queryOutputFormat = "csv"
-		}
 		var formatArg = ""
 		var formatIndex = 1
 		var queryOptions []func(*QueryOptions)
