@@ -1103,6 +1103,30 @@ func (fm *ForceMetadata) CreateBigObject(object BigObject) (err error) {
 	return
 }
 
+func (fm *ForceMetadata) InstallPackage(namespace, version, password string) (err error) {
+	soap := `
+		<metadata xsi:type="InstalledPackage" xmlns:cmd="http://soap.sforce.com/2006/04/metadata">
+			<fullName>%s</fullName>
+			<versionNumber>%s</versionNumber>
+			<password>%s</password>
+		</metadata>
+	`
+	body, err := fm.soapExecute("create", fmt.Sprintf(soap, namespace, version, password))
+	if err != nil {
+		return err
+	}
+	var status struct {
+		Id string `xml:"Body>createResponse>result>id"`
+	}
+	if err = xml.Unmarshal(body, &status); err != nil {
+		return
+	}
+	if err = fm.CheckStatus(status.Id); err != nil {
+		return
+	}
+	return
+}
+
 func (fm *ForceMetadata) CreateCustomObject(object string) (err error) {
 	fld := ""
 	fld = strings.ToUpper(object)
