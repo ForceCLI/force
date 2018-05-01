@@ -178,7 +178,12 @@ func runBigObjectCreate(args []string) {
 		fieldObjects[i] = parseField(field)
 	}
 
-	var object = BigObject{deploymentStatus, objectLabel, pluralLabel, fieldObjects}
+	var object = BigObject{
+		DeploymentStatus: deploymentStatus,
+		Label:            objectLabel,
+		PluralLabel:      pluralLabel,
+		Fields:           fieldObjects,
+	}
 	if len(object.Label) == 0 {
 		ErrorAndExit("Please provide a label for your big object using the -l flag.")
 	}

@@ -175,7 +175,10 @@ func persistBundles(bundles AuraDefinitionBundleResult, definitions AuraDefiniti
 				default:
 					entity += fmt.Sprintf("%s.js", naming)
 				}
-				var componentFile = ComponentFile{filepath.Join(root, value, entity), fmt.Sprintf("%s", def["Id"])}
+				var componentFile = ComponentFile{
+					FileName:    filepath.Join(root, value, entity),
+					ComponentId: fmt.Sprintf("%s", def["Id"]),
+				}
 				bundleManifest.Files = append(bundleManifest.Files, componentFile)
 				if makefile {
 					ioutil.WriteFile(filepath.Join(root, value, entity), []byte(fmt.Sprintf("%s", def["Source"])), 0644)
@@ -215,7 +218,10 @@ func getWildcardQuery(force *Force, metadataTypes metaName) (query ForceMetadata
 			}
 			query = append(query, ForceMetadataQueryElement{Name: []string{string(folderType)}, Members: members})
 		default:
-			mq := ForceMetadataQueryElement{[]string{metadataType}, []string{"*"}}
+			mq := ForceMetadataQueryElement{
+				Name:    []string{metadataType},
+				Members: []string{"*"},
+			}
 			query = append(query, mq)
 		}
 	}
@@ -264,7 +270,10 @@ func runFetch(cmd *Command, args []string) {
 		} else {
 			query := ForceMetadataQuery{}
 			if len(metadataName) > 0 {
-				mq := ForceMetadataQueryElement{metadataTypes, metadataName}
+				mq := ForceMetadataQueryElement{
+					Name:    metadataTypes,
+					Members: metadataName,
+				}
 				query = append(query, mq)
 			} else {
 				query, err = getWildcardQuery(force, metadataTypes)
