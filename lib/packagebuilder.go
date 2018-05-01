@@ -337,18 +337,6 @@ func getMetaTypeFromPath(fpath string) (metaName string, name string) {
 	return
 }
 
-// Gets partial path based on a meta type name
-func getPathForMeta(metaname string) string {
-	for _, mp := range metapaths {
-		if strings.EqualFold(mp.name, metaname) {
-			return mp.path
-		}
-	}
-
-	// Unknown, so use metaname
-	return metaname
-}
-
 func findMetapathForFile(file string) (path metapath) {
 	parentDir := filepath.Dir(file)
 	parentName := filepath.Base(parentDir)

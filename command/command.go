@@ -6,9 +6,6 @@ import (
 	"strings"
 )
 
-var flagEnv string
-var flagProcfile string
-
 var Commands = []*Command{
 	cmdActive,
 	cmdApex,
