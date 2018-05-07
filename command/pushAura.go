@@ -288,20 +288,6 @@ func getFormatByresourcepath(resourcepath string) (format string, defType string
 	return
 }
 
-func getDefinitionFormat(deftype string) (result string) {
-	switch strings.ToUpper(deftype) {
-	case "APPLICATION", "COMPONENT", "EVENT", "INTERFACE", "DOCUMENTATION", "DESIGN":
-		result = "XML"
-	case "CONTROLLER", "MODEL", "HELPER", "RENDERER":
-		result = "JS"
-	case "STYLE":
-		result = "CSS"
-	case "SVG":
-		result = "SVG"
-	}
-	return
-}
-
 func InAuraBundlesFolder(fname string) bool {
 	info, _ := os.Stat(fname)
 	if info.IsDir() {

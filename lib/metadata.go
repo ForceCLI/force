@@ -1261,8 +1261,6 @@ func (fm *ForceMetadata) DeployZipFile(soap string, zipfile []byte) (results For
 		fmt.Println(results)
 		time.Sleep(5000 * time.Millisecond)
 	}
-
-	return
 }
 
 func (fm *ForceMetadata) DeployRecentValidation(validationId string) (results ForceCheckDeploymentStatusResult, err error) {
@@ -1285,8 +1283,6 @@ func (fm *ForceMetadata) DeployRecentValidation(validationId string) (results Fo
 		fmt.Println(results)
 		time.Sleep(5000 * time.Millisecond)
 	}
-
-	return
 }
 
 func (fm *ForceMetadata) RetrieveByPackageXml(package_xml string) (files ForceMetadataFiles, problems []string, err error) {

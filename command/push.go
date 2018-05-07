@@ -80,13 +80,6 @@ func init() {
 	cmdPush.Run = runPush
 }
 
-func argIsFile(fpath string) bool {
-	if _, err := os.Stat(fpath); err != nil {
-		return false
-	}
-	return true
-}
-
 func runPush(cmd *Command, args []string) {
 	if strings.ToLower(metadataType) == "package" {
 		pushPackage()
@@ -166,15 +159,6 @@ func wildCardSearch(metaFolder string, name string) []string {
 		}
 	}
 	return ret
-}
-
-func contains(s []string, e string) bool {
-	for _, a := range s {
-		if strings.Contains(a, e) {
-			return true
-		}
-	}
-	return false
 }
 
 func pushPackage() {

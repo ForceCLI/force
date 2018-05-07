@@ -393,17 +393,6 @@ func listBatches(jobId string) {
 	DisplayBatchList(batchInfos)
 }
 
-func getBatchResults(jobId string, batchId string) {
-	force, _ := ActiveForce()
-
-	data, err := force.RetrieveBulkBatchResults(jobId, batchId)
-	fmt.Println(data)
-	if err != nil {
-		ErrorAndExit(err.Error())
-	}
-	return
-}
-
 func getJobDetails(jobId string) (jobInfo JobInfo) {
 	force, _ := ActiveForce()
 
@@ -564,12 +553,6 @@ func splitFileIntoBatches(rows [][]string, batchsize int) (batches []string) {
 		batches = append(batches, batch)
 		rows = rows[batchsize:]
 	}
-	return
-}
-
-func getBatchInfo(jobId string, batchId string) (batchInfo BatchInfo, err error) {
-	force, _ := ActiveForce()
-	batchInfo, err = force.GetBatchInfo(jobId, batchId)
 	return
 }
 

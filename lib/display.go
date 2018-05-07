@@ -258,14 +258,6 @@ func recordColumns(records []ForceRecord) (columns []string) {
 	return
 }
 
-func coerceForceRecords(uncoerced []map[string]interface{}) (records []ForceRecord) {
-	records = make([]ForceRecord, len(uncoerced))
-	for i, record := range uncoerced {
-		records[i] = ForceRecord(record)
-	}
-	return
-}
-
 func columnLengths(records []ForceRecord, prefix string) (lengths map[string]int) {
 	lengths = make(map[string]int)
 
