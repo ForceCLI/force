@@ -180,7 +180,8 @@ func GetAccountCredentials(accountName string) (creds ForceSession, err error) {
 	err = upgradeCredentials(&creds)
 	if err != nil {
 		// Couldn't update the credentials.  Force re-login.
-		err = Config.Delete("current", "account")
+		_ = Config.Delete("accounts", accountName)
+		_ = Config.DeleteLocalOrGlobal("current", "account")
 		ErrorAndExit("Cannot update stored session.  Please log in again.")
 	}
 	if creds.SessionOptions.ApiVersion != "" && creds.SessionOptions.ApiVersion != ApiVersionNumber() {
