@@ -100,7 +100,6 @@ func getApexDefinition() (attrs map[string]string) {
 }
 
 func getTriggerDefinition() (attrs map[string]string) {
-	//{ "markup": "<apex:page> </apex:page>", "name": "mytestpage", "masterlabel": "Test Page" }
 	attrs = make(map[string]string)
 	attrs["status"] = "Active"
 	attrs["body"] = fmt.Sprintf("trigger %s on %s (before insert, after insert, before update, after update, before delete, after delete, after undelete) { \n\n }", itemName, sObjectName)
