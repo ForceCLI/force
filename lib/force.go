@@ -1172,13 +1172,11 @@ func (f *Force) DeleteToolingRecord(objecttype string, id string) (err error) {
 
 func (f *Force) CreateToolingRecord(objecttype string, attrs map[string]string) (result ForceCreateRecordResult, err error) {
 	aurl := fmt.Sprintf("%s/services/data/%s/tooling/sobjects/%s", f.Credentials.InstanceUrl, apiVersion, objecttype)
-	fmt.Println(attrs)
 	body, err, _ := f.httpPost(aurl, attrs)
 
 	if err != nil {
 		return
 	}
-	fmt.Println(string(body))
 	json.Unmarshal(body, &result)
 
 	return

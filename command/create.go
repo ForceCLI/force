@@ -9,37 +9,37 @@ import (
 )
 
 var cmdCreate = &Command{
-	Usage: "create what=<ApexClass, ApexPage> name=<item name>",
-	Short: "Creates a new, empty Apex Class or Visualforce page.",
+	Usage: "create --type <ApexClass, ApexPage, ApexComponent, ApexTrigger> --name <item name> [--sobject <trigger object>]",
+	Short: "Creates a new, empty Apex Class, Trigger, Visualforce page, or Component.",
 	Long: `
-Creates a new, empty Apex Class or Visualforce page.
+Creates a new, empty Apex Class, Trigger, Visualforce page, or Component.
 
-Examples (both flags are required):
+Examples:
 
-  force create -w ApexClass -n NewController
+  force create -t ApexClass -n NewController
 
-  force create -w ApexTrigger -n NewTrigger -s Account
+  force create -t ApexTrigger -n NewTrigger -s Account
 
-  force create -w ApexPage -n CoolPage
+  force create -t ApexPage -n CoolPage
 
-  force create -w ApexComponent -n CoolComponent
+  force create -t ApexComponent -n CoolComponent
 `,
 }
 var (
-	what     string
-	sObjectName  string
-	itemName string
+	what        string
+	sObjectName string
+	itemName    string
 )
 
 func init() {
-	cmdCreate.Flag.StringVar(&what, "what", "", "What type of thing to create (currently only Apex or Visualforce).")
-	cmdCreate.Flag.StringVar(&what, "w", "", "What type of thing to create (currently only Apex or Visualforce).")
-	cmdCreate.Flag.StringVar(&what, "type", "", "What type of thing to create (currently only Apex or Visualforce).") // Because consistency with other commands like fetch
+	cmdCreate.Flag.StringVar(&what, "type", "", "What type of thing to create (currently only Apex or Visualforce).")
 	cmdCreate.Flag.StringVar(&what, "t", "", "What type of thing to create (currently only Apex or Visualforce).")
-	cmdCreate.Flag.StringVar(&sObjectName, "sobject", "", "For which sobject should the thing be created (only for Triggers).")
-	cmdCreate.Flag.StringVar(&sObjectName, "s", "", "For which sobject should the thing be created (only for Triggers).")
+	cmdCreate.Flag.StringVar(&sObjectName, "sobject", "", "For which sobject should the trigger be created.")
+	cmdCreate.Flag.StringVar(&sObjectName, "s", "", "For which sobject should the trigger be created.")
 	cmdCreate.Flag.StringVar(&itemName, "n", "", "Name of thing to be created.")
 	cmdCreate.Flag.StringVar(&itemName, "name", "", "Name of thing to be created.")
+	cmdCreate.Flag.StringVar(&what, "what", "", "What type of thing to create [deprecated: use type]")
+	cmdCreate.Flag.StringVar(&what, "w", "", "What type of thing to create [deprecated: use t]")
 	cmdCreate.Run = runCreate
 }
 
@@ -65,10 +65,9 @@ func runCreate(cmd *Command, args []string) {
 			attrs = getVFDefinition()
 		}
 
-		result, err := force.CreateToolingRecord(what, attrs)
-		fmt.Println(result)
+		_, err := force.CreateToolingRecord(what, attrs)
 		if err != nil {
-			ErrorAndExit(err.Error())
+			ErrorAndExit(fmt.Sprintf("Failed to create %s %s: %s", itemName, what, err.Error()))
 		} else {
 			fmt.Printf("Created new %s named %s.\n", what, itemName)
 		}
