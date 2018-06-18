@@ -86,6 +86,7 @@ func runExport(cmd *Command, args []string) {
 		{Name: []string{"Community"}, Members: []string{"*"}},
 		{Name: []string{"CompactLayout"}, Members: []string{"*"}},
 		{Name: []string{"ConnectedApp"}, Members: []string{"*"}},
+		{Name: []string{"ContentAsset"}, Members: []string{"*"}},
 		{Name: []string{"ContractSettings"}, Members: []string{"*"}},
 		{Name: []string{"CustomApplication"}, Members: []string{"*"}},
 		{Name: []string{"CustomApplicationComponent"}, Members: []string{"*"}},

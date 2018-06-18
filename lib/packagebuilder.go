@@ -56,6 +56,7 @@ var metapaths = []metapath{
 	metapath{path: "communities", name: "Community"},
 	metapath{path: "components", name: "ApexComponent"},
 	metapath{path: "connectedApps", name: "ConnectedApp"},
+	metapath{path: "contentassets", name: "ContentAsset"},
 	metapath{path: "corsWhitelistOrigins", name: "CorsWhitelistOrigin"},
 	metapath{path: "customApplicationComponents", name: "CustomApplicationComponent"},
 	metapath{path: "customMetadata", name: "CustomMetadata"},
