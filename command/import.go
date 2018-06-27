@@ -146,17 +146,6 @@ func runImport(cmd *Command, args []string) {
 		ErrorAndExit(err.Error())
 	}
 
-	fmt.Printf("\nFailures - %d\n", len(problems))
-	if *verbose {
-		for _, problem := range problems {
-			if problem.FullName == "" {
-				fmt.Println(problem.Problem)
-			} else {
-				fmt.Printf("%s: %s\n", problem.FullName, problem.Problem)
-			}
-		}
-	}
-
 	fmt.Printf("\nSuccesses - %d\n", len(successes))
 	if *verbose {
 		for _, success := range successes {
@@ -172,25 +161,36 @@ func runImport(cmd *Command, args []string) {
 				fmt.Printf("%s\n\tstatus: %s\n\tid=%s\n", success.FullName, verb, success.Id)
 			}
 		}
-		fmt.Printf("\nTest Successes - %d\n", len(testSuccesses))
-		for _, failure := range testSuccesses {
-			fmt.Printf("  [PASS]  %s::%s\n", failure.Name, failure.MethodName)
-		}
-
-		fmt.Printf("\nTest Failures - %d\n", len(testFailures))
-		for _, failure := range testFailures {
-			fmt.Printf("\n  [FAIL]  %s::%s: %s\n", failure.Name, failure.MethodName, failure.Message)
-			fmt.Println(failure.StackTrace)
-		}
-
-		if len(codeCoverageWarnings) > 0 {
-			fmt.Printf("\nCode Coverage Warnings - %d\n", len(codeCoverageWarnings))
-			for _, warning := range codeCoverageWarnings {
-				fmt.Printf("\n %s: %s\n", warning.Name, warning.Message)
-			}
-		}
 
 	}
+
+	fmt.Printf("\nTest Successes - %d\n", len(testSuccesses))
+	for _, failure := range testSuccesses {
+		fmt.Printf("  [PASS]  %s::%s\n", failure.Name, failure.MethodName)
+	}
+
+	fmt.Printf("\nFailures - %d\n", len(problems))
+	for _, problem := range problems {
+		if problem.FullName == "" {
+			fmt.Println(problem.Problem)
+		} else {
+			fmt.Printf("\"%s\", line %d: %s %s\n", problem.FullName, problem.LineNumber, problem.ProblemType, problem.Problem)
+		}
+	}
+
+	fmt.Printf("\nTest Failures - %d\n", len(testFailures))
+	for _, failure := range testFailures {
+		fmt.Printf("\n  [FAIL]  %s::%s: %s\n", failure.Name, failure.MethodName, failure.Message)
+		fmt.Println(failure.StackTrace)
+	}
+
+	if len(codeCoverageWarnings) > 0 {
+		fmt.Printf("\nCode Coverage Warnings - %d\n", len(codeCoverageWarnings))
+		for _, warning := range codeCoverageWarnings {
+			fmt.Printf("\n %s: %s\n", warning.Name, warning.Message)
+		}
+	}
+
 	if len(problems) > 0 {
 		err = errors.New("Some components failed deployment")
 	} else if len(testFailures) > 0 {
