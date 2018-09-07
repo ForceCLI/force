@@ -105,6 +105,7 @@ func runExport(cmd *Command, args []string) {
 		{Name: []string{"EntitlementTemplate"}, Members: []string{"*"}},
 		{Name: []string{"ExternalDataSource"}, Members: []string{"*"}},
 		{Name: []string{"FieldSet"}, Members: []string{"*"}},
+		{Name: []string{"FlexiPage"}, Members: []string{"*"}},
 		{Name: []string{"Flow"}, Members: []string{"*"}},
 		{Name: []string{"FlowDefinition"}, Members: []string{"*"}},
 		{Name: []string{"Folder"}, Members: []string{"*"}},
