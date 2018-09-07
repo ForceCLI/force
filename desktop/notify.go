@@ -28,6 +28,7 @@ func SetShouldNotify(shouldNotify bool) {
 	// Set config
 	Config.Save("notifications", "shouldNotify", strconv.FormatBool(shouldNotify))
 }
+// the method operation
 
 func NotifySuccess(method string, success bool) {
 	if success {
