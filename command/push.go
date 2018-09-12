@@ -2,10 +2,12 @@ package command
 
 import (
 	"archive/zip"
+	"bufio"
 	"bytes"
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -22,7 +24,8 @@ var cmdPush = &Command{
 	Short: "Deploy artifact from a local directory",
 	Long: `
 Deploy artifact from a local directory 
-<metadata>: Accepts either actual directory name or Metadata type
+<metadata>: Accepts either actual directory name or Metadata type, 
+Command can read filenames from pipe (result of previously executed command followed by '|'), see examples
 
 Examples:
   force push -t StaticResource -n MyResource
@@ -30,6 +33,7 @@ Examples:
   force push -f metadata/classes/MyClass.cls
   force push -checkonly -test MyClass_Test metadata/classes/MyClass.cls
   force push -n MyApex -n MyObject__c
+  git diff HEAD~1 --name-only --diff-filter=ACM | force push -f -
 
 Deployment Options
   -rollbackonerror, -r    Indicates whether any failure causes a complete rollback
@@ -87,24 +91,34 @@ func runPush(cmd *Command, args []string) {
 	}
 	// Treat trailing args as file paths
 	resourcepaths = append(resourcepaths, args...)
+
+	if len(metadataType) == 0 && len(resourcepaths) < 1 {
+		ErrorAndExit("Nothing to push. Please spefify metadata-components you want to deploy")
+	}
+
 	if len(resourcepaths) > 0 {
+		if len(resourcepaths) == 1 && resourcepaths[0] == "-" {
+			resourcepaths = resourcepaths[1:]
+			reader := bufio.NewReader(os.Stdin)
+			for {
+				filePath, err := reader.ReadString('\n')
+				if err != nil && err == io.EOF {
+					break
+				}
+				resourcepaths = append(resourcepaths, strings.TrimSuffix(filePath, "\n"))
+			}
+			if len(resourcepaths) < 1 {
+				ErrorAndExit("Nothing to push. Please spefify metadata-components you want to deploy")
+			}
+		}
 		// It's not a package but does have a path. This could be a path to a file
 		// or to a folder. If it is a folder, we pickup the resources a different
 		// way than if it's a file.
 		validatePushByMetadataTypeCommand()
 		PushByPaths(resourcepaths, false, namePaths, deployOpts())
-	} else {
-		if len(metadataName) > 0 {
-			if len(metadataType) != 0 {
-				validatePushByMetadataTypeCommand()
-				pushByMetadataType()
-			} else {
-				ErrorAndExit("The -type (-t) parameter is required.")
-			}
-		} else {
-			validatePushByMetadataTypeCommand()
-			pushByMetadataType()
-		}
+	} else if len(metadataType) != 0 {
+		validatePushByMetadataTypeCommand()
+		pushByMetadataType()
 	}
 }
 
