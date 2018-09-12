@@ -16,8 +16,20 @@ Manage installed packages
 
 Usage:
 
-  force package install <namespace> <version> [password]
+  force package [options] install <namespace> <version> [password]
+
+Options:
+  -activate, -a     Keep the isActive state of any Remote Site Settings (RSS) and Content Security Policies (CSP) in package
 `,
+}
+
+var (
+	activateRSS bool
+)
+
+func init() {
+	cmdPackage.Flag.BoolVar(&activateRSS, "a", false, "keep the isActive state of any Remote Site Settings (RSS) and Content Security Policies (CSP) in package")
+	cmdPackage.Flag.BoolVar(&activateRSS, "activate", false, "keep the isActive state of any Remote Site Settings (RSS) and Content Security Policies (CSP) in package")
 }
 
 func runPackage(cmd *Command, args []string) {
@@ -44,7 +56,7 @@ func runInstallPackage(args []string) {
 	if len(args) > 2 {
 		password = args[2]
 	}
-	if err := force.Metadata.InstallPackage(packageNamespace, version, password); err != nil {
+	if err := force.Metadata.InstallPackageWithRSS(packageNamespace, version, password, activateRSS); err != nil {
 		ErrorAndExit(err.Error())
 	}
 	fmt.Println("Package instaled")

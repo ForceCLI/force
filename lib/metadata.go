@@ -1104,14 +1104,20 @@ func (fm *ForceMetadata) CreateBigObject(object BigObject) (err error) {
 }
 
 func (fm *ForceMetadata) InstallPackage(namespace, version, password string) (err error) {
+	activateRemoteSiteSettings := false
+	return fm.InstallPackageWithRSS(namespace, version, password, activateRemoteSiteSettings)
+}
+
+func (fm *ForceMetadata) InstallPackageWithRSS(namespace, version, password string, activateRemoteSiteSettings bool) (err error) {
 	soap := `
 		<metadata xsi:type="InstalledPackage" xmlns:cmd="http://soap.sforce.com/2006/04/metadata">
 			<fullName>%s</fullName>
 			<versionNumber>%s</versionNumber>
 			<password>%s</password>
+			<activateRSS>%t</activateRSS>
 		</metadata>
 	`
-	body, err := fm.soapExecute("create", fmt.Sprintf(soap, namespace, version, password))
+	body, err := fm.soapExecute("create", fmt.Sprintf(soap, namespace, version, password, activateRemoteSiteSettings))
 	if err != nil {
 		return err
 	}
