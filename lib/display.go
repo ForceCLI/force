@@ -82,17 +82,15 @@ func DisplayMetadataListJson(metadataObjects []DescribeMetadataObject) {
 }
 
 func DisplayBatchList(batchInfos []BatchInfo) {
-
 	for i, batchInfo := range batchInfos {
 		fmt.Printf("Batch %d", i)
-		DisplayBatchInfo(batchInfo)
+		DisplayBatchInfo(batchInfo, os.Stdout)
 		fmt.Println()
 	}
 }
 
-func DisplayBatchInfo(batchInfo BatchInfo) {
-
-	fmt.Printf(BatchInfoTemplate, batchInfo.Id, batchInfo.JobId, batchInfo.State,
+func DisplayBatchInfo(batchInfo BatchInfo, w io.Writer) {
+	fmt.Fprintf(w, BatchInfoTemplate, batchInfo.Id, batchInfo.JobId, batchInfo.State,
 		batchInfo.CreatedDate, batchInfo.SystemModstamp,
 		batchInfo.NumberRecordsProcessed)
 }

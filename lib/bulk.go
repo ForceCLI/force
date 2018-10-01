@@ -5,6 +5,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"net/http"
 )
 
 type BatchResult struct {
@@ -15,6 +16,7 @@ type BatchInfo struct {
 	Id                     string `xml:"id" json:"id"`
 	JobId                  string `xml:"jobId" json:"jobId"`
 	State                  string `xml:"state" json:"state"`
+	StateMessage           string `xml:"stateMessage" json:"stateMessage"`
 	CreatedDate            string `xml:"createdDate" json:"createdDate"`
 	SystemModstamp         string `xml:"systemModstamp" json:"systemModstamp"`
 	NumberRecordsProcessed int    `xml:"numberRecordsProcessed" json:"numberRecordsProcessed"`
@@ -48,14 +50,14 @@ type JobInfo struct {
 
 var InvalidBulkObject = errors.New("Object Does Not Support Bulk API")
 
-func (f *Force) CreateBulkJob(jobInfo JobInfo) (result JobInfo, err error) {
+func (f *Force) CreateBulkJob(jobInfo JobInfo, requestOptions ...func(*http.Request)) (result JobInfo, err error) {
 	xmlbody, err := xml.Marshal(jobInfo)
 	if err != nil {
 		err = fmt.Errorf("Could not create job request: %s", err.Error())
 		return
 	}
 	url := fmt.Sprintf("%s/services/async/%s/job", f.Credentials.InstanceUrl, apiVersionNumber)
-	body, err := f.httpPostXML(url, string(xmlbody))
+	body, err := f.httpPostXML(url, string(xmlbody), requestOptions...)
 	xml.Unmarshal(body, &result)
 	if len(result.Id) == 0 {
 		var fault LoginFault
@@ -97,18 +99,18 @@ func (f *Force) GetBulkJobs() (result []JobInfo, err error) {
 	return
 }
 
-func (f *Force) BulkQuery(soql string, jobId string, contettype string) (result BatchInfo, err error) {
+func (f *Force) BulkQuery(soql string, jobId string, contentType string, requestOptions ...func(*http.Request)) (result BatchInfo, err error) {
 	url := fmt.Sprintf("%s/services/async/%s/job/%s/batch", f.Credentials.InstanceUrl, apiVersionNumber, jobId)
 	var body []byte
 
-	if contettype == "CSV" {
-		body, err = f.httpPostCSV(url, soql)
+	if contentType == "CSV" {
+		body, err = f.httpPostCSV(url, soql, requestOptions...)
 		xml.Unmarshal(body, &result)
-	} else if contettype == "JSON" {
-		body, err = f.httpPostJSON(url, soql)
+	} else if contentType == "JSON" {
+		body, err = f.httpPostJSON(url, soql, requestOptions...)
 		json.Unmarshal(body, &result)
 	} else {
-		body, err = f.httpPostXML(url, soql)
+		body, err = f.httpPostXML(url, soql, requestOptions...)
 		xml.Unmarshal(body, &result)
 	}
 	if len(result.Id) == 0 {

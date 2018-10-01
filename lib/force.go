@@ -1383,29 +1383,29 @@ func (f *Force) httpGetRequest(url string, headers map[string]string) (body []by
 	return
 }
 
-func (f *Force) httpPostCSV(url string, data string) (body []byte, err error) {
-	body, err = f.httpPostWithContentType(url, data, "text/csv")
+func (f *Force) httpPostCSV(url string, data string, requestOptions ...func(*http.Request)) (body []byte, err error) {
+	body, err = f.httpPostWithContentType(url, data, "text/csv", requestOptions...)
 	if err == SessionExpiredError {
 		f.RefreshSessionOrExit()
-		return f.httpPostCSV(url, data)
+		return f.httpPostCSV(url, data, requestOptions...)
 	}
 	return
 }
 
-func (f *Force) httpPostXML(url string, data string) (body []byte, err error) {
-	body, err = f.httpPostWithContentType(url, data, "application/xml")
+func (f *Force) httpPostXML(url string, data string, requestOptions ...func(*http.Request)) (body []byte, err error) {
+	body, err = f.httpPostWithContentType(url, data, "application/xml", requestOptions...)
 	if err == SessionExpiredError {
 		f.RefreshSessionOrExit()
-		return f.httpPostXML(url, data)
+		return f.httpPostXML(url, data, requestOptions...)
 	}
 	return
 }
 
-func (f *Force) httpPostJSON(url string, data string) (body []byte, err error) {
-	body, err = f.httpPostWithContentType(url, data, "application/json")
+func (f *Force) httpPostJSON(url string, data string, requestOptions ...func(*http.Request)) (body []byte, err error) {
+	body, err = f.httpPostWithContentType(url, data, "application/json", requestOptions...)
 	if err == SessionExpiredError {
 		f.RefreshSessionOrExit()
-		return f.httpPostJSON(url, data)
+		return f.httpPostJSON(url, data, requestOptions...)
 	}
 	return
 }
@@ -1424,16 +1424,20 @@ func (f *Force) httpPatchWithContentType(url string, data string, contenttype st
 	return
 }
 
-func (f *Force) httpPostWithContentType(url string, data string, contenttype string) (body []byte, err error) {
-	body, err = f.httpPostPatchWithContentType(url, data, contenttype, "POST")
+func (f *Force) httpPostWithContentType(url string, data string, contenttype string, requestOptions ...func(*http.Request)) (body []byte, err error) {
+	body, err = f.httpPostPatchWithContentType(url, data, contenttype, "POST", requestOptions...)
 	return
 }
 
-func (f *Force) httpPostPatchWithContentType(url string, data string, contenttype string, method string) (body []byte, err error) {
+func (f *Force) httpPostPatchWithContentType(url string, data string, contenttype string, method string, requestOptions ...func(*http.Request)) (body []byte, err error) {
 	rbody := data
 	req, err := httpRequest(strings.ToUpper(method), url, bytes.NewReader([]byte(rbody)))
 	if err != nil {
 		return
+	}
+
+	for _, option := range requestOptions {
+		option(req)
 	}
 
 	req.Header.Add("X-SFDC-Session", f.Credentials.AccessToken)
