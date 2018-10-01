@@ -123,6 +123,7 @@ var (
 	externalId        string
 	concurrencyMode   string
 	pkChunkSize       int
+	pkChunkParent     string
 	waitForCompletion bool
 )
 var commandVersion = "old"
@@ -146,6 +147,7 @@ func init() {
 	cmdBulk.Flag.BoolVar(&waitForCompletion, "w", false, "Wait for job to complete")
 	cmdBulk.Flag.IntVar(&pkChunkSize, "chunk", 0, "PK chunk size")
 	cmdBulk.Flag.IntVar(&pkChunkSize, "p", 0, "PK chunk size")
+	cmdBulk.Flag.StringVar(&pkChunkParent, "parent", "", "PK chunk parent")
 	cmdBulk.Run = runBulk
 }
 
@@ -370,6 +372,11 @@ func doBulkQuery(objectType string, soql string, contenttype string, concurrency
 		if batchInfo.State == "Failed" {
 			fmt.Fprintf(os.Stderr, "Batch failed: %s\n", batchInfo.StateMessage)
 			os.Exit(1)
+		}
+		if batchInfo.NumberRecordsProcessed == 0 {
+			// With PK Chunking and Parent Object, there may be batches with a
+			// result set, but no records.  Skip these batches.
+			continue
 		}
 		results := getBulkQueryResults(jobInfo.Id, batchInfo.Id)
 		if len(results) == 0 {
@@ -632,9 +639,16 @@ func createBulkJob(objectType string, operation string, fileFormat string, exter
 	}
 
 	var options []func(*http.Request)
+	var pkChunkOptions []string
 	if pkChunkSize != 0 {
+		pkChunkOptions = append(pkChunkOptions, fmt.Sprintf("chunkSize=%d", pkChunkSize))
+	}
+	if pkChunkParent != "" {
+		pkChunkOptions = append(pkChunkOptions, fmt.Sprintf("parent=%s", pkChunkParent))
+	}
+	if len(pkChunkOptions) > 0 {
 		options = append(options, func(req *http.Request) {
-			req.Header.Add("Sforce-Enable-PKChunking", fmt.Sprintf("chunkSize=%d", pkChunkSize))
+			req.Header.Add("Sforce-Enable-PKChunking", strings.Join(pkChunkOptions, ";"))
 		})
 	}
 
