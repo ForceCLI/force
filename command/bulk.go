@@ -57,6 +57,7 @@ import (
 	"encoding/csv"
 	"encoding/xml"
 	"fmt"
+	"net/http"
 	"os"
 	"strings"
 	"time"
@@ -107,6 +108,7 @@ Examples using positional arguments - less flexible, arguments must be in the co
   force Bulk batch [job id] [batch id]
   force bulk batch retrieve [job id] [batch id]
   force bulk [-wait | -w] query Account [SOQL]
+  force bulk [-chunk | -p]=50000 query Account [SOQL]
   force bulk query retrieve [job id] [batch id]
 
 `,
@@ -120,6 +122,8 @@ var (
 	fileFormat        string
 	externalId        string
 	concurrencyMode   string
+	pkChunkSize       int
+	pkChunkParent     string
 	waitForCompletion bool
 )
 var commandVersion = "old"
@@ -141,6 +145,9 @@ func init() {
 	cmdBulk.Flag.StringVar(&concurrencyMode, "concurrencyMode", "Parallel", "Concurrency mode for bulk api inserts, updates, deletes and upserts.  Valid options are `Serial` and `Parallel` (default).")
 	cmdBulk.Flag.BoolVar(&waitForCompletion, "wait", false, "Wait for job to complete")
 	cmdBulk.Flag.BoolVar(&waitForCompletion, "w", false, "Wait for job to complete")
+	cmdBulk.Flag.IntVar(&pkChunkSize, "chunk", 0, "PK chunk size")
+	cmdBulk.Flag.IntVar(&pkChunkSize, "p", 0, "PK chunk size")
+	cmdBulk.Flag.StringVar(&pkChunkParent, "parent", "", "PK chunk parent")
 	cmdBulk.Run = runBulk
 }
 
@@ -177,7 +184,7 @@ func runBulkInfoCommand() {
 		if command == "retrieve" {
 			fmt.Println(string(getBulkQueryResults(jobId, batchId)))
 		} else /* batch or status */ {
-			DisplayBatchInfo(getBatchDetails(jobId, batchId))
+			DisplayBatchInfo(getBatchDetails(jobId, batchId), os.Stdout)
 		}
 	default:
 		ErrorAndExit("Unknown sub-command " + command + ".")
@@ -297,7 +304,7 @@ func setConcurrencyModeOrFileFormat(argument string) {
 	}
 }
 
-func doBulkQuery(objectType string, soql string, contenttype string, concurrencyMode string) {
+func startBulkQuery(objectType string, soql string, contenttype string, concurrencyMode string) (jobInfo JobInfo, batchId string) {
 	jobInfo, err := createBulkJob(objectType, "query", contenttype, "", concurrencyMode)
 	if err != nil {
 		ErrorAndExit(err.Error())
@@ -305,12 +312,34 @@ func doBulkQuery(objectType string, soql string, contenttype string, concurrency
 	force, _ := ActiveForce()
 
 	result, err := force.BulkQuery(soql, jobInfo.Id, contenttype)
-	batchId := result.Id
+	batchId = result.Id
 	if err != nil {
 		closeBulkJob(jobInfo.Id)
 		ErrorAndExit(err.Error())
 	}
+	// Wait for chunking to complete
+	if pkChunkSize > 0 {
+		for {
+			batchInfo, err := force.GetBatchInfo(jobInfo.Id, batchId)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Failed to get bulk batch status: %s\n", err.Error())
+				os.Exit(1)
+			}
+			DisplayBatchInfo(batchInfo, os.Stderr)
+			if batchInfo.State == "NotProcessed" {
+				// batches have been created
+				break
+			}
+			time.Sleep(2000 * time.Millisecond)
+		}
+	}
+
 	closeBulkJob(jobInfo.Id)
+	return
+}
+
+func doBulkQuery(objectType string, soql string, contenttype string, concurrencyMode string) {
+	jobInfo, batchId := startBulkQuery(objectType, soql, contenttype, concurrencyMode)
 	if !waitForCompletion {
 		fmt.Println("Query Submitted")
 		if commandVersion == "new" {
@@ -322,10 +351,11 @@ func doBulkQuery(objectType string, soql string, contenttype string, concurrency
 		}
 		return
 	}
+	force, _ := ActiveForce()
 	for {
 		status, err := force.GetJobInfo(jobInfo.Id)
 		if err != nil {
-			fmt.Println("Failed to get bulk job status: " + err.Error())
+			fmt.Fprintf(os.Stderr, "Failed to get bulk job status: %s\n", err.Error())
 			os.Exit(1)
 		}
 		DisplayJobInfo(status, os.Stderr)
@@ -334,22 +364,51 @@ func doBulkQuery(objectType string, soql string, contenttype string, concurrency
 		}
 		time.Sleep(2000 * time.Millisecond)
 	}
-	fmt.Println(string(getBulkQueryResults(jobInfo.Id, batchId)))
+	// Each result set in each batch will contain the header row.  Display
+	// the header only once, for the first result set of the first (non-empty)
+	// batch.
+	headerDisplayed := false
+	for _, batchInfo := range getBatches(jobInfo.Id) {
+		if batchInfo.State == "Failed" {
+			fmt.Fprintf(os.Stderr, "Batch failed: %s\n", batchInfo.StateMessage)
+			os.Exit(1)
+		}
+		if batchInfo.NumberRecordsProcessed == 0 {
+			// With PK Chunking and Parent Object, there may be batches with a
+			// result set, but no records.  Skip these batches.
+			continue
+		}
+		results := getBulkQueryResults(jobInfo.Id, batchInfo.Id)
+		if len(results) == 0 {
+			continue
+		}
+		if headerDisplayed && strings.ToUpper(contenttype) == "CSV" {
+			results = stripFirstLine(results)
+		}
+		headerDisplayed = true
+		fmt.Print(string(results))
+	}
+}
+
+func stripFirstLine(data []byte) []byte {
+	newLineAt := bytes.IndexByte(data, '\n')
+	var returnFrom int
+	if newLineAt < 0 {
+		returnFrom = len(data)
+	} else {
+		returnFrom = newLineAt + 1
+	}
+	return data[returnFrom:]
 }
 
 func getBulkQueryResults(jobId string, batchId string) (data []byte) {
 	resultIds := retrieveBulkQuery(jobId, batchId)
-	hasMultipleResultFiles := len(resultIds) > 1
 
-	for _, resultId := range resultIds {
-		//since this is going to stdOut, simply add header to separate "files"
-		//if it's all in the same file, don't print this separator.
-		if hasMultipleResultFiles {
-			resultHeader := fmt.Sprint("ResultId: ", resultId, "\n")
-			data = append(data[:], []byte(resultHeader)...)
-		}
-		//get next file, and append
+	for row, resultId := range resultIds {
 		var newData []byte = retrieveBulkQueryResults(jobId, batchId, resultId)
+		if row > 0 {
+			newData = stripFirstLine(newData)
+		}
 		data = append(data[:], newData...)
 	}
 
@@ -579,7 +638,21 @@ func createBulkJob(objectType string, operation string, fileFormat string, exter
 		job.ExternalIdFieldName = externalId
 	}
 
-	jobInfo, err = force.CreateBulkJob(job)
+	var options []func(*http.Request)
+	var pkChunkOptions []string
+	if pkChunkSize != 0 {
+		pkChunkOptions = append(pkChunkOptions, fmt.Sprintf("chunkSize=%d", pkChunkSize))
+	}
+	if pkChunkParent != "" {
+		pkChunkOptions = append(pkChunkOptions, fmt.Sprintf("parent=%s", pkChunkParent))
+	}
+	if len(pkChunkOptions) > 0 {
+		options = append(options, func(req *http.Request) {
+			req.Header.Add("Sforce-Enable-PKChunking", strings.Join(pkChunkOptions, ";"))
+		})
+	}
+
+	jobInfo, err = force.CreateBulkJob(job, options...)
 	return
 }
 

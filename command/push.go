@@ -2,6 +2,7 @@ package command
 
 import (
 	"archive/zip"
+	"bufio"
 	"bytes"
 	"encoding/xml"
 	"errors"
@@ -23,6 +24,7 @@ var cmdPush = &Command{
 	Long: `
 Deploy artifact from a local directory 
 <metadata>: Accepts either actual directory name or Metadata type
+File path can be specified as - to read from stdin; see examples
 
 Examples:
   force push -t StaticResource -n MyResource
@@ -30,6 +32,7 @@ Examples:
   force push -f metadata/classes/MyClass.cls
   force push -checkonly -test MyClass_Test metadata/classes/MyClass.cls
   force push -n MyApex -n MyObject__c
+  git diff HEAD^ --name-only --diff-filter=ACM | force push -f -
 
 Deployment Options
   -rollbackonerror, -r    Indicates whether any failure causes a complete rollback
@@ -87,6 +90,22 @@ func runPush(cmd *Command, args []string) {
 	}
 	// Treat trailing args as file paths
 	resourcepaths = append(resourcepaths, args...)
+
+	if len(resourcepaths) == 1 && resourcepaths[0] == "-" {
+		resourcepaths = make(metaName, 0)
+		scanner := bufio.NewScanner(os.Stdin)
+		for scanner.Scan() {
+			resourcepaths = append(resourcepaths, scanner.Text())
+		}
+		if err := scanner.Err(); err != nil {
+			ErrorAndExit("Error reading stdin")
+		}
+	}
+
+	if len(metadataType) == 0 && len(resourcepaths) == 0 {
+		ErrorAndExit("Nothing to push. Please specify metadata components to deploy.")
+	}
+
 	if len(resourcepaths) > 0 {
 		// It's not a package but does have a path. This could be a path to a file
 		// or to a folder. If it is a folder, we pickup the resources a different
