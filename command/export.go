@@ -63,6 +63,7 @@ func runExport(cmd *Command, args []string) {
 			stdObjects = append(stdObjects, name)
 		}
 	}
+	stdObjects = append(stdObjects, "Activity")
 	query := ForceMetadataQuery{
 		{Name: []string{"AccountSettings"}, Members: []string{"*"}},
 		{Name: []string{"ActivitiesSettings"}, Members: []string{"*"}},
