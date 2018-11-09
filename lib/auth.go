@@ -187,6 +187,9 @@ func GetAccountCredentials(accountName string) (creds ForceSession, err error) {
 	if creds.SessionOptions.ApiVersion != "" && creds.SessionOptions.ApiVersion != ApiVersionNumber() {
 		SetApiVersion(creds.SessionOptions.ApiVersion)
 	}
+	if creds.ForceEndpoint == EndpointCustom && CustomEndpoint == "" {
+		CustomEndpoint = creds.InstanceUrl
+	}
 	return
 }
 
