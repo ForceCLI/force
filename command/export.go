@@ -75,6 +75,7 @@ func runExport(cmd *Command, args []string) {
 		{Name: []string{"ApexTrigger"}, Members: []string{"*"}},
 		{Name: []string{"ApprovalProcess"}, Members: []string{"*"}},
 		{Name: []string{"AssignmentRules"}, Members: []string{"*"}},
+		{Name: []string{"Audience"}, Members: []string{"*"}},
 		{Name: []string{"AuraDefinitionBundle"}, Members: []string{"*"}},
 		{Name: []string{"AuthProvider"}, Members: []string{"*"}},
 		{Name: []string{"AutoResponseRules"}, Members: []string{"*"}},
