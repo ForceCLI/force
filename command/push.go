@@ -83,7 +83,17 @@ func init() {
 	cmdPush.Run = runPush
 }
 
+func replaceAuraComponentWithBundle(inputPathToFile string) string {
+	dirPart, filePart := filepath.Split(inputPathToFile)
+	dirPart = filepath.Dir(dirPart)
+	if strings.Contains(dirPart, "aura") && filepath.Ext(filePart) != "" && filepath.Base(filepath.Dir(dirPart)) == "aura" {
+		inputPathToFile = dirPart
+	}
+	return inputPathToFile
+}
+
 func runPush(cmd *Command, args []string) {
+
 	if strings.ToLower(metadataType) == "package" {
 		pushPackage()
 		return
@@ -110,6 +120,15 @@ func runPush(cmd *Command, args []string) {
 		// It's not a package but does have a path. This could be a path to a file
 		// or to a folder. If it is a folder, we pickup the resources a different
 		// way than if it's a file.
+
+		// Replace aura file reference with full bundle folder because only the
+		// main component can be deployed by itself.
+		resorucepathsToPush := make(metaName, 0)
+		for _, fsPath := range resourcepaths {
+			resorucepathsToPush = append(resorucepathsToPush, replaceAuraComponentWithBundle(fsPath))
+		}
+		resourcepaths = resorucepathsToPush
+
 		validatePushByMetadataTypeCommand()
 		PushByPaths(resourcepaths, false, namePaths, deployOpts())
 	} else {
