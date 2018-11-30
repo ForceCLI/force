@@ -45,6 +45,7 @@ var metapaths = []metapath{
 	metapath{path: "appMenus", name: "AppMenu"},
 	metapath{path: "approvalProcesses", name: "ApprovalProcess"},
 	metapath{path: "assignmentRules", name: "AssignmentRules"},
+	metapath{path: "audience", name: "Audience"},
 	metapath{path: "authproviders", name: "AuthProvider"},
 	metapath{path: "aura", name: "AuraDefinitionBundle", hasFolder: true, onlyFolder: true},
 	metapath{path: "autoResponseRules", name: "AutoResponseRules"},
