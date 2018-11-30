@@ -83,7 +83,17 @@ func init() {
 	cmdPush.Run = runPush
 }
 
+func checkIfAuraFileAndGetBundlePath(inputPathToFile string) string {
+	dirPart, filePart := filepath.Split(inputPathToFile)
+	dirPart = filepath.Dir(dirPart)
+	if strings.Contains(dirPart, "aura") && filepath.Ext(filePart) != "" && filepath.Base(filepath.Dir(dirPart)) == "aura" {
+		inputPathToFile = dirPart
+	}
+	return inputPathToFile
+}
+
 func runPush(cmd *Command, args []string) {
+
 	if strings.ToLower(metadataType) == "package" {
 		pushPackage()
 		return
@@ -95,7 +105,9 @@ func runPush(cmd *Command, args []string) {
 		resourcepaths = make(metaName, 0)
 		scanner := bufio.NewScanner(os.Stdin)
 		for scanner.Scan() {
-			resourcepaths = append(resourcepaths, scanner.Text())
+			inputPathToFile := scanner.Text()
+			inputPathToFile = checkIfAuraFileAndGetBundlePath(inputPathToFile) //replace aura file reference with full bundle folder
+			resourcepaths = append(resourcepaths, inputPathToFile)
 		}
 		if err := scanner.Err(); err != nil {
 			ErrorAndExit("Error reading stdin")
