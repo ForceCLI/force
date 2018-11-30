@@ -63,8 +63,6 @@ func ForceSaveLogin(creds ForceSession, output *os.File) (sessionName string, er
 	creds.SessionOptions.ApiVersion = ApiVersionNumber()
 
 	fmt.Fprintf(output, "Logged in as '%s' (API %s)\n", creds.UserInfo.UserName, ApiVersionNumber())
-	title := fmt.Sprintf("\033];%s\007", creds.UserInfo.UserName)
-	fmt.Fprintf(output, title)
 
 	if err = SaveLogin(creds); err != nil {
 		return
