@@ -105,9 +105,7 @@ func runPush(cmd *Command, args []string) {
 		resourcepaths = make(metaName, 0)
 		scanner := bufio.NewScanner(os.Stdin)
 		for scanner.Scan() {
-			inputPathToFile := scanner.Text()
-			inputPathToFile = checkIfAuraFileAndGetBundlePath(inputPathToFile) //replace aura file reference with full bundle folder
-			resourcepaths = append(resourcepaths, inputPathToFile)
+			resourcepaths = append(resourcepaths, scanner.Text())
 		}
 		if err := scanner.Err(); err != nil {
 			ErrorAndExit("Error reading stdin")
@@ -122,6 +120,14 @@ func runPush(cmd *Command, args []string) {
 		// It's not a package but does have a path. This could be a path to a file
 		// or to a folder. If it is a folder, we pickup the resources a different
 		// way than if it's a file.
+		
+		//replace aura file reference with full bundle folder
+		resorucepathsToPush := make(metaName, 0) 
+		for _, fsPath := range resourcepaths {
+			resorucepathsToPush = append(resorucepathsToPush, checkIfAuraFileAndGetBundlePath(fsPath)) 
+		}
+		resourcepaths = resorucepathsToPush
+
 		validatePushByMetadataTypeCommand()
 		PushByPaths(resourcepaths, false, namePaths, deployOpts())
 	} else {
