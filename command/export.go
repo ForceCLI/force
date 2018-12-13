@@ -148,6 +148,7 @@ func runExport(cmd *Command, args []string) {
 		"KnowledgeSettings",
 		"Layout",
 		"Letterhead",
+		"LightningComponentBundle",
 		"ListView",
 		"LiveAgentSettings",
 		"LiveChatAgentConfig",

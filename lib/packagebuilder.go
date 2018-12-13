@@ -86,6 +86,7 @@ var metapaths = []metapath{
 	metapath{path: "layouts", name: "Layout"},
 	metapath{path: "LeadConvertSettings", name: "LeadConvertSettings"},
 	metapath{path: "letterhead", name: "Letterhead"},
+	metapath{path: "lwc", name: "LightningComponentBundle", hasFolder: true, onlyFolder: true},
 	metapath{path: "matchingRules", name: "MatchingRules"},
 	metapath{path: "matchingRules", name: "MatchingRule"},
 	metapath{path: "namedCredentials", name: "NamedCredential"},
