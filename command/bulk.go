@@ -202,17 +202,38 @@ func runDBCommand(arg string) {
 		ErrorAndExit("Upsert commands must have ExternalId specified. -[externalId, e]")
 	}
 
+	var jobInfo JobInfo
+
 	switch command {
 	case "insert":
-		createBulkInsertJob(arg, objectType, fileFormat, concurrencyMode)
+		jobInfo = createBulkInsertJob(arg, objectType, fileFormat, concurrencyMode)
 	case "update":
-		createBulkUpdateJob(arg, objectType, fileFormat, concurrencyMode)
+		jobInfo = createBulkUpdateJob(arg, objectType, fileFormat, concurrencyMode)
 	case "delete":
-		createBulkDeleteJob(arg, objectType, fileFormat, concurrencyMode)
+		jobInfo = createBulkDeleteJob(arg, objectType, fileFormat, concurrencyMode)
 	case "upsert":
-		createBulkUpsertJob(arg, objectType, fileFormat, externalId, concurrencyMode)
+		jobInfo = createBulkUpsertJob(arg, objectType, fileFormat, externalId, concurrencyMode)
 	case "query":
-		doBulkQuery(objectType, arg, fileFormat, concurrencyMode)
+		jobInfo = doBulkQuery(objectType, arg, fileFormat, concurrencyMode)
+	}
+	if !waitForCompletion {
+		return
+	}
+	force, _ := ActiveForce()
+	for {
+		status, err := force.GetJobInfo(jobInfo.Id)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to get bulk job status: %s\n", err.Error())
+			os.Exit(1)
+		}
+		DisplayJobInfo(status, os.Stderr)
+		if status.NumberBatchesCompleted+status.NumberBatchesFailed == status.NumberBatchesTotal {
+			break
+		}
+		time.Sleep(2000 * time.Millisecond)
+	}
+	if command == "query" {
+		displayQueryResults(jobInfo)
 	}
 }
 
@@ -338,7 +359,7 @@ func startBulkQuery(objectType string, soql string, contenttype string, concurre
 	return
 }
 
-func doBulkQuery(objectType string, soql string, contenttype string, concurrencyMode string) {
+func doBulkQuery(objectType string, soql string, contenttype string, concurrencyMode string) (jobInfo JobInfo) {
 	jobInfo, batchId := startBulkQuery(objectType, soql, contenttype, concurrencyMode)
 	if !waitForCompletion {
 		fmt.Println("Query Submitted")
@@ -349,21 +370,11 @@ func doBulkQuery(objectType string, soql string, contenttype string, concurrency
 			fmt.Printf("To retrieve query status use\nforce bulk query status %s %s\n\n", jobInfo.Id, batchId)
 			fmt.Printf("To retrieve query data use\nforce bulk query retrieve %s %s\n\n", jobInfo.Id, batchId)
 		}
-		return
 	}
-	force, _ := ActiveForce()
-	for {
-		status, err := force.GetJobInfo(jobInfo.Id)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to get bulk job status: %s\n", err.Error())
-			os.Exit(1)
-		}
-		DisplayJobInfo(status, os.Stderr)
-		if status.NumberBatchesCompleted+status.NumberBatchesFailed == status.NumberBatchesTotal {
-			break
-		}
-		time.Sleep(2000 * time.Millisecond)
-	}
+	return
+}
+
+func displayQueryResults(jobInfo JobInfo) {
 	// Each result set in each batch will contain the header row.  Display
 	// the header only once, for the first result set of the first (non-empty)
 	// batch.
@@ -382,7 +393,7 @@ func doBulkQuery(objectType string, soql string, contenttype string, concurrency
 		if len(results) == 0 {
 			continue
 		}
-		if headerDisplayed && strings.ToUpper(contenttype) == "CSV" {
+		if headerDisplayed && strings.ToUpper(jobInfo.ContentType) == "CSV" {
 			results = stripFirstLine(results)
 		}
 		headerDisplayed = true
@@ -485,84 +496,84 @@ func getBatchDetails(jobId string, batchId string) (batchInfo BatchInfo) {
 	return
 }
 
-func createBulkInsertJob(csvFilePath string, objectType string, format string, concurrencyMode string) {
+func createBulkInsertJob(csvFilePath string, objectType string, format string, concurrencyMode string) (jobInfo JobInfo) {
 	jobInfo, err := createBulkJob(objectType, "insert", format, "", concurrencyMode)
 	if err != nil {
 		ErrorAndExit(err.Error())
-	} else {
-		batchInfo, err := addBatchToJob(csvFilePath, jobInfo)
-		if err != nil {
-			closeBulkJob(jobInfo.Id)
-			ErrorAndExit(err.Error())
+	}
+	batchInfo, err := addBatchToJob(csvFilePath, jobInfo)
+	closeBulkJob(jobInfo.Id)
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
+	if !waitForCompletion {
+		if commandVersion == "old" {
+			fmt.Printf("Job created ( %s ) - for job status use\n force bulk batch %s %s\n", jobInfo.Id, jobInfo.Id, batchInfo.Id)
 		} else {
-			closeBulkJob(jobInfo.Id)
-			if commandVersion == "old" {
-				fmt.Printf("Job created ( %s ) - for job status use\n force bulk batch %s %s\n", jobInfo.Id, jobInfo.Id, batchInfo.Id)
-			} else {
-				fmt.Printf("Job created ( %s ) - for job status use\n force bulk -c=batch -j=%s -b=%s\n", jobInfo.Id, jobInfo.Id, batchInfo.Id)
-			}
+			fmt.Printf("Job created ( %s ) - for job status use\n force bulk -c=batch -j=%s -b=%s\n", jobInfo.Id, jobInfo.Id, batchInfo.Id)
 		}
 	}
+	return
 }
 
-func createBulkUpdateJob(csvFilePath string, objectType string, format string, concurrencyMode string) {
+func createBulkUpdateJob(csvFilePath string, objectType string, format string, concurrencyMode string) (jobInfo JobInfo) {
 	jobInfo, err := createBulkJob(objectType, "update", format, "", concurrencyMode)
 	if err != nil {
 		ErrorAndExit(err.Error())
-	} else {
-		batchInfo, err := addBatchToJob(csvFilePath, jobInfo)
-		if err != nil {
-			closeBulkJob(jobInfo.Id)
-			ErrorAndExit(err.Error())
+	}
+	batchInfo, err := addBatchToJob(csvFilePath, jobInfo)
+	closeBulkJob(jobInfo.Id)
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
+	if !waitForCompletion {
+		if commandVersion == "old" {
+			fmt.Printf("Job created ( %s ) - for job status use\n force bulk batch %s %s\n", jobInfo.Id, jobInfo.Id, batchInfo.Id)
 		} else {
-			closeBulkJob(jobInfo.Id)
-			if commandVersion == "old" {
-				fmt.Printf("Job created ( %s ) - for job status use\n force bulk batch %s %s\n", jobInfo.Id, jobInfo.Id, batchInfo.Id)
-			} else {
-				fmt.Printf("Job created ( %s ) - for job status use\n force bulk -c=batch -j=%s -b=%s\n", jobInfo.Id, jobInfo.Id, batchInfo.Id)
-			}
+			fmt.Printf("Job created ( %s ) - for job status use\n force bulk -c=batch -j=%s -b=%s\n", jobInfo.Id, jobInfo.Id, batchInfo.Id)
 		}
 	}
+	return
 }
 
-func createBulkDeleteJob(csvFilePath string, objectType string, format string, concurrencyMode string) {
+func createBulkDeleteJob(csvFilePath string, objectType string, format string, concurrencyMode string) (jobInfo JobInfo) {
 	jobInfo, err := createBulkJob(objectType, "delete", format, "", concurrencyMode)
 	if err != nil {
 		ErrorAndExit(err.Error())
-	} else {
-		batchInfo, err := addBatchToJob(csvFilePath, jobInfo)
-		if err != nil {
-			closeBulkJob(jobInfo.Id)
-			ErrorAndExit(err.Error())
+	}
+	batchInfo, err := addBatchToJob(csvFilePath, jobInfo)
+	closeBulkJob(jobInfo.Id)
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
+	if !waitForCompletion {
+		if commandVersion == "old" {
+			fmt.Printf("Job created ( %s ) - for job status use\n force bulk batch %s %s\n", jobInfo.Id, jobInfo.Id, batchInfo.Id)
 		} else {
-			closeBulkJob(jobInfo.Id)
-			if commandVersion == "old" {
-				fmt.Printf("Job created ( %s ) - for job status use\n force bulk batch %s %s\n", jobInfo.Id, jobInfo.Id, batchInfo.Id)
-			} else {
-				fmt.Printf("Job created ( %s ) - for job status use\n force bulk -c=batch -j=%s -b=%s\n", jobInfo.Id, jobInfo.Id, batchInfo.Id)
-			}
+			fmt.Printf("Job created ( %s ) - for job status use\n force bulk -c=batch -j=%s -b=%s\n", jobInfo.Id, jobInfo.Id, batchInfo.Id)
 		}
 	}
+	return
 }
 
-func createBulkUpsertJob(csvFilePath string, objectType string, format string, externalId string, concurrencyMode string) {
+func createBulkUpsertJob(csvFilePath string, objectType string, format string, externalId string, concurrencyMode string) (jobInfo JobInfo) {
 	jobInfo, err := createBulkJob(objectType, "upsert", format, externalId, concurrencyMode)
 	if err != nil {
 		ErrorAndExit(err.Error())
-	} else {
-		batchInfo, err := addBatchToJob(csvFilePath, jobInfo)
-		if err != nil {
-			closeBulkJob(jobInfo.Id)
-			ErrorAndExit(err.Error())
+	}
+	batchInfo, err := addBatchToJob(csvFilePath, jobInfo)
+	closeBulkJob(jobInfo.Id)
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
+	if !waitForCompletion {
+		if commandVersion == "old" {
+			fmt.Printf("Job created ( %s ) - for job status use\n force bulk batch %s %s\n", jobInfo.Id, jobInfo.Id, batchInfo.Id)
 		} else {
-			closeBulkJob(jobInfo.Id)
-			if commandVersion == "old" {
-				fmt.Printf("Job created ( %s ) - for job status use\n force bulk batch %s %s\n", jobInfo.Id, jobInfo.Id, batchInfo.Id)
-			} else {
-				fmt.Printf("Job created ( %s ) - for job status use\n force bulk -c=batch -j=%s -b=%s\n", jobInfo.Id, jobInfo.Id, batchInfo.Id)
-			}
+			fmt.Printf("Job created ( %s ) - for job status use\n force bulk -c=batch -j=%s -b=%s\n", jobInfo.Id, jobInfo.Id, batchInfo.Id)
 		}
 	}
+	return
 }
 
 func addBatchToJob(csvFilePath string, job JobInfo) (result BatchInfo, err error) {
