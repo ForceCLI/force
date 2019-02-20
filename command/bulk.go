@@ -74,15 +74,16 @@ var cmdBulk = &Command{
 Load csv file use Bulk API
 
 Commands:
-  insert   upload a .csv file to insert records
-  update   upload a .csv file to update records
-  upsert   upload a .csv file to upsert records
-  delete   upload a .csv file to delete records
-  query    run a SOQL statement to generate a .csv file on the server
-  retrieve retrieve a query generated .csv file from the server
-  job      get information about a job based on job Id
-  batch    get detailed information about a batch within a job based on job Id and batch Id
-  batches  get a list of batches associated with a job based on job Id
+  insert      upload a .csv file to insert records
+  update      upload a .csv file to update records
+  upsert      upload a .csv file to upsert records
+  delete      upload a .csv file to delete records
+  hardDelete  upload a .csv file to delete records permanently
+  query       run a SOQL statement to generate a .csv file on the server
+  retrieve    retrieve a query generated .csv file from the server
+  job         get information about a job based on job Id
+  batch       get detailed information about a batch within a job based on job Id and batch Id
+  batches     get a list of batches associated with a job based on job Id
 
 Examples using flags - more flexible, flags can be in any order with arguments after all flags.
 
@@ -159,7 +160,7 @@ func runBulk2(cmd *Command, args []string) {
 	commandVersion = "new"
 	command = strings.ToLower(command)
 	switch command {
-	case "insert", "update", "delete", "upsert", "query":
+	case "insert", "update", "delete", "harddelete", "upsert", "query":
 		runDBCommand(args[0])
 	case "job", "retrieve", "batch", "batches":
 		runBulkInfoCommand()
@@ -211,6 +212,8 @@ func runDBCommand(arg string) {
 		jobInfo = createBulkUpdateJob(arg, objectType, fileFormat, concurrencyMode)
 	case "delete":
 		jobInfo = createBulkDeleteJob(arg, objectType, fileFormat, concurrencyMode)
+	case "harddelete":
+		jobInfo = createBulkHardDeleteJob(arg, objectType, fileFormat, concurrencyMode)
 	case "upsert":
 		jobInfo = createBulkUpsertJob(arg, objectType, fileFormat, externalId, concurrencyMode)
 	case "query":
@@ -252,7 +255,7 @@ func runBulk(cmd *Command, args []string) {
 	switch command {
 	case "query":
 		handleQuery(args)
-	case "insert", "update", "upsert", "delete":
+	case "insert", "update", "upsert", "delete", "harddelete":
 		handleDML(args)
 	case "batch", "batches", "job":
 		handleInfo(args)
@@ -538,6 +541,26 @@ func createBulkUpdateJob(csvFilePath string, objectType string, format string, c
 
 func createBulkDeleteJob(csvFilePath string, objectType string, format string, concurrencyMode string) (jobInfo JobInfo) {
 	jobInfo, err := createBulkJob(objectType, "delete", format, "", concurrencyMode)
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
+	batchInfo, err := addBatchToJob(csvFilePath, jobInfo)
+	closeBulkJob(jobInfo.Id)
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
+	if !waitForCompletion {
+		if commandVersion == "old" {
+			fmt.Printf("Job created ( %s ) - for job status use\n force bulk batch %s %s\n", jobInfo.Id, jobInfo.Id, batchInfo.Id)
+		} else {
+			fmt.Printf("Job created ( %s ) - for job status use\n force bulk -c=batch -j=%s -b=%s\n", jobInfo.Id, jobInfo.Id, batchInfo.Id)
+		}
+	}
+	return
+}
+
+func createBulkHardDeleteJob(csvFilePath string, objectType string, format string, concurrencyMode string) (jobInfo JobInfo) {
+	jobInfo, err := createBulkJob(objectType, "hardDelete", format, "", concurrencyMode)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
