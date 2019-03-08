@@ -196,7 +196,7 @@ func runImport(cmd *Command, args []string) {
 	} else if len(testFailures) > 0 {
 		err = errors.New("Some tests failed")
 	} else if !result.Success {
-		err = errors.New(fmt.Sprintf("Status: %s", result.Status))
+		err = errors.New(fmt.Sprintf("Status: %s, Status Code: %s, Error Message: %s", result.Status, result.ErrorStatusCode, result.ErrorMessage))
 	}
 	if err != nil {
 		ErrorAndExit(err.Error())

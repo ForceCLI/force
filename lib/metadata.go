@@ -157,6 +157,8 @@ type ForceCheckDeploymentStatusResult struct {
 	Details                  ComponentDetails `xml:"details"`
 	Done                     bool             `xml:"done"`
 	Id                       string           `xml:"id"`
+	ErrorMessage             string           `xml:"errorMessage"`
+	ErrorStatusCode          string           `xml:"errorStatusCode"`
 	NumberComponentErrors    int              `xml:"numberComponentErrors"`
 	NumberComponentsDeployed int              `xml:"numberComponentsDeployed"`
 	NumberComponentsTotal    int              `xml:"numberComponentsTotal"`
