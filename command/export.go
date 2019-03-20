@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/ForceCLI/force/config"
@@ -30,13 +31,27 @@ Examples:
 `,
 }
 
+type metadataList []string
+
+func (i *metadataList) String() string {
+	return fmt.Sprint(*i)
+}
+
+func (i *metadataList) Set(value string) error {
+	*i = append(*i, value)
+	return nil
+}
+
 var (
-	showWarnings bool
+	showWarnings         bool
+	excludeMetadataNames metadataList
 )
 
 func init() {
 	cmdExport.Flag.BoolVar(&showWarnings, "w", false, "show warnings")
 	cmdExport.Flag.BoolVar(&showWarnings, "warnings", false, "show warnings")
+	cmdExport.Flag.Var(&excludeMetadataNames, "x", "exclude metadata type")
+	cmdExport.Flag.Var(&excludeMetadataNames, "exclude", "exclude metadata type")
 }
 
 func runExport(cmd *Command, args []string) {
@@ -55,106 +70,120 @@ func runExport(cmd *Command, args []string) {
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
-	stdObjects := make([]string, 1, len(sobjects)+1)
-	stdObjects[0] = "*"
-	for _, sobject := range sobjects {
-		name := sobject["name"].(string)
-		if !sobject["custom"].(bool) && !strings.HasSuffix(name, "__Tag") && !strings.HasSuffix(name, "__History") && !strings.HasSuffix(name, "__Share") {
-			stdObjects = append(stdObjects, name)
+	query := make(ForceMetadataQuery, 0)
+	customObject := "CustomObject"
+
+	sort.Strings(excludeMetadataNames)
+
+	if !isExcluded(customObject) {
+		stdObjects := make([]string, 1, len(sobjects)+1)
+		stdObjects[0] = "*"
+		for _, sobject := range sobjects {
+			name := sobject["name"].(string)
+			if !sobject["custom"].(bool) && !strings.HasSuffix(name, "__Tag") && !strings.HasSuffix(name, "__History") && !strings.HasSuffix(name, "__Share") {
+				stdObjects = append(stdObjects, name)
+			}
 		}
+		stdObjects = append(stdObjects, "Activity")
+
+		query = append(query, ForceMetadataQueryElement{Name: []string{customObject}, Members: stdObjects})
 	}
-	stdObjects = append(stdObjects, "Activity")
-	query := ForceMetadataQuery{
-		{Name: []string{"AccountSettings"}, Members: []string{"*"}},
-		{Name: []string{"ActivitiesSettings"}, Members: []string{"*"}},
-		{Name: []string{"AddressSettings"}, Members: []string{"*"}},
-		{Name: []string{"AnalyticSnapshot"}, Members: []string{"*"}},
-		{Name: []string{"ApexClass"}, Members: []string{"*"}},
-		{Name: []string{"ApexComponent"}, Members: []string{"*"}},
-		{Name: []string{"ApexPage"}, Members: []string{"*"}},
-		{Name: []string{"ApexTrigger"}, Members: []string{"*"}},
-		{Name: []string{"ApprovalProcess"}, Members: []string{"*"}},
-		{Name: []string{"AssignmentRules"}, Members: []string{"*"}},
-		{Name: []string{"Audience"}, Members: []string{"*"}},
-		{Name: []string{"AuraDefinitionBundle"}, Members: []string{"*"}},
-		{Name: []string{"AuthProvider"}, Members: []string{"*"}},
-		{Name: []string{"AutoResponseRules"}, Members: []string{"*"}},
-		{Name: []string{"BusinessHoursSettings"}, Members: []string{"*"}},
-		{Name: []string{"BusinessProcess"}, Members: []string{"*"}},
-		{Name: []string{"CallCenter"}, Members: []string{"*"}},
-		{Name: []string{"CaseSettings"}, Members: []string{"*"}},
-		{Name: []string{"ChatterAnswersSettings"}, Members: []string{"*"}},
-		{Name: []string{"CompanySettings"}, Members: []string{"*"}},
-		{Name: []string{"Community"}, Members: []string{"*"}},
-		{Name: []string{"CompactLayout"}, Members: []string{"*"}},
-		{Name: []string{"ConnectedApp"}, Members: []string{"*"}},
-		{Name: []string{"ContentAsset"}, Members: []string{"*"}},
-		{Name: []string{"ContractSettings"}, Members: []string{"*"}},
-		{Name: []string{"CustomApplication"}, Members: []string{"*"}},
-		{Name: []string{"CustomApplicationComponent"}, Members: []string{"*"}},
-		{Name: []string{"CustomField"}, Members: []string{"*"}},
-		{Name: []string{"CustomLabels"}, Members: []string{"*"}},
-		{Name: []string{"CustomMetadata"}, Members: []string{"*"}},
-		{Name: []string{"CustomObject"}, Members: stdObjects},
-		{Name: []string{"CustomObjectTranslation"}, Members: []string{"*"}},
-		{Name: []string{"CustomPageWebLink"}, Members: []string{"*"}},
-		{Name: []string{"CustomPermission"}, Members: []string{"*"}},
-		{Name: []string{"CustomSite"}, Members: []string{"*"}},
-		{Name: []string{"CustomTab"}, Members: []string{"*"}},
-		{Name: []string{"DataCategoryGroup"}, Members: []string{"*"}},
-		{Name: []string{"DuplicateRule"}, Members: []string{"*"}},
-		{Name: []string{"EntitlementProcess"}, Members: []string{"*"}},
-		{Name: []string{"EntitlementSettings"}, Members: []string{"*"}},
-		{Name: []string{"EntitlementTemplate"}, Members: []string{"*"}},
-		{Name: []string{"ExternalDataSource"}, Members: []string{"*"}},
-		{Name: []string{"FieldSet"}, Members: []string{"*"}},
-		{Name: []string{"FlexiPage"}, Members: []string{"*"}},
-		{Name: []string{"Flow"}, Members: []string{"*"}},
-		{Name: []string{"FlowDefinition"}, Members: []string{"*"}},
-		{Name: []string{"Folder"}, Members: []string{"*"}},
-		{Name: []string{"ForecastingSettings"}, Members: []string{"*"}},
-		{Name: []string{"Group"}, Members: []string{"*"}},
-		{Name: []string{"HomePageComponent"}, Members: []string{"*"}},
-		{Name: []string{"HomePageLayout"}, Members: []string{"*"}},
-		{Name: []string{"IdeasSettings"}, Members: []string{"*"}},
-		{Name: []string{"KnowledgeSettings"}, Members: []string{"*"}},
-		{Name: []string{"Layout"}, Members: []string{"*"}},
-		{Name: []string{"Letterhead"}, Members: []string{"*"}},
-		{Name: []string{"ListView"}, Members: []string{"*"}},
-		{Name: []string{"LiveAgentSettings"}, Members: []string{"*"}},
-		{Name: []string{"LiveChatAgentConfig"}, Members: []string{"*"}},
-		{Name: []string{"LiveChatButton"}, Members: []string{"*"}},
-		{Name: []string{"LiveChatDeployment"}, Members: []string{"*"}},
-		{Name: []string{"MatchingRules"}, Members: []string{"*"}},
-		{Name: []string{"MilestoneType"}, Members: []string{"*"}},
-		{Name: []string{"MobileSettings"}, Members: []string{"*"}},
-		{Name: []string{"NamedFilter"}, Members: []string{"*"}},
-		{Name: []string{"Network"}, Members: []string{"*"}},
-		{Name: []string{"OpportunitySettings"}, Members: []string{"*"}},
-		{Name: []string{"PermissionSet"}, Members: []string{"*"}},
-		{Name: []string{"Portal"}, Members: []string{"*"}},
-		{Name: []string{"PostTemplate"}, Members: []string{"*"}},
-		{Name: []string{"ProductSettings"}, Members: []string{"*"}},
-		{Name: []string{"Profile"}, Members: []string{"*"}},
-		{Name: []string{"ProfileSessionSetting"}, Members: []string{"*"}},
-		{Name: []string{"Queue"}, Members: []string{"*"}},
-		{Name: []string{"QuickAction"}, Members: []string{"*"}},
-		{Name: []string{"QuoteSettings"}, Members: []string{"*"}},
-		{Name: []string{"RecordType"}, Members: []string{"*"}},
-		{Name: []string{"RemoteSiteSetting"}, Members: []string{"*"}},
-		{Name: []string{"ReportType"}, Members: []string{"*"}},
-		{Name: []string{"Role"}, Members: []string{"*"}},
-		{Name: []string{"SamlSsoConfig"}, Members: []string{"*"}},
-		{Name: []string{"Scontrol"}, Members: []string{"*"}},
-		{Name: []string{"SecuritySettings"}, Members: []string{"*"}},
-		{Name: []string{"SharingReason"}, Members: []string{"*"}},
-		{Name: []string{"SharingRules"}, Members: []string{"*"}},
-		{Name: []string{"Skill"}, Members: []string{"*"}},
-		{Name: []string{"StaticResource"}, Members: []string{"*"}},
-		{Name: []string{"Territory"}, Members: []string{"*"}},
-		{Name: []string{"Translations"}, Members: []string{"*"}},
-		{Name: []string{"ValidationRule"}, Members: []string{"*"}},
-		{Name: []string{"Workflow"}, Members: []string{"*"}},
+
+	metadataNames := []string{"AccountSettings",
+		"ActivitiesSettings",
+		"AddressSettings",
+		"AnalyticSnapshot",
+		"ApexClass",
+		"ApexComponent",
+		"ApexPage",
+		"ApexTrigger",
+		"ApprovalProcess",
+		"AssignmentRules",
+		"Audience",
+		"AuraDefinitionBundle",
+		"AuthProvider",
+		"AutoResponseRules",
+		"BusinessHoursSettings",
+		"BusinessProcess",
+		"CallCenter",
+		"CaseSettings",
+		"ChatterAnswersSettings",
+		"CompanySettings",
+		"Community",
+		"CompactLayout",
+		"ConnectedApp",
+		"ContentAsset",
+		"ContractSettings",
+		"CustomApplication",
+		"CustomApplicationComponent",
+		"CustomField",
+		"CustomLabels",
+		"CustomMetadata",
+		"CustomObjectTranslation",
+		"CustomPageWebLink",
+		"CustomPermission",
+		"CustomSite",
+		"CustomTab",
+		"DataCategoryGroup",
+		"DuplicateRule",
+		"EntitlementProcess",
+		"EntitlementSettings",
+		"EntitlementTemplate",
+		"ExternalDataSource",
+		"FieldSet",
+		"FlexiPage",
+		"Flow",
+		"FlowDefinition",
+		"Folder",
+		"ForecastingSettings",
+		"Group",
+		"HomePageComponent",
+		"HomePageLayout",
+		"IdeasSettings",
+		"KnowledgeSettings",
+		"Layout",
+		"Letterhead",
+		"ListView",
+		"LiveAgentSettings",
+		"LiveChatAgentConfig",
+		"LiveChatButton",
+		"LiveChatDeployment",
+		"MatchingRules",
+		"MilestoneType",
+		"MobileSettings",
+		"NamedFilter",
+		"Network",
+		"OpportunitySettings",
+		"PermissionSet",
+		"Portal",
+		"PostTemplate",
+		"ProductSettings",
+		"Profile",
+		"ProfileSessionSetting",
+		"Queue",
+		"QuickAction",
+		"QuoteSettings",
+		"RecordType",
+		"RemoteSiteSetting",
+		"ReportType",
+		"Role",
+		"SamlSsoConfig",
+		"Scontrol",
+		"SecuritySettings",
+		"SharingReason",
+		"SharingRules",
+		"Skill",
+		"StaticResource",
+		"Territory",
+		"Translations",
+		"ValidationRule",
+		"Workflow",
+	}
+
+	for _, name := range metadataNames {
+		if !isExcluded(name) {
+			query = append(query, ForceMetadataQueryElement{Name: []string{name}, Members: []string{"*"}})
+		}
 	}
 
 	folders, err := force.GetAllFolders()
@@ -171,7 +200,10 @@ func runExport(cmd *Command, args []string) {
 			err = fmt.Errorf("Could not get metadata in folders: %s", err.Error())
 			ErrorAndExit(err.Error())
 		}
-		query = append(query, ForceMetadataQueryElement{Name: []string{string(foldersType)}, Members: members})
+		
+		if !isExcluded(string(foldersType)) {
+			query = append(query, ForceMetadataQueryElement{Name: []string{string(foldersType)}, Members: members})
+		}
 	}
 
 	if root == "" {
@@ -181,6 +213,7 @@ func runExport(cmd *Command, args []string) {
 			ErrorAndExit(err.Error())
 		}
 	}
+
 	files, problems, err := force.Metadata.Retrieve(query)
 	if err != nil {
 		fmt.Printf("Encountered and error with retrieve...\n")
@@ -202,4 +235,10 @@ func runExport(cmd *Command, args []string) {
 		}
 	}
 	fmt.Printf("Exported to %s\n", root)
+}
+
+func isExcluded(name string) bool {
+	index := sort.SearchStrings(excludeMetadataNames, name)
+
+	return index < len(excludeMetadataNames) && excludeMetadataNames[index] == name
 }
