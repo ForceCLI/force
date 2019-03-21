@@ -22,12 +22,15 @@ Export metadata to a local directory
 
 Export Options
   -w, -warnings  # Display warnings about metadata that cannot be retrieved
+  -x, -exclude   # Exclude given metadata type
 
 Examples:
 
   force export
 
   force export org/schema
+
+  force export -x ApexClass -x CustomObject
 `,
 }
 
@@ -200,7 +203,7 @@ func runExport(cmd *Command, args []string) {
 			err = fmt.Errorf("Could not get metadata in folders: %s", err.Error())
 			ErrorAndExit(err.Error())
 		}
-		
+
 		if !isExcluded(string(foldersType)) {
 			query = append(query, ForceMetadataQueryElement{Name: []string{string(foldersType)}, Members: members})
 		}
