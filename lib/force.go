@@ -84,8 +84,8 @@ type ForceSession struct {
 }
 
 type LoginFault struct {
-	ExceptionCode    string `xml:"exceptionCode"`
-	ExceptionMessage string `xml:"exceptionMessage"`
+	ExceptionCode    string `xml:"exceptionCode" json:"exceptionCode"`
+	ExceptionMessage string `xml:"exceptionMessage" json:"exceptionCode"`
 }
 
 type SoapFault struct {
@@ -1230,7 +1230,7 @@ func (f *Force) GetAbsolute(url string) (result string, err error) {
 	headers := map[string]string{
 		"Authorization": fmt.Sprintf("Bearer %s", f.Credentials.AccessToken),
 	}
-	body, err := f.httpGetRequest(qualifiedUrl, headers)
+	body, _, err := f.httpGetRequest(qualifiedUrl, headers)
 	if err == SessionExpiredError {
 		f.RefreshSessionOrExit()
 		return f.GetREST(url)
@@ -1305,7 +1305,7 @@ func (f *Force) httpGet(url string) (body []byte, err error) {
 	headers := map[string]string{
 		"Authorization": fmt.Sprintf("Bearer %s", f.Credentials.AccessToken),
 	}
-	body, err = f.httpGetRequest(url, headers)
+	body, _, err = f.httpGetRequest(url, headers)
 	if err == SessionExpiredError {
 		f.RefreshSessionOrExit()
 		return f.httpGet(url)
@@ -1313,12 +1313,12 @@ func (f *Force) httpGet(url string) (body []byte, err error) {
 	return
 }
 
-func (f *Force) httpGetBulk(url string) (body []byte, err error) {
+func (f *Force) httpGetBulk(url string) (body []byte, contentType string, err error) {
 	headers := map[string]string{
 		"X-SFDC-Session": fmt.Sprintf("Bearer %s", f.Credentials.AccessToken),
 		"Content-Type":   "application/xml",
 	}
-	body, err = f.httpGetRequest(url, headers)
+	body, contentType, err = f.httpGetRequest(url, headers)
 	if err == SessionExpiredError {
 		f.RefreshSessionOrExit()
 		return f.httpGetBulk(url)
@@ -1331,7 +1331,7 @@ func (f *Force) httpGetBulkJSON(url string) (body []byte, err error) {
 		"X-SFDC-Session": fmt.Sprintf("Bearer %s", f.Credentials.AccessToken),
 		"Content-Type":   "application/json",
 	}
-	body, err = f.httpGetRequest(url, headers)
+	body, _, err = f.httpGetRequest(url, headers)
 	if err == SessionExpiredError {
 		f.RefreshSessionOrExit()
 		return f.httpGetBulkJSON(url)
@@ -1339,7 +1339,7 @@ func (f *Force) httpGetBulkJSON(url string) (body []byte, err error) {
 	return
 }
 
-func (f *Force) httpGetRequest(url string, headers map[string]string) (body []byte, err error) {
+func (f *Force) httpGetRequest(url string, headers map[string]string) (body []byte, contentType string, err error) {
 	req, err := httpRequest("GET", url, nil)
 	if err != nil {
 		return
@@ -1361,15 +1361,20 @@ func (f *Force) httpGetRequest(url string, headers map[string]string) (body []by
 		return
 	}
 
-	if res.StatusCode/100 != 2 {
-		contentType := res.Header.Get("Content-Type")
-		if strings.HasPrefix(contentType, "application/xml") {
+	contentType = res.Header.Get("Content-Type")
+	if strings.HasPrefix(contentType, "application/xml") {
+		contentType = "XML"
+		if res.StatusCode/100 != 2 {
 			var fault LoginFault
 			xml.Unmarshal(body, &fault)
 			if fault.ExceptionCode == "InvalidSessionId" {
 				err = SessionExpiredError
 			}
-		} else {
+		}
+
+	} else {
+		contentType = "JSON"
+		if res.StatusCode/100 != 2 {
 			var messages []ForceError
 			json.Unmarshal(body, &messages)
 			if len(messages) > 0 {
@@ -1378,8 +1383,8 @@ func (f *Force) httpGetRequest(url string, headers map[string]string) (body []by
 				err = errors.New(string(body))
 			}
 		}
-		return
 	}
+
 	return
 }
 
