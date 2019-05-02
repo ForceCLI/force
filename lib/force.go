@@ -1326,6 +1326,19 @@ func (f *Force) httpGetBulk(url string) (body []byte, contentType string, err er
 	return
 }
 
+func (f *Force) httpGetBulkAndSend(url string, results chan<- BatchResultChunk) (err error) {
+	headers := map[string]string{
+		"X-SFDC-Session": fmt.Sprintf("Bearer %s", f.Credentials.AccessToken),
+		"Content-Type":   "application/xml",
+	}
+	err = f.httpGetRequestAndSend(url, headers, results)
+	if err == SessionExpiredError {
+		f.RefreshSessionOrExit()
+		return f.httpGetBulkAndSend(url, results)
+	}
+	return
+}
+
 func (f *Force) httpGetBulkJSON(url string) (body []byte, err error) {
 	headers := map[string]string{
 		"X-SFDC-Session": fmt.Sprintf("Bearer %s", f.Credentials.AccessToken),
@@ -1335,6 +1348,19 @@ func (f *Force) httpGetBulkJSON(url string) (body []byte, err error) {
 	if err == SessionExpiredError {
 		f.RefreshSessionOrExit()
 		return f.httpGetBulkJSON(url)
+	}
+	return
+}
+
+func (f *Force) httpGetBulkJSONAndSend(url string, results chan<- BatchResultChunk) (err error) {
+	headers := map[string]string{
+		"X-SFDC-Session": fmt.Sprintf("Bearer %s", f.Credentials.AccessToken),
+		"Content-Type":   "application/json",
+	}
+	err = f.httpGetRequestAndSend(url, headers, results)
+	if err == SessionExpiredError {
+		f.RefreshSessionOrExit()
+		return f.httpGetBulkJSONAndSend(url, results)
 	}
 	return
 }
@@ -1386,6 +1412,70 @@ func (f *Force) httpGetRequest(url string, headers map[string]string) (body []by
 	}
 
 	return
+}
+
+func (f *Force) httpGetRequestAndSend(url string, headers map[string]string, results chan<- BatchResultChunk) (err error) {
+	req, err := httpRequest("GET", url, nil)
+	if err != nil {
+		return err
+	}
+	for headerName, headerValue := range headers {
+		req.Header.Add(headerName, headerValue)
+	}
+	res, err := doRequest(req)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+	if res.StatusCode == 401 || res.StatusCode == 403 {
+		return SessionExpiredError
+	}
+	contentType := res.Header.Get("Content-Type")
+	if res.StatusCode/100 != 2 {
+		body, err := ioutil.ReadAll(res.Body)
+		if err != nil {
+			return err
+		}
+		if strings.HasPrefix(contentType, "application/xml") {
+			var fault LoginFault
+			xml.Unmarshal(body, &fault)
+			if fault.ExceptionCode == "InvalidSessionId" {
+				err = SessionExpiredError
+			}
+		} else {
+			var messages []ForceError
+			json.Unmarshal(body, &messages)
+			if len(messages) > 0 {
+				err = errors.New(messages[0].Message)
+			} else {
+				err = errors.New(string(body))
+			}
+		}
+		return err
+	}
+
+	buf := make([]byte, 50*1024*1024)
+	firstChunk := true
+	isCSV := strings.Contains(contentType, "text/csv")
+	for {
+		n, err := io.ReadFull(res.Body, buf)
+		if n > 0 {
+			data := make([]byte, n)
+			copy(data, buf[:n])
+			results <- BatchResultChunk{
+				HasCSVHeader: firstChunk && isCSV,
+				Data:         data,
+			}
+		}
+		if err == io.EOF || err == io.ErrUnexpectedEOF {
+			return nil
+		} else if err != nil {
+			return err
+		}
+		firstChunk = false
+	}
+
+	return nil
 }
 
 func (f *Force) httpPostCSV(url string, data string, requestOptions ...func(*http.Request)) (body []byte, err error) {
