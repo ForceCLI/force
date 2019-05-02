@@ -12,6 +12,11 @@ type BatchResult struct {
 	Results []Result
 }
 
+type BatchResultChunk struct {
+	HasCSVHeader bool
+	Data         []byte
+}
+
 type BatchInfo struct {
 	Id                     string `xml:"id" json:"id"`
 	JobId                  string `xml:"jobId" json:"jobId"`
@@ -246,6 +251,20 @@ func (f *Force) retrieveBulkResult(url string, contentType string) (result []byt
 	return nil, err
 }
 
+func (f *Force) retrieveBulkResultAndSend(url string, contentType string, results chan<- BatchResultChunk) (err error) {
+	switch contentType {
+	case "JSON":
+		return f.httpGetBulkJSONAndSend(url, results)
+	case "CSV":
+		fallthrough
+	case "XML":
+		return f.httpGetBulkAndSend(url, results)
+	default:
+		err = fmt.Errorf("Invalid content type for bulk API: " + contentType)
+	}
+	return err
+}
+
 func (f *Force) RetrieveBulkQueryResultList(job JobInfo, batchId string) ([]byte, error) {
 	url := fmt.Sprintf("%s/services/async/%s/job/%s/batch/%s/result", f.Credentials.InstanceUrl, apiVersionNumber, job.Id, batchId)
 	return f.retrieveBulkResult(url, job.ContentType)
@@ -266,6 +285,11 @@ func (f *Force) RetrieveBulkQueryResults(jobId string, batchId string, resultId 
 func (f *Force) RetrieveBulkJobQueryResults(job JobInfo, batchId string, resultId string) ([]byte, error) {
 	url := fmt.Sprintf("%s/services/async/%s/job/%s/batch/%s/result/%s", f.Credentials.InstanceUrl, apiVersionNumber, job.Id, batchId, resultId)
 	return f.retrieveBulkResult(url, job.ContentType)
+}
+
+func (f *Force) RetrieveBulkJobQueryResultsAndSend(job JobInfo, batchId string, resultId string, results chan<- BatchResultChunk) error {
+	url := fmt.Sprintf("%s/services/async/%s/job/%s/batch/%s/result/%s", f.Credentials.InstanceUrl, apiVersionNumber, job.Id, batchId, resultId)
+	return f.retrieveBulkResultAndSend(url, job.ContentType, results)
 }
 
 func (f *Force) RetrieveBulkBatchResults(jobId string, batchId string) (results BatchResult, err error) {
