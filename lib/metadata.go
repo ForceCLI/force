@@ -779,29 +779,8 @@ func (fm *ForceMetadata) DescribeMetadata() (describe MetadataDescribeResult, er
 	} else {
 		describe = result.Data
 	}
-	//fm.DescribeMetadataValue("{http://soap.sforce.com/2006/04/metadata}EmailTemplate")
 	return
 }
-
-//func (fm *ForceMetadata) DescribeMetadataValue(entitytype string) (describe MetadataDescribeValueTypeResult, err error) {
-//	body, err := fm.soapExecute("describeValueType", fmt.Sprintf("<type>%s</type>", entitytype))
-//	if err != nil {
-//		return
-//	}
-/*var result struct {
-	Data MetadataDescribeResult `xml:"Body>describeMetadataResponse>result"`
-}
-
-err = xml.Unmarshal([]byte(body), &result)
-
-if err != nil {
-	fmt.Println(err.Error())
-	} else {
-		describe = result.Data
-	}
-*/
-//		return
-//	}
 
 func (fm *ForceMetadata) CreateConnectedApp(name, callback string) (err error) {
 	soap := `
@@ -997,7 +976,6 @@ func (fm *ForceMetadata) CreateCustomField(object, field, typ string, options ma
 		ErrorAndExit("unable to create field type: %s", typ)
 	}
 
-	//fmt.Println(fmt.Sprintf(soap, object, field, label, soapField))
 	body, err := fm.soapExecute("create", fmt.Sprintf(soap, object, field, label, soapField))
 	if err != nil {
 		return err
@@ -1247,7 +1225,6 @@ func (fm *ForceMetadata) Deploy(files ForceMetadataFiles, options ForceDeployOpt
 }
 
 func (fm *ForceMetadata) DeployZipFile(soap string, zipfile []byte) (results ForceCheckDeploymentStatusResult, err error) {
-	//ioutil.WriteFile("package.zip", zipfile, 0644)
 	encoded := base64.StdEncoding.EncodeToString(zipfile)
 	body, err := fm.soapExecute("deploy", fmt.Sprintf(soap, encoded))
 	if err != nil {

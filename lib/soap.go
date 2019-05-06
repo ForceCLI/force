@@ -97,7 +97,6 @@ func (s *Soap) Execute(action, query string) (response []byte, err error) {
 	`
 	rbody := fmt.Sprintf(soap, s.Namespace,
 		s.AccessToken, s.Header, action, s.Namespace, query, action)
-	//fmt.Println(rbody)
 	req, err := httpRequest("POST", s.Endpoint, strings.NewReader(rbody))
 	if err != nil {
 		return
