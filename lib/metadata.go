@@ -687,8 +687,7 @@ func (fm *ForceMetadata) CheckStatus(id string) (err error) {
 	}
 	switch {
 	case !status.Done:
-		fmt.Printf("Not done yet: %s  Will check again in five seconds.\n", status.State)
-		//fmt.Printf("ID: %s State: %s - message: %s\n", id, status.State, status.Message)
+		Log.Info(fmt.Sprintf("Not done yet: %s  Will check again in five seconds.", status.State))
 		time.Sleep(5000 * time.Millisecond)
 		return fm.CheckStatus(id)
 	case status.State == "Error":
@@ -730,7 +729,6 @@ func (fm *ForceMetadata) CheckDeployStatus(id string) (results ForceCheckDeploym
 func (fm *ForceMetadata) CheckRetrieveStatus(id string) (files ForceMetadataFiles, problems []string, err error) {
 	body, err := fm.soapExecute("checkRetrieveStatus", fmt.Sprintf("<id>%s</id>", id))
 	if err != nil {
-		fmt.Printf("Hrm... will probably try again\n")
 		return
 	}
 	var status struct {
@@ -774,9 +772,7 @@ func (fm *ForceMetadata) DescribeMetadata() (describe MetadataDescribeResult, er
 
 	err = xml.Unmarshal([]byte(body), &result)
 
-	if err != nil {
-		fmt.Println(err.Error())
-	} else {
+	if err == nil {
 		describe = result.Data
 	}
 	return
@@ -1228,7 +1224,6 @@ func (fm *ForceMetadata) DeployZipFile(soap string, zipfile []byte) (results For
 	encoded := base64.StdEncoding.EncodeToString(zipfile)
 	body, err := fm.soapExecute("deploy", fmt.Sprintf(soap, encoded))
 	if err != nil {
-		fmt.Println(err.Error())
 		return
 	}
 
@@ -1243,7 +1238,7 @@ func (fm *ForceMetadata) DeployZipFile(soap string, zipfile []byte) (results For
 		if err != nil || results.Done {
 			return
 		}
-		fmt.Println(results)
+		Log.Info(results)
 		time.Sleep(5000 * time.Millisecond)
 	}
 }
@@ -1265,7 +1260,7 @@ func (fm *ForceMetadata) DeployRecentValidation(validationId string) (results Fo
 		if err != nil || results.Done {
 			return
 		}
-		fmt.Println(results)
+		Log.Info(results)
 		time.Sleep(5000 * time.Millisecond)
 	}
 }
@@ -1308,24 +1303,20 @@ func (fm *ForceMetadata) RetrieveByPackageXml(package_xml string) (files ForceMe
 
 	body, err := fm.soapExecute("retrieve", fmt.Sprintf(soap, apiVersionNumber, xml_types))
 	if err != nil {
-		fmt.Printf("Error: %s\n", err.Error())
 		return
 	}
 	var status struct {
 		Id string `xml:"Body>retrieveResponse>result>id"`
 	}
 	if err = xml.Unmarshal(body, &status); err != nil {
-		fmt.Printf("Error: %s\n", err.Error())
 		return
 	}
 
 	if err = fm.CheckStatus(status.Id); err != nil {
-		fmt.Printf("Error: %s\n", err.Error())
 		return
 	}
 	raw_files, problems, err := fm.CheckRetrieveStatus(status.Id)
 	if err != nil {
-		fmt.Printf("Error: %s\n", err.Error())
 		return
 	}
 	files = make(ForceMetadataFiles)

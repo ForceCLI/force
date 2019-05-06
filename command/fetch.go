@@ -267,6 +267,9 @@ func runFetch(cmd *Command, args []string) {
 	} else {
 		if len(packageXml) > 0 {
 			files, problems, err = force.Metadata.RetrieveByPackageXml(packageXml)
+			if err != nil {
+				ErrorAndExit(err.Error())
+			}
 		} else {
 			query := ForceMetadataQuery{}
 			if len(metadataName) > 0 {

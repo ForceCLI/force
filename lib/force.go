@@ -363,7 +363,7 @@ func (f *Force) GetCodeCoverage(classId string, className string) (err error) {
 
 	//var result ForceSobjectsResult
 	json.Unmarshal(body, &result)
-	fmt.Printf("\n%d lines covered\n%d lines not covered\n", int(result.Records[0]["NumLinesCovered"].(float64)), int(result.Records[0]["NumLinesUncovered"].(float64)))
+	Log.Info(fmt.Sprintf("\n%d lines covered\n%d lines not covered\n", int(result.Records[0]["NumLinesCovered"].(float64)), int(result.Records[0]["NumLinesUncovered"].(float64))))
 	return
 }
 

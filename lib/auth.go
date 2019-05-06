@@ -28,7 +28,7 @@ func getUserInfo(creds ForceSession) (userinfo UserInfo, err error) {
 	}
 	me, err := force.GetRecord("User", userinfo.UserId)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Problem getting user data, continuing...")
+		Log.Info("Problem getting user data, continuing...")
 		err = nil
 	}
 	userinfo.ProfileId = fmt.Sprintf("%s", me["ProfileId"])
@@ -37,7 +37,7 @@ func getUserInfo(creds ForceSession) (userinfo UserInfo, err error) {
 	if err == nil {
 		userinfo.OrgNamespace = namespace
 	} else {
-		fmt.Fprintf(os.Stderr, "Your profile does not have Modify All Data enabled. Functionallity will be limited.\n")
+		Log.Info("Your profile does not have Modify All Data enabled. Functionallity will be limited.")
 		err = nil
 	}
 	return
@@ -62,7 +62,7 @@ func ForceSaveLogin(creds ForceSession, output *os.File) (sessionName string, er
 	creds.UserInfo = &userinfo
 	creds.SessionOptions.ApiVersion = ApiVersionNumber()
 
-	fmt.Fprintf(output, "Logged in as '%s' (API %s)\n", creds.UserInfo.UserName, ApiVersionNumber())
+	Log.Info(fmt.Sprintf("Logged in as '%s' (API %s)\n", creds.UserInfo.UserName, ApiVersionNumber()))
 
 	if err = SaveLogin(creds); err != nil {
 		return

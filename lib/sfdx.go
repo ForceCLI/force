@@ -2,7 +2,6 @@ package lib
 
 import (
 	"encoding/json"
-	"fmt"
 	. "github.com/ForceCLI/force/error"
 	"os"
 	"os/exec"
@@ -41,7 +40,7 @@ func UseSFDXSession(authData SFDXAuth) {
 }
 
 func GetSFDXAuth(user string) (auth SFDXAuth, err error) {
-	fmt.Println("Getting SFDX AUTH FOR " + user)
+	Log.Info("Getting SFDX AUTH FOR " + user)
 	cmd := exec.Command("sfdx", "force:org:display", "-u"+user, "--json")
 
 	stdout, err := cmd.StdoutPipe()

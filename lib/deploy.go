@@ -21,7 +21,7 @@ func PushByPaths(fpaths []string, byName bool, namePaths map[string]string, opts
 
 		fi, err := os.Stat(fpath)
 		if err != nil {
-			fmt.Println(err)
+			Log.Info(err.Error())
 			badPaths = append(badPaths, fpath)
 			continue
 		}
@@ -31,7 +31,7 @@ func PushByPaths(fpaths []string, byName bool, namePaths map[string]string, opts
 		if mode.IsDir() {
 			dirNamePaths, dirBadPath, err := pb.AddDirectory(fpath)
 			if err != nil {
-				fmt.Println(err.Error())
+				Log.Info(err.Error())
 				badPaths = append(badPaths, dirBadPath...)
 			} else {
 				for dirContentName, dirContentPath := range dirNamePaths {
@@ -41,7 +41,7 @@ func PushByPaths(fpaths []string, byName bool, namePaths map[string]string, opts
 		} else if mode.IsRegular() { // single file processing
 			name, err := pb.AddFile(fpath)
 			if err != nil {
-				fmt.Println(err.Error())
+				Log.Info(err.Error())
 				badPaths = append(badPaths, fpath)
 			} else {
 				// Store paths by name for error messages
@@ -51,11 +51,11 @@ func PushByPaths(fpaths []string, byName bool, namePaths map[string]string, opts
 	}
 
 	if len(badPaths) == 0 {
-		fmt.Println("Deploying now...")
+		Log.Info("Deploying now...")
 		t0 := time.Now()
 		deployFiles(pb.ForceMetadataFiles(), byName, namePaths, opts)
 		t1 := time.Now()
-		fmt.Printf("The deployment took %v to run.\n", t1.Sub(t0))
+		Log.Info(fmt.Sprintf("The deployment took %v to run.\n", t1.Sub(t0)))
 	} else {
 		ErrorAndExit("Could not add the following files:\n {%v}", strings.Join(badPaths, "\n"))
 	}
