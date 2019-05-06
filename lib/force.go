@@ -28,6 +28,7 @@ var (
 var Timeout int64 = 0
 var CustomEndpoint = ``
 var SessionExpiredError = errors.New("Session expired")
+var APILimitExceededError = errors.New("API limit exceeded")
 
 const (
 	EndpointProduction = iota
@@ -1176,10 +1177,7 @@ func (f *Force) httpGetRequest(url string, headers map[string]string) (body []by
 		return
 	}
 	defer res.Body.Close()
-	if res.StatusCode == 401 || res.StatusCode == 403 {
-		err = SessionExpiredError
-		return
-	}
+
 	body, err = ioutil.ReadAll(res.Body)
 	if err != nil {
 		return
@@ -1195,18 +1193,28 @@ func (f *Force) httpGetRequest(url string, headers map[string]string) (body []by
 				err = SessionExpiredError
 			}
 		}
-
 	} else {
 		contentType = "JSON"
 		if res.StatusCode/100 != 2 {
 			var messages []ForceError
 			json.Unmarshal(body, &messages)
-			if len(messages) > 0 {
+			if len(messages) > 0 && messages[0].ErrorCode == "REQUEST_LIMIT_EXCEEDED" {
+				err = APILimitExceededError
+			} else if len(messages) > 0 {
 				err = errors.New(messages[0].Message)
 			} else {
 				err = errors.New(string(body))
 			}
 		}
+	}
+
+	if res.StatusCode == 401 || (res.StatusCode == 403 && err != APILimitExceededError) {
+		err = SessionExpiredError
+		return
+	}
+
+	if err != nil {
+		return
 	}
 
 	return
