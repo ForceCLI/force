@@ -4,11 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 	. "github.com/ForceCLI/force/error"
 	"io/ioutil"
 	"net/url"
-	"os"
 )
 
 func (f *Force) refreshOauth() (err error) {
@@ -27,10 +25,9 @@ func (f *Force) refreshOauth() (err error) {
 		return
 	}
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	fmt.Fprintln(os.Stderr, "Refreshing Session Token")
+	Log.Info("Refreshing Session Token")
 	res, err := doRequest(req)
 	if err != nil {
-		fmt.Println(err.Error())
 		return
 	}
 	defer res.Body.Close()
@@ -50,7 +47,7 @@ func (f *Force) refreshOauth() (err error) {
 }
 
 func (f *Force) refreshSFDX() (err error) {
-	fmt.Fprintln(os.Stderr, "Refreshing Session Token Using SFDX")
+	Log.Info("Refreshing Session Token Using SFDX")
 	sfdxAuth, err := GetSFDXAuth(f.Credentials.UserInfo.UserName)
 	if err != nil {
 		return
