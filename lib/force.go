@@ -1006,7 +1006,10 @@ func (f *Force) GetAbsolute(url string) (result string, err error) {
 	}
 	body, _, err := f.httpGetRequest(qualifiedUrl, headers)
 	if err == SessionExpiredError {
-		f.RefreshSessionOrExit()
+		err = f.RefreshSession()
+		if err != nil {
+			return
+		}
 		return f.GetREST(url)
 	}
 	result = string(body)
@@ -1038,7 +1041,10 @@ func (f *Force) PostAbsolute(url string, content string) (result string, err err
 	qualifiedUrl := f.qualifyUrl(url)
 	body, err := f.httpPostJSON(qualifiedUrl, content)
 	if err == SessionExpiredError {
-		f.RefreshSessionOrExit()
+		err = f.RefreshSession()
+		if err != nil {
+			return
+		}
 		return f.PostREST(url, content)
 	}
 	result = string(body)
@@ -1054,7 +1060,10 @@ func (f *Force) PatchAbsolute(url string, content string) (result string, err er
 	qualifiedUrl := f.qualifyUrl(url)
 	body, err := f.httpPatchJSON(qualifiedUrl, content)
 	if err == SessionExpiredError {
-		f.RefreshSessionOrExit()
+		err = f.RefreshSession()
+		if err != nil {
+			return
+		}
 		return f.PatchREST(url, content)
 	}
 	result = string(body)
@@ -1081,7 +1090,10 @@ func (f *Force) httpGet(url string) (body []byte, err error) {
 	}
 	body, _, err = f.httpGetRequest(url, headers)
 	if err == SessionExpiredError {
-		f.RefreshSessionOrExit()
+		err = f.RefreshSession()
+		if err != nil {
+			return
+		}
 		return f.httpGet(url)
 	}
 	return
@@ -1094,7 +1106,10 @@ func (f *Force) httpGetBulk(url string) (body []byte, contentType string, err er
 	}
 	body, contentType, err = f.httpGetRequest(url, headers)
 	if err == SessionExpiredError {
-		f.RefreshSessionOrExit()
+		err = f.RefreshSession()
+		if err != nil {
+			return
+		}
 		return f.httpGetBulk(url)
 	}
 	return
@@ -1107,7 +1122,10 @@ func (f *Force) httpGetBulkAndSend(url string, results chan<- BatchResultChunk) 
 	}
 	err = f.httpGetRequestAndSend(url, headers, results)
 	if err == SessionExpiredError {
-		f.RefreshSessionOrExit()
+		err = f.RefreshSession()
+		if err != nil {
+			return
+		}
 		return f.httpGetBulkAndSend(url, results)
 	}
 	return
@@ -1120,7 +1138,10 @@ func (f *Force) httpGetBulkJSON(url string) (body []byte, err error) {
 	}
 	body, _, err = f.httpGetRequest(url, headers)
 	if err == SessionExpiredError {
-		f.RefreshSessionOrExit()
+		err = f.RefreshSession()
+		if err != nil {
+			return
+		}
 		return f.httpGetBulkJSON(url)
 	}
 	return
@@ -1133,7 +1154,10 @@ func (f *Force) httpGetBulkJSONAndSend(url string, results chan<- BatchResultChu
 	}
 	err = f.httpGetRequestAndSend(url, headers, results)
 	if err == SessionExpiredError {
-		f.RefreshSessionOrExit()
+		err = f.RefreshSession()
+		if err != nil {
+			return
+		}
 		return f.httpGetBulkJSONAndSend(url, results)
 	}
 	return
@@ -1255,7 +1279,10 @@ func (f *Force) httpGetRequestAndSend(url string, headers map[string]string, res
 func (f *Force) httpPostCSV(url string, data string, requestOptions ...func(*http.Request)) (body []byte, err error) {
 	body, err = f.httpPostWithContentType(url, data, "text/csv", requestOptions...)
 	if err == SessionExpiredError {
-		f.RefreshSessionOrExit()
+		err = f.RefreshSession()
+		if err != nil {
+			return
+		}
 		return f.httpPostCSV(url, data, requestOptions...)
 	}
 	return
@@ -1264,7 +1291,10 @@ func (f *Force) httpPostCSV(url string, data string, requestOptions ...func(*htt
 func (f *Force) httpPostXML(url string, data string, requestOptions ...func(*http.Request)) (body []byte, err error) {
 	body, err = f.httpPostWithContentType(url, data, "application/xml", requestOptions...)
 	if err == SessionExpiredError {
-		f.RefreshSessionOrExit()
+		err = f.RefreshSession()
+		if err != nil {
+			return
+		}
 		return f.httpPostXML(url, data, requestOptions...)
 	}
 	return
@@ -1273,7 +1303,10 @@ func (f *Force) httpPostXML(url string, data string, requestOptions ...func(*htt
 func (f *Force) httpPostJSON(url string, data string, requestOptions ...func(*http.Request)) (body []byte, err error) {
 	body, err = f.httpPostWithContentType(url, data, "application/json", requestOptions...)
 	if err == SessionExpiredError {
-		f.RefreshSessionOrExit()
+		err = f.RefreshSession()
+		if err != nil {
+			return
+		}
 		return f.httpPostJSON(url, data, requestOptions...)
 	}
 	return
@@ -1282,7 +1315,10 @@ func (f *Force) httpPostJSON(url string, data string, requestOptions ...func(*ht
 func (f *Force) httpPatchJSON(url string, data string) (body []byte, err error) {
 	body, err = f.httpPatchWithContentType(url, data, "application/json")
 	if err == SessionExpiredError {
-		f.RefreshSessionOrExit()
+		err = f.RefreshSession()
+		if err != nil {
+			return
+		}
 		return f.httpPatchJSON(url, data)
 	}
 	return
@@ -1349,7 +1385,10 @@ func (f *Force) httpPostPatchWithContentType(url string, data string, contenttyp
 func (f *Force) httpPost(url string, attrs map[string]string) (body []byte, err error, emessages []ForceError) {
 	body, err, emessages = f.httpPostAttributes(url, attrs)
 	if err == SessionExpiredError {
-		f.RefreshSessionOrExit()
+		err = f.RefreshSession()
+		if err != nil {
+			return
+		}
 		return f.httpPost(url, attrs)
 	}
 	return
@@ -1386,7 +1425,10 @@ func (f *Force) httpPostAttributes(url string, attrs map[string]string) (body []
 func (f *Force) httpPatch(url string, attrs map[string]string) (body []byte, err error) {
 	body, err = f.httpPatchAttributes(url, attrs)
 	if err == SessionExpiredError {
-		f.RefreshSessionOrExit()
+		err = f.RefreshSession()
+		if err != nil {
+			return
+		}
 		return f.httpPatchAttributes(url, attrs)
 	}
 	return
@@ -1422,7 +1464,10 @@ func (f *Force) httpPatchAttributes(url string, attrs map[string]string) (body [
 func (f *Force) httpDelete(url string) (body []byte, err error) {
 	body, err = f.httpDeleteUrl(url)
 	if err == SessionExpiredError {
-		f.RefreshSessionOrExit()
+		err = f.RefreshSession()
+		if err != nil {
+			return
+		}
 		return f.httpDeleteUrl(url)
 	}
 	return

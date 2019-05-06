@@ -1451,7 +1451,10 @@ func (fm *ForceMetadata) soapExecute(action, query string) (response []byte, err
 	soap := NewSoap(url, "http://soap.sforce.com/2006/04/metadata", fm.Force.Credentials.AccessToken)
 	response, err = soap.Execute(action, query)
 	if err == SessionExpiredError {
-		fm.Force.RefreshSessionOrExit()
+		err = fm.Force.RefreshSession()
+		if err != nil {
+			return
+		}
 		return fm.soapExecute(action, query)
 	}
 	return

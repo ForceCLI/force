@@ -9,6 +9,8 @@ import (
 	"net/url"
 )
 
+var SessionRefreshError = errors.New("Failed to refresh session.  Please run `force login`.")
+
 func (f *Force) refreshOauth() (err error) {
 	attrs := url.Values{}
 	attrs.Set("grant_type", "refresh_token")
@@ -33,7 +35,7 @@ func (f *Force) refreshOauth() (err error) {
 	defer res.Body.Close()
 	body, err := ioutil.ReadAll(res.Body)
 	if res.StatusCode != 200 {
-		err = errors.New("Failed to refresh session.  Please run `force login`.")
+		err = SessionRefreshError
 		return
 	}
 	if err != nil {
