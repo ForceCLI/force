@@ -1000,7 +1000,7 @@ func (f *Force) qualifyUrl(url string) string {
 	return fmt.Sprintf("%s/%s", f.Credentials.InstanceUrl, strings.TrimLeft(url, "/"))
 }
 
-func (f *Force) GetAbsolute(url string) (result string, err error) {
+func (f *Force) GetAbsoluteBytes(url string) (result []byte, err error) {
 	qualifiedUrl := f.qualifyUrl(url)
 	headers := map[string]string{
 		"Authorization": fmt.Sprintf("Bearer %s", f.Credentials.AccessToken),
@@ -1011,10 +1011,17 @@ func (f *Force) GetAbsolute(url string) (result string, err error) {
 		if err != nil {
 			return
 		}
-		return f.GetREST(url)
+		return f.GetAbsoluteBytes(url)
 	}
-	result = string(body)
-	return
+	return body, err
+}
+
+func (f *Force) GetAbsolute(url string) (string, error) {
+	data, err := f.GetAbsoluteBytes(url)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
 }
 
 func (f *Force) GetREST(url string) (result string, err error) {
