@@ -609,6 +609,9 @@ func (f *Force) GetSobject(name string) (sobject ForceSobject, err error) {
 }
 
 func (f *Force) QueryAndSend(query string, processor chan<- ForceRecord, options ...func(*QueryOptions)) (err error) {
+	defer func() {
+		close(processor)
+	}()
 	queryOptions := QueryOptions{}
 	for _, option := range options {
 		option(&queryOptions)
@@ -648,7 +651,6 @@ func (f *Force) QueryAndSend(query string, processor chan<- ForceRecord, options
 		}
 		url = fmt.Sprintf("%s%s", f.Credentials.InstanceUrl, result.NextRecordsUrl)
 	}
-	close(processor)
 	return
 }
 
