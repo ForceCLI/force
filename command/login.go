@@ -43,7 +43,7 @@ var (
 )
 
 func runLogin(cmd *Command, args []string) {
-	var endpoint string = "https://login.salesforce.com"
+	endpoint := "https://login.salesforce.com"
 	// If no instance specified, try to get last endpoint used
 	if *instance == "" {
 		currentEndpointUrl, err := CurrentEndpointUrl()
