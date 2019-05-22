@@ -24,9 +24,9 @@ type SFDXAuth struct {
 
 func UseSFDXSession(authData SFDXAuth) {
 	creds := ForceSession{
-		AccessToken:   authData.AccessToken,
-		InstanceUrl:   authData.InstanceUrl,
-		ForceEndpoint: EndpointCustom,
+		AccessToken: authData.AccessToken,
+		InstanceUrl: authData.InstanceUrl,
+		EndpointUrl: authData.InstanceUrl,
 		UserInfo: &UserInfo{
 			OrgId: authData.Id,
 		},

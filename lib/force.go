@@ -79,6 +79,7 @@ type ForceSession struct {
 	ClientId       string
 	RefreshToken   string
 	ForceEndpoint  ForceEndpoint
+	EndpointUrl    string `json:"endpoint_url"`
 	UserInfo       *UserInfo
 	SessionOptions *SessionOptions
 }
@@ -226,23 +227,37 @@ func NewForce(creds *ForceSession) (force *Force) {
 	return
 }
 
-func ForceSoapLogin(endpoint ForceEndpoint, username string, password string) (creds ForceSession, err error) {
-	var surl string
-	version := strings.Split(apiVersion, "v")[1]
+func endpointUrl(endpoint ForceEndpoint) string {
 	switch endpoint {
 	case EndpointProduction:
-		surl = fmt.Sprintf("https://login.salesforce.com/services/Soap/u/%s", version)
+		return "https://login.salesforce.com"
 	case EndpointTest:
-		surl = fmt.Sprintf("https://test.salesforce.com/services/Soap/u/%s", version)
+		return "https://test.salesforce.com"
 	case EndpointPrerelease:
-		surl = fmt.Sprintf("https://prerelna1.pre.salesforce.com/services/Soap/u/%s", version)
+		return "https://prerelna1.pre.salesforce.com"
 	case EndpointMobile1:
-		surl = fmt.Sprintf("https://mobile1.t.salesforce.com/services/Soap/u/%s", version)
+		return "https://mobile1.t.pre.salesforce.com"
 	case EndpointCustom:
-		surl = fmt.Sprintf("%s/services/Soap/u/%s", CustomEndpoint, version)
+		fallthrough
 	default:
+		Log.Info("Deprecated use of CustomEndpoint")
+		return CustomEndpoint
+	}
+}
+
+func ForceSoapLogin(endpoint ForceEndpoint, username string, password string) (creds ForceSession, err error) {
+	Log.Info("Deprecated call to ForceSoapLogin.  Use ForceSoapLoginAtEndpoint.")
+	url := endpointUrl(endpoint)
+	return ForceSoapLoginAtEndpoint(url, username, password)
+}
+
+func ForceSoapLoginAtEndpoint(endpoint string, username string, password string) (creds ForceSession, err error) {
+	var surl string
+	version := strings.Split(apiVersion, "v")[1]
+	if endpoint == "" {
 		ErrorAndExit("Unable to login with SOAP. Unknown endpoint type")
 	}
+	surl = fmt.Sprintf("%s/services/Soap/u/%s", endpoint, version)
 
 	soap := NewSoap(surl, "", "")
 	response, err := soap.ExecuteLogin(username, password)
@@ -268,9 +283,9 @@ func ForceSoapLogin(endpoint ForceEndpoint, username string, password string) (c
 	}
 	instanceUrl := u.Scheme + "://" + u.Host
 	creds = ForceSession{
-		AccessToken:   result.SessionId,
-		InstanceUrl:   instanceUrl,
-		ForceEndpoint: endpoint,
+		AccessToken: result.SessionId,
+		InstanceUrl: instanceUrl,
+		EndpointUrl: endpoint,
 		UserInfo: &UserInfo{
 			OrgId:  orgid,
 			UserId: result.Id,
@@ -282,55 +297,28 @@ func ForceSoapLogin(endpoint ForceEndpoint, username string, password string) (c
 	return
 }
 
-func tokenURL(endpoint ForceEndpoint) (tokenURL string, err error) {
-	switch endpoint {
-	case EndpointProduction:
-		tokenURL = fmt.Sprintf("https://login.salesforce.com/services/oauth2/token")
-	case EndpointTest:
-		tokenURL = fmt.Sprintf("https://test.salesforce.com/services/oauth2/token")
-	case EndpointPrerelease:
-		tokenURL = fmt.Sprintf("https://prerellogin.pre.salesforce.com/services/oauth2/token")
-	case EndpointMobile1:
-		tokenURL = fmt.Sprintf("https://EndpointMobile1.t.salesforce.com/services/oauth2/token")
-	case EndpointCustom:
-		tokenURL = fmt.Sprintf("%s/services/oauth2/token", CustomEndpoint)
-	default:
-		err = fmt.Errorf("no such endpoint type")
-	}
-	return
+func tokenURL(endpoint string) (tokenURL string) {
+	return fmt.Sprintf("%s/services/oauth2/token", endpoint)
 }
 
 func (f *Force) refreshTokenURL() string {
-	var refreshURL string
-	endpoint := f.Credentials.ForceEndpoint
-	refreshURL, err := tokenURL(endpoint)
-	if err != nil {
-		ErrorAndExit(err.Error())
-	}
-	return refreshURL
+	return tokenURL(f.Credentials.EndpointUrl)
 }
 
 func ForceLogin(endpoint ForceEndpoint) (creds ForceSession, err error) {
+	Log.Info("Deprecated call to ForceLogin.  Use ForceLogin.")
+	url := endpointUrl(endpoint)
+	return ForceLoginAtEndpoint(url)
+}
+
+func ForceLoginAtEndpoint(endpoint string) (creds ForceSession, err error) {
 	ch := make(chan ForceSession)
 	port, err := startLocalHttpServer(ch)
 	var url string
 
 	Redir := RedirectUri
 
-	switch endpoint {
-	case EndpointProduction:
-		url = fmt.Sprintf("https://login.salesforce.com/services/oauth2/authorize?response_type=token&client_id=%s&redirect_uri=%s&state=%d&prompt=login", ClientId, Redir, port)
-	case EndpointTest:
-		url = fmt.Sprintf("https://test.salesforce.com/services/oauth2/authorize?response_type=token&client_id=%s&redirect_uri=%s&state=%d&prompt=login", ClientId, Redir, port)
-	case EndpointPrerelease:
-		url = fmt.Sprintf("https://prerellogin.pre.salesforce.com/services/oauth2/authorize?response_type=token&client_id=%s&redirect_uri=%s&state=%d&prompt=login", ClientId, Redir, port)
-	case EndpointMobile1:
-		url = fmt.Sprintf("https://EndpointMobile1.t.salesforce.com/services/oauth2/authorize?response_type=token&client_id=%s&redirect_uri=%s&state=%d&prompt=login", ClientId, Redir, port)
-	case EndpointCustom:
-		url = fmt.Sprintf("%s/services/oauth2/authorize?response_type=token&client_id=%s&redirect_uri=%s&state=%d&prompt=login", CustomEndpoint, ClientId, Redir, port)
-	default:
-		ErrorAndExit("Unable to login with OAuth. Unknown endpoint type")
-	}
+	url = fmt.Sprintf("%s/services/oauth2/authorize?response_type=token&client_id=%s&redirect_uri=%s&state=%d&prompt=login", endpoint, ClientId, Redir, port)
 
 	err = desktop.Open(url)
 	creds = <-ch
@@ -339,7 +327,7 @@ func ForceLogin(endpoint ForceEndpoint) (creds ForceSession, err error) {
 			RefreshMethod: RefreshOauth,
 		}
 	}
-	creds.ForceEndpoint = endpoint
+	creds.EndpointUrl = endpoint
 	creds.ClientId = ClientId
 	return
 }
