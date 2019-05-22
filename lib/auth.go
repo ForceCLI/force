@@ -91,7 +91,13 @@ func SaveLogin(creds ForceSession) (err error) {
 }
 
 func ForceLoginAndSaveSoap(endpoint ForceEndpoint, user_name string, password string, output *os.File) (username string, err error) {
-	creds, err := ForceSoapLogin(endpoint, user_name, password)
+	Log.Info("Deprecated call to ForceLoginAndSaveSoap.  Use ForceSoapLoginAtEndpointAndSaveSoap.")
+	url := endpointUrl(endpoint)
+	return ForceLoginAtEndpointAndSaveSoap(url, username, password, output)
+}
+
+func ForceLoginAtEndpointAndSaveSoap(endpoint string, user_name string, password string, output *os.File) (username string, err error) {
+	creds, err := ForceSoapLoginAtEndpoint(endpoint, user_name, password)
 	if err != nil {
 		return
 	}
@@ -101,7 +107,13 @@ func ForceLoginAndSaveSoap(endpoint ForceEndpoint, user_name string, password st
 }
 
 func ForceLoginAndSave(endpoint ForceEndpoint, output *os.File) (username string, err error) {
-	creds, err := ForceLogin(endpoint)
+	Log.Info("Deprecated call to ForceLoginAndSave.  Use ForceLoginAtEndpointAndSave.")
+	url := endpointUrl(endpoint)
+	return ForceLoginAtEndpointAndSave(url, output)
+}
+
+func ForceLoginAtEndpointAndSave(endpoint string, output *os.File) (username string, err error) {
+	creds, err := ForceLoginAtEndpoint(endpoint)
 	if err != nil {
 		return
 	}
@@ -137,7 +149,7 @@ func GetForce(accountName string) (force *Force, err error) {
 
 // Add UserInfo and SessionOptions to old ForceSession
 func upgradeCredentials(creds *ForceSession) (err error) {
-	if creds.SessionOptions != nil && creds.UserInfo != nil {
+	if creds.SessionOptions != nil && creds.UserInfo != nil && creds.EndpointUrl != "" {
 		return
 	}
 	if creds.SessionOptions == nil {
@@ -161,6 +173,19 @@ func upgradeCredentials(creds *ForceSession) (err error) {
 		}
 		creds.UserInfo = &userinfo
 		_, err = ForceSaveLogin(*creds, os.Stderr)
+		if err != nil {
+			return
+		}
+	}
+	if creds.EndpointUrl == "" {
+		switch creds.ForceEndpoint {
+		case EndpointProduction, EndpointTest, EndpointPrerelease, EndpointMobile1:
+			creds.EndpointUrl = endpointUrl(creds.ForceEndpoint)
+		default:
+			creds.EndpointUrl = creds.InstanceUrl
+		}
+		Log.Info(fmt.Sprintf("Updated Endpoint URL in session to %s", creds.EndpointUrl))
+		err = SaveLogin(*creds)
 	}
 	return
 }
@@ -184,9 +209,6 @@ func GetAccountCredentials(accountName string) (creds ForceSession, err error) {
 	}
 	if creds.SessionOptions.ApiVersion != "" && creds.SessionOptions.ApiVersion != ApiVersionNumber() {
 		SetApiVersion(creds.SessionOptions.ApiVersion)
-	}
-	if creds.ForceEndpoint == EndpointCustom && CustomEndpoint == "" {
-		CustomEndpoint = creds.InstanceUrl
 	}
 	return
 }

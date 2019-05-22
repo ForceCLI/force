@@ -43,15 +43,12 @@ var (
 )
 
 func runLogin(cmd *Command, args []string) {
-	var endpoint ForceEndpoint = EndpointProduction
+	endpoint := "https://login.salesforce.com"
 	// If no instance specified, try to get last endpoint used
 	if *instance == "" {
-		currentEndpoint, customUrl, err := CurrentEndpoint()
-		if err == nil && &currentEndpoint != nil {
-			endpoint = currentEndpoint
-			if currentEndpoint == EndpointCustom && customUrl != "" {
-				*instance = customUrl
-			}
+		currentEndpointUrl, err := CurrentEndpointUrl()
+		if err == nil && currentEndpointUrl != "" {
+			endpoint = currentEndpointUrl
 		}
 	}
 
@@ -66,13 +63,13 @@ func runLogin(cmd *Command, args []string) {
 
 	switch *instance {
 	case "login":
-		endpoint = EndpointProduction
+		endpoint = "https://login.salesforce.com"
 	case "test":
-		endpoint = EndpointTest
+		endpoint = "https://test.salesforce.com"
 	case "pre":
-		endpoint = EndpointPrerelease
+		endpoint = "https://prerelna1.salesforce.com"
 	case "mobile1":
-		endpoint = EndpointMobile1
+		endpoint = "https://mobile1.t.pre.salesforce.com"
 	default:
 		if *instance != "" {
 			//need to determine the form of the endpoint
@@ -88,16 +85,15 @@ func runLogin(cmd *Command, args []string) {
 					ErrorAndExit("Could not identify host: %s", *instance)
 				}
 			}
-			CustomEndpoint = uri.Scheme + "://" + uri.Host
-			endpoint = EndpointCustom
+			endpoint = uri.Scheme + "://" + uri.Host
 
-			fmt.Println("Loaded Endpoint: (" + CustomEndpoint + ")")
+			fmt.Println("Loaded Endpoint: (" + endpoint + ")")
 		}
 	}
 
 	if len(*userName) == 0 {
 		// OAuth Login
-		_, err := ForceLoginAndSave(endpoint, os.Stdout)
+		_, err := ForceLoginAtEndpointAndSave(endpoint, os.Stdout)
 		if err != nil {
 			ErrorAndExit(err.Error())
 		}
@@ -106,11 +102,11 @@ func runLogin(cmd *Command, args []string) {
 
 	if len(*keyFile) != 0 {
 		// JWT Login
-		assertion, err := JwtAssertion(endpoint, *userName, *keyFile, ClientId)
+		assertion, err := JwtAssertionForEndpoint(endpoint, *userName, *keyFile, ClientId)
 		if err != nil {
 			ErrorAndExit(err.Error())
 		}
-		_, err = ForceLoginAndSaveJWT(endpoint, assertion, os.Stdout)
+		_, err = ForceLoginAtEndpointAndSaveJWT(endpoint, assertion, os.Stdout)
 		if err != nil {
 			ErrorAndExit(err.Error())
 		}
@@ -125,13 +121,14 @@ func runLogin(cmd *Command, args []string) {
 			ErrorAndExit(err.Error())
 		}
 	}
-	_, err := ForceLoginAndSaveSoap(endpoint, *userName, *password, os.Stdout)
+	_, err := ForceLoginAtEndpointAndSaveSoap(endpoint, *userName, *password, os.Stdout)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
 }
 
 func CurrentEndpoint() (endpoint ForceEndpoint, customUrl string, err error) {
+	Log.Info("Deprecated call to CurrentEndpoint.  Use CurrentEndpointUrl.")
 	creds, err := ActiveCredentials(false)
 	if err != nil {
 		return
@@ -139,4 +136,12 @@ func CurrentEndpoint() (endpoint ForceEndpoint, customUrl string, err error) {
 	endpoint = creds.ForceEndpoint
 	customUrl = creds.InstanceUrl
 	return
+}
+
+func CurrentEndpointUrl() (endpoint string, err error) {
+	creds, err := ActiveCredentials(false)
+	if err != nil {
+		return "", err
+	}
+	return creds.EndpointUrl, nil
 }
