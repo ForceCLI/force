@@ -13,6 +13,12 @@ import (
 )
 
 func JwtAssertion(endpoint ForceEndpoint, username string, keyfile string, clientId string) (signedToken string, err error) {
+	Log.Info("Deprecated call to JwtAssertion.  Use JwtAssertionForEndpoint.")
+	url := endpointUrl(endpoint)
+	return JwtAssertionForEndpoint(url, username, keyfile, clientId)
+}
+
+func JwtAssertionForEndpoint(endpoint string, username string, keyfile string, clientId string) (signedToken string, err error) {
 	keyData, err := ioutil.ReadFile(keyfile)
 	if err != nil {
 		return
@@ -22,10 +28,7 @@ func JwtAssertion(endpoint ForceEndpoint, username string, keyfile string, clien
 		return
 	}
 
-	tokenURL, err := tokenURL(endpoint)
-	if err != nil {
-		return
-	}
+	tokenURL := tokenURL(endpoint)
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
 		"iss": clientId,
 		"sub": username,
@@ -37,15 +40,18 @@ func JwtAssertion(endpoint ForceEndpoint, username string, keyfile string, clien
 }
 
 func JWTLogin(endpoint ForceEndpoint, assertion string) (creds ForceSession, err error) {
-	if err != nil {
-		return
-	}
+	Log.Info("Deprecated call to JWTLogin.  Use JWTLoginAtEndpoint.")
+	url := endpointUrl(endpoint)
+	return JWTLoginAtEndpoint(url, assertion)
+}
+
+func JWTLoginAtEndpoint(endpoint string, assertion string) (creds ForceSession, err error) {
 	attrs := url.Values{}
 	attrs.Set("grant_type", "urn:ietf:params:oauth:grant-type:jwt-bearer")
 	attrs.Set("assertion", assertion)
 
 	postVars := attrs.Encode()
-	tokenURL, err := tokenURL(endpoint)
+	tokenURL := tokenURL(endpoint)
 	if err != nil {
 		return
 	}
@@ -76,13 +82,19 @@ func JWTLogin(endpoint ForceEndpoint, assertion string) (creds ForceSession, err
 
 	err = json.Unmarshal(body, &creds)
 	creds.SessionOptions = &SessionOptions{}
-	creds.ForceEndpoint = endpoint
+	creds.EndpointUrl = endpoint
 	creds.ClientId = ClientId
 	return
 }
 
 func ForceLoginAndSaveJWT(endpoint ForceEndpoint, assertion string, output *os.File) (username string, err error) {
-	creds, err := JWTLogin(endpoint, assertion)
+	Log.Info("Deprecated call to ForceLoginAndSaveJWT.  Use ForceLoginAtEndpointAndSaveJWT.")
+	url := endpointUrl(endpoint)
+	return ForceLoginAtEndpointAndSaveJWT(url, assertion, output)
+}
+
+func ForceLoginAtEndpointAndSaveJWT(endpoint string, assertion string, output *os.File) (username string, err error) {
+	creds, err := JWTLoginAtEndpoint(endpoint, assertion)
 	if err != nil {
 		return
 	}
