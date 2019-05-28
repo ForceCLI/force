@@ -217,11 +217,6 @@ func (f *Force) GetBatches(jobId string) (result []BatchInfo, err error) {
 	if contentType == "JSON" {
 		json.Unmarshal(body, &batchInfoList)
 		result = batchInfoList.BatchInfos
-		if len(result) == 0 {
-			var fault LoginFault
-			json.Unmarshal(body, &fault)
-			err = errors.New(fmt.Sprintf("%s: %s", fault.ExceptionCode, fault.ExceptionMessage))
-		}
 	} else {
 		xml.Unmarshal(body, &batchInfoList)
 		result = batchInfoList.BatchInfos
