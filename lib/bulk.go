@@ -208,18 +208,23 @@ func (f *Force) GetBatchInfo(jobId string, batchId string) (result BatchInfo, er
 
 func (f *Force) GetBatches(jobId string) (result []BatchInfo, err error) {
 	url := fmt.Sprintf("%s/services/async/%s/job/%s/batch", f.Credentials.InstanceUrl, apiVersionNumber, jobId)
-	body, _, err := f.httpGetBulk(url)
+	body, contentType, err := f.httpGetBulk(url)
 
 	var batchInfoList struct {
-		BatchInfos []BatchInfo `xml:"batchInfo"`
+		BatchInfos []BatchInfo `xml:"batchInfo" json:"batchInfo"`
 	}
 
-	xml.Unmarshal(body, &batchInfoList)
-	result = batchInfoList.BatchInfos
-	if len(result) == 0 {
-		var fault LoginFault
-		xml.Unmarshal(body, &fault)
-		err = errors.New(fmt.Sprintf("%s: %s", fault.ExceptionCode, fault.ExceptionMessage))
+	if contentType == "JSON" {
+		json.Unmarshal(body, &batchInfoList)
+		result = batchInfoList.BatchInfos
+	} else {
+		xml.Unmarshal(body, &batchInfoList)
+		result = batchInfoList.BatchInfos
+		if len(result) == 0 {
+			var fault LoginFault
+			xml.Unmarshal(body, &fault)
+			err = errors.New(fmt.Sprintf("%s: %s", fault.ExceptionCode, fault.ExceptionMessage))
+		}
 	}
 	return
 }
