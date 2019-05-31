@@ -1,11 +1,12 @@
 package command
 
 import (
-	"bitbucket.org/pkg/inflect"
 	"fmt"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/ForceCLI/inflect"
 
 	. "github.com/ForceCLI/force/error"
 	. "github.com/ForceCLI/force/lib"
