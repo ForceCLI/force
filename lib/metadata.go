@@ -2,7 +2,6 @@ package lib
 
 import (
 	"archive/zip"
-	"bitbucket.org/pkg/inflect"
 	"bufio"
 	"bytes"
 	"encoding/base64"
@@ -17,6 +16,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/ForceCLI/inflect"
 
 	. "github.com/ForceCLI/force/error"
 )
