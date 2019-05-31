@@ -672,28 +672,36 @@ func NewForceMetadata(force *Force) (fm *ForceMetadata) {
 	return
 }
 
-func (fm *ForceMetadata) CheckStatus(id string) (err error) {
+type MetadataDeployStatus struct {
+	Done    bool   `xml:"Body>checkStatusResponse>result>done"`
+	State   string `xml:"Body>checkStatusResponse>result>state"`
+	Message string `xml:"Body>checkStatusResponse>result>message"`
+}
+
+func (fm *ForceMetadata) GetStatus(id string) (status MetadataDeployStatus, err error) {
 	body, err := fm.soapExecute("checkStatus", fmt.Sprintf("<id>%s</id>", id))
 	if err != nil {
-		return
+		return status, err
 	}
-	var status struct {
-		Done    bool   `xml:"Body>checkStatusResponse>result>done"`
-		State   string `xml:"Body>checkStatusResponse>result>state"`
-		Message string `xml:"Body>checkStatusResponse>result>message"`
+	err = xml.Unmarshal(body, &status)
+	return status, err
+}
+
+func (fm *ForceMetadata) CheckStatus(id string) error {
+	for {
+		status, err := fm.GetStatus(id)
+		switch {
+		case err != nil:
+			return err
+		case !status.Done:
+			Log.Info(fmt.Sprintf("Not done yet: %s  Will check again in five seconds.", status.State))
+			time.Sleep(5000 * time.Millisecond)
+		case status.State == "Error":
+			return errors.New(status.Message)
+		default:
+			return nil
+		}
 	}
-	if err = xml.Unmarshal(body, &status); err != nil {
-		return
-	}
-	switch {
-	case !status.Done:
-		Log.Info(fmt.Sprintf("Not done yet: %s  Will check again in five seconds.", status.State))
-		time.Sleep(5000 * time.Millisecond)
-		return fm.CheckStatus(id)
-	case status.State == "Error":
-		return errors.New(status.Message)
-	}
-	return
 }
 
 func (results ForceCheckDeploymentStatusResult) String() string {
@@ -1084,7 +1092,7 @@ func (fm *ForceMetadata) InstallPackage(namespace, version, password string) (er
 	return fm.InstallPackageWithRSS(namespace, version, password, activateRemoteSiteSettings)
 }
 
-func (fm *ForceMetadata) InstallPackageWithRSS(namespace, version, password string, activateRemoteSiteSettings bool) (err error) {
+func (fm *ForceMetadata) InstallPackageByNamespaceAndVersion(namespace, version, password string, activateRemoteSiteSettings bool) (id string, err error) {
 	soap := `
 		<metadata xsi:type="InstalledPackage" xmlns:cmd="http://soap.sforce.com/2006/04/metadata">
 			<fullName>%s</fullName>
@@ -1095,15 +1103,20 @@ func (fm *ForceMetadata) InstallPackageWithRSS(namespace, version, password stri
 	`
 	body, err := fm.soapExecute("create", fmt.Sprintf(soap, namespace, version, password, activateRemoteSiteSettings))
 	if err != nil {
-		return err
+		return "", err
 	}
 	var status struct {
 		Id string `xml:"Body>createResponse>result>id"`
 	}
 	if err = xml.Unmarshal(body, &status); err != nil {
-		return
+		return "", err
 	}
-	if err = fm.CheckStatus(status.Id); err != nil {
+	return status.Id, nil
+}
+
+func (fm *ForceMetadata) InstallPackageWithRSS(namespace, version, password string, activateRemoteSiteSettings bool) (err error) {
+	id, err := fm.InstallPackageByNamespaceAndVersion(namespace, version, password, activateRemoteSiteSettings)
+	if err = fm.CheckStatus(id); err != nil {
 		return
 	}
 	return
