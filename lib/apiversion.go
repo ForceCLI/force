@@ -5,8 +5,11 @@ import (
 	"os"
 )
 
-var apiVersionNumber = "40.0"
-var apiVersion = fmt.Sprintf("v%s", apiVersionNumber)
+var (
+	DefaultApiVersionNumber = "45.0"
+	apiVersionNumber        = DefaultApiVersionNumber
+	apiVersion              = fmt.Sprintf("v%s", apiVersionNumber)
+)
 
 func ApiVersion() string {
 	return apiVersion
