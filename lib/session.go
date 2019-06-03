@@ -10,6 +10,7 @@ import (
 )
 
 var SessionRefreshError = errors.New("Failed to refresh session.  Please run `force login`.")
+var SessionRefreshUnavailable = errors.New("Unable to refresh.  Please run `force login`.")
 
 func (f *Force) refreshOauth() (err error) {
 	attrs := url.Values{}
@@ -75,7 +76,7 @@ func (f *Force) RefreshSession() (err error) {
 	} else if f.Credentials.SessionOptions.RefreshMethod == RefreshSFDX {
 		err = f.refreshSFDX()
 	} else {
-		err = errors.New("Unable to refresh.  Please run `force login`.")
+		err = SessionRefreshUnavailable
 	}
 	return
 }
