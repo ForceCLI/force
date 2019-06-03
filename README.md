@@ -1,4 +1,4 @@
-## force CLI v0.26.8
+## force CLI v0.26.9
 
 A command-line interface to force.com
 ![](https://travis-ci.org/ForceCLI/force.svg?branch=master)
