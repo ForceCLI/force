@@ -2,9 +2,10 @@ package command
 
 import (
 	"fmt"
-	"github.com/bgentry/speakeasy"
 	"net/url"
 	"os"
+
+	"github.com/bgentry/speakeasy"
 
 	. "github.com/ForceCLI/force/error"
 	. "github.com/ForceCLI/force/lib"
@@ -55,6 +56,9 @@ func runLogin(cmd *Command, args []string) {
 	if *api_version != "" {
 		// Todo verify format of version is 30.0
 		SetApiVersion(*api_version)
+	} else {
+		//override api version in case of a new login
+		SetApiVersion(DefaultApiVersionNumber)
 	}
 
 	if *connectedAppClientId != "" {
