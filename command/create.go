@@ -26,9 +26,9 @@ Examples:
 `,
 }
 var (
-	what        string
+	what     string
 	sObjectName string
-	itemName    string
+	itemName string
 )
 
 func init() {
