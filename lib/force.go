@@ -25,6 +25,11 @@ var (
 	RedirectUri = "http://localhost:3835/oauth/callback"
 )
 
+const (
+	doNotRetry = iota
+	retry
+)
+
 var Timeout int64 = 0
 var CustomEndpoint = ``
 var SessionExpiredError = errors.New("Session expired")
@@ -1118,7 +1123,7 @@ func (f *Force) httpGetBulkAndSend(url string, results chan<- BatchResultChunk) 
 		"X-SFDC-Session": fmt.Sprintf("Bearer %s", f.Credentials.AccessToken),
 		"Content-Type":   "application/xml",
 	}
-	err = f.httpGetRequestAndSend(url, headers, results)
+	err = f.httpGetRequestAndSend(url, headers, results, retry)
 	if err == SessionExpiredError {
 		err = f.RefreshSession()
 		if err != nil {
@@ -1150,7 +1155,7 @@ func (f *Force) httpGetBulkJSONAndSend(url string, results chan<- BatchResultChu
 		"X-SFDC-Session": fmt.Sprintf("Bearer %s", f.Credentials.AccessToken),
 		"Content-Type":   "application/json",
 	}
-	err = f.httpGetRequestAndSend(url, headers, results)
+	err = f.httpGetRequestAndSend(url, headers, results, retry)
 	if err == SessionExpiredError {
 		err = f.RefreshSession()
 		if err != nil {
@@ -1217,7 +1222,7 @@ func (f *Force) httpGetRequest(url string, headers map[string]string) (body []by
 	return
 }
 
-func (f *Force) httpGetRequestAndSend(url string, headers map[string]string, results chan<- BatchResultChunk) (err error) {
+func (f *Force) httpGetRequestAndSend(url string, headers map[string]string, results chan<- BatchResultChunk, retryMode int) (err error) {
 	req, err := httpRequest("GET", url, nil)
 	if err != nil {
 		return err
@@ -1262,6 +1267,7 @@ func (f *Force) httpGetRequestAndSend(url string, headers map[string]string, res
 	isCSV := strings.Contains(contentType, "text/csv")
 	for {
 		n, err := io.ReadFull(res.Body, buf)
+
 		if n > 0 {
 			data := make([]byte, n)
 			copy(data, buf[:n])
@@ -1270,8 +1276,13 @@ func (f *Force) httpGetRequestAndSend(url string, headers map[string]string, res
 				Data:         data,
 			}
 		}
+
 		if err == io.EOF || err == io.ErrUnexpectedEOF {
-			return nil
+			if retryMode == retry && firstChunk && err == io.EOF {
+				f.httpGetRequestAndSend(url, headers, results, doNotRetry)
+			} else {
+				return nil
+			}
 		} else if err != nil {
 			return err
 		}
