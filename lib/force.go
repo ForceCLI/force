@@ -1279,10 +1279,9 @@ func (f *Force) httpGetRequestAndSend(url string, headers map[string]string, res
 
 		if err == io.EOF || err == io.ErrUnexpectedEOF {
 			if retryMode == retry && firstChunk && err == io.EOF {
-				f.httpGetRequestAndSend(url, headers, results, doNotRetry)
-			} else {
-				return nil
+				return f.httpGetRequestAndSend(url, headers, results, doNotRetry)
 			}
+			return nil
 		} else if err != nil {
 			return err
 		}
