@@ -342,6 +342,10 @@ func (f *Force) GetCodeCoverage(classId string, className string) (err error) {
 	var result ForceQueryResult
 	json.Unmarshal(body, &result)
 
+	if len(result.Records) == 0 {
+		ErrorAndExit("class not found")
+	}
+
 	classId = result.Records[0]["Id"].(string)
 	url = fmt.Sprintf("%s/services/data/%s/tooling/query/?q=Select+Coverage,+NumLinesCovered,+NumLinesUncovered,+ApexTestClassId,+ApexClassorTriggerId+From+ApexCodeCoverage+Where+ApexClassorTriggerId='%s'", f.Credentials.InstanceUrl, apiVersion, classId)
 
@@ -352,6 +356,11 @@ func (f *Force) GetCodeCoverage(classId string, className string) (err error) {
 
 	//var result ForceSobjectsResult
 	json.Unmarshal(body, &result)
+
+	if len(result.Records) == 0 {
+		ErrorAndExit("could not find metrics")
+	}
+
 	Log.Info(fmt.Sprintf("\n%d lines covered\n%d lines not covered\n", int(result.Records[0]["NumLinesCovered"].(float64)), int(result.Records[0]["NumLinesUncovered"].(float64))))
 	return
 }

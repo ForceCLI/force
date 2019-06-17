@@ -46,54 +46,52 @@ func runPassword(cmd *Command, args []string) {
 }
 
 func runPasswordStatus(args []string) {
-	if len(args) != 1 {
-		ErrorAndExit("must specify user name")
-	}
-	force, _ := ActiveForce()
-	records, err := force.Query(fmt.Sprintf("select Id From User Where UserName = '%s'", args[0]))
-	if err != nil {
-		ErrorAndExit(err.Error())
-	} else {
-		object, err := force.GetPasswordStatus(records.Records[0]["Id"].(string))
+	run(args, 1, func(force *Force, recordID string) {
+		object, err := force.GetPasswordStatus(recordID)
 		if err != nil {
 			ErrorAndExit(err.Error())
 		} else {
 			fmt.Printf("\nPassword is expired: %t\n\n", object.IsExpired)
 		}
-	}
+	})
 }
 
 func runPasswordReset(args []string) {
-	if len(args) != 1 {
-		ErrorAndExit("must specify user name")
-	}
-	force, _ := ActiveForce()
-	records, err := force.Query(fmt.Sprintf("select Id From User Where UserName = '%s'", args[0]))
-	object, err := force.ResetPassword(records.Records[0]["Id"].(string))
-	if err != nil {
-		ErrorAndExit(err.Error())
-	} else {
-		fmt.Printf("\nNew password is: %s\n\n", object.NewPassword)
-	}
+	run(args, 1, func(force *Force, recordID string) {
+		object, err := force.ResetPassword(recordID)
+		if err != nil {
+			ErrorAndExit(err.Error())
+		} else {
+			fmt.Printf("\nNew password is: %s\n\n", object.NewPassword)
+		}
+	})
 }
 
 func runPasswordChange(args []string) {
-	if len(args) != 2 {
-		ErrorAndExit("must specify user name")
-	}
-	force, _ := ActiveForce()
-	records, err := force.Query(fmt.Sprintf("select Id From User Where UserName = '%s'", args[0]))
-	if err != nil {
-		ErrorAndExit(err.Error())
-	} else {
-		fmt.Println(args[1:])
+	run(args, 2, func(force *Force, recordID string) {
 		newPass := make(map[string]string)
 		newPass["NewPassword"] = args[1]
-		_, err, emessages := force.ChangePassword(records.Records[0]["Id"].(string), newPass)
+		_, err, emessages := force.ChangePassword(recordID, newPass)
 		if err != nil {
 			ErrorAndExit(err.Error(), emessages[0].ErrorCode)
 		} else {
 			fmt.Println("\nPassword changed\n ")
 		}
+	})
+}
+
+func run(args []string, expectedArgs int, runner func(force *Force, recordID string)) {
+	if len(args) != expectedArgs {
+		ErrorAndExit("must specify user name")
+	}
+
+	force, _ := ActiveForce()
+	records, err := force.Query(fmt.Sprintf("select Id From User Where UserName = '%s'", args[0]))
+	if err != nil {
+		ErrorAndExit(err.Error())
+	} else if len(records.Records) > 0 {
+		runner(force, records.Records[0]["Id"].(string))
+	} else {
+		ErrorAndExit("user not found")
 	}
 }
