@@ -113,6 +113,7 @@ Examples using positional arguments - less flexible, arguments must be in the co
   force bulk query retrieve [job id] [batch id]
 
 `,
+	MaxExpectedArgs: -1,
 }
 
 var (

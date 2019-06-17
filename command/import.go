@@ -40,6 +40,7 @@ Examples:
 
   force import -checkonly -runalltests
 `,
+	MaxExpectedArgs: -1,
 }
 
 var (

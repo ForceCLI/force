@@ -3,11 +3,12 @@ package command
 import (
 	"encoding/json"
 	"fmt"
-	. "github.com/ForceCLI/force/error"
-	. "github.com/ForceCLI/force/lib"
 	"os"
 	"os/exec"
 	"path"
+
+	. "github.com/ForceCLI/force/error"
+	. "github.com/ForceCLI/force/lib"
 )
 
 var cmdUseDXAuth = &Command{
@@ -23,6 +24,7 @@ Examples:
   force usedxauth ScratchUserAlias
   force usedxauth
 `,
+	MaxExpectedArgs: 1,
 }
 
 func init() {

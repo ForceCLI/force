@@ -3,10 +3,11 @@ package command
 import (
 	"fmt"
 
+	"strings"
+
 	"github.com/ForceCLI/force/desktop"
 	. "github.com/ForceCLI/force/error"
 	. "github.com/ForceCLI/force/lib"
-	"strings"
 )
 
 var cmdTest = &Command{
@@ -29,6 +30,7 @@ Examples:
   force test -class=Test1 method1 method2
   force test -v Test1
 `,
+	MaxExpectedArgs: -1,
 }
 
 func init() {

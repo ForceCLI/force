@@ -22,7 +22,7 @@ var cmdPush = &Command{
 	Usage: "push -t <metadata type> -n <metadata name> -f <pathtometadata> [deployment options]",
 	Short: "Deploy artifact from a local directory",
 	Long: `
-Deploy artifact from a local directory 
+Deploy artifact from a local directory
 <metadata>: Accepts either actual directory name or Metadata type
 File path can be specified as - to read from stdin; see examples
 
@@ -45,6 +45,7 @@ Deployment Options
   -testlevel, -l          Set test level (NoTestRun, RunSpecifiedTests, RunLocalTests, RunAllTestsInOrg)
   -ignorewarnings, -i     Indicates if warnings should fail deployment or not
 `,
+	MaxExpectedArgs: -1,
 }
 
 var (

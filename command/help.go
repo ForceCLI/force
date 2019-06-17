@@ -9,9 +9,10 @@ import (
 )
 
 var cmdHelp = &Command{
-	Usage: "help [topic]",
-	Short: "Show this help",
-	Long:  `Help shows usage for a command.`,
+	Usage:           "help [topic]",
+	Short:           "Show this help",
+	Long:            `Help shows usage for a command.`,
+	MaxExpectedArgs: -1,
 }
 
 func init() {

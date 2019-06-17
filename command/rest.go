@@ -28,6 +28,7 @@ Examples:
   force rest post "/tooling/sobjects/CustomField/00D9A0000000TgcUAE" path/to/definition.json
 
 `,
+	MaxExpectedArgs: -1,
 }
 
 var (
@@ -46,6 +47,7 @@ func runRest(cmd *Command, args []string) {
 		err  error
 	)
 	force, _ := ActiveForce()
+
 	if len(args) == 0 {
 		cmd.PrintUsage()
 	} else if strings.ToLower(args[0]) == "get" {

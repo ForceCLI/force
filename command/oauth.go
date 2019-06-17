@@ -22,6 +22,7 @@ Examples:
 
   force oauth create MyApp http://localhost:3835/oauth/callback
 `,
+	MaxExpectedArgs: -1,
 }
 
 func runOauth(cmd *Command, args []string) {

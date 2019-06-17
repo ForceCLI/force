@@ -38,6 +38,7 @@ Examples:
 
   force sobject delete Todo
 `,
+	MaxExpectedArgs: -1,
 }
 
 func runSobject(cmd *Command, args []string) {

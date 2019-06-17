@@ -22,6 +22,11 @@ func main() {
 			if err := cmd.Flag.Parse(args[1:]); err != nil {
 				os.Exit(2)
 			}
+			if cmd.MaxExpectedArgs >= 0 && len(cmd.Flag.Args()) > cmd.MaxExpectedArgs {
+				cmd.InvalidInvokation(args)
+				os.Exit(2)
+			}
+
 			_, err := ActiveCredentials(false)
 			if err != nil {
 				ErrorAndExit(err.Error())

@@ -25,7 +25,7 @@ Usage:
   force bigobject create -n=<name> [-f=<field> ...]
   		A field is defined as a "+" separated list of attributes
   		Attributes depend on the type of the field.
-  		
+
   		Type = text: name, label, length
   		Type = datetime: name, label
   		Type = lookup: name, label, referenceTo, relationshipName
@@ -40,6 +40,7 @@ Examples:
   -f=name:MyDate+type=dateTime
 
 `,
+	MaxExpectedArgs: -1,
 }
 
 type boField []string
@@ -85,7 +86,11 @@ func runBigObject(cmd *Command, args []string) {
 		}
 		switch args[0] {
 		case "list":
-			getBigObjectList(args[1:])
+			if len(args) <= 2 {
+				getBigObjectList(args[1:])
+			} else {
+				cmd.InvalidInvokation(args)
+			}
 		case "create":
 			runBigObjectCreate(args[1:])
 		default:

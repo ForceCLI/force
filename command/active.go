@@ -27,6 +27,7 @@ Options:
   -local, -l    Set active account locally, for current directory
   -session, -s  Output session id
 `,
+	MaxExpectedArgs: 1,
 }
 var (
 	tojson    bool

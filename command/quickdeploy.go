@@ -23,6 +23,7 @@ Examples:
 
   force quickdeploy -v 0Af0b000000ZvXH
 `,
+	MaxExpectedArgs: -1,
 }
 
 var (

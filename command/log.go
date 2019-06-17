@@ -22,6 +22,7 @@ Examples:
 
   force log delete <id>
 `,
+	MaxExpectedArgs: -1,
 }
 
 func init() {
@@ -44,6 +45,8 @@ func getLog(cmd *Command, args []string) {
 			ErrorAndExit(err.Error())
 		}
 		fmt.Println("Debug log deleted")
+	} else if len(args) > 1 {
+		ErrorAndExit("You need to provide the id of a debug log to fetch.")
 	} else {
 		logId := args[0]
 		log, err := force.RetrieveLog(logId)

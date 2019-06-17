@@ -26,6 +26,7 @@ var cmdLogin = &Command{
     force login -i my-domain.my.salesforce.com -u username -p password
     force login --connected-app-client-id <my-consumer-key> -u username -key jwt.key
 `,
+	MaxExpectedArgs: 0,
 }
 
 func init() {

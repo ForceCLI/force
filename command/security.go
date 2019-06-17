@@ -244,6 +244,7 @@ Examples:
 
   force security Case
 `,
+	MaxExpectedArgs: -1,
 }
 
 func runSecurity(cmd *Command, args []string) {
@@ -258,7 +259,7 @@ func runSecurity(cmd *Command, args []string) {
 			{Name: []string{"CustomObject"}, Members: args},
 		}
 	} else {
-		fmt.Printf("Pass an SObject name")
+		fmt.Println("Pass an SObject name")
 		return
 	}
 
