@@ -29,6 +29,8 @@ var Timeout int64 = 0
 var CustomEndpoint = ``
 var SessionExpiredError = errors.New("Session expired")
 var APILimitExceededError = errors.New("API limit exceeded")
+var ClassNotFoundError = errors.New("class not found")
+var MetricsNotFoundError = errors.New("metrics not found")
 
 const (
 	EndpointProduction = iota
@@ -342,6 +344,10 @@ func (f *Force) GetCodeCoverage(classId string, className string) (err error) {
 	var result ForceQueryResult
 	json.Unmarshal(body, &result)
 
+	if len(result.Records) == 0 {
+		return ClassNotFoundError
+	}
+
 	classId = result.Records[0]["Id"].(string)
 	url = fmt.Sprintf("%s/services/data/%s/tooling/query/?q=Select+Coverage,+NumLinesCovered,+NumLinesUncovered,+ApexTestClassId,+ApexClassorTriggerId+From+ApexCodeCoverage+Where+ApexClassorTriggerId='%s'", f.Credentials.InstanceUrl, apiVersion, classId)
 
@@ -352,6 +358,11 @@ func (f *Force) GetCodeCoverage(classId string, className string) (err error) {
 
 	//var result ForceSobjectsResult
 	json.Unmarshal(body, &result)
+
+	if len(result.Records) == 0 {
+		return MetricsNotFoundError
+	}
+
 	Log.Info(fmt.Sprintf("\n%d lines covered\n%d lines not covered\n", int(result.Records[0]["NumLinesCovered"].(float64)), int(result.Records[0]["NumLinesUncovered"].(float64))))
 	return
 }
