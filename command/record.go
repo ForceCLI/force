@@ -45,6 +45,7 @@ Examples:
 
   force record delete User 00Ei0000000000
 `,
+	MaxExpectedArgs: -1,
 }
 
 func runRecord(cmd *Command, args []string) {

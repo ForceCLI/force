@@ -52,6 +52,7 @@ var cmdAura = &Command{
 	force aura list
 
 	`,
+	MaxExpectedArgs: -1,
 }
 
 func init() {

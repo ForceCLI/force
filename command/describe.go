@@ -19,6 +19,7 @@ var cmdDescribe = &Command{
   force describe -t=metadata -n=CustomObject
   force describe -t=sobject -n=Account
   `,
+	MaxExpectedArgs: 0,
 }
 
 var (

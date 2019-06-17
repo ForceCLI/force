@@ -16,6 +16,7 @@ Examples:
 
   force whoami
 `,
+	MaxExpectedArgs: 0,
 }
 
 func runWhoami(cmd *Command, args []string) {

@@ -22,6 +22,7 @@ Examples:
 
   force trace delete <id>
 `,
+	MaxExpectedArgs: -1,
 }
 
 func init() {

@@ -23,6 +23,7 @@ Examples:
   force logout
   force logout -u=user@example.org
 `,
+	MaxExpectedArgs: 0,
 }
 
 func init() {

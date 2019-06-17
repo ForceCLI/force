@@ -18,6 +18,7 @@ Examples:
 
   force version
 `,
+	MaxExpectedArgs: 0,
 }
 
 func init() {

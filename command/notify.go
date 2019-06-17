@@ -14,6 +14,7 @@ var cmdNotifySet = &Command{
 	Long: `
 Determines if notifications should be used
 `,
+	MaxExpectedArgs: -1,
 }
 
 func notifySet(cmd *Command, args []string) {

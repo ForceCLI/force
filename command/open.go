@@ -2,6 +2,7 @@ package command
 
 import (
 	"fmt"
+
 	desktop "github.com/ForceCLI/force/desktop"
 	. "github.com/ForceCLI/force/error"
 	. "github.com/ForceCLI/force/lib"
@@ -16,6 +17,7 @@ By default, the active account is used.
 
   force open [account]
 `,
+	MaxExpectedArgs: 1,
 }
 
 func init() {

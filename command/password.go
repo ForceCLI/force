@@ -23,6 +23,7 @@ Examples:
   force password change joe@org.com $uP3r$3cure
 
 `,
+	MaxExpectedArgs: -1,
 }
 
 func init() {

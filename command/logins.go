@@ -22,6 +22,7 @@ Examples:
 
   force logins
 `,
+	MaxExpectedArgs: 0,
 }
 
 func runLogins(cmd *Command, args []string) {

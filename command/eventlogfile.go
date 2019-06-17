@@ -18,6 +18,7 @@ Examples:
   force eventlogfile
   force eventlogfile 0AT300000000XQ7GAM
 `,
+	MaxExpectedArgs: 1,
 }
 
 func getEventLogFile(cmd *Command, args []string) {
