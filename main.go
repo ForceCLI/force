@@ -23,7 +23,7 @@ func main() {
 				os.Exit(2)
 			}
 			if cmd.MaxExpectedArgs >= 0 && len(cmd.Flag.Args()) > cmd.MaxExpectedArgs {
-				cmd.InvalidInvokation(args)
+				cmd.InvalidInvocation(args)
 				os.Exit(2)
 			}
 

@@ -81,7 +81,7 @@ func (c *Command) List() bool {
 	return c.Short != ""
 }
 
-func (c *Command) InvalidInvokation(args []string) {
-	fmt.Printf("Invalid invokation: force %s\n\n", strings.Join(args, " "))
+func (c *Command) InvalidInvocation(args []string) {
+	fmt.Printf("Invalid invocation: force %s\n\n", strings.Join(args, " "))
 	c.PrintUsage()
 }

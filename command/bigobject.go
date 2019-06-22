@@ -89,7 +89,7 @@ func runBigObject(cmd *Command, args []string) {
 			if len(args) <= 2 {
 				getBigObjectList(args[1:])
 			} else {
-				cmd.InvalidInvokation(args)
+				cmd.InvalidInvocation(args)
 			}
 		case "create":
 			runBigObjectCreate(args[1:])
