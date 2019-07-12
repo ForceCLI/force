@@ -29,6 +29,8 @@ var Timeout int64 = 0
 var CustomEndpoint = ``
 var SessionExpiredError = errors.New("Session expired")
 var APILimitExceededError = errors.New("API limit exceeded")
+var ClassNotFoundError = errors.New("class not found")
+var MetricsNotFoundError = errors.New("metrics not found")
 
 const (
 	EndpointProduction = iota
@@ -343,7 +345,7 @@ func (f *Force) GetCodeCoverage(classId string, className string) (err error) {
 	json.Unmarshal(body, &result)
 
 	if len(result.Records) == 0 {
-		ErrorAndExit("class not found")
+		return ClassNotFoundError
 	}
 
 	classId = result.Records[0]["Id"].(string)
@@ -358,7 +360,7 @@ func (f *Force) GetCodeCoverage(classId string, className string) (err error) {
 	json.Unmarshal(body, &result)
 
 	if len(result.Records) == 0 {
-		ErrorAndExit("could not find metrics")
+		return MetricsNotFoundError
 	}
 
 	Log.Info(fmt.Sprintf("\n%d lines covered\n%d lines not covered\n", int(result.Records[0]["NumLinesCovered"].(float64)), int(result.Records[0]["NumLinesUncovered"].(float64))))
