@@ -16,6 +16,11 @@ type ScratchOrg struct {
 	AuthCode    string
 }
 
+type AuthCodeSession struct {
+	ForceSession
+	RefreshToken string `json:"refresh_token"`
+}
+
 func (s *ScratchOrg) tokenURL() string {
 	return fmt.Sprintf("%s/services/oauth2/token", s.InstanceUrl)
 }
@@ -48,6 +53,7 @@ func (f *Force) ForceLoginNewScratch(scratchOrgId string) (session ForceSession,
 		RefreshMethod: RefreshOauth,
 	}
 	session.ForceEndpoint = EndpointTest
+	session.ClientId = "SalesforceDevelopmentExperience"
 	return
 }
 
@@ -84,9 +90,17 @@ func (s *ScratchOrg) getSession() (session ForceSession, err error) {
 	if err != nil {
 		return
 	}
+	var authSession AuthCodeSession
 
-	json.Unmarshal(body, &session)
-	return
+	err = json.Unmarshal(body, &authSession)
+	if err != nil {
+		return
+	}
+
+	session = authSession.ForceSession
+	session.RefreshToken = authSession.RefreshToken
+
+	return session, nil
 }
 
 // Create a new Scratch Org from a Dev Hub Org
