@@ -98,8 +98,11 @@ func (f *Force) CreateScratchOrg() (id string, err error) {
 	params["Edition"] = "Developer"
 	params["Features"] = "AuthorApex;API;AddCustomApps:30;AddCustomTabs:30;ForceComPlatform;Sites;CustomerSelfService"
 	params["OrgName"] = "Force CLI Scratch"
-	id, err, _ = f.CreateRecord("ScratchOrgInfo", params)
+	id, err, messages := f.CreateRecord("ScratchOrgInfo", params)
 	if err != nil {
+		if len(messages) == 1 && messages[0].ErrorCode == "NOT_FOUND" {
+			return "", DevHubOrgRequiredError
+		}
 		return
 	}
 	return
