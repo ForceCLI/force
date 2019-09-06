@@ -13,9 +13,9 @@ import (
 
 var cmdLogin = &Command{
 	Usage: "login",
-	Short: "force login [-i=<instance>] [<-u=username> <-p=password>]",
+	Short: "force login [-i=<instance>] [<-u=username> <-p=password>] [-scratch]",
 	Long: `
-  force login [-i=<instance>] [<-u=username> <-p=password> <-v=apiversion]
+  force login [-i=<instance>] [<-u=username> <-p=password> <-v=apiversion] [-scratch]
 
   Examples:
     force login
@@ -25,6 +25,7 @@ var cmdLogin = &Command{
     force login -i=na1-blitz01.soma.salesforce.com -u=un -p=pw -v 39.0
     force login -i my-domain.my.salesforce.com -u username -p password
     force login --connected-app-client-id <my-consumer-key> -u username -key jwt.key
+    force login -scratch
 `,
 }
 
@@ -41,9 +42,17 @@ var (
 	api_version          = cmdLogin.Flag.String("v", "", "API Version to use")
 	connectedAppClientId = cmdLogin.Flag.String("connected-app-client-id", "", "Client Id (aka Consumer Key) to use instead of default")
 	keyFile              = cmdLogin.Flag.String("key", "", "JWT Signing Key Filename")
+	scratchOrg           = cmdLogin.Flag.Bool("scratch", false, "Create new Scratch Org and Log In")
 )
 
 func runLogin(cmd *Command, args []string) {
+	if *scratchOrg {
+		_, err := ForceScratchLoginAndSave(os.Stderr)
+		if err != nil {
+			ErrorAndExit(err.Error())
+		}
+		return
+	}
 	endpoint := "https://login.salesforce.com"
 	// If no instance specified, try to get last endpoint used
 	if *instance == "" {

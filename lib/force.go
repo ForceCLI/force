@@ -31,6 +31,7 @@ var SessionExpiredError = errors.New("Session expired")
 var APILimitExceededError = errors.New("API limit exceeded")
 var ClassNotFoundError = errors.New("class not found")
 var MetricsNotFoundError = errors.New("metrics not found")
+var DevHubOrgRequiredError = errors.New("Org must be a Dev Hub")
 
 const (
 	EndpointProduction = iota
