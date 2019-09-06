@@ -24,6 +24,7 @@ Examples:
 
   force create -t ApexComponent -n CoolComponent
 `,
+	MaxExpectedArgs: 0,
 }
 var (
 	what        string

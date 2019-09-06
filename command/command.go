@@ -51,9 +51,10 @@ type Command struct {
 	Run  func(cmd *Command, args []string)
 	Flag flag.FlagSet
 
-	Usage string // first word is the command name
-	Short string // `forego help` output
-	Long  string // `forego help cmd` output
+	Usage           string // first word is the command name
+	Short           string // `forego help` output
+	Long            string // `forego help cmd` output
+	MaxExpectedArgs int    // the maximum number of arguments this command expects, -1 if it is variadic
 }
 
 func (c *Command) PrintUsage() {
@@ -78,4 +79,9 @@ func (c *Command) Runnable() bool {
 
 func (c *Command) List() bool {
 	return c.Short != ""
+}
+
+func (c *Command) InvalidInvocation(args []string) {
+	fmt.Printf("Invalid invocation: force %s\n\n", strings.Join(args, " "))
+	c.PrintUsage()
 }

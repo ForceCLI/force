@@ -27,6 +27,7 @@ var cmdLogin = &Command{
     force login --connected-app-client-id <my-consumer-key> -u username -key jwt.key
     force login -scratch
 `,
+	MaxExpectedArgs: 0,
 }
 
 func init() {

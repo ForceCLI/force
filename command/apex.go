@@ -27,6 +27,7 @@ Examples:
   >> Start typing Apex code; press CTRL-D(for Mac/Linux) / Ctrl-Z (for Windows) when finished
 
 `,
+	MaxExpectedArgs: 2,
 }
 
 func init() {

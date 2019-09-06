@@ -21,6 +21,7 @@ Usage:
 Options:
   -activate, -a     Keep the isActive state of any Remote Site Settings (RSS) and Content Security Policies (CSP) in package
 `,
+	MaxExpectedArgs: 4,
 }
 
 var (

@@ -37,6 +37,7 @@ Examples
   force fetch -t AuraDefinitionBundle -t ApexClass
   force fetch -x myproj/metadata/package.xml
 `,
+	MaxExpectedArgs: 0,
 }
 
 type metaName []string

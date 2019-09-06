@@ -33,7 +33,7 @@ Commands:
   create        creates a new dataPipe
   update        update a dataPipe
   delete        delete a datapipe
-  list          list all datapipes 
+  list          list all datapipes
   query         query for a specific datapipe(s)
   createjob     creates a new job for a specific datapipe
   listjobs      list the status of submitted jobs
@@ -53,6 +53,7 @@ Defaults
   -v Current API version *Number only
 
 `,
+	MaxExpectedArgs: -1,
 }
 
 var defaultContent = `
@@ -99,6 +100,7 @@ func runDataPipe(cmd *Command, args []string) {
 		if err := cmd.Flag.Parse(args[1:]); err != nil {
 			os.Exit(2)
 		}
+
 		switch args[0] {
 		case "create":
 			runDataPipelineCreate()

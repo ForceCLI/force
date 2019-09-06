@@ -21,6 +21,7 @@ var cmdPushAura = &Command{
 	force pushAura -f=<fullFilePath>
 
 	`,
+	MaxExpectedArgs: -1,
 }
 
 func init() {

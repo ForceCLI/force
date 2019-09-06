@@ -32,6 +32,7 @@ Examples:
 
   force export -x ApexClass -x CustomObject
 `,
+	MaxExpectedArgs: 1,
 }
 
 type metadataList []string

@@ -17,6 +17,7 @@ var cmdLimits = &Command{
 	 -- Max is the limit total for the organization.
 
 	 -- Remaining is the total number of calls or events left for the organization.`,
+	MaxExpectedArgs: 0,
 }
 
 func init() {

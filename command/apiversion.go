@@ -20,6 +20,7 @@ Examples:
   force apiversion
   force apiversion 40.0
 `,
+	MaxExpectedArgs: 1,
 }
 
 func init() {

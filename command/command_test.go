@@ -1,9 +1,10 @@
 package command_test
 
 import (
+	"testing"
+
 	. "github.com/ForceCLI/force/command"
 	"github.com/bmizerany/assert"
-	"testing"
 )
 
 // test that all avialable commands come with at least a name and short usage information

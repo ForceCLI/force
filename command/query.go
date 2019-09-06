@@ -2,9 +2,10 @@ package command
 
 import (
 	"fmt"
-	"golang.org/x/crypto/ssh/terminal"
 	"os"
 	"strings"
+
+	"golang.org/x/crypto/ssh/terminal"
 
 	. "github.com/ForceCLI/force/error"
 	. "github.com/ForceCLI/force/lib"
@@ -29,6 +30,7 @@ Query Options
   --tooling, -t  Use Tooling API
   --format, -f   Output format: csv, json, json-pretty, console
 `,
+	MaxExpectedArgs: -1,
 }
 
 var (

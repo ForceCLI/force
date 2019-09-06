@@ -33,6 +33,7 @@ Examples:
   force field type email   #displays the required and optional attributes
 
 `,
+	MaxExpectedArgs: -1,
 }
 
 func runField(cmd *Command, args []string) {
@@ -51,6 +52,8 @@ func runField(cmd *Command, args []string) {
 				DisplayFieldTypes()
 			} else if len(args) == 2 {
 				DisplayFieldDetails(args[1])
+			} else {
+				ErrorAndExit("must specify one type at most")
 			}
 		default:
 			ErrorAndExit("no such command: %s", args[0])
@@ -105,8 +108,8 @@ func runFieldCreate(args []string) {
 }
 
 func runFieldDelete(args []string) {
-	if len(args) < 2 {
-		ErrorAndExit("must specify object and at least one field")
+	if len(args) != 2 {
+		ErrorAndExit("must specify object and field")
 	}
 	force, _ := ActiveForce()
 	if err := force.Metadata.DeleteCustomField(args[0], args[1]); err != nil {
