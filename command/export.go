@@ -139,6 +139,7 @@ func runExport(cmd *Command, args []string) {
 		"FlowDefinition",
 		"Folder",
 		"ForecastingSettings",
+		"GlobalValueSet",
 		"Group",
 		"HomePageComponent",
 		"HomePageLayout",
