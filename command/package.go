@@ -60,5 +60,5 @@ func runInstallPackage(args []string) {
 	if err := force.Metadata.InstallPackageWithRSS(packageNamespace, version, password, activateRSS); err != nil {
 		ErrorAndExit(err.Error())
 	}
-	fmt.Println("Package instaled")
+	fmt.Println("Package installed")
 }
