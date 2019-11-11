@@ -84,10 +84,13 @@ func init() {
 	cmdPush.Run = runPush
 }
 
-func replaceAuraComponentWithBundle(inputPathToFile string) string {
+func replaceComponentWithBundle(inputPathToFile string) string {
 	dirPart, filePart := filepath.Split(inputPathToFile)
 	dirPart = filepath.Dir(dirPart)
 	if strings.Contains(dirPart, "aura") && filepath.Ext(filePart) != "" && filepath.Base(filepath.Dir(dirPart)) == "aura" {
+		inputPathToFile = dirPart
+	}
+	if strings.Contains(dirPart, "lwc") && filepath.Ext(filePart) != "" && filepath.Base(filepath.Dir(dirPart)) == "lwc" {
 		inputPathToFile = dirPart
 	}
 	return inputPathToFile
@@ -122,11 +125,11 @@ func runPush(cmd *Command, args []string) {
 		// or to a folder. If it is a folder, we pickup the resources a different
 		// way than if it's a file.
 
-		// Replace aura file reference with full bundle folder because only the
+		// Replace aura/lwc file reference with full bundle folder because only the
 		// main component can be deployed by itself.
 		resorucepathsToPush := make(metaName, 0)
 		for _, fsPath := range resourcepaths {
-			resorucepathsToPush = append(resorucepathsToPush, replaceAuraComponentWithBundle(fsPath))
+			resorucepathsToPush = append(resorucepathsToPush, replaceComponentWithBundle(fsPath))
 		}
 		resourcepaths = resorucepathsToPush
 
@@ -248,7 +251,7 @@ func findMetadataTypeFolder(mdtype string, root string) (folder string) {
 		if firstEl == mdtype {
 			// This is sufficient for MD that does not have sub folders (classes, pages, etc)
 			// It is NOT sufficient for aura bundles
-			if mdtype == "AuraDefinitionBundle" {
+			if mdtype == "AuraDefinitionBundle" || mdtype == "LightningComponentBundle" {
 				// Need the parent of this folder to get all aura bundles in the directory
 				folder = filepath.Dir(filepath.Dir(path))
 			} else {
@@ -317,15 +320,15 @@ func pushByMetadataType() {
 	// to be added to the package.
 	var files []string
 
-	// Handle aura separately
-	if filepath.Base(metaFolder) == "aura" {
+	// Handle aura/lwc bundles separately
+	if filepath.Base(metaFolder) == "aura" || filepath.Base(metaFolder) == "lwc" {
 		cur := ""
 		filepath.Walk(metaFolder, func(path string, f os.FileInfo, err error) error {
 			if f.IsDir() && cur != f.Name() {
 				cur = f.Name()
 				fmt.Printf("Pushing " + f.Name() + "\n")
 			}
-			if f.Name() != "aura" && strings.ToLower(f.Name()) != ".ds_store" && f.IsDir() {
+			if (f.Name() != "aura" && f.Name() != "lwc") && strings.ToLower(f.Name()) != ".ds_store" && f.IsDir() {
 				absPath, _ := filepath.Abs(path)
 				pushAuraComponentByPath(absPath)
 			}
@@ -339,7 +342,8 @@ func pushByMetadataType() {
 		// that have been unpacked.  Not entirely sure if this is the only time we will
 		// find a folder inside a metadata type folder.
 		if f.IsDir() {
-			if f.Name() != "aura" && filepath.Base(filepath.Dir(path)) != "aura" && filepath.Base(filepath.Dir(filepath.Dir(path))) != "aura" {
+			if f.Name() != "aura" && filepath.Base(filepath.Dir(path)) != "aura" && filepath.Base(filepath.Dir(filepath.Dir(path))) != "aura" &&
+				f.Name() != "lwc" && filepath.Base(filepath.Dir(path)) != "lwc" && filepath.Base(filepath.Dir(filepath.Dir(path))) != "lwc" {
 				// Check to see if any names where specified in the -name flag
 				if len(metadataName) == 0 {
 					// Take all
@@ -359,7 +363,7 @@ func pushByMetadataType() {
 
 		// These should be file resources, but, could be child folders of unzipped resources in
 		// which case we will have handled them above.
-		if (filepath.Dir(path) != metaFolder && !f.IsDir()) || f.Name() == "aura" {
+		if (filepath.Dir(path) != metaFolder && !f.IsDir()) || (f.Name() == "aura" || f.Name() == "lwc") {
 			return nil
 		}
 		// Again, if no names where specifed on -name flag, just add the file.
