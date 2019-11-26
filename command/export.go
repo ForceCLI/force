@@ -123,6 +123,7 @@ func runExport(cmd *Command, args []string) {
 		"CustomField",
 		"CustomLabels",
 		"CustomMetadata",
+		"CustomNotificationType",
 		"CustomObjectTranslation",
 		"CustomPageWebLink",
 		"CustomPermission",
