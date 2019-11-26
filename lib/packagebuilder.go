@@ -61,6 +61,7 @@ var metapaths = []metapath{
 	metapath{path: "corsWhitelistOrigins", name: "CorsWhitelistOrigin"},
 	metapath{path: "customApplicationComponents", name: "CustomApplicationComponent"},
 	metapath{path: "customMetadata", name: "CustomMetadata"},
+	metapath{path: "notificationTypes", name: "CustomNotificationType"},
 	metapath{path: "customPermissions", name: "CustomPermission"},
 	metapath{path: "dashboards", name: "Dashboard", hasFolder: true},
 	metapath{path: "dataSources", name: "ExternalDataSource"},
