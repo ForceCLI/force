@@ -162,6 +162,8 @@ func runExport(cmd *Command, args []string) {
 		"Network",
 		"OpportunitySettings",
 		"PermissionSet",
+		"PlatformEventChannel",
+		"PlatformEventChannelMember",
 		"Portal",
 		"PostTemplate",
 		"ProductSettings",
