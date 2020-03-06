@@ -3,33 +3,38 @@ language: go
 go:
 - 1.14
 
+env:
+  global:
+    - OS_TARGETS="darwin windows linux"
+    - ARCH_TARGETS="386 amd64"
+    - GO_LINKER_VALUE=$(git describe --tags --always)
+    - GO_LINKER_SYMBOL="github.com/ForceCLI/force/lib.Version"
+
 before_install:
-- go get golang.org/x/tools/cmd/goimports
-- go get github.com/mitchellh/gox
+  - go get golang.org/x/tools/cmd/goimports
+  - go get github.com/mitchellh/gox
+
 script:
-- git config --global user.email "you@example.com"
-- git config --global user.name "Your Name"
-- test -z "$(go fmt)"
-- go vet
-- go test -v ./...
-- go test -v -race ./...
-- export OS_TARGETS="darwin windows linux"
-- export ARCH_TARGETS="386 amd64"
-- export GO_LINKER_VALUE=$(git describe --tags --always)
-- export GO_LINKER_SYMBOL="github.com/ForceCLI/force/lib.Version"
-- gox -os "$OS_TARGETS" -arch="$ARCH_TARGETS" -ldflags "-X $GO_LINKER_SYMBOL=$GO_LINKER_VALUE"
+  - git config --global user.email "you@example.com"
+  - git config --global user.name "Your Name"
+  - test -z "$(go fmt)"
+  - go vet
+  - go test -v ./...
+  - go test -v -race ./...
+  - gox -os "$OS_TARGETS" -arch="$ARCH_TARGETS" -ldflags "-X $GO_LINKER_SYMBOL=$GO_LINKER_VALUE"
+
 deploy:
-- provider: releases
-  skip_cleanup: true
-  api_key:
-    secure: ZKXOj+6IJmEhv8r9QDY50BPvXj9lawJ/4URPavYPRoOH66xJvUeEPw6Weor2qx30z6dh6Eu2VME9rVx9q4+fb5erhuNYckL1qnaIO/z8k3bQuM0aBvcYB+BX6kdHKJcQHKrg12+Otj5aWlx3SXRENIAILhAOz43I75uryMTqN3o=
-  file:
-    - force_darwin_amd64
-    - force_darwin_386
-    - force_linux_amd64
-    - force_linux_386
-    - force_windows_amd64.exe
-    - force_windows_386.exe
-  on:
-    tags: true
-    repo: ForceCLI/force
+  - provider: releases
+    skip_cleanup: true
+    api_key:
+      secure: ZKXOj+6IJmEhv8r9QDY50BPvXj9lawJ/4URPavYPRoOH66xJvUeEPw6Weor2qx30z6dh6Eu2VME9rVx9q4+fb5erhuNYckL1qnaIO/z8k3bQuM0aBvcYB+BX6kdHKJcQHKrg12+Otj5aWlx3SXRENIAILhAOz43I75uryMTqN3o=
+    file:
+      - force_darwin_amd64
+      - force_darwin_386
+      - force_linux_amd64
+      - force_linux_386
+      - force_windows_amd64.exe
+      - force_windows_386.exe
+    on:
+      tags: true
+      repo: ForceCLI/force
