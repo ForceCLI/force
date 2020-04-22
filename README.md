@@ -79,7 +79,7 @@ Active without any arguments will display the currently acctive login that you a
 ### whoami
 Whoami will display detailed user information about the currently active logged in user.  This is Force.com specific information.
 
-      force whomai
+      force whoami
 
 ![](https://raw.githubusercontent.com/dcarroll/dcarroll.github.io/master/images/force/screenshot-191%20copy.png)
 
