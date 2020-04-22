@@ -32,7 +32,7 @@ Export specified artifact(s) to a local directory. Use "package" type to retriev
 
 Examples
 
-  force fetch -t=CustomObject n=Book__c n=Author__c
+  force fetch -t=CustomObject -n=Book__c -n=Author__c
   force fetch -t Aura -n MyComponent -d /Users/me/Documents/Project/home
   force fetch -t AuraDefinitionBundle -t ApexClass
   force fetch -x myproj/metadata/package.xml
