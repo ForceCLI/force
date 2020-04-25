@@ -1599,3 +1599,15 @@ func oauthCallbackHtml() string {
   </body>
 </html>`
 }
+
+func (force *Force) GetMetadata() *ForceMetadata {
+	return force.Metadata
+}
+
+func (force *Force) GetCredentials() *ForceSession {
+	return force.Credentials
+}
+
+func (force *Force) GetPartner() *ForcePartner {
+	return force.Partner
+}
