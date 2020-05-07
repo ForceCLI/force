@@ -1,3 +1,19 @@
+// Package query implements querying through the Salesforce data service.
+// It is a non-trivial problem because:
+//
+// - The API response shape is weird
+// - Subqueries can themselves be paginated.
+//
+// The first is generally manageable and nothing so out of the ordinary.
+// The second however is a big problem from an API/interface perspective.
+// It doesn't make sense to paginate subqueries to a caller,
+// because they probably don't have the context to use the subquery.
+// It's also just incredibly difficult to program the caller-based pagination of subqueries.
+//
+// So we choose to hide the subquery pagination as an implementation detail.
+// Again, not ideal, but probably the best choice.
+//
+// We do, however, still support top-level query pagination.
 package query
 
 import (
@@ -7,8 +23,6 @@ import (
 	"strings"
 )
 
-//type Record = interface{}
-
 type result struct {
 	Done           bool
 	TotalSize      int
@@ -16,42 +30,57 @@ type result struct {
 	Records        []map[string]interface{}
 }
 
-func (r result) PublicRecords() []Record {
-	res := make([]Record, len(r.Records))
-	for i, rec := range r.Records {
-		res[i] = r.publicRecord(rec)
+func recordsFromMapRecords(q queryer, records []map[string]interface{}) ([]Record, error) {
+	res := make([]Record, len(records))
+	for i, rec := range records {
+		rec, err := recordFromMapRecord(q, rec)
+		if err != nil {
+			return nil, err
+		}
+		res[i] = rec
 	}
-	return res
+	return res, nil
 }
 
-func (r result) publicRecord(rec map[string]interface{}) Record {
-	pub := Record{
+func recordFromMapRecord(q queryer, rec map[string]interface{}) (Record, error) {
+	res := Record{
 		Raw:    rec,
 		Fields: make(map[string]interface{}, len(rec)-1),
 	}
 	for k, v := range rec {
 		if k == "attributes" {
 			attrs := v.(map[string]interface{})
-			pub.Attributes.Type = attrs["type"].(string)
-			pub.Attributes.Url = attrs["url"].(string)
+			res.Attributes.Type = attrs["type"].(string)
+			res.Attributes.Url = attrs["url"].(string)
 		} else if strings.HasSuffix(k, "__r") {
 			vm := v.(map[string]interface{})
 			if _, isRelationList := vm["done"]; isRelationList {
-				relRes := result{
-					Done:           vm["done"].(bool),
-					TotalSize:      int(vm["totalSize"].(float64)),
-					NextRecordsUrl: vm["nextRecordsUrl"].(string),
-					Records:        mapII2MapSI(vm["records"].([]interface{})),
+				subrecs, err := recordsFromMapRecords(q, toStrIfaceMapSlice(vm["records"].([]interface{})))
+				if err != nil {
+					return res, err
 				}
-				pub.Fields[k] = relRes.PublicRecords()
+				if !vm["done"].(bool) {
+					err := q.getAllPages(vm["nextRecordsUrl"].(string), func(records []Record) bool {
+						subrecs = append(subrecs, records...)
+						return true
+					})
+					if err != nil {
+						return res, err
+					}
+				}
+				res.Fields[k] = subrecs
 			} else {
-				pub.Fields[k] = r.publicRecord(vm)
+				rec, err := recordFromMapRecord(q, vm)
+				if err != nil {
+					return res, err
+				}
+				res.Fields[k] = rec
 			}
 		} else {
-			pub.Fields[k] = v
+			res.Fields[k] = v
 		}
 	}
-	return pub
+	return res, nil
 }
 
 type Record struct {
@@ -60,7 +89,7 @@ type Record struct {
 		Url  string
 	}
 	Fields map[string]interface{}
-	Raw map[string]interface{}
+	Raw    map[string]interface{}
 }
 
 type Options struct {
@@ -73,9 +102,9 @@ type Options struct {
 	httpGet     func(string) ([]byte, error)
 }
 
-type PageCallback func(parent *Record, children []Record) bool
+type PageCallback func([]Record) bool
 
-func (o Options) Url() string {
+func (o Options) UrlTail() string {
 	tail := o.tail
 	if tail == "" {
 		cmd := o.cmd
@@ -88,7 +117,7 @@ func (o Options) Url() string {
 	if o.querystring != "" {
 		query = "?q=" + url.QueryEscape(o.querystring)
 	}
-	return fmt.Sprintf("%s%s%s", o.instanceUrl, tail, query)
+	return fmt.Sprintf("%s%s", tail, query)
 }
 
 type Option func(*Options)
@@ -138,38 +167,50 @@ func Query(cb PageCallback, options ...Option) error {
 	for _, option := range options {
 		option(&opts)
 	}
+	q := queryer{opts.instanceUrl, opts.httpGet}
+	return q.getAllPages(opts.UrlTail(), cb)
+}
 
+type queryer struct {
+	instanceUrl string
+	httpGet     HttpGetter
+}
+
+func (q queryer) getAllPages(nextRecordsUrl string, cb PageCallback) error {
 	done := false
-	nextRecordsUrl := opts.Url()
 	for !done {
-		body, err := opts.httpGet(nextRecordsUrl)
+		body, err := q.httpGet(fmt.Sprintf("%s%s", q.instanceUrl, nextRecordsUrl))
 		if err != nil {
 			return err
 		}
-		var currResult result
+		currResult := result{}
 		if err := json.Unmarshal(body, &currResult); err != nil {
 			return err
 		}
-		getNextPage := cb(nil, currResult.PublicRecords())
+		records, err := recordsFromMapRecords(q, currResult.Records)
+		if err != nil {
+			return err
+		}
+		getNextPage := cb(records)
 		if !getNextPage {
 			break
 		}
 		done = currResult.Done
-		nextRecordsUrl = fmt.Sprintf("%s%s", opts.instanceUrl, currResult.NextRecordsUrl)
+		nextRecordsUrl = currResult.NextRecordsUrl
 	}
 	return nil
 }
 
 func Eager(options ...Option) ([]Record, error) {
 	records := make([]Record, 0, 128)
-	err := Query(func(parent *Record, children []Record) bool {
+	err := Query(func(children []Record) bool {
 		records = append(records, children...)
 		return true
 	}, options...)
 	return records, err
 }
 
-func mapII2MapSI(i2i []interface{}) []map[string]interface{} {
+func toStrIfaceMapSlice(i2i []interface{}) []map[string]interface{} {
 	res := make([]map[string]interface{}, len(i2i))
 	for i, m := range i2i {
 		res[i] = m.(map[string]interface{})

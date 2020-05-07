@@ -656,15 +656,12 @@ func (f *Force) QueryAndSend(query string, processor chan<- ForceRecord, options
 }
 
 func (f *Force) Query(qs string, options ...func(*QueryOptions)) (ForceQueryResult, error) {
+	qopts := f.QueryOptions()
+	qopts = append(qopts, query.QS(qs))
+
 	queryOptions := QueryOptions{}
 	for _, option := range options {
 		option(&queryOptions)
-	}
-	qopts := []query.Option{
-		query.HttpGet(f.httpGet),
-		query.InstanceUrl(f.Credentials.InstanceUrl),
-		query.ApiVersion(apiVersion),
-		query.QS(qs),
 	}
 	if queryOptions.QueryAll {
 		qopts = append(qopts, query.All)
@@ -682,9 +679,18 @@ func (f *Force) Query(qs string, options ...func(*QueryOptions)) (ForceQueryResu
 	result.TotalSize = len(records)
 	result.Records = make([]ForceRecord, len(records))
 	for i, r := range records {
-		result.Records[i] = r.Fields
+		// NOTE: This will keep intact the subquery locator bug
+		result.Records[i] = r.Raw
 	}
 	return result, err
+}
+
+func (f *Force) QueryOptions() []query.Option {
+	return []query.Option{
+		query.HttpGet(f.httpGet),
+		query.InstanceUrl(f.Credentials.InstanceUrl),
+		query.ApiVersion(apiVersion),
+	}
 }
 
 func (f *Force) Get(url string) (object ForceRecord, err error) {
