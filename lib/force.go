@@ -6,6 +6,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"github.com/ForceCLI/force/lib/query"
 	"io"
 	"io/ioutil"
 	"net"
@@ -608,89 +609,61 @@ func (f *Force) GetSobject(name string) (sobject ForceSobject, err error) {
 	return
 }
 
-func (f *Force) QueryAndSend(query string, processor chan<- ForceRecord, options ...func(*QueryOptions)) (err error) {
+func (f *Force) QueryAndSend(qs string, processor chan<- ForceRecord, options ...func(*QueryOptions)) error {
 	defer func() {
 		close(processor)
 	}()
-	queryOptions := QueryOptions{}
-	for _, option := range options {
-		option(&queryOptions)
-	}
-	cmd := "query"
-	if queryOptions.QueryAll {
-		cmd = "queryAll"
-	}
-	if queryOptions.IsTooling {
-		cmd = "tooling/" + cmd
-	}
-	processResults := func(body []byte) (result ForceQueryResult, err error) {
-		err = json.Unmarshal(body, &result)
-		if err != nil {
-			return
-		}
-		for _, row := range result.Records {
-			processor <- row
-		}
-		return
-	}
 
-	var body []byte
-	url := fmt.Sprintf("%s/services/data/%s/%s?q=%s", f.Credentials.InstanceUrl, apiVersion, cmd, url.QueryEscape(query))
-	for {
-		body, err = f.httpGet(url)
-		if err != nil {
-			return
+	qopts := f.legacyQueryOptions(qs, options...)
+	err := query.Query(func(records []query.Record) bool {
+		for _, row := range records {
+			processor <- row.Raw
 		}
-		var result ForceQueryResult
-		result, err = processResults(body)
-		if err != nil {
-			return
-		}
-		if result.Done {
-			break
-		}
-		url = fmt.Sprintf("%s%s", f.Credentials.InstanceUrl, result.NextRecordsUrl)
-	}
-	return
+		return true
+	}, qopts...)
+	return err
 }
 
-func (f *Force) Query(query string, options ...func(*QueryOptions)) (result ForceQueryResult, err error) {
+func (f *Force) Query(qs string, options ...func(*QueryOptions)) (ForceQueryResult, error) {
+	qopts := f.legacyQueryOptions(qs, options...)
+	result := ForceQueryResult{}
+	records, err := query.Eager(qopts...)
+	if err != nil {
+		return result, err
+	}
+	result.Done = true
+	result.TotalSize = len(records)
+	result.Records = make([]ForceRecord, len(records))
+	for i, r := range records {
+		// NOTE: This will keep intact the subquery locator bug
+		result.Records[i] = r.Raw
+	}
+	return result, err
+}
+
+func (f *Force) QueryOptions() []query.Option {
+	return []query.Option{
+		query.HttpGet(f.httpGet),
+		query.InstanceUrl(f.Credentials.InstanceUrl),
+		query.ApiVersion(apiVersion),
+	}
+}
+
+func (f *Force) legacyQueryOptions(qs string, options ...func(*QueryOptions)) []query.Option {
+	qopts := f.QueryOptions()
+	qopts = append(qopts, query.QS(qs))
+
 	queryOptions := QueryOptions{}
 	for _, option := range options {
 		option(&queryOptions)
 	}
-	cmd := "query"
 	if queryOptions.QueryAll {
-		cmd = "queryAll"
+		qopts = append(qopts, query.All)
 	}
 	if queryOptions.IsTooling {
-		cmd = "tooling/" + cmd
+		qopts = append(qopts, query.Tooling)
 	}
-
-	result = ForceQueryResult{
-		Done:           false,
-		NextRecordsUrl: fmt.Sprintf("%s/services/data/%s/%s?q=%s", f.Credentials.InstanceUrl, apiVersion, cmd, url.QueryEscape(query)),
-		TotalSize:      0,
-		Records:        []ForceRecord{},
-	}
-
-	/* The Force API will split queries returning large result sets into
-	 * multiple pieces (generally every 200 records). We need to repeatedly
-	 * query until we've retrieved all of them. */
-	for !result.Done {
-		var body []byte
-		body, err = f.httpGet(result.NextRecordsUrl)
-
-		if err != nil {
-			return
-		}
-
-		var currResult ForceQueryResult
-		json.Unmarshal(body, &currResult)
-		result.Update(currResult, f)
-	}
-
-	return
+	return qopts
 }
 
 func (f *Force) Get(url string) (object ForceRecord, err error) {
