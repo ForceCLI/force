@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"strings"
 )
 
 //type Record = interface{}
@@ -17,20 +18,40 @@ type result struct {
 
 func (r result) PublicRecords() []Record {
 	res := make([]Record, len(r.Records))
-	for i, r := range r.Records {
-		pub := Record{Raw: r, Fields: make(map[string]interface{}, len(r)-1)}
-		for k, v := range r {
-			if k == "attributes" {
-				attrs := v.(map[string]interface{})
-				pub.Attributes.Type = attrs["type"].(string)
-				pub.Attributes.Url = attrs["url"].(string)
-			} else {
-				pub.Fields[k] = v
-			}
-		}
-		res[i] = pub
+	for i, rec := range r.Records {
+		res[i] = r.publicRecord(rec)
 	}
 	return res
+}
+
+func (r result) publicRecord(rec map[string]interface{}) Record {
+	pub := Record{
+		Raw:    rec,
+		Fields: make(map[string]interface{}, len(rec)-1),
+	}
+	for k, v := range rec {
+		if k == "attributes" {
+			attrs := v.(map[string]interface{})
+			pub.Attributes.Type = attrs["type"].(string)
+			pub.Attributes.Url = attrs["url"].(string)
+		} else if strings.HasSuffix(k, "__r") {
+			vm := v.(map[string]interface{})
+			if _, isRelationList := vm["done"]; isRelationList {
+				relRes := result{
+					Done:           vm["done"].(bool),
+					TotalSize:      int(vm["totalSize"].(float64)),
+					NextRecordsUrl: vm["nextRecordsUrl"].(string),
+					Records:        mapII2MapSI(vm["records"].([]interface{})),
+				}
+				pub.Fields[k] = relRes.PublicRecords()
+			} else {
+				pub.Fields[k] = r.publicRecord(vm)
+			}
+		} else {
+			pub.Fields[k] = v
+		}
+	}
+	return pub
 }
 
 type Record struct {
@@ -146,4 +167,12 @@ func Eager(options ...Option) ([]Record, error) {
 		return true
 	}, options...)
 	return records, err
+}
+
+func mapII2MapSI(i2i []interface{}) []map[string]interface{} {
+	res := make([]map[string]interface{}, len(i2i))
+	for i, m := range i2i {
+		res[i] = m.(map[string]interface{})
+	}
+	return res
 }
