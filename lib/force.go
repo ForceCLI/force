@@ -6,6 +6,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"github.com/ForceCLI/force/lib/query"
 	"io"
 	"io/ioutil"
 	"net"
@@ -654,43 +655,36 @@ func (f *Force) QueryAndSend(query string, processor chan<- ForceRecord, options
 	return
 }
 
-func (f *Force) Query(query string, options ...func(*QueryOptions)) (result ForceQueryResult, err error) {
+func (f *Force) Query(qs string, options ...func(*QueryOptions)) (ForceQueryResult, error) {
 	queryOptions := QueryOptions{}
 	for _, option := range options {
 		option(&queryOptions)
 	}
-	cmd := "query"
+	qopts := []query.Option{
+		query.HttpGet(f.httpGet),
+		query.InstanceUrl(f.Credentials.InstanceUrl),
+		query.ApiVersion(apiVersion),
+		query.QS(qs),
+	}
 	if queryOptions.QueryAll {
-		cmd = "queryAll"
+		qopts = append(qopts, query.All)
 	}
 	if queryOptions.IsTooling {
-		cmd = "tooling/" + cmd
+		qopts = append(qopts, query.Tooling)
 	}
 
-	result = ForceQueryResult{
-		Done:           false,
-		NextRecordsUrl: fmt.Sprintf("%s/services/data/%s/%s?q=%s", f.Credentials.InstanceUrl, apiVersion, cmd, url.QueryEscape(query)),
-		TotalSize:      0,
-		Records:        []ForceRecord{},
+	result := ForceQueryResult{}
+	records, err := query.Eager(qopts...)
+	if err != nil {
+		return result, err
 	}
-
-	/* The Force API will split queries returning large result sets into
-	 * multiple pieces (generally every 200 records). We need to repeatedly
-	 * query until we've retrieved all of them. */
-	for !result.Done {
-		var body []byte
-		body, err = f.httpGet(result.NextRecordsUrl)
-
-		if err != nil {
-			return
-		}
-
-		var currResult ForceQueryResult
-		json.Unmarshal(body, &currResult)
-		result.Update(currResult, f)
+	result.Done = true
+	result.TotalSize = len(records)
+	result.Records = make([]ForceRecord, len(records))
+	for i, r := range records {
+		result.Records[i] = r.(map[string]interface{})
 	}
-
-	return
+	return result, err
 }
 
 func (f *Force) Get(url string) (object ForceRecord, err error) {
