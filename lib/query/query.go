@@ -6,26 +6,53 @@ import (
 	"net/url"
 )
 
-type Record = interface{}
+//type Record = interface{}
 
-type Result struct {
+type result struct {
 	Done           bool
 	TotalSize      int
 	NextRecordsUrl string
-	Records        []Record
+	Records        []map[string]interface{}
+}
+
+func (r result) PublicRecords() []Record {
+	res := make([]Record, len(r.Records))
+	for i, r := range r.Records {
+		pub := Record{Raw: r, Fields: make(map[string]interface{}, len(r)-1)}
+		for k, v := range r {
+			if k == "attributes" {
+				attrs := v.(map[string]interface{})
+				pub.Attributes.Type = attrs["type"].(string)
+				pub.Attributes.Url = attrs["url"].(string)
+			} else {
+				pub.Fields[k] = v
+			}
+		}
+		res[i] = pub
+	}
+	return res
+}
+
+type Record struct {
+	Attributes struct {
+		Type string
+		Url  string
+	}
+	Fields map[string]interface{}
+	Raw map[string]interface{}
 }
 
 type Options struct {
-	apiVersion string
-	cmd string
-	tooling bool
+	apiVersion  string
+	cmd         string
+	tooling     bool
 	instanceUrl string
-	tail string
+	tail        string
 	querystring string
-	httpGet func(string) ([]byte, error)
+	httpGet     func(string) ([]byte, error)
 }
 
-type PageCallback func(parent Record, children []Record) bool
+type PageCallback func(parent *Record, children []Record) bool
 
 func (o Options) Url() string {
 	tail := o.tail
@@ -98,11 +125,11 @@ func Query(cb PageCallback, options ...Option) error {
 		if err != nil {
 			return err
 		}
-		var currResult Result
+		var currResult result
 		if err := json.Unmarshal(body, &currResult); err != nil {
 			return err
 		}
-		getNextPage := cb(nil, currResult.Records)
+		getNextPage := cb(nil, currResult.PublicRecords())
 		if !getNextPage {
 			break
 		}
@@ -114,7 +141,7 @@ func Query(cb PageCallback, options ...Option) error {
 
 func Eager(options ...Option) ([]Record, error) {
 	records := make([]Record, 0, 128)
-	err := Query(func(parent Record, children []Record) bool {
+	err := Query(func(parent *Record, children []Record) bool {
 		records = append(records, children...)
 		return true
 	}, options...)

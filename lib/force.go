@@ -682,7 +682,7 @@ func (f *Force) Query(qs string, options ...func(*QueryOptions)) (ForceQueryResu
 	result.TotalSize = len(records)
 	result.Records = make([]ForceRecord, len(records))
 	for i, r := range records {
-		result.Records[i] = r.(map[string]interface{})
+		result.Records[i] = r.Fields
 	}
 	return result, err
 }
