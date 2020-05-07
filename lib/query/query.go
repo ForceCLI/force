@@ -52,7 +52,7 @@ func recordFromMapRecord(q queryer, rec map[string]interface{}) (Record, error) 
 			attrs := v.(map[string]interface{})
 			res.Attributes.Type = attrs["type"].(string)
 			res.Attributes.Url = attrs["url"].(string)
-		} else if strings.HasSuffix(k, "__r") {
+		} else if strings.HasSuffix(k, "__r") && v != nil {
 			vm := v.(map[string]interface{})
 			if _, isRelationList := vm["done"]; isRelationList {
 				subrecs, err := recordsFromMapRecords(q, toStrIfaceMapSlice(vm["records"].([]interface{})))
