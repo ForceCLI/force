@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
-	"strings"
 )
 
 type result struct {
@@ -52,8 +51,7 @@ func recordFromMapRecord(q queryer, rec map[string]interface{}) (Record, error) 
 			attrs := v.(map[string]interface{})
 			res.Attributes.Type = attrs["type"].(string)
 			res.Attributes.Url = attrs["url"].(string)
-		} else if strings.HasSuffix(k, "__r") && v != nil {
-			vm := v.(map[string]interface{})
+		} else if vm, ok := v.(map[string]interface{}); ok && vm["records"] != nil {
 			if _, isRelationList := vm["done"]; isRelationList {
 				subrecs, err := recordsFromMapRecords(q, toStrIfaceMapSlice(vm["records"].([]interface{})))
 				if err != nil {
