@@ -14,6 +14,8 @@ type BatchResult struct {
 
 type BatchResultChunk struct {
 	HasCSVHeader bool
+	Finished     bool
+	BatchId      string
 	Data         []byte
 }
 

@@ -1245,6 +1245,12 @@ func (f *Force) httpGetRequestAndSend(url string, headers map[string]string, res
 	buf := make([]byte, 50*1024*1024)
 	firstChunk := true
 	isCSV := strings.Contains(contentType, "text/csv")
+	finishedChunk := BatchResultChunk{
+		HasCSVHeader: false,
+		Data:         []byte{},
+		Finished:     true,
+		BatchId:      url,
+	}
 	for {
 		n, err := io.ReadFull(res.Body, buf)
 		if n > 0 {
@@ -1253,11 +1259,15 @@ func (f *Force) httpGetRequestAndSend(url string, headers map[string]string, res
 			results <- BatchResultChunk{
 				HasCSVHeader: firstChunk && isCSV,
 				Data:         data,
+				Finished:     false,
+				BatchId:      url,
 			}
 		}
 		if err == io.EOF || err == io.ErrUnexpectedEOF {
+			results <- finishedChunk
 			return nil
 		} else if err != nil {
+			results <- finishedChunk
 			return err
 		}
 		firstChunk = false
