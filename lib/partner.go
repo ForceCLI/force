@@ -109,6 +109,10 @@ func (partner *ForcePartner) SoapExecuteCore(action, query string) (response []b
 	soap := NewSoap(url, "urn:partner.soap.sforce.com", partner.Force.Credentials.AccessToken)
 	soap.Header = "<apex:DebuggingHeader><apex:debugLevel>DEBUGONLY</apex:debugLevel></apex:DebuggingHeader>"
 	response, err = soap.Execute(action, query)
+	if err == SessionExpiredError {
+		partner.Force.RefreshSessionOrExit()
+		return partner.SoapExecuteCore(action, query)
+	}
 	return
 }
 

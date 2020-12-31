@@ -31,6 +31,8 @@ Usage:
 
   force record delete <object> <id>
 
+  force record merge <object> <masterId> <duplicateId>
+
 Examples:
 
   force record get User 00Ei0000000000
@@ -44,6 +46,8 @@ Examples:
   force record update User username:user@name.org State:GA
 
   force record delete User 00Ei0000000000
+
+  force record merge Contact 0033c00002YDNNWAA5 0033c00002YDPqkAAH
 `,
 	MaxExpectedArgs: -1,
 }
@@ -77,6 +81,8 @@ func runRecord(cmd *Command, args []string) {
 			runRecordUpdate(args[1:])
 		case "delete", "remove":
 			runRecordDelete(args[1:])
+		case "merge":
+			runRecordMerge(args[1:])
 		default:
 			ErrorAndExit("no such command: %s", args[0])
 		}
@@ -120,6 +126,21 @@ func runRecordUpdate(args []string) {
 		ErrorAndExit(err.Error())
 	}
 	fmt.Println("Record updated")
+}
+
+func runRecordMerge(args []string) {
+	if len(args) < 3 {
+		ErrorAndExit("must specify object, master id, and duplicate id")
+	}
+	force, _ := ActiveForce()
+	object := args[0]
+	masterId := args[1]
+	duplicateId := args[2]
+	err := force.Partner.Merge(object, masterId, duplicateId)
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
+	fmt.Println("Records merged")
 }
 
 func runRecordDelete(args []string) {
