@@ -16,7 +16,7 @@ script:
 - export ARCH_TARGETS="386 amd64"
 - export GO_LINKER_VALUE=$(git describe --tags --always)
 - export GO_LINKER_SYMBOL="github.com/ForceCLI/force/lib.Version"
-- gox -os "$OS_TARGETS" -arch="$ARCH_TARGETS" -ldflags "-X $GO_LINKER_SYMBOL=$GO_LINKER_VALUE"
+- gox -os "$OS_TARGETS" -arch="$ARCH_TARGETS" -osarch '!darwin/386' -ldflags "-X $GO_LINKER_SYMBOL=$GO_LINKER_VALUE"
 deploy:
 - provider: releases
   skip_cleanup: true
