@@ -2,6 +2,7 @@ package lib
 
 import (
 	"encoding/xml"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -185,6 +186,16 @@ func MetaPathToSourcePath(mpath string) (spath string) {
 
 // Add a file to the builder
 func (pb *PackageBuilder) AddFile(fpath string) (fname string, err error) {
+	out, err := pb.addFile(fpath)
+	return out.Filename, err
+}
+
+type addFileOutput struct {
+	Filename string
+	IsBad    bool
+}
+
+func (pb *PackageBuilder) addFile(fpath string) (out addFileOutput, err error) {
 	fpath, err = filepath.Abs(fpath)
 	if err != nil {
 		return
@@ -199,8 +210,15 @@ func (pb *PackageBuilder) AddFile(fpath string) (fname string, err error) {
 		return
 	}
 
+	if lwcJsTestFile.MatchString(fpath) {
+		// If this is a JS test file, just ignore it entirely,
+		// don't consider it bad.
+		return
+	}
+
 	fpath = MetaPathToSourcePath(fpath)
 	metaName, fname := getMetaTypeFromPath(fpath)
+	out.Filename = fname
 	if !isDestructiveChanges && !strings.HasSuffix(fpath, "-meta.xml") {
 		pb.AddMetaToPackage(metaName, fname)
 	}
@@ -214,6 +232,7 @@ func (pb *PackageBuilder) AddFile(fpath string) (fname string, err error) {
 		}
 	}
 
+	out.IsBad = out.Filename == ""
 	return
 }
 
@@ -230,6 +249,13 @@ func (pb *PackageBuilder) AddDirectory(fpath string) (namePaths map[string]strin
 	for _, f := range files {
 		dirOrFilePath := fpath + "/" + f.Name()
 		if f.IsDir() {
+			if lwcJsTestDir.MatchString(dirOrFilePath) {
+				// Normally malformed paths would indicate invalid metadata,
+				// but LWC tests should never be deployed. We may want to consider this logic/behavior,
+				// such that we don't call `addFile` on directories in some cases; if we could
+				// avoid the addFile call on the __tests__ dir, we could avoid this check.
+				continue
+			}
 			dirNamePaths, dirBadPath, err := pb.AddDirectory(dirOrFilePath)
 			if err != nil {
 				badPaths = append(badPaths, dirBadPath...)
@@ -240,12 +266,12 @@ func (pb *PackageBuilder) AddDirectory(fpath string) (namePaths map[string]strin
 			}
 		}
 
-		name, err := pb.AddFile(dirOrFilePath)
+		addFileOut, err := pb.addFile(dirOrFilePath)
 
-		if (err != nil) || (name == "") {
+		if (err != nil) || (addFileOut.IsBad) {
 			badPaths = append(badPaths, dirOrFilePath)
 		} else {
-			namePaths[name] = dirOrFilePath
+			namePaths[addFileOut.Filename] = dirOrFilePath
 		}
 	}
 	return
@@ -397,3 +423,6 @@ func getMetaForPath(path string) (metaName string, objectName string) {
 	objectName = fileName
 	return
 }
+
+var lwcJsTestFile = regexp.MustCompile(".*\\.test\\.js$")
+var lwcJsTestDir = regexp.MustCompile(fmt.Sprintf("%s__tests__$", regexp.QuoteMeta(string(os.PathSeparator))))
