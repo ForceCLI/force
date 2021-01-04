@@ -131,6 +131,36 @@ var _ = Describe("Packagebuilder", func() {
 			})
 		})
 
+		Context("when adding an LWC file", func() {
+			var componentDir string
+
+			BeforeEach(func() {
+				componentDir = tempDir + "/src/lwc/mycomponent"
+				mustMkdir(componentDir)
+			})
+
+			It("should add the file to the package and package.xml", func() {
+				filePath := componentDir + "/mycomponent.js"
+				mustWrite(filePath, `export default const x = 1;`)
+				res, err := pb.AddFile(filePath)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(res).To(Equal("mycomponent"))
+				Expect(pb.Files).To(HaveKey("lwc/mycomponent/mycomponent.js"))
+				Expect(pb.Metadata).To(HaveKey("LightningComponentBundle"))
+				Expect(pb.Metadata["LightningComponentBundle"].Members[0]).To(Equal("mycomponent"))
+			})
+
+			It("should not add test files to package or package.xml", func() {
+				filePath := componentDir + "/mycomponent.test.js"
+				mustWrite(filePath, `export default const x = 1;`)
+				res, err := pb.AddFile(filePath)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(res).To(Equal(""))
+				Expect(pb.Files).To(BeEmpty())
+				Expect(pb.Metadata).To(BeEmpty())
+			})
+		})
+
 		Context("when adding a destructiveChanges file", func() {
 			var destructiveChangesPath string
 
@@ -157,4 +187,59 @@ var _ = Describe("Packagebuilder", func() {
 			})
 		})
 	})
+
+	Describe("AddDirectory", func() {
+		var pb PackageBuilder
+		var tempDir string
+
+		BeforeEach(func() {
+			pb = NewPushBuilder()
+			tempDir, _ = ioutil.TempDir("", "packagebuilder-test")
+		})
+
+		AfterEach(func() {
+			os.RemoveAll(tempDir)
+		})
+
+		Describe("adding a folder of lightning web components", func() {
+			var lwcRoot string
+
+			BeforeEach(func() {
+				lwcRoot = tempDir + "/src/lwc/supercomponent"
+				mustMkdir(lwcRoot)
+			})
+
+			It("should not add a file to the package or package.xml", func() {
+				mustWrite(lwcRoot+"/supercomponent.js", "export default const x = 1;")
+				namePaths, badPaths, err := pb.AddDirectory(lwcRoot)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(badPaths).To(BeEmpty())
+				Expect(namePaths).To(HaveKeyWithValue("supercomponent", HaveSuffix("/src/lwc/supercomponent/supercomponent.js")))
+				Expect(pb.Files).To(HaveKey("lwc/supercomponent/supercomponent.js"))
+				Expect(pb.Metadata).To(HaveKey("LightningComponentBundle"))
+			})
+
+			It("ignores test files and folders", func() {
+				mustWrite(lwcRoot+"/supercomponent.js", "export default const x = 1;")
+				mustWrite(lwcRoot+"/supercomponent.test.js", "")
+				mustMkdir(lwcRoot + "/__tests__")
+				mustWrite(lwcRoot+"/__tests__/supercomponent.test.js", "")
+
+				namePaths, badPaths, err := pb.AddDirectory(lwcRoot)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(badPaths).To(BeEmpty())
+				Expect(namePaths).To(HaveKeyWithValue("supercomponent", HaveSuffix("/src/lwc/supercomponent/supercomponent.js")))
+				Expect(pb.Files).To(HaveKey("lwc/supercomponent/supercomponent.js"))
+				Expect(pb.Metadata).To(HaveKey("LightningComponentBundle"))
+			})
+		})
+	})
 })
+
+func mustWrite(path, contents string) {
+	Expect(ioutil.WriteFile(path, []byte(contents), 0644)).To(Succeed())
+}
+
+func mustMkdir(path string) {
+	Expect(os.MkdirAll(path, 0755)).To(Succeed())
+}
