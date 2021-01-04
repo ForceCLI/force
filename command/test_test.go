@@ -64,7 +64,7 @@ var _ = Describe("Test", func() {
 				NumberFailures:            2,
 				NumberLocations:           []int{1, 1, 1, 1, 1},
 				NumberLocationsNotCovered: []int{0, 0, 1, 0, 1},
-				Name: []string{"Test1", "Test2", "Test3", "Test4", "Test5"}}
+				Name:                      []string{"Test1", "Test2", "Test3", "Test4", "Test5"}}
 		)
 
 		It("should ignore test classes with 0% coverage", func() {
