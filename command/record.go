@@ -33,6 +33,8 @@ Usage:
 
   force record merge <object> <masterId> <duplicateId>
 
+  force record undelete <id>
+
 Examples:
 
   force record get User 00Ei0000000000
@@ -48,6 +50,8 @@ Examples:
   force record delete User 00Ei0000000000
 
   force record merge Contact 0033c00002YDNNWAA5 0033c00002YDPqkAAH
+
+  force record undelete 0033c00002YDNNWAA5
 `,
 	MaxExpectedArgs: -1,
 }
@@ -83,6 +87,8 @@ func runRecord(cmd *Command, args []string) {
 			runRecordDelete(args[1:])
 		case "merge":
 			runRecordMerge(args[1:])
+		case "undelete":
+			runRecordUndelete(args[1:])
 		default:
 			ErrorAndExit("no such command: %s", args[0])
 		}
@@ -141,6 +147,27 @@ func runRecordMerge(args []string) {
 		ErrorAndExit(err.Error())
 	}
 	fmt.Println("Records merged")
+}
+
+func runRecordUndelete(args []string) {
+	if len(args) < 1 {
+		ErrorAndExit("must specify id")
+	}
+	force, _ := ActiveForce()
+	res, err := force.Partner.UndeleteMany(args)
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
+	errored := false
+	for _, r := range res {
+		if !r.Success {
+			errored = true
+			fmt.Printf("Undelete failed for %s: %s\n", r.Id, r.Errors[0].Message)
+		}
+	}
+	if !errored {
+		fmt.Println("Records undeleted")
+	}
 }
 
 func runRecordDelete(args []string) {

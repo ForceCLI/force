@@ -42,6 +42,16 @@ type MergeResult struct {
 	UpdatedRelatedIds []ID    `xml:"updatedRelatedIds,omitempty"`
 }
 
+type UndeleteResponse struct {
+	Result []UndeleteResult `xml:"Body>undeleteResponse>result"`
+}
+
+type UndeleteResult struct {
+	Errors  []Error `xml:"errors,omitempty"`
+	Id      ID      `xml:"id,omitempty"`
+	Success bool    `xml:"success,omitempty"`
+}
+
 type Error struct {
 	ExtendedErrorDetails []ExtendedErrorDetails `xml:"extendedErrorDetails,omitempty"`
 	Fields               []string               `xml:"fields,omitempty"`
