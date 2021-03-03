@@ -13,7 +13,7 @@ import (
 
 func (f *Force) userInfo() (userinfo UserInfo, err error) {
 	url := fmt.Sprintf("%s/services/oauth2/userinfo", f.Credentials.InstanceUrl)
-	login, err := f.httpGet(url)
+	login, _, err := f.makeHttpRequestSync(f.newAuthedHttpInput("GET", url))
 	if err != nil {
 		return
 	}

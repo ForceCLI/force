@@ -235,11 +235,3 @@ var _ = Describe("Packagebuilder", func() {
 		})
 	})
 })
-
-func mustWrite(path, contents string) {
-	Expect(ioutil.WriteFile(path, []byte(contents), 0644)).To(Succeed())
-}
-
-func mustMkdir(path string) {
-	Expect(os.MkdirAll(path, 0755)).To(Succeed())
-}
