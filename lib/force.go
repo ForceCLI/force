@@ -6,19 +6,16 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"github.com/ForceCLI/force/desktop"
+	. "github.com/ForceCLI/force/error"
 	"github.com/ForceCLI/force/lib/query"
 	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
 	"net/url"
-	"runtime"
 	"strconv"
 	"strings"
-	"time"
-
-	"github.com/ForceCLI/force/desktop"
-	. "github.com/ForceCLI/force/error"
 )
 
 var (
@@ -90,7 +87,7 @@ type ForceSession struct {
 
 type LoginFault struct {
 	ExceptionCode    string `xml:"exceptionCode" json:"exceptionCode"`
-	ExceptionMessage string `xml:"exceptionMessage" json:"exceptionCode"`
+	ExceptionMessage string `xml:"exceptionMessage" json:"exceptionMessage"`
 }
 
 type SoapFault struct {
@@ -339,7 +336,7 @@ func ForceLoginAtEndpoint(endpoint string) (creds ForceSession, err error) {
 func (f *Force) GetCodeCoverage(classId string, className string) (err error) {
 	url := fmt.Sprintf("%s/services/data/%s/query/?q=Select+Id+From+ApexClass+Where+Name+=+'%s'", f.Credentials.InstanceUrl, apiVersion, className)
 
-	body, err := f.httpGet(url)
+	body, _, err := f.makeHttpRequestSync(f.newAuthedHttpInput("GET", url))
 	if err != nil {
 		return
 	}
@@ -353,7 +350,7 @@ func (f *Force) GetCodeCoverage(classId string, className string) (err error) {
 	classId = result.Records[0]["Id"].(string)
 	url = fmt.Sprintf("%s/services/data/%s/tooling/query/?q=Select+Coverage,+NumLinesCovered,+NumLinesUncovered,+ApexTestClassId,+ApexClassorTriggerId+From+ApexCodeCoverage+Where+ApexClassorTriggerId='%s'", f.Credentials.InstanceUrl, apiVersion, classId)
 
-	body, err = f.httpGet(url)
+	body, _, err = f.makeHttpRequestSync(f.newAuthedHttpInput("GET", url))
 	if err != nil {
 		return
 	}
@@ -434,7 +431,7 @@ func (f *Force) QueryDataPipeline(soql string) (results ForceQueryResult, err er
 	aurl := fmt.Sprintf("%s/services/data/%s/tooling/query?q=%s", f.Credentials.InstanceUrl, apiVersion,
 		url.QueryEscape(soql))
 
-	body, err := f.httpGet(aurl)
+	body, _, err := f.makeHttpRequestSync(f.newAuthedHttpInput("GET", aurl))
 	if err != nil {
 		return
 	}
@@ -448,7 +445,7 @@ func (f *Force) QueryDataPipelineJob(soql string) (results ForceQueryResult, err
 	aurl := fmt.Sprintf("%s/services/data/%s/tooling/query?q=%s", f.Credentials.InstanceUrl, apiVersion,
 		url.QueryEscape(soql))
 
-	body, err := f.httpGet(aurl)
+	body, _, err := f.makeHttpRequestSync(f.newAuthedHttpInput("GET", aurl))
 	if err != nil {
 		return
 	}
@@ -468,7 +465,7 @@ func (f *Force) GetAuraBundleDefinitions() (definitions AuraDefinitionBundleResu
 	aurl := fmt.Sprintf("%s/services/data/%s/tooling/query?q=%s", f.Credentials.InstanceUrl, apiVersion,
 		url.QueryEscape("SELECT Id, Source, AuraDefinitionBundleId, DefType, Format FROM AuraDefinition"))
 
-	body, err := f.httpGet(aurl)
+	body, _, err := f.makeHttpRequestSync(f.newAuthedHttpInput("GET", aurl))
 	if err != nil {
 		return
 	}
@@ -491,7 +488,7 @@ func (f *Force) GetMoreAuraBundleDefinitions(definitions *AuraDefinitionBundleRe
 		moreDefs := new(AuraDefinitionBundleResult)
 		aurl := fmt.Sprintf("%s%s", f.Credentials.InstanceUrl, nextRecordsUrl)
 
-		body, err := f.httpGet(aurl)
+		body, _, err := f.makeHttpRequestSync(f.newAuthedHttpInput("GET", aurl))
 		if err != nil {
 			return err
 		}
@@ -513,7 +510,7 @@ func (f *Force) GetMoreAuraBundleDefinitions(definitions *AuraDefinitionBundleRe
 func (f *Force) GetAuraBundlesList() (bundles AuraDefinitionBundleResult, err error) {
 	aurl := fmt.Sprintf("%s/services/data/%s/tooling/query?q=%s", f.Credentials.InstanceUrl, apiVersion,
 		url.QueryEscape("SELECT Id, DeveloperName, NamespacePrefix, ApiVersion, Description FROM AuraDefinitionBundle"))
-	body, err := f.httpGet(aurl)
+	body, _, err := f.makeHttpRequestSync(f.newAuthedHttpInput("GET", aurl))
 	if err != nil {
 		return
 	}
@@ -538,7 +535,7 @@ func (f *Force) GetAuraBundleByName(bundleName string) (bundles AuraDefinitionBu
 	aurl := fmt.Sprintf("%s/services/data/%s/tooling/query?q=%s", f.Credentials.InstanceUrl, apiVersion,
 		url.QueryEscape(fmt.Sprintf("SELECT Id, DeveloperName, NamespacePrefix, ApiVersion, Description FROM AuraDefinitionBundle%s", criteria)))
 
-	body, err := f.httpGet(aurl)
+	body, _, err := f.makeHttpRequestSync(f.newAuthedHttpInput("GET", aurl))
 	if err != nil {
 		return
 	}
@@ -551,7 +548,7 @@ func (f *Force) GetAuraBundleDefinition(id string) (definitions AuraDefinitionBu
 	aurl := fmt.Sprintf("%s/services/data/%s/tooling/query?q=%s", f.Credentials.InstanceUrl, apiVersion,
 		url.QueryEscape(fmt.Sprintf("SELECT Id, Source, AuraDefinitionBundleId, DefType, Format FROM AuraDefinition WHERE AuraDefinitionBundleId = '%s'", id)))
 
-	body, err := f.httpGet(aurl)
+	body, _, err := f.makeHttpRequestSync(f.newAuthedHttpInput("GET", aurl))
 	if err != nil {
 		return
 	}
@@ -589,7 +586,7 @@ func (f *Force) CreateAuraComponent(attrs map[string]string) (result ForceCreate
 
 func (f *Force) ListSobjects() (sobjects []ForceSobject, err error) {
 	url := fmt.Sprintf("%s/services/data/%s/sobjects", f.Credentials.InstanceUrl, apiVersion)
-	body, err := f.httpGet(url)
+	body, _, err := f.makeHttpRequestSync(f.newAuthedHttpInput("GET", url))
 	if err != nil {
 		return
 	}
@@ -601,7 +598,7 @@ func (f *Force) ListSobjects() (sobjects []ForceSobject, err error) {
 
 func (f *Force) GetSobject(name string) (sobject ForceSobject, err error) {
 	url := fmt.Sprintf("%s/services/data/%s/sobjects/%s/describe", f.Credentials.InstanceUrl, apiVersion, name)
-	body, err := f.httpGet(url)
+	body, _, err := f.makeHttpRequestSync(f.newAuthedHttpInput("GET", url))
 	if err != nil {
 		return
 	}
@@ -643,7 +640,10 @@ func (f *Force) Query(qs string, options ...func(*QueryOptions)) (ForceQueryResu
 
 func (f *Force) QueryOptions() []query.Option {
 	return []query.Option{
-		query.HttpGet(f.httpGet),
+		query.HttpGet(func(url string) ([]byte, error) {
+			body, _, err := f.makeHttpRequestSync(f.newAuthedHttpInput("GET", url))
+			return body, err
+		}),
 		query.InstanceUrl(f.Credentials.InstanceUrl),
 		query.ApiVersion(apiVersion),
 	}
@@ -667,7 +667,7 @@ func (f *Force) legacyQueryOptions(qs string, options ...func(*QueryOptions)) []
 }
 
 func (f *Force) Get(url string) (object ForceRecord, err error) {
-	body, err := f.httpGet(url)
+	body, _, err := f.makeHttpRequestSync(f.newAuthedHttpInput("GET", url))
 	if err != nil {
 		return
 	}
@@ -678,7 +678,7 @@ func (f *Force) Get(url string) (object ForceRecord, err error) {
 func (f *Force) GetLimits() (result map[string]ForceLimit, err error) {
 
 	url := fmt.Sprintf("%s/services/data/%s/limits", f.Credentials.InstanceUrl, apiVersion)
-	body, err := f.httpGet(url)
+	body, _, err := f.makeHttpRequestSync(f.newAuthedHttpInput("GET", url))
 	if err != nil {
 		return
 	}
@@ -689,7 +689,7 @@ func (f *Force) GetLimits() (result map[string]ForceLimit, err error) {
 
 func (f *Force) GetPasswordStatus(id string) (result ForcePasswordStatusResult, err error) {
 	url := fmt.Sprintf("%s/services/data/%s/sobjects/User/%s/password", f.Credentials.InstanceUrl, apiVersion, id)
-	body, err := f.httpGet(url)
+	body, _, err := f.makeHttpRequestSync(f.newAuthedHttpInput("GET", url))
 	if err != nil {
 		return
 	}
@@ -722,7 +722,7 @@ func (f *Force) GetRecord(sobject, id string) (object ForceRecord, err error) {
 		url = fmt.Sprintf("%s/services/data/%s/sobjects/%s/%s/%s", f.Credentials.InstanceUrl, apiVersion, sobject, fields[0], fields[1])
 	}
 
-	body, err := f.httpGet(url)
+	body, _, err := f.makeHttpRequestSync(f.newAuthedHttpInput("GET", url))
 	if err != nil {
 		return
 	}
@@ -753,7 +753,7 @@ func (f *Force) QueryProfile(fields ...string) (results ForceQueryResult, err er
 		strings.Join(fields, ","),
 		f.Credentials.UserInfo.ProfileId)
 
-	body, err := f.httpGet(url)
+	body, _, err := f.makeHttpRequestSync(f.newAuthedHttpInput("GET", url))
 	if err != nil {
 		return
 	}
@@ -763,7 +763,7 @@ func (f *Force) QueryProfile(fields ...string) (results ForceQueryResult, err er
 
 func (f *Force) QueryTraceFlags() (results ForceQueryResult, err error) {
 	url := fmt.Sprintf("%s/services/data/%s/tooling/query/?q=Select+Id,+DebugLevel.DeveloperName,++ApexCode,+ApexProfiling,+Callout,+CreatedDate,+Database,+ExpirationDate,+System,+TracedEntity.Name,+Validation,+Visualforce,+Workflow+From+TraceFlag+Order+By+ExpirationDate,TracedEntity.Name", f.Credentials.InstanceUrl, apiVersion)
-	body, err := f.httpGet(url)
+	body, _, err := f.makeHttpRequestSync(f.newAuthedHttpInput("GET", url))
 	if err != nil {
 		return
 	}
@@ -773,7 +773,7 @@ func (f *Force) QueryTraceFlags() (results ForceQueryResult, err error) {
 
 func (f *Force) QueryDefaultDebugLevel() (id string, err error) {
 	url := fmt.Sprintf("%s/services/data/%s/tooling/query/?q=Select+Id+From+DebugLevel+Where+DeveloperName+=+'Force_CLI'", f.Credentials.InstanceUrl, apiVersion)
-	body, err := f.httpGet(url)
+	body, _, err := f.makeHttpRequestSync(f.newAuthedHttpInput("GET", url))
 	if err != nil {
 		return
 	}
@@ -847,14 +847,14 @@ func (f *Force) StartTrace(userId ...string) (result ForceCreateRecordResult, er
 
 func (f *Force) RetrieveLog(logId string) (result string, err error) {
 	url := fmt.Sprintf("%s/services/data/%s/tooling/sobjects/ApexLog/%s/Body", f.Credentials.InstanceUrl, apiVersion, logId)
-	body, err := f.httpGet(url)
+	body, _, err := f.makeHttpRequestSync(f.newAuthedHttpInput("GET", url))
 	result = string(body)
 	return
 }
 
 func (f *Force) QueryLogs() (results ForceQueryResult, err error) {
 	url := fmt.Sprintf("%s/services/data/%s/tooling/query/?q=Select+Id,+Application,+DurationMilliseconds,+Location,+LogLength,+LogUser.Name,+Operation,+Request,StartTime,+Status+From+ApexLog+Order+By+StartTime", f.Credentials.InstanceUrl, apiVersion)
-	body, err := f.httpGet(url)
+	body, _, err := f.makeHttpRequestSync(f.newAuthedHttpInput("GET", url))
 	if err != nil {
 		return
 	}
@@ -864,7 +864,7 @@ func (f *Force) QueryLogs() (results ForceQueryResult, err error) {
 
 func (f *Force) RetrieveEventLogFile(elfId string) (result string, err error) {
 	url := fmt.Sprintf("%s/services/data/%s/sobjects/EventLogFile/%s/LogFile", f.Credentials.InstanceUrl, apiVersion, elfId)
-	body, err := f.httpGet(url)
+	body, _, err := f.makeHttpRequestSync(f.newAuthedHttpInput("GET", url))
 	if err != nil {
 		return
 	}
@@ -900,7 +900,7 @@ func (f *Force) QueryEventLogFiles() (results ForceQueryResult, err error) {
 	} else {
 		url = fmt.Sprintf("%s/services/data/%s/query/?q=Select+Id,+LogDate,+EventType,+LogFileLength+FROM+EventLogFile+ORDER+BY+LogDate+DESC,+EventType", f.Credentials.InstanceUrl, apiVersion)
 	}
-	body, err := f.httpGet(url)
+	body, _, err := f.makeHttpRequestSync(f.newAuthedHttpInput("GET", url))
 	if err != nil {
 		return
 	}
@@ -934,7 +934,7 @@ func (f *Force) CreateToolingRecord(objecttype string, attrs map[string]string) 
 
 func (f *Force) DescribeSObject(objecttype string) (result string, err error) {
 	url := fmt.Sprintf("%s/services/data/%s/sobjects/%s/describe", f.Credentials.InstanceUrl, apiVersion, objecttype)
-	body, err := f.httpGet(url)
+	body, _, err := f.makeHttpRequestSync(f.newAuthedHttpInput("GET", url))
 	if err != nil {
 		return
 	}
@@ -977,10 +977,7 @@ func (f *Force) qualifyUrl(url string) string {
 
 func (f *Force) GetAbsoluteBytes(url string) (result []byte, err error) {
 	qualifiedUrl := f.qualifyUrl(url)
-	headers := map[string]string{
-		"Authorization": fmt.Sprintf("Bearer %s", f.Credentials.AccessToken),
-	}
-	body, _, err := f.httpGetRequest(qualifiedUrl, headers)
+	body, _, err := f.makeHttpRequestSync(f.newAuthedHttpInput("GET", qualifiedUrl))
 	if err == SessionExpiredError {
 		err = f.RefreshSession()
 		if err != nil {
@@ -1059,7 +1056,8 @@ func (f *Force) PatchREST(url string, content string) (result string, err error)
 }
 
 func (f *Force) getForceResult(url string) (results ForceQueryResult, err error) {
-	body, err := f.httpGet(fmt.Sprintf("%s%s", f.Credentials.InstanceUrl, url))
+	furl := fmt.Sprintf("%s%s", f.Credentials.InstanceUrl, url)
+	body, _, err := f.makeHttpRequestSync(f.newAuthedHttpInput("GET", furl))
 	if err != nil {
 		return
 	}
@@ -1067,203 +1065,98 @@ func (f *Force) getForceResult(url string) (results ForceQueryResult, err error)
 	return
 }
 
-func (f *Force) httpGet(url string) (body []byte, err error) {
-	headers := map[string]string{
-		"Authorization": fmt.Sprintf("Bearer %s", f.Credentials.AccessToken),
+func (f *Force) newAuthedHttpInput(method, url string) *httpRequestInput {
+	inp := &httpRequestInput{
+		Method:  method,
+		Url:     url,
+		Headers: map[string]string{},
+		Retrier: (&httpRetrier{}).Reauth(),
 	}
-	body, _, err = f.httpGetRequest(url, headers)
-	if err == SessionExpiredError {
-		err = f.RefreshSession()
-		if err != nil {
-			return
-		}
-		return f.httpGet(url)
+	return f.setHttpInputAuth(inp)
+}
+
+func (f *Force) setHttpInputAuth(input *httpRequestInput) *httpRequestInput {
+	input.Headers["X-SFDC-Session"] = f.Credentials.AccessToken
+	input.Headers["Authorization"] = fmt.Sprintf("Bearer %s", f.Credentials.AccessToken)
+	return input
+}
+
+func (f *Force) makeHttpRequestSync(input *httpRequestInput) (body []byte, contentType ContentType, err error) {
+	input.Callback = func(r *http.Response) error {
+		contentType = ContentType(r.Header.Get("Content-Type"))
+		body, err = ioutil.ReadAll(r.Body)
+		r.Body.Close()
+		return err
 	}
+	err = f.makeHttpRequest(input)
 	return
 }
 
-func (f *Force) httpGetBulk(url string) (body []byte, contentType string, err error) {
-	headers := map[string]string{
-		"X-SFDC-Session": fmt.Sprintf("Bearer %s", f.Credentials.AccessToken),
-		"Content-Type":   "application/xml",
-	}
-	body, contentType, err = f.httpGetRequest(url, headers)
-	if err == SessionExpiredError {
-		err = f.RefreshSession()
-		if err != nil {
-			return
+func (f *Force) makeHttpRequest(input *httpRequestInput) error {
+	for {
+		res, err := f._makeHttpRequestWithoutRetry(input)
+		if !input.Retrier.ShouldRetry(res, err) {
+			if err != nil {
+				return err
+			}
+			cberr := input.Callback(res)
+			return cberr
 		}
-		return f.httpGetBulk(url)
+		if err == SessionExpiredError {
+			f.RefreshSession()
+			f.setHttpInputAuth(input)
+		}
 	}
-	return
 }
 
-func (f *Force) httpGetBulkAndSend(url string, results chan<- BatchResultChunk) (err error) {
-	headers := map[string]string{
-		"X-SFDC-Session": fmt.Sprintf("Bearer %s", f.Credentials.AccessToken),
-		"Content-Type":   "application/xml",
-	}
-	err = f.httpGetRequestAndSend(url, headers, results)
-	if err == SessionExpiredError {
-		err = f.RefreshSession()
-		if err != nil {
-			return
-		}
-		return f.httpGetBulkAndSend(url, results)
-	}
-	return
-}
-
-func (f *Force) httpGetBulkJSON(url string) (body []byte, err error) {
-	headers := map[string]string{
-		"X-SFDC-Session": fmt.Sprintf("Bearer %s", f.Credentials.AccessToken),
-		"Content-Type":   "application/json",
-	}
-	body, _, err = f.httpGetRequest(url, headers)
-	if err == SessionExpiredError {
-		err = f.RefreshSession()
-		if err != nil {
-			return
-		}
-		return f.httpGetBulkJSON(url)
-	}
-	return
-}
-
-func (f *Force) httpGetBulkJSONAndSend(url string, results chan<- BatchResultChunk) (err error) {
-	headers := map[string]string{
-		"X-SFDC-Session": fmt.Sprintf("Bearer %s", f.Credentials.AccessToken),
-		"Content-Type":   "application/json",
-	}
-	err = f.httpGetRequestAndSend(url, headers, results)
-	if err == SessionExpiredError {
-		err = f.RefreshSession()
-		if err != nil {
-			return
-		}
-		return f.httpGetBulkJSONAndSend(url, results)
-	}
-	return
-}
-
-func (f *Force) httpGetRequest(url string, headers map[string]string) (body []byte, contentType string, err error) {
-	req, err := httpRequest("GET", url, nil)
+func (f *Force) _makeHttpRequestWithoutRetry(input *httpRequestInput) (*http.Response, error) {
+	req, err := httpRequestWithHeaders(input.Method, input.Url, input.Headers, input.Body)
 	if err != nil {
-		return
-	}
-	for headerName, headerValue := range headers {
-		req.Header.Add(headerName, headerValue)
+		return nil, err
 	}
 	res, err := doRequest(req)
 	if err != nil {
-		return
+		return nil, err
 	}
-	defer res.Body.Close()
+	if res.StatusCode/100 == 2 {
+		return res, nil
+	}
 
-	body, err = ioutil.ReadAll(res.Body)
+	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		return
+		return nil, err
 	}
 
-	contentType = res.Header.Get("Content-Type")
-	if strings.HasPrefix(contentType, "application/xml") {
-		contentType = "XML"
-		if res.StatusCode/100 != 2 {
-			var fault LoginFault
-			xml.Unmarshal(body, &fault)
-			if fault.ExceptionCode == "InvalidSessionId" {
-				err = SessionExpiredError
-			}
+	// In general, a 401 or 403 will be treated as SessionExpiredError,
+	// but there are some special cases. We handle InvalidSessionId in XML errors explicitly;
+	// we also handle rate limit issues, which are a 403, explicitly, so we don't keep refreshing.
+	// So we pull these out and handle them in this if/else;
+	// if we don't find them, we create a fallback error.
+	// Then if it's a 401/403, treat the session expired (discard the fallback error);
+	// Finally, return the fallback error.
+	var fallbackErr error
+	if strings.HasPrefix(res.Header.Get("Content-Type"), "application/xml") {
+		var fault LoginFault
+		xml.Unmarshal(body, &fault)
+		if fault.ExceptionCode == "InvalidSessionId" {
+			return nil, SessionExpiredError
 		}
 	} else {
-		contentType = "JSON"
-		if res.StatusCode/100 != 2 {
-			var messages []ForceError
-			json.Unmarshal(body, &messages)
-			if len(messages) > 0 && messages[0].ErrorCode == "REQUEST_LIMIT_EXCEEDED" {
-				err = APILimitExceededError
-			} else if len(messages) > 0 {
-				err = errors.New(messages[0].Message)
-			} else {
-				err = errors.New(string(body))
-			}
-		}
-	}
-
-	if res.StatusCode == 401 || (res.StatusCode == 403 && err != APILimitExceededError) {
-		err = SessionExpiredError
-		return
-	}
-
-	if err != nil {
-		return
-	}
-
-	return
-}
-
-func (f *Force) httpGetRequestAndSend(url string, headers map[string]string, results chan<- BatchResultChunk) (err error) {
-	req, err := httpRequest("GET", url, nil)
-	if err != nil {
-		return err
-	}
-	for headerName, headerValue := range headers {
-		req.Header.Add(headerName, headerValue)
-	}
-	res, err := doRequest(req)
-	if err != nil {
-		return err
-	}
-	defer res.Body.Close()
-	if res.StatusCode == 401 || res.StatusCode == 403 {
-		return SessionExpiredError
-	}
-	contentType := res.Header.Get("Content-Type")
-	if res.StatusCode/100 != 2 {
-		body, err := ioutil.ReadAll(res.Body)
-		if err != nil {
-			return err
-		}
-		if strings.HasPrefix(contentType, "application/xml") {
-			var fault LoginFault
-			xml.Unmarshal(body, &fault)
-			if fault.ExceptionCode == "InvalidSessionId" {
-				err = SessionExpiredError
-			}
+		var messages []ForceError
+		json.Unmarshal(body, &messages)
+		if len(messages) > 0 && messages[0].ErrorCode == "REQUEST_LIMIT_EXCEEDED" {
+			return nil, APILimitExceededError
+		} else if len(messages) > 0 {
+			fallbackErr = errors.New(messages[0].Message)
 		} else {
-			var messages []ForceError
-			json.Unmarshal(body, &messages)
-			if len(messages) > 0 {
-				err = errors.New(messages[0].Message)
-			} else {
-				err = errors.New(string(body))
-			}
+			fallbackErr = errors.New(string(body))
 		}
-		return err
 	}
 
-	buf := make([]byte, 50*1024*1024)
-	firstChunk := true
-	isCSV := strings.Contains(contentType, "text/csv")
-	for {
-		n, err := io.ReadFull(res.Body, buf)
-		if n > 0 {
-			data := make([]byte, n)
-			copy(data, buf[:n])
-			results <- BatchResultChunk{
-				HasCSVHeader: firstChunk && isCSV,
-				Data:         data,
-			}
-		}
-		if err == io.EOF || err == io.ErrUnexpectedEOF {
-			return nil
-		} else if err != nil {
-			return err
-		}
-		firstChunk = false
+	if res.StatusCode == 401 || res.StatusCode == 403 {
+		return nil, SessionExpiredError
 	}
-
-	return nil
+	return nil, fallbackErr
 }
 
 func (f *Force) httpPostCSV(url string, data string, requestOptions ...func(*http.Request)) (body []byte, err error) {
@@ -1493,21 +1386,6 @@ func (result *ForceQueryResult) Update(other ForceQueryResult, force *Force) {
 	result.Records = append(result.Records, other.Records...)
 	result.TotalSize = len(result.Records)
 	result.NextRecordsUrl = fmt.Sprintf("%s%s", force.Credentials.InstanceUrl, other.NextRecordsUrl)
-}
-
-func doRequest(request *http.Request) (res *http.Response, err error) {
-	client := &http.Client{}
-	client.Timeout = time.Duration(Timeout) * time.Millisecond
-	return client.Do(request)
-}
-
-func httpRequest(method, url string, body io.Reader) (request *http.Request, err error) {
-	request, err = http.NewRequest(method, url, body)
-	if err != nil {
-		return
-	}
-	request.Header.Add("User-Agent", fmt.Sprintf("force/%s (%s-%s)", Version, runtime.GOOS, runtime.GOARCH))
-	return
 }
 
 func startLocalHttpServer(ch chan ForceSession) (port int, err error) {

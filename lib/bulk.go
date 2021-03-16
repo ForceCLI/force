@@ -5,7 +5,9 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
+	"strings"
 )
 
 type BatchResult struct {
@@ -51,6 +53,41 @@ type JobInfo struct {
 	TotalProcessingTime     int      `xml:"totalProcessingTime,omitempty"`
 	ApiActiveProcessingTime int      `xml:"apiActiveProcessingTime,omitempty"`
 	ApexProcessingTime      int      `xml:"apexProcessingTime,omitempty"`
+}
+
+func (ji JobInfo) JobContentType() (JobContentType, error) {
+	switch ji.ContentType {
+	case "JSON":
+		return JobContentTypeJson, nil
+	case "CSV":
+		return JobContentTypeCsv, nil
+	case "XML":
+		return JobContentTypeXml, nil
+	default:
+		return "", fmt.Errorf("Invalid content type for bulk API: " + ji.ContentType)
+	}
+}
+
+func (ji JobInfo) HttpContentType() (ContentType, error) {
+	jct, err := ji.JobContentType()
+	if err != nil {
+		return "", err
+	}
+	return httpContentTypeForJobContentType[jct], nil
+}
+
+type JobContentType string
+
+const (
+	JobContentTypeCsv  JobContentType = "CSV"
+	JobContentTypeXml  JobContentType = "XML"
+	JobContentTypeJson JobContentType = "JSON"
+)
+
+var httpContentTypeForJobContentType = map[JobContentType]ContentType{
+	JobContentTypeCsv:  ContentTypeCsv,
+	JobContentTypeXml:  ContentTypeXml,
+	JobContentTypeJson: ContentTypeJson,
 }
 
 var InvalidBulkObject = errors.New("Object Does Not Support Bulk API")
@@ -104,26 +141,39 @@ func (f *Force) GetBulkJobs() (result []JobInfo, err error) {
 	return
 }
 
-func (f *Force) BulkQuery(soql string, jobId string, contentType string, requestOptions ...func(*http.Request)) (result BatchInfo, err error) {
+func (f *Force) httpGetBulk(url string) (body []byte, contentType ContentType, err error) {
+	return f.makeHttpRequestSync(f.newAuthedHttpInput("GET", url).WithContent(ContentTypeXml))
+}
+
+func (f *Force) BulkQuery(soql string, jobId string, contentType string, requestOptions ...func(*http.Request)) (BatchInfo, error) {
 	url := fmt.Sprintf("%s/services/async/%s/job/%s/batch", f.Credentials.InstanceUrl, apiVersionNumber, jobId)
 	var body []byte
 
-	if contentType == "CSV" {
+	jct, err := JobInfo{ContentType: contentType}.JobContentType()
+	if err != nil {
+		return BatchInfo{}, err
+	}
+
+	var result BatchInfo
+	switch jct {
+	case JobContentTypeCsv:
 		body, err = f.httpPostCSV(url, soql, requestOptions...)
 		xml.Unmarshal(body, &result)
-	} else if contentType == "JSON" {
+	case JobContentTypeJson:
 		body, err = f.httpPostJSON(url, soql, requestOptions...)
 		json.Unmarshal(body, &result)
-	} else {
+	case JobContentTypeXml:
 		body, err = f.httpPostXML(url, soql, requestOptions...)
 		xml.Unmarshal(body, &result)
+	default:
+		panic("unreachable")
 	}
 	if len(result.Id) == 0 {
 		var fault LoginFault
 		xml.Unmarshal(body, &fault)
-		err = errors.New(fmt.Sprintf("%s: %s", fault.ExceptionCode, fault.ExceptionMessage))
+		return BatchInfo{}, errors.New(fmt.Sprintf("%s: %s", fault.ExceptionCode, fault.ExceptionMessage))
 	}
-	return
+	return result, nil
 }
 
 func (f *Force) addCSVBatchToJob(content string, job JobInfo) (result BatchInfo, err error) {
@@ -169,25 +219,28 @@ func (f *Force) addJSONBatchToJob(content string, job JobInfo) (result BatchInfo
 	return
 }
 
-func (f *Force) AddBatchToJob(content string, job JobInfo) (result BatchInfo, err error) {
-	switch job.ContentType {
-	case "CSV":
+func (f *Force) AddBatchToJob(content string, job JobInfo) (BatchInfo, error) {
+	jct, err := job.JobContentType()
+	if err != nil {
+		return BatchInfo{}, err
+	}
+	switch jct {
+	case JobContentTypeCsv:
 		return f.addCSVBatchToJob(content, job)
-	case "JSON":
+	case JobContentTypeJson:
 		return f.addJSONBatchToJob(content, job)
-	case "XML":
+	case JobContentTypeXml:
 		return f.addXMLBatchToJob(content, job)
 	default:
-		err = fmt.Errorf("Invalid content type for bulk API: " + job.ContentType)
+		panic("unreachable")
 	}
-	return
 }
 
 func (f *Force) GetBatchInfo(jobId string, batchId string) (result BatchInfo, err error) {
 	url := fmt.Sprintf("%s/services/async/%s/job/%s/batch/%s", f.Credentials.InstanceUrl, apiVersionNumber, jobId, batchId)
 	body, contentType, err := f.httpGetBulk(url)
 
-	if contentType == "JSON" {
+	if contentType == ContentTypeJson {
 		json.Unmarshal(body, &result)
 		if len(result.Id) == 0 {
 			var fault LoginFault
@@ -214,7 +267,7 @@ func (f *Force) GetBatches(jobId string) (result []BatchInfo, err error) {
 		BatchInfos []BatchInfo `xml:"batchInfo" json:"batchInfo"`
 	}
 
-	if contentType == "JSON" {
+	if contentType == ContentTypeJson {
 		json.Unmarshal(body, &batchInfoList)
 		result = batchInfoList.BatchInfos
 	} else {
@@ -241,38 +294,14 @@ func (f *Force) GetJobInfo(jobId string) (result JobInfo, err error) {
 	return
 }
 
-func (f *Force) retrieveBulkResult(url string, contentType string) (result []byte, err error) {
-	switch contentType {
-	case "JSON":
-		return f.httpGetBulkJSON(url)
-	case "CSV":
-		fallthrough
-	case "XML":
-		result, _, err = f.httpGetBulk(url)
-		return result, err
-	default:
-		err = fmt.Errorf("Invalid content type for bulk API: " + contentType)
-	}
-	return nil, err
-}
-
-func (f *Force) retrieveBulkResultAndSend(url string, contentType string, results chan<- BatchResultChunk) (err error) {
-	switch contentType {
-	case "JSON":
-		return f.httpGetBulkJSONAndSend(url, results)
-	case "CSV":
-		fallthrough
-	case "XML":
-		return f.httpGetBulkAndSend(url, results)
-	default:
-		err = fmt.Errorf("Invalid content type for bulk API: " + contentType)
-	}
-	return err
-}
-
 func (f *Force) RetrieveBulkQueryResultList(job JobInfo, batchId string) ([]byte, error) {
 	url := fmt.Sprintf("%s/services/async/%s/job/%s/batch/%s/result", f.Credentials.InstanceUrl, apiVersionNumber, job.Id, batchId)
-	return f.retrieveBulkResult(url, job.ContentType)
+	ct, err := job.HttpContentType()
+	if err != nil {
+		return nil, err
+	}
+	body, _, err := f.makeHttpRequestSync(f.newAuthedHttpInput("GET", url).WithContent(ct))
+	return body, err
 }
 
 func (f *Force) RetrieveBulkQuery(jobId string, batchId string) (result []byte, err error) {
@@ -289,12 +318,26 @@ func (f *Force) RetrieveBulkQueryResults(jobId string, batchId string, resultId 
 
 func (f *Force) RetrieveBulkJobQueryResults(job JobInfo, batchId string, resultId string) ([]byte, error) {
 	url := fmt.Sprintf("%s/services/async/%s/job/%s/batch/%s/result/%s", f.Credentials.InstanceUrl, apiVersionNumber, job.Id, batchId, resultId)
-	return f.retrieveBulkResult(url, job.ContentType)
+	ct, err := job.HttpContentType()
+	if err != nil {
+		return nil, err
+	}
+	body, _, err := f.makeHttpRequestSync(f.newAuthedHttpInput("GET", url).WithContent(ct))
+	return body, err
 }
 
-func (f *Force) RetrieveBulkJobQueryResultsAndSend(job JobInfo, batchId string, resultId string, results chan<- BatchResultChunk) error {
+func (f *Force) RetrieveBulkJobQueryResultsWithCallback(job JobInfo, batchId string, resultId string, callback HttpCallback) error {
 	url := fmt.Sprintf("%s/services/async/%s/job/%s/batch/%s/result/%s", f.Credentials.InstanceUrl, apiVersionNumber, job.Id, batchId, resultId)
-	return f.retrieveBulkResultAndSend(url, job.ContentType, results)
+	ct, err := job.HttpContentType()
+	if err != nil {
+		return err
+	}
+	return f.makeHttpRequest(f.newAuthedHttpInput("GET", url).WithContent(ct).WithCallback(callback))
+}
+
+// Deprecated: Use RetrieveBulkJobQueryResultsWithCallback
+func (f *Force) RetrieveBulkJobQueryResultsAndSend(job JobInfo, batchId string, resultId string, results chan<- BatchResultChunk) error {
+	return f.RetrieveBulkJobQueryResultsWithCallback(job, batchId, resultId, NewBatchResultChannelHttpCallback(results, 0))
 }
 
 func (f *Force) RetrieveBulkBatchResults(jobId string, batchId string) (results BatchResult, err error) {
@@ -307,4 +350,43 @@ func (f *Force) RetrieveBulkBatchResults(jobId string, batchId string) (results 
 	}
 	//	sreader = Reader.NewReader(result);
 	return
+}
+
+// NewChannelChunkBatchResultsReporter returns a new reporter that will send chunks of a read body into
+// the results channel. You can control the size of the chunks via bufferSize (defaults to 50mb).
+func NewBatchResultChannelHttpCallback(results chan<- BatchResultChunk, bufferSize int) HttpCallback {
+	if bufferSize <= 1 {
+		bufferSize = 50 * 1024 * 1024
+	}
+	return (&batchResultChannelHttpCallback{results: results, bufferSize: bufferSize}).Report
+}
+
+type batchResultChannelHttpCallback struct {
+	bufferSize int
+	results    chan<- BatchResultChunk
+}
+
+func (c *batchResultChannelHttpCallback) Report(res *http.Response) error {
+	defer res.Body.Close()
+	buf := make([]byte, c.bufferSize)
+	contentType := res.Header.Get("Content-Type")
+	firstChunk := true
+	isCSV := strings.Contains(contentType, "text/csv")
+	for {
+		n, err := io.ReadFull(res.Body, buf)
+		if n > 0 {
+			data := make([]byte, n)
+			copy(data, buf[:n])
+			c.results <- BatchResultChunk{
+				HasCSVHeader: firstChunk && isCSV,
+				Data:         data,
+			}
+		}
+		if err == io.EOF || err == io.ErrUnexpectedEOF {
+			return nil
+		} else if err != nil {
+			return err
+		}
+		firstChunk = false
+	}
 }
