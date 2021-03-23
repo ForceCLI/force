@@ -18,32 +18,33 @@ Can be downloaded from the [Current Release Page](https://github.com/ForceCLI/fo
     Usage: force <command> [<args>]
 
     Available commands:
-       login     Log in to force.com
-       logout    Log out from force.com
-       logins    List force.com logins used
-       active    Show or set the active force.com account
-       whoami    Show information about the active account
-       describe  Describe the object or list of available objects
-       sobject   Manage standard & custom objects
-       field     Manage sobject fields
-       record    Create, modify, or view records
-       bulk      Load csv file use Bulk API
-       fetch     Export specified artifact(s) to a local directory
-       import    Import metadata from a local directory
-       export    Export metadata to a local directory
-       query     Execute a SOQL statement
-       apex      Execute anonymous Apex code
-       log       Fetch debug logs
-       oauth     Manage ConnectedApp credentials
-       test      Run apex tests
-       security  Displays the OLS and FLS for a given SObject
-       version   Display current version
-       push      Deploy single artifact from a local directory
-       aura      Retrieve or deploy Aura components
-       password  See password status or reset password
-       notify    Should notifications be used
-       limits    Display current limits
-       help      Show this help
+       login       Log in to force.com
+       logout      Log out from force.com
+       logins      List force.com logins used
+       active      Show or set the active force.com account
+       whoami      Show information about the active account
+       describe    Describe the object or list of available objects
+       sobject     Manage standard & custom objects
+       field       Manage sobject fields
+       record      Create, modify, or view records
+       bulk        Load csv file use Bulk API
+       fetch       Export specified artifact(s) to a local directory
+       import      Import metadata from a local directory
+       export      Export metadata to a local directory
+       query       Execute a SOQL statement
+       apex        Execute anonymous Apex code
+       log         Fetch debug logs
+       oauth       Manage ConnectedApp credentials
+       test        Run apex tests
+       security    Displays the OLS and FLS for a given SObject
+       version     Display current version
+       apiversion  Set the Salesforce API version metadata is pulled with
+       push        Deploy single artifact from a local directory
+       aura        Retrieve or deploy Aura components
+       password    See password status or reset password
+       notify      Should notifications be used
+       limits      Display current limits
+       help        Show this help
 
     Run 'force help [command]' for details.
 
@@ -148,6 +149,7 @@ Export allows you to fetch all codes from your org to local machine. This comman
 ### notify
 Includes notification library, [gotifier](https://github.com/ViViDboarder/gotifier), that will display notifications for using either Using [terminal-notifier](https://github.com/julienXX/terminal-notifier) on OSX or [notify-send](http://manpages.ubuntu.com/manpages/saucy/man1/notify-send.1.html) on Ubuntu. Currently, only the `push` and `test` methods are displaying notifications.
 
+
 ### limits
 Limits will display limits information for your organization.
 - Max is the limit total for the organization
@@ -155,7 +157,14 @@ Limits will display limits information for your organization.
 
 The list is limited to those exposed by the REST API.
 
-      force limits
+      force limits      
+
+       
+### apiversion
+Set the API version to be used when interacting with the Salesforce org.
+        
+      force apiversion nn.0
+
 
 ### Hacking
 
