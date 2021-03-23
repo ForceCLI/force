@@ -38,6 +38,7 @@ Can be downloaded from the [Current Release Page](https://github.com/ForceCLI/fo
        test      Run apex tests
        security  Displays the OLS and FLS for a given SObject
        version   Display current version
+       apiversion   Set the Salesforce API version metadata is pulled with
        push      Deploy single artifact from a local directory
        aura      Retrieve or deploy Aura components
        password  See password status or reset password
@@ -148,6 +149,7 @@ Export allows you to fetch all codes from your org to local machine. This comman
 ### notify
 Includes notification library, [gotifier](https://github.com/ViViDboarder/gotifier), that will display notifications for using either Using [terminal-notifier](https://github.com/julienXX/terminal-notifier) on OSX or [notify-send](http://manpages.ubuntu.com/manpages/saucy/man1/notify-send.1.html) on Ubuntu. Currently, only the `push` and `test` methods are displaying notifications.
 
+
 ### limits
 Limits will display limits information for your organization.
 - Max is the limit total for the organization
@@ -155,7 +157,14 @@ Limits will display limits information for your organization.
 
 The list is limited to those exposed by the REST API.
 
-      force limits
+      force limits      
+
+       
+### apiversion
+This will set the API version number to be used when interacting with Salesforce environments.
+        
+      force apiversion nn.0
+
 
 ### Hacking
 
