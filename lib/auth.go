@@ -13,11 +13,11 @@ import (
 
 func (f *Force) userInfo() (userinfo UserInfo, err error) {
 	url := fmt.Sprintf("%s/services/oauth2/userinfo", f.Credentials.InstanceUrl)
-	login, _, err := f.makeHttpRequestSync(f.newAuthedHttpInput("GET", url))
+	login, err := f.makeHttpRequestSync(f.NewRequest("GET").AbsoluteUrl(url))
 	if err != nil {
 		return
 	}
-	err = json.Unmarshal([]byte(login), &userinfo)
+	err = json.Unmarshal(login, &userinfo)
 	return
 }
 
