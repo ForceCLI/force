@@ -146,7 +146,8 @@ func (f *Force) GetBulkJobs() ([]JobInfo, error) {
 }
 
 func (f *Force) httpGetBulk(url string) (*Response, error) {
-	return f.NewRequest("GET").AbsoluteUrl(url).WithContent(ContentTypeXml).ReadResponseBody().Execute()
+	req := NewRequest("GET").AbsoluteUrl(url).WithContent(ContentTypeXml).ReadResponseBody()
+	return f.ExecuteRequest(req)
 }
 
 func (f *Force) BulkQuery(soql string, jobId string, contentType string, requestOptions ...func(*http.Request)) (BatchInfo, error) {
@@ -316,7 +317,7 @@ func (f *Force) RetrieveBulkQueryResultList(job JobInfo, batchId string) ([]byte
 	if err != nil {
 		return nil, err
 	}
-	body, err := f.makeHttpRequestSync(f.NewRequest("GET").AbsoluteUrl(url).WithContent(ct))
+	body, err := f.makeHttpRequestSync(NewRequest("GET").AbsoluteUrl(url).WithContent(ct))
 	return body, err
 }
 
@@ -344,7 +345,7 @@ func (f *Force) RetrieveBulkJobQueryResults(job JobInfo, batchId string, resultI
 	if err != nil {
 		return nil, err
 	}
-	body, err := f.makeHttpRequestSync(f.NewRequest("GET").AbsoluteUrl(url).WithContent(ct))
+	body, err := f.makeHttpRequestSync(NewRequest("GET").AbsoluteUrl(url).WithContent(ct))
 	return body, err
 }
 
@@ -354,7 +355,8 @@ func (f *Force) RetrieveBulkJobQueryResultsWithCallback(job JobInfo, batchId str
 	if err != nil {
 		return err
 	}
-	_, err = f.NewRequest("GET").AbsoluteUrl(url).WithContent(ct).WithResponseCallback(callback).Execute()
+	req := NewRequest("GET").AbsoluteUrl(url).WithContent(ct).WithResponseCallback(callback)
+	_, err = f.ExecuteRequest(req)
 	return err
 }
 

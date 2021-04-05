@@ -1,10 +1,16 @@
 package lib
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
+	"strings"
 )
+
+func NewRequest(httpMethod string) *Request {
+	return &Request{method: httpMethod, Headers: map[string]string{}}
+}
 
 // Request configures a Salesforce API request.
 // Use Force.NewRequest to create a new request.
@@ -16,9 +22,9 @@ import (
 // If you want the body to be read synchronously, use ReadResponseBody().
 // You should not use Response.HttpResponse's Body in this case.
 type Request struct {
-	f                *Force
 	method           string
-	fullUrl          string
+	rootedUrl        string
+	absoluteUrl      string
 	Headers          map[string]string
 	body             io.Reader
 	readResponseBody bool
@@ -40,28 +46,25 @@ type Response struct {
 	ContentType ContentType
 }
 
-func (f *Force) NewRequest(httpMethod string) *Request {
-	return &Request{f: f, method: httpMethod, Headers: map[string]string{}}
-}
-
 // RestUrl is used when the url specifies the "Apex REST" portion of the url.
 // For example, the url of "/MyApexRestClass" would use a full URL of
 // https://me.salesforce.com/services/data/41.0/MyApexRESTClass.
 func (r *Request) RestUrl(url string) *Request {
-	return r.AbsoluteUrl(r.f.fullRestUrl(url))
+	return r.RootUrl(fullRestUrl(url))
 }
 
 // RestUrl is used when the url specifies the root-based relative URL of a resource.
 // For example, the url of "/services/async/42.0/job" would use a full URL of
 // https://me.salesforce.com/services/async/42.0/job.
 func (r *Request) RootUrl(url string) *Request {
-	return r.AbsoluteUrl(r.f.qualifyUrl(url))
+	r.rootedUrl = url
+	return r
 }
 
 // AbsoluteUrl is used when the url specifies the absolute url,
 // such as "https://me.salesforce.com/services/async/42.0/job".
 func (r *Request) AbsoluteUrl(url string) *Request {
-	r.fullUrl = url
+	r.absoluteUrl = url
 	return r
 }
 
@@ -91,7 +94,7 @@ func (r *Request) ReadResponseBody() *Request {
 }
 
 // WithResponseCallback specifies a callback invoked with the *http.Response of a request.
-// Most callers will not need this when invoking Request.Execute directly,
+// Most callers will not need this when invoking Request.ExecuteRequest directly,
 // since they have access to the *http.Response from the Response.
 // However when a method does not deal with Request and Response,
 // WithResponseCallback can be useful to allow access to the response,
@@ -107,39 +110,54 @@ func (r *Request) Unauthed() *Request {
 	return r
 }
 
-// Execute executes an HTTP request based on Request,
+func (r *Request) toHttpCallback(forceResponse *Response) HttpCallback {
+	return func(resp *http.Response) error {
+		forceResponse.HttpResponse = resp
+		forceResponse.ContentType = ContentType(resp.Header.Get("Content-Type"))
+		if r.readResponseBody {
+			b, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				return err
+			}
+			resp.Body.Close()
+			forceResponse.ReadResponseBody = b
+		} else if r.callback != nil {
+			return r.callback(resp)
+		}
+		return nil
+	}
+}
+
+// ExecuteRequest executes an HTTP request based on Request,
 // processes the HTTP response in the configured way,
-// and returns the Force Response.
+// and returns the Response.
 //
-// Execute will retry once on a SessionExpired error
+// ExecuteRequest will retry once on a SessionExpired error
 // (future versions may allow configurable retry behavior).
-func (r *Request) Execute() (*Response, error) {
+func (f *Force) ExecuteRequest(r *Request) (*Response, error) {
+	var absUrl string
+	if r.absoluteUrl != "" {
+		absUrl = r.absoluteUrl
+	} else {
+		absUrl = f.qualifyUrl(r.rootedUrl)
+	}
 	reqResp := &Response{}
 	inp := &httpRequestInput{
-		Method:  r.method,
-		Url:     r.fullUrl,
-		Headers: r.Headers,
-		Callback: func(resp *http.Response) error {
-			reqResp.HttpResponse = resp
-			reqResp.ContentType = ContentType(resp.Header.Get("Content-Type"))
-			if r.readResponseBody {
-				b, err := ioutil.ReadAll(resp.Body)
-				if err != nil {
-					return err
-				}
-				resp.Body.Close()
-				reqResp.ReadResponseBody = b
-			} else if r.callback != nil {
-				return r.callback(resp)
-			}
-			return nil
-		},
-		Retrier: (&httpRetrier{}).Reauth(),
-		Body:    r.body,
+		Method:   r.method,
+		Url:      absUrl,
+		Headers:  r.Headers,
+		Callback: r.toHttpCallback(reqResp),
+		Retrier:  (&httpRetrier{}).Reauth(),
+		Body:     r.body,
 	}
 	if !r.unauthed {
-		r.f.setHttpInputAuth(inp)
+		f.setHttpInputAuth(inp)
 	}
-	err := r.f.makeHttpRequest(inp)
+	err := f.makeHttpRequest(inp)
 	return reqResp, err
+}
+
+// Prepend /services/data/vXX.0 to URL
+func fullRestUrl(url string) string {
+	return fmt.Sprintf("/services/data/%s/%s", apiVersion, strings.TrimLeft(url, "/"))
 }
