@@ -336,7 +336,7 @@ func ForceLoginAtEndpoint(endpoint string) (creds ForceSession, err error) {
 func (f *Force) GetCodeCoverage(classId string, className string) (err error) {
 	url := fmt.Sprintf("%s/services/data/%s/query/?q=Select+Id+From+ApexClass+Where+Name+=+'%s'", f.Credentials.InstanceUrl, apiVersion, className)
 
-	body, _, err := f.makeHttpRequestSync(f.newAuthedHttpInput("GET", url))
+	body, err := f.makeHttpRequestSync(NewRequest("GET").AbsoluteUrl(url))
 	if err != nil {
 		return
 	}
@@ -350,7 +350,7 @@ func (f *Force) GetCodeCoverage(classId string, className string) (err error) {
 	classId = result.Records[0]["Id"].(string)
 	url = fmt.Sprintf("%s/services/data/%s/tooling/query/?q=Select+Coverage,+NumLinesCovered,+NumLinesUncovered,+ApexTestClassId,+ApexClassorTriggerId+From+ApexCodeCoverage+Where+ApexClassorTriggerId='%s'", f.Credentials.InstanceUrl, apiVersion, classId)
 
-	body, _, err = f.makeHttpRequestSync(f.newAuthedHttpInput("GET", url))
+	body, err = f.makeHttpRequestSync(NewRequest("GET").AbsoluteUrl(url))
 	if err != nil {
 		return
 	}
@@ -431,7 +431,7 @@ func (f *Force) QueryDataPipeline(soql string) (results ForceQueryResult, err er
 	aurl := fmt.Sprintf("%s/services/data/%s/tooling/query?q=%s", f.Credentials.InstanceUrl, apiVersion,
 		url.QueryEscape(soql))
 
-	body, _, err := f.makeHttpRequestSync(f.newAuthedHttpInput("GET", aurl))
+	body, err := f.makeHttpRequestSync(NewRequest("GET").AbsoluteUrl(aurl))
 	if err != nil {
 		return
 	}
@@ -445,7 +445,7 @@ func (f *Force) QueryDataPipelineJob(soql string) (results ForceQueryResult, err
 	aurl := fmt.Sprintf("%s/services/data/%s/tooling/query?q=%s", f.Credentials.InstanceUrl, apiVersion,
 		url.QueryEscape(soql))
 
-	body, _, err := f.makeHttpRequestSync(f.newAuthedHttpInput("GET", aurl))
+	body, err := f.makeHttpRequestSync(NewRequest("GET").AbsoluteUrl(aurl))
 	if err != nil {
 		return
 	}
@@ -465,7 +465,7 @@ func (f *Force) GetAuraBundleDefinitions() (definitions AuraDefinitionBundleResu
 	aurl := fmt.Sprintf("%s/services/data/%s/tooling/query?q=%s", f.Credentials.InstanceUrl, apiVersion,
 		url.QueryEscape("SELECT Id, Source, AuraDefinitionBundleId, DefType, Format FROM AuraDefinition"))
 
-	body, _, err := f.makeHttpRequestSync(f.newAuthedHttpInput("GET", aurl))
+	body, err := f.makeHttpRequestSync(NewRequest("GET").AbsoluteUrl(aurl))
 	if err != nil {
 		return
 	}
@@ -488,7 +488,7 @@ func (f *Force) GetMoreAuraBundleDefinitions(definitions *AuraDefinitionBundleRe
 		moreDefs := new(AuraDefinitionBundleResult)
 		aurl := fmt.Sprintf("%s%s", f.Credentials.InstanceUrl, nextRecordsUrl)
 
-		body, _, err := f.makeHttpRequestSync(f.newAuthedHttpInput("GET", aurl))
+		body, err := f.makeHttpRequestSync(NewRequest("GET").AbsoluteUrl(aurl))
 		if err != nil {
 			return err
 		}
@@ -510,7 +510,7 @@ func (f *Force) GetMoreAuraBundleDefinitions(definitions *AuraDefinitionBundleRe
 func (f *Force) GetAuraBundlesList() (bundles AuraDefinitionBundleResult, err error) {
 	aurl := fmt.Sprintf("%s/services/data/%s/tooling/query?q=%s", f.Credentials.InstanceUrl, apiVersion,
 		url.QueryEscape("SELECT Id, DeveloperName, NamespacePrefix, ApiVersion, Description FROM AuraDefinitionBundle"))
-	body, _, err := f.makeHttpRequestSync(f.newAuthedHttpInput("GET", aurl))
+	body, err := f.makeHttpRequestSync(NewRequest("GET").AbsoluteUrl(aurl))
 	if err != nil {
 		return
 	}
@@ -535,7 +535,7 @@ func (f *Force) GetAuraBundleByName(bundleName string) (bundles AuraDefinitionBu
 	aurl := fmt.Sprintf("%s/services/data/%s/tooling/query?q=%s", f.Credentials.InstanceUrl, apiVersion,
 		url.QueryEscape(fmt.Sprintf("SELECT Id, DeveloperName, NamespacePrefix, ApiVersion, Description FROM AuraDefinitionBundle%s", criteria)))
 
-	body, _, err := f.makeHttpRequestSync(f.newAuthedHttpInput("GET", aurl))
+	body, err := f.makeHttpRequestSync(NewRequest("GET").AbsoluteUrl(aurl))
 	if err != nil {
 		return
 	}
@@ -548,7 +548,7 @@ func (f *Force) GetAuraBundleDefinition(id string) (definitions AuraDefinitionBu
 	aurl := fmt.Sprintf("%s/services/data/%s/tooling/query?q=%s", f.Credentials.InstanceUrl, apiVersion,
 		url.QueryEscape(fmt.Sprintf("SELECT Id, Source, AuraDefinitionBundleId, DefType, Format FROM AuraDefinition WHERE AuraDefinitionBundleId = '%s'", id)))
 
-	body, _, err := f.makeHttpRequestSync(f.newAuthedHttpInput("GET", aurl))
+	body, err := f.makeHttpRequestSync(NewRequest("GET").AbsoluteUrl(aurl))
 	if err != nil {
 		return
 	}
@@ -586,7 +586,7 @@ func (f *Force) CreateAuraComponent(attrs map[string]string) (result ForceCreate
 
 func (f *Force) ListSobjects() (sobjects []ForceSobject, err error) {
 	url := fmt.Sprintf("%s/services/data/%s/sobjects", f.Credentials.InstanceUrl, apiVersion)
-	body, _, err := f.makeHttpRequestSync(f.newAuthedHttpInput("GET", url))
+	body, err := f.makeHttpRequestSync(NewRequest("GET").AbsoluteUrl(url))
 	if err != nil {
 		return
 	}
@@ -598,7 +598,7 @@ func (f *Force) ListSobjects() (sobjects []ForceSobject, err error) {
 
 func (f *Force) GetSobject(name string) (sobject ForceSobject, err error) {
 	url := fmt.Sprintf("%s/services/data/%s/sobjects/%s/describe", f.Credentials.InstanceUrl, apiVersion, name)
-	body, _, err := f.makeHttpRequestSync(f.newAuthedHttpInput("GET", url))
+	body, err := f.makeHttpRequestSync(NewRequest("GET").AbsoluteUrl(url))
 	if err != nil {
 		return
 	}
@@ -641,7 +641,7 @@ func (f *Force) Query(qs string, options ...func(*QueryOptions)) (ForceQueryResu
 func (f *Force) QueryOptions() []query.Option {
 	return []query.Option{
 		query.HttpGet(func(url string) ([]byte, error) {
-			body, _, err := f.makeHttpRequestSync(f.newAuthedHttpInput("GET", url))
+			body, err := f.makeHttpRequestSync(NewRequest("GET").AbsoluteUrl(url))
 			return body, err
 		}),
 		query.InstanceUrl(f.Credentials.InstanceUrl),
@@ -667,7 +667,7 @@ func (f *Force) legacyQueryOptions(qs string, options ...func(*QueryOptions)) []
 }
 
 func (f *Force) Get(url string) (object ForceRecord, err error) {
-	body, _, err := f.makeHttpRequestSync(f.newAuthedHttpInput("GET", url))
+	body, err := f.makeHttpRequestSync(NewRequest("GET").AbsoluteUrl(url))
 	if err != nil {
 		return
 	}
@@ -678,7 +678,7 @@ func (f *Force) Get(url string) (object ForceRecord, err error) {
 func (f *Force) GetLimits() (result map[string]ForceLimit, err error) {
 
 	url := fmt.Sprintf("%s/services/data/%s/limits", f.Credentials.InstanceUrl, apiVersion)
-	body, _, err := f.makeHttpRequestSync(f.newAuthedHttpInput("GET", url))
+	body, err := f.makeHttpRequestSync(NewRequest("GET").AbsoluteUrl(url))
 	if err != nil {
 		return
 	}
@@ -689,7 +689,7 @@ func (f *Force) GetLimits() (result map[string]ForceLimit, err error) {
 
 func (f *Force) GetPasswordStatus(id string) (result ForcePasswordStatusResult, err error) {
 	url := fmt.Sprintf("%s/services/data/%s/sobjects/User/%s/password", f.Credentials.InstanceUrl, apiVersion, id)
-	body, _, err := f.makeHttpRequestSync(f.newAuthedHttpInput("GET", url))
+	body, err := f.makeHttpRequestSync(NewRequest("GET").AbsoluteUrl(url))
 	if err != nil {
 		return
 	}
@@ -722,7 +722,7 @@ func (f *Force) GetRecord(sobject, id string) (object ForceRecord, err error) {
 		url = fmt.Sprintf("%s/services/data/%s/sobjects/%s/%s/%s", f.Credentials.InstanceUrl, apiVersion, sobject, fields[0], fields[1])
 	}
 
-	body, _, err := f.makeHttpRequestSync(f.newAuthedHttpInput("GET", url))
+	body, err := f.makeHttpRequestSync(NewRequest("GET").AbsoluteUrl(url))
 	if err != nil {
 		return
 	}
@@ -753,7 +753,7 @@ func (f *Force) QueryProfile(fields ...string) (results ForceQueryResult, err er
 		strings.Join(fields, ","),
 		f.Credentials.UserInfo.ProfileId)
 
-	body, _, err := f.makeHttpRequestSync(f.newAuthedHttpInput("GET", url))
+	body, err := f.makeHttpRequestSync(NewRequest("GET").AbsoluteUrl(url))
 	if err != nil {
 		return
 	}
@@ -763,7 +763,7 @@ func (f *Force) QueryProfile(fields ...string) (results ForceQueryResult, err er
 
 func (f *Force) QueryTraceFlags() (results ForceQueryResult, err error) {
 	url := fmt.Sprintf("%s/services/data/%s/tooling/query/?q=Select+Id,+DebugLevel.DeveloperName,++ApexCode,+ApexProfiling,+Callout,+CreatedDate,+Database,+ExpirationDate,+System,+TracedEntity.Name,+Validation,+Visualforce,+Workflow+From+TraceFlag+Order+By+ExpirationDate,TracedEntity.Name", f.Credentials.InstanceUrl, apiVersion)
-	body, _, err := f.makeHttpRequestSync(f.newAuthedHttpInput("GET", url))
+	body, err := f.makeHttpRequestSync(NewRequest("GET").AbsoluteUrl(url))
 	if err != nil {
 		return
 	}
@@ -773,7 +773,7 @@ func (f *Force) QueryTraceFlags() (results ForceQueryResult, err error) {
 
 func (f *Force) QueryDefaultDebugLevel() (id string, err error) {
 	url := fmt.Sprintf("%s/services/data/%s/tooling/query/?q=Select+Id+From+DebugLevel+Where+DeveloperName+=+'Force_CLI'", f.Credentials.InstanceUrl, apiVersion)
-	body, _, err := f.makeHttpRequestSync(f.newAuthedHttpInput("GET", url))
+	body, err := f.makeHttpRequestSync(NewRequest("GET").AbsoluteUrl(url))
 	if err != nil {
 		return
 	}
@@ -847,14 +847,14 @@ func (f *Force) StartTrace(userId ...string) (result ForceCreateRecordResult, er
 
 func (f *Force) RetrieveLog(logId string) (result string, err error) {
 	url := fmt.Sprintf("%s/services/data/%s/tooling/sobjects/ApexLog/%s/Body", f.Credentials.InstanceUrl, apiVersion, logId)
-	body, _, err := f.makeHttpRequestSync(f.newAuthedHttpInput("GET", url))
+	body, err := f.makeHttpRequestSync(NewRequest("GET").AbsoluteUrl(url))
 	result = string(body)
 	return
 }
 
 func (f *Force) QueryLogs() (results ForceQueryResult, err error) {
 	url := fmt.Sprintf("%s/services/data/%s/tooling/query/?q=Select+Id,+Application,+DurationMilliseconds,+Location,+LogLength,+LogUser.Name,+Operation,+Request,StartTime,+Status+From+ApexLog+Order+By+StartTime", f.Credentials.InstanceUrl, apiVersion)
-	body, _, err := f.makeHttpRequestSync(f.newAuthedHttpInput("GET", url))
+	body, err := f.makeHttpRequestSync(NewRequest("GET").AbsoluteUrl(url))
 	if err != nil {
 		return
 	}
@@ -864,7 +864,7 @@ func (f *Force) QueryLogs() (results ForceQueryResult, err error) {
 
 func (f *Force) RetrieveEventLogFile(elfId string) (result string, err error) {
 	url := fmt.Sprintf("%s/services/data/%s/sobjects/EventLogFile/%s/LogFile", f.Credentials.InstanceUrl, apiVersion, elfId)
-	body, _, err := f.makeHttpRequestSync(f.newAuthedHttpInput("GET", url))
+	body, err := f.makeHttpRequestSync(NewRequest("GET").AbsoluteUrl(url))
 	if err != nil {
 		return
 	}
@@ -900,7 +900,7 @@ func (f *Force) QueryEventLogFiles() (results ForceQueryResult, err error) {
 	} else {
 		url = fmt.Sprintf("%s/services/data/%s/query/?q=Select+Id,+LogDate,+EventType,+LogFileLength+FROM+EventLogFile+ORDER+BY+LogDate+DESC,+EventType", f.Credentials.InstanceUrl, apiVersion)
 	}
-	body, _, err := f.makeHttpRequestSync(f.newAuthedHttpInput("GET", url))
+	body, err := f.makeHttpRequestSync(NewRequest("GET").AbsoluteUrl(url))
 	if err != nil {
 		return
 	}
@@ -934,7 +934,7 @@ func (f *Force) CreateToolingRecord(objecttype string, attrs map[string]string) 
 
 func (f *Force) DescribeSObject(objecttype string) (result string, err error) {
 	url := fmt.Sprintf("%s/services/data/%s/sobjects/%s/describe", f.Credentials.InstanceUrl, apiVersion, objecttype)
-	body, _, err := f.makeHttpRequestSync(f.newAuthedHttpInput("GET", url))
+	body, err := f.makeHttpRequestSync(NewRequest("GET").AbsoluteUrl(url))
 	if err != nil {
 		return
 	}
@@ -965,27 +965,13 @@ func (f *Force) Whoami() (me ForceRecord, err error) {
 	return
 }
 
-// Prepend /services/data/vXX.0 to URL
-func (f *Force) fullRestUrl(url string) string {
-	return fmt.Sprintf("/services/data/%s/%s", apiVersion, strings.TrimLeft(url, "/"))
-}
-
 // Prepend https schema and instance to URL
 func (f *Force) qualifyUrl(url string) string {
 	return fmt.Sprintf("%s/%s", f.Credentials.InstanceUrl, strings.TrimLeft(url, "/"))
 }
 
 func (f *Force) GetAbsoluteBytes(url string) (result []byte, err error) {
-	qualifiedUrl := f.qualifyUrl(url)
-	body, _, err := f.makeHttpRequestSync(f.newAuthedHttpInput("GET", qualifiedUrl))
-	if err == SessionExpiredError {
-		err = f.RefreshSession()
-		if err != nil {
-			return
-		}
-		return f.GetAbsoluteBytes(url)
-	}
-	return body, err
+	return f.makeHttpRequestSync(NewRequest("GET").RootUrl(url))
 }
 
 func (f *Force) GetAbsolute(url string) (string, error) {
@@ -997,8 +983,8 @@ func (f *Force) GetAbsolute(url string) (string, error) {
 }
 
 func (f *Force) GetREST(url string) (result string, err error) {
-	fullUrl := f.fullRestUrl(url)
-	return f.GetAbsolute(fullUrl)
+	body, err := f.makeHttpRequestSync(NewRequest("GET").RestUrl(url))
+	return string(body), err
 }
 
 func (f *Force) PostPatchAbsolute(url string, content string, method string) (result string, err error) {
@@ -1032,7 +1018,7 @@ func (f *Force) PostAbsolute(url string, content string) (result string, err err
 }
 
 func (f *Force) PostREST(url string, content string) (result string, err error) {
-	fullUrl := f.fullRestUrl(url)
+	fullUrl := fullRestUrl(url)
 	return f.PostAbsolute(fullUrl, content)
 }
 
@@ -1051,28 +1037,18 @@ func (f *Force) PatchAbsolute(url string, content string) (result string, err er
 }
 
 func (f *Force) PatchREST(url string, content string) (result string, err error) {
-	fullUrl := f.fullRestUrl(url)
+	fullUrl := fullRestUrl(url)
 	return f.PatchAbsolute(fullUrl, content)
 }
 
 func (f *Force) getForceResult(url string) (results ForceQueryResult, err error) {
 	furl := fmt.Sprintf("%s%s", f.Credentials.InstanceUrl, url)
-	body, _, err := f.makeHttpRequestSync(f.newAuthedHttpInput("GET", furl))
+	body, err := f.makeHttpRequestSync(NewRequest("GET").AbsoluteUrl(furl))
 	if err != nil {
 		return
 	}
 	json.Unmarshal(body, &results)
 	return
-}
-
-func (f *Force) newAuthedHttpInput(method, url string) *httpRequestInput {
-	inp := &httpRequestInput{
-		Method:  method,
-		Url:     url,
-		Headers: map[string]string{},
-		Retrier: (&httpRetrier{}).Reauth(),
-	}
-	return f.setHttpInputAuth(inp)
 }
 
 func (f *Force) setHttpInputAuth(input *httpRequestInput) *httpRequestInput {
@@ -1081,15 +1057,13 @@ func (f *Force) setHttpInputAuth(input *httpRequestInput) *httpRequestInput {
 	return input
 }
 
-func (f *Force) makeHttpRequestSync(input *httpRequestInput) (body []byte, contentType ContentType, err error) {
-	input.Callback = func(r *http.Response) error {
-		contentType = ContentType(r.Header.Get("Content-Type"))
-		body, err = ioutil.ReadAll(r.Body)
-		r.Body.Close()
-		return err
+func (f *Force) makeHttpRequestSync(req *Request) (body []byte, err error) {
+	req = req.ReadResponseBody()
+	resp, err := f.ExecuteRequest(req)
+	if err != nil {
+		return nil, err
 	}
-	err = f.makeHttpRequest(input)
-	return
+	return resp.ReadResponseBody, nil
 }
 
 func (f *Force) makeHttpRequest(input *httpRequestInput) error {
