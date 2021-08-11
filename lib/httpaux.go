@@ -1,12 +1,27 @@
 package lib
 
 import (
+	"crypto/tls"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
+	"os"
 	"runtime"
 	"time"
 )
+
+var sslKeyLogWriter *os.File
+
+func init() {
+	if f := os.Getenv("SSLKEYLOGFILE"); f != "" {
+		var err error
+		sslKeyLogWriter, err = os.OpenFile(f, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
+		if err != nil {
+			panic("Could not open SSLKEYLOGFILE: " + err.Error())
+		}
+	}
+}
 
 type ContentType string
 
@@ -20,6 +35,23 @@ const (
 func doRequest(request *http.Request) (res *http.Response, err error) {
 	client := &http.Client{}
 	client.Timeout = time.Duration(Timeout) * time.Millisecond
+	if sslKeyLogWriter != nil {
+		client.Transport = &http.Transport{
+			TLSClientConfig: &tls.Config{
+				KeyLogWriter: sslKeyLogWriter,
+			},
+			Proxy: http.ProxyFromEnvironment,
+			DialContext: (&net.Dialer{
+				Timeout:   30 * time.Second,
+				KeepAlive: 30 * time.Second,
+			}).DialContext,
+			ForceAttemptHTTP2:     true,
+			MaxIdleConns:          100,
+			IdleConnTimeout:       10 * time.Minute,
+			TLSHandshakeTimeout:   10 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+		}
+	}
 	return client.Do(request)
 }
 
