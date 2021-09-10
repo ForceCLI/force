@@ -173,6 +173,7 @@ func runExport(cmd *Command, args []string) {
 		"QuickAction",
 		"QuoteSettings",
 		"RecordType",
+		"RestrictionRule",
 		"RemoteSiteSetting",
 		"ReportType",
 		"Role",

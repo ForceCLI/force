@@ -108,6 +108,7 @@ var metapaths = []metapath{
 	metapath{path: "profileSessionSettings", name: "ProfileSessionSetting"},
 	metapath{path: "queues", name: "Queue"},
 	metapath{path: "quickActions", name: "QuickAction"},
+	metapath{path: "restrictionRules", name: "RestrictionRule"},
 	metapath{path: "remoteSiteSettings", name: "RemoteSiteSetting"},
 	metapath{path: "reports", name: "Report", hasFolder: true},
 	metapath{path: "reportTypes", name: "ReportType"},
