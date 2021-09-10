@@ -27,6 +27,7 @@ var Timeout int64 = 0
 var CustomEndpoint = ``
 var SessionExpiredError = errors.New("Session expired")
 var APILimitExceededError = errors.New("API limit exceeded")
+var APIDisabledForUser = errors.New("API disabled for user")
 var ClassNotFoundError = errors.New("class not found")
 var MetricsNotFoundError = errors.New("metrics not found")
 var DevHubOrgRequiredError = errors.New("Org must be a Dev Hub")
@@ -1120,6 +1121,8 @@ func (f *Force) _makeHttpRequestWithoutRetry(input *httpRequestInput) (*http.Res
 		json.Unmarshal(body, &messages)
 		if len(messages) > 0 && messages[0].ErrorCode == "REQUEST_LIMIT_EXCEEDED" {
 			return nil, APILimitExceededError
+		} else if len(messages) > 0 && messages[0].ErrorCode == "API_CURRENTLY_DISABLED" {
+			return nil, APIDisabledForUser
 		} else if len(messages) > 0 {
 			fallbackErr = errors.New(messages[0].Message)
 		} else {
