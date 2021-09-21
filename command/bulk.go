@@ -351,6 +351,9 @@ func startBulkQuery(objectType string, soql string, contenttype string, concurre
 				os.Exit(1)
 			}
 			DisplayBatchInfo(batchInfo, os.Stderr)
+			if batchInfo.State == "Failed" {
+				ErrorAndExit(fmt.Sprintf("Job Failed: %s", batchInfo.StateMessage))
+			}
 			if batchInfo.State == "NotProcessed" {
 				// batches have been created
 				break
