@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/ForceCLI/force/desktop"
 	. "github.com/ForceCLI/force/error"
+	"github.com/ForceCLI/force/lib/internal"
 	"github.com/ForceCLI/force/lib/query"
 	"io"
 	"io/ioutil"
@@ -91,6 +92,10 @@ type LoginFault struct {
 	ExceptionMessage string `xml:"exceptionMessage" json:"exceptionMessage"`
 }
 
+func (lf LoginFault) Error() string {
+	return fmt.Sprintf("%s: %s", lf.ExceptionCode, lf.ExceptionMessage)
+}
+
 type SoapFault struct {
 	FaultCode   string     `xml:"Body>Fault>faultcode"`
 	FaultString string     `xml:"Body>Fault>faultstring"`
@@ -105,6 +110,21 @@ type GenericForceError struct {
 type ForceError struct {
 	Message   string
 	ErrorCode string
+}
+
+type ForceErrors []ForceError
+
+func (fs ForceErrors) Error() string {
+	sb := strings.Builder{}
+	for i, e := range fs {
+		sb.WriteString(e.ErrorCode)
+		sb.WriteString(": ")
+		sb.WriteString(e.Message)
+		if i < len(fs)-1 {
+			sb.WriteString(", ")
+		}
+	}
+	return sb.String()
 }
 
 type FieldName struct {
@@ -1004,18 +1024,10 @@ func (f *Force) PostPatchREST(url string, content string, method string) (result
 	}
 }
 
-func (f *Force) PostAbsolute(url string, content string) (result string, err error) {
+func (f *Force) PostAbsolute(url string, content string) (string, error) {
 	qualifiedUrl := f.qualifyUrl(url)
-	body, err := f.httpPostJSON(qualifiedUrl, content)
-	if err == SessionExpiredError {
-		err = f.RefreshSession()
-		if err != nil {
-			return
-		}
-		return f.PostREST(url, content)
-	}
-	result = string(body)
-	return
+	body, err := f.httpPostPatchWithRetry(qualifiedUrl, content, ContentTypeJson, HttpMethodPost)
+	return string(body), err
 }
 
 func (f *Force) PostREST(url string, content string) (result string, err error) {
@@ -1025,16 +1037,8 @@ func (f *Force) PostREST(url string, content string) (result string, err error) 
 
 func (f *Force) PatchAbsolute(url string, content string) (result string, err error) {
 	qualifiedUrl := f.qualifyUrl(url)
-	body, err := f.httpPatchJSON(qualifiedUrl, content)
-	if err == SessionExpiredError {
-		err = f.RefreshSession()
-		if err != nil {
-			return
-		}
-		return f.PatchREST(url, content)
-	}
-	result = string(body)
-	return
+	body, err := f.httpPostPatchWithRetry(qualifiedUrl, content, ContentTypeJson, HttpMethodPost)
+	return string(body), err
 }
 
 func (f *Force) PatchREST(url string, content string) (result string, err error) {
@@ -1101,104 +1105,71 @@ func (f *Force) _makeHttpRequestWithoutRetry(input *httpRequestInput) (*http.Res
 	if err != nil {
 		return nil, err
 	}
+	return res, f._coerceHttpError(res, body)
+}
 
-	// In general, a 401 or 403 will be treated as SessionExpiredError,
-	// but there are some special cases. We handle InvalidSessionId in XML errors explicitly;
-	// we also handle rate limit issues, which are a 403, explicitly, so we don't keep refreshing.
-	// So we pull these out and handle them in this if/else;
-	// if we don't find them, we create a fallback error.
-	// Then if it's a 401/403, treat the session expired (discard the fallback error);
-	// Finally, return the fallback error.
+// Custom HTTP error handling, which is not obvious or trivial because Salesforce returns
+// many shapes and forms of errors.
+//
+// The returned error is never nil.
+//
+// In general, a 401 or 403 will be treated as SessionExpiredError,
+// but there are some special cases. We handle InvalidSessionId in XML errors explicitly;
+// we also handle rate limit issues, which are a 403, explicitly, so we don't keep refreshing.
+// So we pull these out and handle them in this if/else;
+// if we don't find them, we create a fallback error based on the actual response shape.
+// Then if it's a 401/403, treat the session expired (discard the fallback error);
+// Finally, return the fallback error.
+func (f *Force) _coerceHttpError(res *http.Response, body []byte) error {
 	var fallbackErr error
-	if strings.HasPrefix(res.Header.Get("Content-Type"), "application/xml") {
+	if strings.HasPrefix(res.Header.Get("Content-Type"), string(ContentTypeXml)) {
 		var fault LoginFault
-		xml.Unmarshal(body, &fault)
+		if err := internal.XmlUnmarshal(body, &fault); err != nil {
+			return err
+		}
 		if fault.ExceptionCode == "InvalidSessionId" {
-			return nil, SessionExpiredError
+			return SessionExpiredError
+		} else if fault.ExceptionCode != "" {
+			return fault
 		}
 	} else {
-		var messages []ForceError
-		json.Unmarshal(body, &messages)
-		if len(messages) > 0 && messages[0].ErrorCode == "REQUEST_LIMIT_EXCEEDED" {
-			return nil, APILimitExceededError
-		} else if len(messages) > 0 && messages[0].ErrorCode == "API_CURRENTLY_DISABLED" {
-			return nil, APIDisabledForUser
-		} else if len(messages) > 0 {
-			fallbackErr = errors.New(messages[0].Message)
-		} else {
-			fallbackErr = errors.New(string(body))
+		var errors ForceErrors
+		if err := internal.JsonUnmarshal(body, &errors); err != nil {
+			return err
+		}
+		if len(errors) > 0 && errors[0].ErrorCode == "REQUEST_LIMIT_EXCEEDED" {
+			return APILimitExceededError
+		} else if len(errors) > 0 && errors[0].ErrorCode == "API_CURRENTLY_DISABLED" {
+			return APIDisabledForUser
+		} else if len(errors) > 0 {
+			fallbackErr = errors
 		}
 	}
 
 	if res.StatusCode == 401 || res.StatusCode == 403 {
-		return nil, SessionExpiredError
+		return SessionExpiredError
 	}
-	return nil, fallbackErr
+	if fallbackErr == nil {
+		fallbackErr = fmt.Errorf("unhandled error: %d %s", res.StatusCode, string(body))
+	}
+	return fallbackErr
 }
 
-func (f *Force) httpPostCSV(url string, data string, requestOptions ...func(*http.Request)) (body []byte, err error) {
-	body, err = f.httpPostWithContentType(url, data, "text/csv", requestOptions...)
+func (f *Force) httpPostPatchWithRetry(url string, rbody string, contenttype ContentType, method HttpMethod, requestOptions ...func(*http.Request)) ([]byte, error) {
+	body, err := f.httpPostPatch(url, rbody, contenttype, method, requestOptions...)
 	if err == SessionExpiredError {
-		err = f.RefreshSession()
-		if err != nil {
-			return
+		if err := f.RefreshSession(); err != nil {
+			return nil, err
 		}
-		return f.httpPostCSV(url, data, requestOptions...)
+		return f.httpPostPatch(url, rbody, contenttype, method, requestOptions...)
 	}
-	return
+	return body, err
 }
 
-func (f *Force) httpPostXML(url string, data string, requestOptions ...func(*http.Request)) (body []byte, err error) {
-	body, err = f.httpPostWithContentType(url, data, "application/xml", requestOptions...)
-	if err == SessionExpiredError {
-		err = f.RefreshSession()
-		if err != nil {
-			return
-		}
-		return f.httpPostXML(url, data, requestOptions...)
-	}
-	return
-}
-
-func (f *Force) httpPostJSON(url string, data string, requestOptions ...func(*http.Request)) (body []byte, err error) {
-	body, err = f.httpPostWithContentType(url, data, "application/json", requestOptions...)
-	if err == SessionExpiredError {
-		err = f.RefreshSession()
-		if err != nil {
-			return
-		}
-		return f.httpPostJSON(url, data, requestOptions...)
-	}
-	return
-}
-
-func (f *Force) httpPatchJSON(url string, data string) (body []byte, err error) {
-	body, err = f.httpPatchWithContentType(url, data, "application/json")
-	if err == SessionExpiredError {
-		err = f.RefreshSession()
-		if err != nil {
-			return
-		}
-		return f.httpPatchJSON(url, data)
-	}
-	return
-}
-
-func (f *Force) httpPatchWithContentType(url string, data string, contenttype string) (body []byte, err error) {
-	body, err = f.httpPostPatchWithContentType(url, data, contenttype, "PATCH")
-	return
-}
-
-func (f *Force) httpPostWithContentType(url string, data string, contenttype string, requestOptions ...func(*http.Request)) (body []byte, err error) {
-	body, err = f.httpPostPatchWithContentType(url, data, contenttype, "POST", requestOptions...)
-	return
-}
-
-func (f *Force) httpPostPatchWithContentType(url string, data string, contenttype string, method string, requestOptions ...func(*http.Request)) (body []byte, err error) {
-	rbody := data
-	req, err := httpRequest(strings.ToUpper(method), url, bytes.NewReader([]byte(rbody)))
+func (f *Force) httpPostPatch(url string, rbody string, contenttype ContentType, method HttpMethod, requestOptions ...func(*http.Request)) ([]byte, error) {
+	req, err := httpRequest(string(method), url, strings.NewReader(rbody))
 	if err != nil {
-		return
+		return nil, err
 	}
 
 	for _, option := range requestOptions {
@@ -1207,39 +1178,26 @@ func (f *Force) httpPostPatchWithContentType(url string, data string, contenttyp
 
 	req.Header.Add("X-SFDC-Session", f.Credentials.AccessToken)
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", f.Credentials.AccessToken))
-	req.Header.Add("Content-Type", contenttype)
+	req.Header.Add("Content-Type", string(contenttype))
 	res, err := doRequest(req)
 	if err != nil {
-		return
+		return nil, err
 	}
 	defer res.Body.Close()
 	if res.StatusCode == 401 {
-		err = SessionExpiredError
-		return
+		return nil, SessionExpiredError
 	}
-	body, err = ioutil.ReadAll(res.Body)
+	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		return
+		return nil, err
 	}
-	if res.StatusCode/100 != 2 {
-		if contenttype == "application/xml" {
-			var fault LoginFault
-			xml.Unmarshal(body, &fault)
-			if fault.ExceptionCode == "InvalidSessionId" {
-				err = SessionExpiredError
-			}
-		} else {
-			var messages []ForceError
-			json.Unmarshal(body, &messages)
-			if messages != nil {
-				err = errors.New(messages[0].Message)
-			}
-		}
-		return
+	if res.StatusCode/100 == 2 {
+		return body, nil
 	} else if res.StatusCode == 204 {
-		body = []byte("Patch command succeeded....")
+		return []byte("Patch command succeeded...."), nil
+	} else {
+		return body, f._coerceHttpError(res, body)
 	}
-	return
 }
 
 func (f *Force) httpPost(url string, attrs map[string]string) (body []byte, err error, emessages []ForceError) {

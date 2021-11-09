@@ -1,10 +1,10 @@
 package lib
 
 import (
-	"encoding/json"
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"github.com/ForceCLI/force/lib/internal"
 	"io"
 	"net/http"
 	"strings"
@@ -90,43 +90,52 @@ var httpContentTypeForJobContentType = map[JobContentType]ContentType{
 	JobContentTypeJson: ContentTypeJson,
 }
 
-var InvalidBulkObject = errors.New("Object Does Not Support Bulk API")
-
-func (f *Force) CreateBulkJob(jobInfo JobInfo, requestOptions ...func(*http.Request)) (result JobInfo, err error) {
-	xmlbody, err := xml.Marshal(jobInfo)
-	if err != nil {
-		err = fmt.Errorf("Could not create job request: %s", err.Error())
-		return
-	}
-	url := fmt.Sprintf("%s/services/async/%s/job", f.Credentials.InstanceUrl, apiVersionNumber)
-	body, err := f.httpPostXML(url, string(xmlbody), requestOptions...)
-	xml.Unmarshal(body, &result)
-	if len(result.Id) == 0 {
-		var fault LoginFault
-		xml.Unmarshal(body, &fault)
-		if fault.ExceptionCode == "InvalidEntity" {
-			err = InvalidBulkObject
-		} else {
-			err = errors.New(fmt.Sprintf("%s: %s", fault.ExceptionCode, fault.ExceptionMessage))
-		}
-	}
-	return
+var httpResponseUnmarshalerForJobContentType = map[JobContentType]internal.Unmarshaler{
+	JobContentTypeCsv:  internal.XmlUnmarshal,
+	JobContentTypeXml:  internal.XmlUnmarshal,
+	JobContentTypeJson: internal.JsonUnmarshal,
 }
 
-func (f *Force) CloseBulkJob(jobId string) (result JobInfo, err error) {
+var InvalidBulkObject = errors.New("Object Does Not Support Bulk API")
+
+func (f *Force) CreateBulkJob(jobInfo JobInfo, requestOptions ...func(*http.Request)) (JobInfo, error) {
+	xmlbody, err := internal.XmlMarshal(jobInfo)
+	if err != nil {
+		return JobInfo{}, fmt.Errorf("Could not create job request: %s", err.Error())
+	}
+	url := fmt.Sprintf("%s/services/async/%s/job", f.Credentials.InstanceUrl, apiVersionNumber)
+	body, err := f.httpPostPatchWithRetry(url, string(xmlbody), ContentTypeXml, HttpMethodPost, requestOptions...)
+	if err != nil {
+		if fault, ok := err.(LoginFault); ok && fault.ExceptionCode == "InvalidEntity" {
+			return JobInfo{}, InvalidBulkObject
+		}
+		return JobInfo{}, err
+	}
+	var result JobInfo
+	if err := internal.XmlUnmarshal(body, &result); err != nil {
+		return result, err
+	}
+	return result, nil
+}
+
+func (f *Force) CloseBulkJob(jobId string) (JobInfo, error) {
 	jobInfo := JobInfo{
 		State: "Closed",
 	}
-	xmlbody, _ := xml.Marshal(jobInfo)
-	url := fmt.Sprintf("%s/services/async/%s/job/%s", f.Credentials.InstanceUrl, apiVersionNumber, jobId)
-	body, err := f.httpPostXML(url, string(xmlbody))
-	xml.Unmarshal(body, &result)
-	if len(result.Id) == 0 {
-		var fault LoginFault
-		xml.Unmarshal(body, &fault)
-		err = errors.New(fmt.Sprintf("%s: %s", fault.ExceptionCode, fault.ExceptionMessage))
+	xmlbody, err := internal.XmlMarshal(jobInfo)
+	if err != nil {
+		return JobInfo{}, err
 	}
-	return
+	url := fmt.Sprintf("%s/services/async/%s/job/%s", f.Credentials.InstanceUrl, apiVersionNumber, jobId)
+	body, err := f.httpPostPatchWithRetry(url, string(xmlbody), ContentTypeXml, HttpMethodPost)
+	if err != nil {
+		return JobInfo{}, err
+	}
+	var result JobInfo
+	if err := internal.XmlUnmarshal(body, &result); err != nil {
+		return result, err
+	}
+	return result, nil
 }
 
 func (f *Force) GetBulkJobs() ([]JobInfo, error) {
@@ -136,11 +145,8 @@ func (f *Force) GetBulkJobs() ([]JobInfo, error) {
 		return nil, err
 	}
 	var result []JobInfo
-	xml.Unmarshal(resp.ReadResponseBody, &result)
-	if len(result[0].Id) == 0 {
-		var fault LoginFault
-		xml.Unmarshal(resp.ReadResponseBody, &fault)
-		err = errors.New(fmt.Sprintf("%s: %s", fault.ExceptionCode, fault.ExceptionMessage))
+	if err := internal.XmlUnmarshal(resp.ReadResponseBody, &result); err != nil {
+		return nil, err
 	}
 	return result, err
 }
@@ -152,76 +158,23 @@ func (f *Force) httpGetBulk(url string) (*Response, error) {
 
 func (f *Force) BulkQuery(soql string, jobId string, contentType string, requestOptions ...func(*http.Request)) (BatchInfo, error) {
 	url := fmt.Sprintf("%s/services/async/%s/job/%s/batch", f.Credentials.InstanceUrl, apiVersionNumber, jobId)
-	var body []byte
 
 	jct, err := JobInfo{ContentType: contentType}.JobContentType()
 	if err != nil {
 		return BatchInfo{}, err
 	}
+	httpCt := httpContentTypeForJobContentType[jct]
+	unmarshal := httpResponseUnmarshalerForJobContentType[jct]
 
-	var result BatchInfo
-	switch jct {
-	case JobContentTypeCsv:
-		body, err = f.httpPostCSV(url, soql, requestOptions...)
-		xml.Unmarshal(body, &result)
-	case JobContentTypeJson:
-		body, err = f.httpPostJSON(url, soql, requestOptions...)
-		json.Unmarshal(body, &result)
-	case JobContentTypeXml:
-		body, err = f.httpPostXML(url, soql, requestOptions...)
-		xml.Unmarshal(body, &result)
-	default:
-		panic("unreachable")
+	body, err := f.httpPostPatch(url, soql, httpCt, HttpMethodPost, requestOptions...)
+	if err != nil {
+		return BatchInfo{}, err
 	}
-	if len(result.Id) == 0 {
-		var fault LoginFault
-		xml.Unmarshal(body, &fault)
-		return BatchInfo{}, errors.New(fmt.Sprintf("%s: %s", fault.ExceptionCode, fault.ExceptionMessage))
+	var result BatchInfo
+	if err := unmarshal(body, &result); err != nil {
+		return BatchInfo{}, err
 	}
 	return result, nil
-}
-
-func (f *Force) addCSVBatchToJob(content string, job JobInfo) (result BatchInfo, err error) {
-	url := fmt.Sprintf("%s/services/async/%s/job/%s/batch", f.Credentials.InstanceUrl, apiVersionNumber, job.Id)
-	body, err := f.httpPostCSV(url, content)
-	if err != nil {
-		err = fmt.Errorf("Failed to add batch: " + err.Error())
-		return
-	}
-	err = xml.Unmarshal(body, &result)
-	if len(result.Id) == 0 {
-		var fault LoginFault
-		xml.Unmarshal(body, &fault)
-		err = errors.New(fmt.Sprintf("%s: %s", fault.ExceptionCode, fault.ExceptionMessage))
-	}
-	return
-}
-
-func (f *Force) addXMLBatchToJob(content string, job JobInfo) (result BatchInfo, err error) {
-	url := fmt.Sprintf("%s/services/async/%s/job/%s/batch", f.Credentials.InstanceUrl, apiVersionNumber, job.Id)
-	body, err := f.httpPostXML(url, content)
-	if err != nil {
-		err = fmt.Errorf("Failed to add batch: " + err.Error())
-		return
-	}
-	err = xml.Unmarshal(body, &result)
-	if len(result.Id) == 0 {
-		var fault LoginFault
-		xml.Unmarshal(body, &fault)
-		err = errors.New(fmt.Sprintf("%s: %s", fault.ExceptionCode, fault.ExceptionMessage))
-	}
-	return
-}
-
-func (f *Force) addJSONBatchToJob(content string, job JobInfo) (result BatchInfo, err error) {
-	url := fmt.Sprintf("%s/services/async/%s/job/%s/batch", f.Credentials.InstanceUrl, apiVersionNumber, job.Id)
-	body, err := f.httpPostJSON(url, content)
-	if err != nil {
-		err = fmt.Errorf("Failed to add batch: " + err.Error())
-		return
-	}
-	err = json.Unmarshal(body, &result)
-	return
 }
 
 func (f *Force) AddBatchToJob(content string, job JobInfo) (BatchInfo, error) {
@@ -229,44 +182,38 @@ func (f *Force) AddBatchToJob(content string, job JobInfo) (BatchInfo, error) {
 	if err != nil {
 		return BatchInfo{}, err
 	}
-	switch jct {
-	case JobContentTypeCsv:
-		return f.addCSVBatchToJob(content, job)
-	case JobContentTypeJson:
-		return f.addJSONBatchToJob(content, job)
-	case JobContentTypeXml:
-		return f.addXMLBatchToJob(content, job)
-	default:
-		panic("unreachable")
+	url := fmt.Sprintf("%s/services/async/%s/job/%s/batch", f.Credentials.InstanceUrl, apiVersionNumber, job.Id)
+	body, err := f.httpPostPatch(url, content, httpContentTypeForJobContentType[jct], HttpMethodPost)
+	if err != nil {
+		return BatchInfo{}, err
 	}
+	unmarshal := httpResponseUnmarshalerForJobContentType[jct]
+	var result BatchInfo
+	if err := unmarshal(body, &result); err != nil {
+		return BatchInfo{}, err
+	}
+	return result, nil
 }
 
 func (f *Force) GetBatchInfo(jobId string, batchId string) (BatchInfo, error) {
-	var result BatchInfo
 	url := fmt.Sprintf("%s/services/async/%s/job/%s/batch/%s", f.Credentials.InstanceUrl, apiVersionNumber, jobId, batchId)
 
 	resp, err := f.httpGetBulk(url)
 	if err != nil {
-		return result, err
+		return BatchInfo{}, err
 	}
 
+	var unmarshal internal.Unmarshaler
 	if resp.ContentType == ContentTypeJson {
-		json.Unmarshal(resp.ReadResponseBody, &result)
-		if len(result.Id) == 0 {
-			var fault LoginFault
-			json.Unmarshal(resp.ReadResponseBody, &fault)
-			err = errors.New(fmt.Sprintf("%s: %s", fault.ExceptionCode, fault.ExceptionMessage))
-		}
+		unmarshal = internal.JsonUnmarshal
 	} else {
-		xml.Unmarshal(resp.ReadResponseBody, &result)
-		if len(result.Id) == 0 {
-			var fault LoginFault
-			xml.Unmarshal(resp.ReadResponseBody, &fault)
-			err = errors.New(fmt.Sprintf("%s: %s", fault.ExceptionCode, fault.ExceptionMessage))
-		}
+		unmarshal = internal.XmlUnmarshal
 	}
-
-	return result, err
+	var result BatchInfo
+	if err := unmarshal(resp.ReadResponseBody, &result); err != nil {
+		return BatchInfo{}, err
+	}
+	return result, nil
 }
 
 func (f *Force) GetBatches(jobId string) (result []BatchInfo, err error) {
@@ -280,19 +227,16 @@ func (f *Force) GetBatches(jobId string) (result []BatchInfo, err error) {
 		BatchInfos []BatchInfo `xml:"batchInfo" json:"batchInfo"`
 	}
 
+	var unmarshal internal.Unmarshaler
 	if resp.ContentType == ContentTypeJson {
-		json.Unmarshal(resp.ReadResponseBody, &batchInfoList)
-		result = batchInfoList.BatchInfos
+		unmarshal = internal.JsonUnmarshal
 	} else {
-		xml.Unmarshal(resp.ReadResponseBody, &batchInfoList)
-		result = batchInfoList.BatchInfos
-		if len(result) == 0 {
-			var fault LoginFault
-			xml.Unmarshal(resp.ReadResponseBody, &fault)
-			err = errors.New(fmt.Sprintf("%s: %s", fault.ExceptionCode, fault.ExceptionMessage))
-		}
+		unmarshal = internal.XmlUnmarshal
 	}
-	return
+	if err := unmarshal(resp.ReadResponseBody, &batchInfoList); err != nil {
+		return nil, err
+	}
+	return batchInfoList.BatchInfos, nil
 }
 
 func (f *Force) GetJobInfo(jobId string) (JobInfo, error) {
@@ -302,13 +246,10 @@ func (f *Force) GetJobInfo(jobId string) (JobInfo, error) {
 		return JobInfo{}, err
 	}
 	var result JobInfo
-	xml.Unmarshal(resp.ReadResponseBody, &result)
-	if len(result.Id) == 0 {
-		var fault LoginFault
-		xml.Unmarshal(resp.ReadResponseBody, &fault)
-		err = errors.New(fmt.Sprintf("%s: %s", fault.ExceptionCode, fault.ExceptionMessage))
+	if err := internal.XmlUnmarshal(resp.ReadResponseBody, &result); err != nil {
+		return JobInfo{}, err
 	}
-	return result, err
+	return result, nil
 }
 
 func (f *Force) RetrieveBulkQueryResultList(job JobInfo, batchId string) ([]byte, error) {
@@ -370,7 +311,7 @@ func (f *Force) RetrieveBulkBatchResults(jobId string, batchId string) (BatchRes
 	return BatchResult{}, err
 }
 
-// NewChannelChunkBatchResultsReporter returns a new reporter that will send chunks of a read body into
+// NewBatchResultChannelHttpCallback returns a new reporter that will send chunks of a read body into
 // the results channel. You can control the size of the chunks via bufferSize (defaults to 50mb).
 func NewBatchResultChannelHttpCallback(results chan<- BatchResultChunk, bufferSize int) HttpCallback {
 	if bufferSize <= 1 {
