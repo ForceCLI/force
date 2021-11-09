@@ -28,3 +28,11 @@ func mustRead(r io.Reader) []byte {
 	Expect(err).ToNot(HaveOccurred())
 	return b
 }
+
+var XmlHeaders = map[string][]string{"Content-Type": {"application/xml"}}
+
+const loginFaultBody = `<?xml version="1.0" encoding="UTF-8"?>
+<error xmlns="http://www.force.com/2009/06/asyncapi/dataload">
+<exceptionCode>somecode</exceptionCode>
+<exceptionMessage>msg</exceptionMessage>
+</error>`

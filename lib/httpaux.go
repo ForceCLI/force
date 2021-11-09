@@ -26,10 +26,17 @@ func init() {
 type ContentType string
 
 const (
-	ContentTypeNone = ""
-	ContentTypeJson = "application/json"
-	ContentTypeXml  = "application/xml"
-	ContentTypeCsv  = "application/csv"
+	ContentTypeNone ContentType = ""
+	ContentTypeJson ContentType = "application/json"
+	ContentTypeXml  ContentType = "application/xml"
+	ContentTypeCsv  ContentType = "text/csv"
+)
+
+type HttpMethod string
+
+const (
+	HttpMethodPost  HttpMethod = http.MethodPost
+	HttpMethodPatch HttpMethod = http.MethodPatch
 )
 
 func doRequest(request *http.Request) (res *http.Response, err error) {
