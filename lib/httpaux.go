@@ -29,7 +29,7 @@ const (
 	ContentTypeNone ContentType = ""
 	ContentTypeJson ContentType = "application/json"
 	ContentTypeXml  ContentType = "application/xml"
-	ContentTypeCsv  ContentType = "application/csv"
+	ContentTypeCsv  ContentType = "text/csv"
 )
 
 type HttpMethod string
