@@ -27,6 +27,7 @@ type BatchInfo struct {
 	CreatedDate            string `xml:"createdDate" json:"createdDate"`
 	SystemModstamp         string `xml:"systemModstamp" json:"systemModstamp"`
 	NumberRecordsProcessed int    `xml:"numberRecordsProcessed" json:"numberRecordsProcessed"`
+	NumberRecordsFailed    int    `xml:"numberRecordsFailed" json:"numberRecordsFailed"`
 }
 
 type JobInfo struct {
