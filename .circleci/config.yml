@@ -1,0 +1,36 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/golang:1.15
+    steps:
+      - checkout
+      - run: go get -u github.com/mitchellh/gox
+      - run: go get -u github.com/tcnksm/ghr
+      - run: sudo apt-get update && sudo apt-get install p7zip-full
+      - restore_cache: # restores saved cache if no changes are detected since last run
+          keys:
+            - go-mod-v4-{{ checksum "go.sum" }}
+      - run: make dist
+      - save_cache:
+          key: go-mod-v4-{{ checksum "go.sum" }}
+          paths:
+            - "/go/pkg/mod"
+      - run:
+          name: create release
+          command: |
+            if [ "$CIRCLE_TAG" ]; then
+              mkdir -p dist
+              mv force*.zip dist
+              ghr -t $GITHUB_TOKEN -u $CIRCLE_PROJECT_USERNAME -r $CIRCLE_PROJECT_REPONAME --replace $CIRCLE_TAG dist/
+            else
+              echo "No tag"
+            fi
+workflows:
+  version: 2
+  build-workflow: # the name of our workflow
+    jobs: # the jobs that we are sequencing.
+      - build:
+          filters:
+            tags:
+              only: /^v.*/
