@@ -1462,7 +1462,7 @@ func (fm *ForceMetadata) ListConnectedApps() (apps ForceConnectedApps, err error
 
 func (fm *ForceMetadata) soapExecute(action, query string) (response []byte, err error) {
 	url := fmt.Sprintf("%s/services/Soap/m/%s", fm.Force.Credentials.InstanceUrl, fm.ApiVersion)
-	soap := NewSoap(url, "http://soap.sforce.com/2006/04/metadata", fm.Force.Credentials.AccessToken)
+	soap := NewSoap(url, "http://soap.sforce.com/2006/04/metadata", fm.Force.Credentials.AccessToken).WithClient(fm.Force.ClientName)
 	response, err = soap.Execute(action, query)
 	if err == SessionExpiredError {
 		err = fm.Force.RefreshSession()

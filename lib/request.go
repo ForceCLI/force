@@ -79,6 +79,11 @@ func (r *Request) WithContent(ct ContentType) *Request {
 	return r.WithHeader("Content-Type", string(ct))
 }
 
+// WithClient sets the Sforce-Call-Options header with client name
+func (r *Request) WithClient(clientName string) *Request {
+	return r.WithHeader("Sforce-Call-Options", fmt.Sprintf("client=%s;", clientName))
+}
+
 // WithBody sets the HTTP request body.
 func (r *Request) WithBody(rdr io.Reader) *Request {
 	r.body = rdr
@@ -140,6 +145,9 @@ func (f *Force) ExecuteRequest(r *Request) (*Response, error) {
 		absUrl = r.absoluteUrl
 	} else {
 		absUrl = f.qualifyUrl(r.rootedUrl)
+	}
+	if _, ok := r.Headers["Sforce-Call-Options"]; !ok {
+		r = r.WithClient(f.ClientName)
 	}
 	reqResp := &Response{}
 	inp := &httpRequestInput{

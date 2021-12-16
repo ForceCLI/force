@@ -50,6 +50,7 @@ const (
 type RefreshMethod int
 
 type Force struct {
+	ClientName  string
 	Credentials *ForceSession
 	Metadata    *ForceMetadata
 	Partner     *ForcePartner
@@ -243,6 +244,7 @@ type BundleManifest struct {
 
 func NewForce(creds *ForceSession) (force *Force) {
 	force = new(Force)
+	force.ClientName = "ForceCLI/" + Version
 	force.Credentials = creds
 	force.Metadata = NewForceMetadata(force)
 	force.Partner = NewForcePartner(force)
@@ -1178,6 +1180,7 @@ func (f *Force) httpPostPatch(url string, rbody string, contenttype ContentType,
 
 	req.Header.Add("X-SFDC-Session", f.Credentials.AccessToken)
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", f.Credentials.AccessToken))
+	req.Header.Add("Sforce-Call-Options", fmt.Sprintf("client=%s;", f.ClientName))
 	req.Header.Add("Content-Type", string(contenttype))
 	res, err := doRequest(req)
 	if err != nil {
@@ -1220,6 +1223,7 @@ func (f *Force) httpPostAttributes(url string, attrs map[string]string) (body []
 	}
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", f.Credentials.AccessToken))
 	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Sforce-Call-Options", fmt.Sprintf("client=%s;", f.ClientName))
 	res, err := doRequest(req)
 	if err != nil {
 		return
@@ -1260,6 +1264,7 @@ func (f *Force) httpPatchAttributes(url string, attrs map[string]string) (body [
 	}
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", f.Credentials.AccessToken))
 	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Sforce-Call-Options", fmt.Sprintf("client=%s;", f.ClientName))
 	res, err := doRequest(req)
 	if err != nil {
 		return
@@ -1297,6 +1302,7 @@ func (f *Force) httpDeleteUrl(url string) (body []byte, err error) {
 		return
 	}
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", f.Credentials.AccessToken))
+	req.Header.Add("Sforce-Call-Options", fmt.Sprintf("client=%s;", f.ClientName))
 	res, err := doRequest(req)
 	if err != nil {
 		return

@@ -19,6 +19,7 @@ type Soap struct {
 	Endpoint    string
 	Header      string
 	Namespace   string
+	ClientName  string
 }
 
 func NewSoap(endpoint, namespace, accessToken string) (s *Soap) {
@@ -28,6 +29,12 @@ func NewSoap(endpoint, namespace, accessToken string) (s *Soap) {
 	s.Endpoint = endpoint
 	return
 }
+
+func (s *Soap) WithClient(clientName string) *Soap {
+	s.ClientName = clientName
+	return s
+}
+
 func (s *Soap) ExecuteLogin(username, password string) (response []byte, err error) {
 	type SoapLogin struct {
 		XMLName  xml.Name `xml:"soapenv:Envelope"`
@@ -85,6 +92,9 @@ func (s *Soap) Execute(action, query string) (response []byte, err error) {
 				<cmd:SessionHeader>
 					<cmd:sessionId>%s</cmd:sessionId>
 				</cmd:SessionHeader>
+				<cmd:CallOptions>
+					<cmd:client>%s</cmd:client>
+				</cmd:CallOptions>
 				%s
 			</env:Header>
 			<env:Body>
@@ -95,7 +105,7 @@ func (s *Soap) Execute(action, query string) (response []byte, err error) {
 		</env:Envelope>
 	`
 	rbody := fmt.Sprintf(soap, s.Namespace,
-		s.AccessToken, s.Header, action, s.Namespace, query, action)
+		s.AccessToken, s.ClientName, s.Header, action, s.Namespace, query, action)
 	req, err := httpRequest("POST", s.Endpoint, strings.NewReader(rbody))
 	if err != nil {
 		return

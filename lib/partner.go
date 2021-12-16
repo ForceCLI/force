@@ -106,7 +106,7 @@ func (partner *ForcePartner) ExecuteAnonymousTest(apex string) (output string, e
 
 func (partner *ForcePartner) SoapExecuteCore(action, query string) (response []byte, err error) {
 	url := fmt.Sprintf("%s/services/Soap/u/%s/%s", partner.Force.Credentials.InstanceUrl, partner.Force.Credentials.SessionOptions.ApiVersion, partner.Force.Credentials.UserInfo.OrgId)
-	soap := NewSoap(url, "urn:partner.soap.sforce.com", partner.Force.Credentials.AccessToken)
+	soap := NewSoap(url, "urn:partner.soap.sforce.com", partner.Force.Credentials.AccessToken).WithClient(partner.Force.ClientName)
 	soap.Header = "<apex:DebuggingHeader><apex:debugLevel>DEBUGONLY</apex:debugLevel></apex:DebuggingHeader>"
 	response, err = soap.Execute(action, query)
 	if err == SessionExpiredError {
@@ -118,7 +118,7 @@ func (partner *ForcePartner) SoapExecuteCore(action, query string) (response []b
 
 func (partner *ForcePartner) soapExecute(action, query string) (response []byte, err error) {
 	url := fmt.Sprintf("%s/services/Soap/s/%s/%s", partner.Force.Credentials.InstanceUrl, partner.Force.Credentials.SessionOptions.ApiVersion, partner.Force.Credentials.UserInfo.OrgId)
-	soap := NewSoap(url, "http://soap.sforce.com/2006/08/apex", partner.Force.Credentials.AccessToken)
+	soap := NewSoap(url, "http://soap.sforce.com/2006/08/apex", partner.Force.Credentials.AccessToken).WithClient(partner.Force.ClientName)
 	soap.Header = "<apex:DebuggingHeader><apex:debugLevel>DEBUGONLY</apex:debugLevel></apex:DebuggingHeader>"
 	response, err = soap.Execute(action, query)
 	if err == SessionExpiredError {
