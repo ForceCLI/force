@@ -100,6 +100,7 @@ var metapaths = []metapath{
 	metapath{path: "permissionsets", name: "PermissionSet"},
 	metapath{path: "platformEventChannels", name: "PlatformEventChannel"},
 	metapath{path: "platformEventChannelMembers", name: "PlatformEventChannelMember"},
+	metapath{path: "PlatformEventSubscriberConfigs", name: "PlatformEventSubscriberConfig"},
 	metapath{path: "postTemplates", name: "PostTemplate"},
 	metapath{path: "profiles", name: "Profile", extension: ".profile"},
 	metapath{path: "postTemplates", name: "PostTemplate"},
