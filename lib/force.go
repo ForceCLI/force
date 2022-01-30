@@ -67,6 +67,14 @@ type SessionOptions struct {
 	ApiVersion    string
 	Alias         string
 	RefreshMethod RefreshMethod
+	// RefreshFunc can be set to support refreshing of additional session/refresh types than
+	// available in RefreshMethod. It should return an error on failure.
+	// On success, it is responsible for updating the given Force's credentials.
+	// Usually this is done by calling Force.UpdateCredentials (which persist the changes)
+	// or Force.CopyCredentialAuthFields (which modifies memory only).
+	//
+	// Note that RefreshMethod implementations use Force.UpdateCredentials.
+	RefreshFunc func(*Force) error
 }
 
 type OAuthError struct {
@@ -1082,7 +1090,11 @@ func (f *Force) makeHttpRequest(input *httpRequestInput) error {
 			return cberr
 		}
 		if err == SessionExpiredError {
-			f.RefreshSession()
+			// If refreshing causes an error, we should return the original error.
+			// Otherwise we end up retrying even if we haven't updated auth.
+			if refreshedErr := f.RefreshSession(); refreshedErr != nil {
+				return err
+			}
 			f.setHttpInputAuth(input)
 		}
 	}
