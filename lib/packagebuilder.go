@@ -98,6 +98,7 @@ var metapaths = []metapath{
 	metapath{path: "pages", name: "ApexPage"},
 	metapath{path: "pathAssistants", name: "PathAssistant"},
 	metapath{path: "permissionsets", name: "PermissionSet"},
+	metapath{path: "permissionsetgroups", name: "PermissionSetGroup"},
 	metapath{path: "platformEventChannels", name: "PlatformEventChannel"},
 	metapath{path: "platformEventChannelMembers", name: "PlatformEventChannelMember"},
 	metapath{path: "PlatformEventSubscriberConfigs", name: "PlatformEventSubscriberConfig"},
