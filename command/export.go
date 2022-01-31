@@ -162,6 +162,7 @@ func runExport(cmd *Command, args []string) {
 		"Network",
 		"OpportunitySettings",
 		"PermissionSet",
+		"PermissionSetGroup",
 		"PlatformEventChannel",
 		"PlatformEventChannelMember",
 		"PlatformEventSubscriberConfig",
