@@ -70,13 +70,13 @@ func (f *Force) RefreshSessionOrExit() {
 	}
 }
 
-func (f *Force) RefreshSession() (err error) {
-	if f.Credentials.SessionOptions.RefreshMethod == RefreshOauth {
-		err = f.refreshOauth()
+func (f *Force) RefreshSession() error {
+	if f.Credentials.SessionOptions.RefreshFunc != nil {
+		return f.Credentials.SessionOptions.RefreshFunc(f)
+	} else if f.Credentials.SessionOptions.RefreshMethod == RefreshOauth {
+		return f.refreshOauth()
 	} else if f.Credentials.SessionOptions.RefreshMethod == RefreshSFDX {
-		err = f.refreshSFDX()
-	} else {
-		err = SessionRefreshUnavailable
+		return f.refreshSFDX()
 	}
-	return
+	return SessionRefreshUnavailable
 }

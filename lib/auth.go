@@ -142,12 +142,18 @@ func ForceLoginAtEndpointAndSave(endpoint string, output *os.File) (username str
 	return
 }
 
+// UpdateCredentials calls CopyCredentialAuthFields and persists the new credentials in config.
 func (f *Force) UpdateCredentials(creds ForceSession) {
+	f.CopyCredentialAuthFields(&creds)
+	ForceSaveLogin(*f.Credentials, os.Stderr)
+}
+
+// CopyCredentialAuthFields copies auth fields from creds into the receiver's Credentials.
+func (f *Force) CopyCredentialAuthFields(creds *ForceSession) {
 	f.Credentials.AccessToken = creds.AccessToken
 	f.Credentials.IssuedAt = creds.IssuedAt
 	f.Credentials.InstanceUrl = creds.InstanceUrl
 	f.Credentials.Scope = creds.Scope
-	ForceSaveLogin(*f.Credentials, os.Stderr)
 }
 
 func ActiveForce() (force *Force, err error) {
