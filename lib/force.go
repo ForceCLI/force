@@ -341,14 +341,14 @@ func ForceLogin(endpoint ForceEndpoint) (creds ForceSession, err error) {
 	return ForceLoginAtEndpoint(url)
 }
 
-func ForceLoginAtEndpoint(endpoint string) (creds ForceSession, err error) {
+func ForceLoginAtEndpointWithPrompt(endpoint string, prompt string) (creds ForceSession, err error) {
 	ch := make(chan ForceSession)
 	port, err := startLocalHttpServer(ch)
 	var url string
 
 	Redir := RedirectUri
 
-	url = fmt.Sprintf("%s/services/oauth2/authorize?response_type=token&client_id=%s&redirect_uri=%s&state=%d&prompt=login", endpoint, ClientId, Redir, port)
+	url = fmt.Sprintf("%s/services/oauth2/authorize?response_type=token&client_id=%s&redirect_uri=%s&state=%d&prompt=%s", endpoint, ClientId, Redir, port, prompt)
 
 	err = desktop.Open(url)
 	creds = <-ch
@@ -359,7 +359,11 @@ func ForceLoginAtEndpoint(endpoint string) (creds ForceSession, err error) {
 	}
 	creds.EndpointUrl = endpoint
 	creds.ClientId = ClientId
-	return
+	return creds, err
+}
+
+func ForceLoginAtEndpoint(endpoint string) (creds ForceSession, err error) {
+	return ForceLoginAtEndpointWithPrompt(endpoint, "login")
 }
 
 func (f *Force) GetCodeCoverage(classId string, className string) (err error) {

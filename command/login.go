@@ -13,9 +13,9 @@ import (
 
 var cmdLogin = &Command{
 	Usage: "login",
-	Short: "force login [-i=<instance>] [<-u=username> <-p=password>] [-scratch]",
+	Short: "force login [-i=<instance>] [<-u=username> <-p=password>] [-scratch] [-s]",
 	Long: `
-  force login [-i=<instance>] [<-u=username> <-p=password> <-v=apiversion] [-scratch]
+  force login [-i=<instance>] [<-u=username> <-p=password> <-v=apiversion] [-scratch] [-s]
 
   Examples:
     force login
@@ -24,6 +24,7 @@ var cmdLogin = &Command{
     force login -i=test -u=un -p=pw
     force login -i=na1-blitz01.soma.salesforce.com -u=un -p=pw -v 39.0
     force login -i my-domain.my.salesforce.com -u username -p password
+    force login -i my-domain.my.salesforce.com -s[kipLogin]
     force login --connected-app-client-id <my-consumer-key> -u username -key jwt.key
     force login -scratch
 `,
@@ -43,6 +44,7 @@ var (
 	api_version          = cmdLogin.Flag.String("v", "", "API Version to use")
 	connectedAppClientId = cmdLogin.Flag.String("connected-app-client-id", "", "Client Id (aka Consumer Key) to use instead of default")
 	keyFile              = cmdLogin.Flag.String("key", "", "JWT Signing Key Filename")
+	skipLogin            = cmdLogin.Flag.Bool("s", false, "Skip login if already authenticated (useful with SSO)")
 	scratchOrg           = cmdLogin.Flag.Bool("scratch", false, "Create new Scratch Org and Log In")
 )
 
@@ -107,7 +109,12 @@ func runLogin(cmd *Command, args []string) {
 
 	if len(*userName) == 0 {
 		// OAuth Login
-		_, err := ForceLoginAtEndpointAndSave(endpoint, os.Stdout)
+		var err error
+		if *skipLogin {
+			_, err = ForceLoginAtEndpointWithPromptAndSave(endpoint, os.Stdout, "consent")
+		} else {
+			_, err = ForceLoginAtEndpointAndSave(endpoint, os.Stdout)
+		}
 		if err != nil {
 			ErrorAndExit(err.Error())
 		}
