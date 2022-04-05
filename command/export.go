@@ -134,6 +134,7 @@ func runExport(cmd *Command, args []string) {
 		"EntitlementProcess",
 		"EntitlementSettings",
 		"EntitlementTemplate",
+		"ExperienceBundle",
 		"ExternalDataSource",
 		"FieldSet",
 		"FlexiPage",

@@ -73,6 +73,7 @@ var metapaths = []metapath{
 	metapath{path: "EmbeddedServiceConfig", name: "EmbeddedServiceConfig"},
 	metapath{path: "email", name: "EmailTemplate", hasFolder: true},
 	metapath{path: "escalationRules", name: "EscalationRules"},
+	metapath{path: "experiences", name: "ExperienceBundle"},
 	metapath{path: "feedFilters", name: "CustomFeedFilter"},
 	metapath{path: "flexipages", name: "FlexiPage"},
 	metapath{path: "flowDefinitions", name: "FlowDefinition"},
