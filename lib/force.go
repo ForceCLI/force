@@ -6,10 +6,6 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
-	"github.com/ForceCLI/force/desktop"
-	. "github.com/ForceCLI/force/error"
-	"github.com/ForceCLI/force/lib/internal"
-	"github.com/ForceCLI/force/lib/query"
 	"io"
 	"io/ioutil"
 	"net"
@@ -17,6 +13,11 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+
+	"github.com/ForceCLI/force/desktop"
+	. "github.com/ForceCLI/force/error"
+	"github.com/ForceCLI/force/lib/internal"
+	"github.com/ForceCLI/force/lib/query"
 )
 
 var (
@@ -1134,6 +1135,7 @@ func (f *Force) _makeHttpRequestWithoutRetry(input *httpRequestInput) (*http.Res
 // Finally, return the fallback error.
 func (f *Force) _coerceHttpError(res *http.Response, body []byte) error {
 	var fallbackErr error
+	sessionExpired := res.StatusCode == 401 || res.StatusCode == 403
 	if strings.HasPrefix(res.Header.Get("Content-Type"), string(ContentTypeXml)) {
 		var fault LoginFault
 		if err := internal.XmlUnmarshal(body, &fault); err != nil {
@@ -1146,7 +1148,7 @@ func (f *Force) _coerceHttpError(res *http.Response, body []byte) error {
 		}
 	} else {
 		var errors ForceErrors
-		if err := internal.JsonUnmarshal(body, &errors); err != nil {
+		if err := internal.JsonUnmarshal(body, &errors); err != nil && !sessionExpired {
 			return err
 		}
 		if len(errors) > 0 && errors[0].ErrorCode == "REQUEST_LIMIT_EXCEEDED" {
@@ -1158,7 +1160,7 @@ func (f *Force) _coerceHttpError(res *http.Response, body []byte) error {
 		}
 	}
 
-	if res.StatusCode == 401 || res.StatusCode == 403 {
+	if sessionExpired {
 		return SessionExpiredError
 	}
 	if fallbackErr == nil {
