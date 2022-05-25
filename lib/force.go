@@ -1153,7 +1153,10 @@ func (f *Force) _coerceHttpError(res *http.Response, body []byte) error {
 	} else {
 		var errors ForceErrors
 		if err := internal.JsonUnmarshal(body, &errors); err != nil && !sessionExpired {
-			return err
+			var errors map[string]interface{}
+			if err := internal.JsonUnmarshal(body, &errors); err != nil {
+				return err
+			}
 		}
 		if len(errors) > 0 && errors[0].ErrorCode == "REQUEST_LIMIT_EXCEEDED" {
 			return APILimitExceededError
