@@ -12,43 +12,9 @@ import (
 	. "github.com/ForceCLI/force/lib"
 )
 
-var cmdPushAura = &Command{
-	Usage: "pushAura",
-	Short: "force pushAura -resourcepath=<filepath>",
-	Long: `
-	force pushAura -resourcepath <fullFilePath>
-
-	force pushAura -f=<fullFilePath>
-
-	`,
-	MaxExpectedArgs: -1,
-}
-
-func init() {
-	cmdPushAura.Run = runPushAura
-	cmdPushAura.Flag.Var(&resourcepaths, "f", "fully qualified file name for entity")
-	cmdPushAura.Flag.StringVar(&metadataType, "t", "", "Type of entity or bundle to create")
-	cmdPushAura.Flag.StringVar(&metadataType, "type", "", "Type of entity or bundle to create")
-}
-
-func runPushAura(cmd *Command, args []string) {
-	// For some reason, when called from sublime, the quotes are included
-	// in the resourcepath argument.  Quoting is needed if you have blank spaces
-	// in the path name. So need to strip them out.
-	if strings.Contains(resourcepaths[0], "\"") || strings.Contains(resourcepaths[0], "'") {
-		resourcepaths[0] = strings.Replace(resourcepaths[0], "\"", "", -1)
-		resourcepaths[0] = strings.Replace(resourcepaths[0], "'", "", -1)
-	}
-	absPath, _ := filepath.Abs(resourcepaths[0])
-	if _, err := os.Stat(absPath); os.IsNotExist(err) {
-		ErrorAndExit("File does not exist\n" + absPath)
-	}
-	pushAuraComponentByPath(absPath)
-}
-
 func pushAuraComponentByPath(absPath string) {
 	// Verify that the file is in an aura bundles folder
-	if !InAuraBundlesFolder(absPath) {
+	if !inAuraBundlesFolder(absPath) {
 		ErrorAndExit("File is not in an aura bundle folder (aura)")
 	}
 
@@ -75,7 +41,6 @@ func pushAuraComponentByPath(absPath string) {
 }
 
 func pushAuraComponent(fname string) {
-	force, _ := ActiveForce()
 	// Check for manifest file
 	if _, err := os.Stat(filepath.Join(filepath.Dir(fname), ".manifest")); os.IsNotExist(err) {
 		// No manifest, but is in aurabundle folder, assume creating a new bundle with this file
@@ -116,7 +81,7 @@ func createNewAuraBundleAndDefinition(force Force, fname string) {
 		manifest.Name = bundleName
 
 		_, _ = getFormatByresourcepath(fname)
-		targetDirectory, mdbase = SetTargetDirectory(fname)
+		targetDirectory, mdbase = setTargetDirectory(fname)
 		// Create a bundle defintion
 		bundle, err, emessages := force.CreateAuraBundle(bundleName)
 		if err != nil {
@@ -138,7 +103,7 @@ func createNewAuraBundleAndDefinition(force Force, fname string) {
 	}
 }
 
-func SetTargetDirectory(fname string) (dir string, base string) {
+func setTargetDirectory(fname string) (dir string, base string) {
 	// Need to get the parent of metadata, do this by walking up the path
 	done := false
 	for done == false {
@@ -185,7 +150,7 @@ func updateManifest(manifest BundleManifest, component ForceCreateRecordResult, 
 	return
 }
 
-func GetManifest(fname string) (manifest BundleManifest, err error) {
+func getManifest(fname string) (manifest BundleManifest, err error) {
 	manifestname := filepath.Join(filepath.Dir(fname), ".manifest")
 
 	if _, err = os.Stat(manifestname); os.IsNotExist(err) {
@@ -200,7 +165,7 @@ func GetManifest(fname string) (manifest BundleManifest, err error) {
 func updateAuraDefinition(force Force, fname string) {
 
 	//Get the manifest
-	manifest, err := GetManifest(fname)
+	manifest, err := getManifest(fname)
 	Timeout = 20000
 
 	for i := range manifest.Files {
@@ -289,7 +254,7 @@ func getFormatByresourcepath(resourcepath string) (format string, defType string
 	return
 }
 
-func InAuraBundlesFolder(fname string) bool {
+func inAuraBundlesFolder(fname string) bool {
 	info, _ := os.Stat(fname)
 	if info.IsDir() {
 		return filepath.Base(fname) == "aura" || strings.HasSuffix(filepath.Dir(fname), filepath.FromSlash("aura"))

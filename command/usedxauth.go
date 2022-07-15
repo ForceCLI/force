@@ -9,35 +9,42 @@ import (
 
 	. "github.com/ForceCLI/force/error"
 	. "github.com/ForceCLI/force/lib"
+	"github.com/spf13/cobra"
 )
 
-var cmdUseDXAuth = &Command{
-	Run:   runUseDXAuth,
-	Usage: "usedxauth [dx-username or alias]",
+func init() {
+	RootCmd.AddCommand(useDXAuthCmd)
+}
+
+var useDXAuthCmd = &cobra.Command{
+	Use:   "usedxauth [dx-username or alias]",
 	Short: "Authenticate with SFDX Scratch Org User",
 	Long: `
 Authenticate with SFDX Scratch Org User. If a user or alias is passed to the command then an attempt is made to find that user authentication info.  If no user or alias is passed an attempt is made to find the default user based on sfdx config.
-
-Examples:
-
+`,
+	Example: `
   force usedxauth test-d1df0gyckgpr@dcarroll_company.net
   force usedxauth ScratchUserAlias
   force usedxauth
 `,
-	MaxExpectedArgs: 1,
+	Args: cobra.MaximumNArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		alias := ""
+		if len(args) > 0 {
+			alias = args[0]
+		}
+		runUseDXAuth(alias)
+	},
 }
 
-func init() {
-}
-
-func runUseDXAuth(cmd *Command, args []string) {
+func runUseDXAuth(alias string) {
 	var auth map[string]interface{}
 	var err error
-	if len(args) == 0 {
+	if len(alias) == 0 {
 		fmt.Println("Determining default user...")
 		auth, _ = getDefaultItem()
 	} else {
-		user := args[0]
+		user := alias
 		fmt.Printf("Looking for %s in DX orgs...\n", user)
 		auth, err = getOrgListItem(user)
 		if err != nil {

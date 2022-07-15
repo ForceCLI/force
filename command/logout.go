@@ -8,47 +8,31 @@ import (
 	. "github.com/ForceCLI/force/config"
 	. "github.com/ForceCLI/force/error"
 	. "github.com/ForceCLI/force/lib"
+	"github.com/spf13/cobra"
 )
-
-var cmdLogout = &Command{
-	Usage: "logout [-u=username]",
-	Short: "Log out from Force.com",
-	Long: `
-Log out from Force.com
-
-The username may be omitted when only one account is logged in, in which case
-that single logged-in account will be logged out.
-
-Examples:
-  force logout
-  force logout -u=user@example.org
-`,
-	MaxExpectedArgs: 0,
-}
 
 func init() {
-	cmdLogout.Run = runLogout
+	RootCmd.AddCommand(logoutCmd)
 }
 
-var (
-	logoutUserName = cmdLogout.Flag.String("u", "", "Username to log out")
-)
+var logoutCmd = &cobra.Command{
+	Use:                   "logout",
+	Short:                 "Log out from Force.com",
+	Args:                  cobra.MaximumNArgs(0),
+	DisableFlagsInUseLine: true,
+	Run: func(cmd *cobra.Command, args []string) {
+		runLogout()
+	},
+}
 
-func runLogout(cmd *Command, args []string) {
-	/* If a username was specified, we will use it regardless of logins.
-	 * Otherwise, if there's only one login, we'll use that. */
-	if *logoutUserName == "" {
-		accounts, _ := Config.List("accounts")
-		if len(accounts) == 0 {
-			ErrorAndExit("No logins, so a username cannot be assumed.")
-		} else if len(accounts) > 1 {
-			ErrorAndExit("More than one login. Please specify a username.")
-		} else {
-			logoutUserName = &accounts[0]
-		}
+func runLogout() {
+	accounts, _ := Config.List("accounts")
+	if len(accounts) == 0 {
+		ErrorAndExit("No logins, so a username cannot be assumed.")
 	}
-	Config.Delete("accounts", *logoutUserName)
-	if active, _ := Config.Load("current", "account"); active == *logoutUserName {
+	username := force.Credentials.UserInfo.UserName
+	Config.Delete("accounts", username)
+	if active, _ := Config.Load("current", "account"); active == username {
 		Config.Delete("current", "account")
 		SetActiveLoginDefault()
 	}

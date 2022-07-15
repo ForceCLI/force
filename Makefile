@@ -33,6 +33,9 @@ $(basename $(WINDOWS)).zip: $(WINDOWS)
 	zip $@ $<
 	7za rn $@ $< $(EXECUTABLE)
 
+docs:
+	go run docs/mkdocs.go
+
 dist: test $(addsuffix .zip,$(basename $(ALL)))
 
 fmt:

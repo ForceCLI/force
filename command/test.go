@@ -8,18 +8,27 @@ import (
 	"github.com/ForceCLI/force/desktop"
 	. "github.com/ForceCLI/force/error"
 	. "github.com/ForceCLI/force/lib"
+	"github.com/spf13/cobra"
 )
 
-var cmdTest = &Command{
-	Usage: "test (all | classname... | classname.method...)",
+var (
+	namespaceTestFlag string
+	classFlag         string
+	verboselogging    bool
+)
+
+func init() {
+	testCmd.Flags().BoolVarP(&verboselogging, "verbose", "v", false, "set verbose logging")
+	testCmd.Flags().StringVarP(&namespaceTestFlag, "namespace", "n", "", "namespace to run tests in")
+	testCmd.Flags().StringVarP(&classFlag, "class", "c", "", "class to run tests from")
+	RootCmd.AddCommand(testCmd)
+}
+
+var testCmd = &cobra.Command{
+	Use:   "test (all | classname... | classname.method...)",
 	Short: "Run apex tests",
 	Long: `
 Run apex tests
-
-Test Options
-  -namespace=<namespace>     Select namespace to run test from
-  -class=class               Select class to run tests from
-  -v                         Verbose logging
 
 Examples:
 
@@ -30,19 +39,11 @@ Examples:
   force test -class=Test1 method1 method2
   force test -v Test1
 `,
-	MaxExpectedArgs: -1,
-}
 
-func init() {
-	cmdTest.Flag.BoolVar(&verboselogging, "v", false, "set verbose logging")
-	cmdTest.Run = runTests
+	Run: func(cmd *cobra.Command, args []string) {
+		runTests(args)
+	},
 }
-
-var (
-	namespaceTestFlag = cmdTest.Flag.String("namespace", "", "namespace to run tests in")
-	classFlag         = cmdTest.Flag.String("class", "", "class to run tests from")
-	verboselogging    bool
-)
 
 func RunTests(testRunner TestRunner, tests []string, namespace string) (output TestCoverage, err error) {
 	output, err = testRunner.RunTests(tests, namespace)
@@ -103,15 +104,17 @@ func GenerateResults(output TestCoverage) string {
 	return result
 }
 
-func runTests(cmd *Command, args []string) {
-	if len(args) < 1 && *classFlag == "" {
+func runTests(args []string) {
+	if len(args) < 1 && classFlag == "" {
 		ErrorAndExit("must specify tests to run")
 	}
-	force, _ := ActiveForce()
-	if *classFlag != "" {
-		args = QualifyMethods(*classFlag, args)
+	if classFlag != "" {
+		args = QualifyMethods(classFlag, args)
 	}
-	output, err := RunTests(force.Partner, args, *namespaceTestFlag)
+	for i, t := range args {
+		args[i] = strings.Replace(t, "::", ".", 1)
+	}
+	output, err := RunTests(force.Partner, args, namespaceTestFlag)
 
 	if err != nil {
 		ErrorAndExit(err.Error())

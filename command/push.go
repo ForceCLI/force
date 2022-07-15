@@ -16,37 +16,8 @@ import (
 	"github.com/ForceCLI/force/config"
 	. "github.com/ForceCLI/force/error"
 	. "github.com/ForceCLI/force/lib"
+	"github.com/spf13/cobra"
 )
-
-var cmdPush = &Command{
-	Usage: "push -t <metadata type> -n <metadata name> -f <pathtometadata> [deployment options]",
-	Short: "Deploy artifact from a local directory",
-	Long: `
-Deploy artifact from a local directory
-<metadata>: Accepts either actual directory name or Metadata type
-File path can be specified as - to read from stdin; see examples
-
-Examples:
-  force push -t StaticResource -n MyResource
-  force push -t ApexClass
-  force push -f metadata/classes/MyClass.cls
-  force push -checkonly -test MyClass_Test metadata/classes/MyClass.cls
-  force push -n MyApex -n MyObject__c
-  git diff HEAD^ --name-only --diff-filter=ACM | force push -f -
-
-Deployment Options
-  -rollbackonerror, -r    Indicates whether any failure causes a complete rollback
-  -runalltests, -at       If set all Apex tests defined in the organization are run (equivalent to -l RunAllTestsInOrg)
-  -checkonly, -c          Indicates whether classes and triggers are saved during deployment
-  -purgeondelete, -p      If set the deleted components are not stored in recycle bin
-  -allowmissingfiles, -m  Specifies whether a deploy succeeds even if files missing
-  -autoupdatepackage, -u  Auto add files to the package if missing
-  -test                   Run tests in class (implies -l RunSpecifiedTests)
-  -testlevel, -l          Set test level (NoTestRun, RunSpecifiedTests, RunLocalTests, RunAllTestsInOrg)
-  -ignorewarnings, -i     Indicates if warnings should fail deployment or not
-`,
-	MaxExpectedArgs: -1,
-}
 
 var (
 	namePaths     = make(map[string]string)
@@ -56,32 +27,52 @@ var (
 
 func init() {
 	// Deploy options
-	cmdPush.Flag.BoolVar(rollBackOnErrorFlag, "rollbackonerror", false, "set roll back on error")
-	cmdPush.Flag.BoolVar(rollBackOnErrorFlag, "r", false, "set roll back on error")
-	cmdPush.Flag.BoolVar(runAllTestsFlag, "runalltests", false, "set run all tests")
-	cmdPush.Flag.BoolVar(runAllTestsFlag, "at", false, "set run all tests")
-	cmdPush.Flag.StringVar(testLevelFlag, "testlevel", "NoTestRun", "set test level")
-	cmdPush.Flag.StringVar(testLevelFlag, "l", "NoTestRun", "set test level")
-	cmdPush.Flag.BoolVar(checkOnlyFlag, "checkonly", false, "set check only")
-	cmdPush.Flag.BoolVar(checkOnlyFlag, "c", false, "set check only")
-	cmdPush.Flag.BoolVar(purgeOnDeleteFlag, "purgeondelete", false, "set purge on delete")
-	cmdPush.Flag.BoolVar(purgeOnDeleteFlag, "p", false, "set purge on delete")
-	cmdPush.Flag.BoolVar(allowMissingFilesFlag, "allowmissingfiles", false, "set allow missing files")
-	cmdPush.Flag.BoolVar(allowMissingFilesFlag, "m", false, "set allow missing files")
-	cmdPush.Flag.BoolVar(autoUpdatePackageFlag, "autoupdatepackage", false, "set auto update package")
-	cmdPush.Flag.BoolVar(autoUpdatePackageFlag, "u", false, "set auto update package")
-	cmdPush.Flag.BoolVar(ignoreWarningsFlag, "ignorewarnings", false, "set ignore warnings")
-	cmdPush.Flag.BoolVar(ignoreWarningsFlag, "i", false, "set ignore warnings")
+	pushCmd.Flags().BoolVarP(&rollBackOnErrorFlag, "rollbackonerror", "r", false, "set roll back on error")
+	pushCmd.Flags().BoolVar(&runAllTestsFlag, "runalltests", false, "set run all tests")
+	pushCmd.Flags().StringVarP(&testLevelFlag, "testlevel", "l", "NoTestRun", "set test level")
+	pushCmd.Flags().BoolVarP(&checkOnlyFlag, "checkonly", "c", false, "set check only")
+	pushCmd.Flags().BoolVarP(&purgeOnDeleteFlag, "purgeondelete", "p", false, "set purge on delete")
+	pushCmd.Flags().BoolVarP(&allowMissingFilesFlag, "allowmissingfiles", "m", false, "set allow missing files")
+	pushCmd.Flags().BoolVarP(&autoUpdatePackageFlag, "autoupdatepackage", "u", false, "set auto update package")
+	pushCmd.Flags().BoolVarP(&ignoreWarningsFlag, "ignorewarnings", "i", false, "set ignore warnings")
 
 	// Ways to push
-	cmdPush.Flag.Var(&resourcepaths, "f", "Path to resource(s)")
-	cmdPush.Flag.Var(&resourcepaths, "filepath", "Path to resource(s)")
-	cmdPush.Flag.Var(&testsToRun, "test", "Test(s) to run")
-	cmdPush.Flag.StringVar(&metadataType, "t", "", "Metatdata type")
-	cmdPush.Flag.StringVar(&metadataType, "type", "", "Metatdata type")
-	cmdPush.Flag.Var(&metadataName, "name", "name of metadata object")
-	cmdPush.Flag.Var(&metadataName, "n", "names of metadata object")
-	cmdPush.Run = runPush
+	pushCmd.Flags().StringSliceVarP(&resourcepaths, "filepath", "f", []string{}, "Path to resource(s)")
+	pushCmd.Flags().StringSliceVar(&testsToRun, "test", []string{}, "Test(s) to run")
+	pushCmd.Flags().StringP("type", "t", "", "Metatdata type")
+	pushCmd.Flags().StringSliceVarP(&metadataName, "name", "n", []string{}, "name of metadata object")
+	RootCmd.AddCommand(pushCmd)
+}
+
+var pushCmd = &cobra.Command{
+	Use:   "push [flags]",
+	Short: "Deploy metadata from a local directory",
+	Long: `
+Deploy artifact from a local directory
+<metadata>: Accepts either actual directory name or Metadata type
+File path can be specified as - to read from stdin; see examples
+`,
+
+	Example: `
+  force push -t StaticResource -n MyResource
+  force push -t ApexClass
+  force push -f metadata/classes/MyClass.cls
+  force push -checkonly -test MyClass_Test metadata/classes/MyClass.cls
+  force push -n MyApex -n MyObject__c
+  git diff HEAD^ --name-only --diff-filter=ACM | force push -f -
+`,
+	DisableFlagsInUseLine: false,
+	Run: func(cmd *cobra.Command, args []string) {
+		if cmd.Flags().Changed("test") && len(testsToRun) == 0 {
+			// NoTestRun can't be used when deploying to production, but
+			// RunSpecifiedTests can be used with an empty set of tests by passing
+			// `--test ''`
+			testLevelFlag = "RunSpecifiedTests"
+			testsToRun = []string{""}
+		}
+		metadataType, _ := cmd.Flags().GetString("type")
+		runPush(metadataType, args)
+	},
 }
 
 func replaceComponentWithBundle(inputPathToFile string) string {
@@ -96,8 +87,7 @@ func replaceComponentWithBundle(inputPathToFile string) string {
 	return inputPathToFile
 }
 
-func runPush(cmd *Command, args []string) {
-
+func runPush(metadataType string, args []string) {
 	if strings.ToLower(metadataType) == "package" {
 		pushPackage()
 		return
@@ -133,24 +123,24 @@ func runPush(cmd *Command, args []string) {
 		}
 		resourcepaths = resourcepathsToPush
 
-		validatePushByMetadataTypeCommand()
-		PushByPaths(resourcepaths, false, namePaths, deployOpts())
+		validatePushByMetadataTypeCommand(metadataType)
+		PushByPaths(force, resourcepaths, false, namePaths, deployOpts())
 	} else {
 		if len(metadataName) > 0 {
 			if len(metadataType) != 0 {
-				validatePushByMetadataTypeCommand()
+				validatePushByMetadataTypeCommand(metadataType)
 				pushByMetadataType()
 			} else {
 				ErrorAndExit("The -type (-t) parameter is required.")
 			}
 		} else {
-			validatePushByMetadataTypeCommand()
+			validatePushByMetadataTypeCommand(metadataType)
 			pushByMetadataType()
 		}
 	}
 }
 
-func isValidMetadataType() {
+func isValidMetadataType(metadataType string) {
 	fmt.Printf("Validating and deploying push...\n")
 	// Look to see if we can find any resource for that metadata type
 	root, err := config.GetSourceDir()
@@ -180,9 +170,9 @@ func metadataExists() {
 	}
 }
 
-func validatePushByMetadataTypeCommand() {
+func validatePushByMetadataTypeCommand(metadataType string) {
 	// TODO: Is this needed?
-	isValidMetadataType()
+	isValidMetadataType(metadataType)
 	metadataExists()
 }
 
@@ -207,11 +197,11 @@ func pushPackage() {
 	if len(resourcepaths) == 0 {
 		var packageFolder = findPackageFolder(metadataName[0])
 		zipResource(packageFolder, metadataName[0])
-		resourcepaths.Set(packageFolder + ".resource")
+		resourcepaths = append(resourcepaths, packageFolder+".resource")
 		//var dir, _ = os.Getwd();
 		//ErrorAndExit(fmt.Sprintf("No resource path sepcified. %s, %s", metadataName[0], dir))
 	}
-	DeployPackage(resourcepaths, deployOpts())
+	DeployPackage(force, resourcepaths, deployOpts())
 }
 
 // Return the name of the first element of an XML file. We need this
@@ -388,7 +378,7 @@ func pushByMetadataType() {
 	})
 
 	// Push these files to the package maker/sender
-	PushByPaths(files, true, namePaths, deployOpts())
+	PushByPaths(force, files, true, namePaths, deployOpts())
 }
 
 // Just zip up what ever is in the path
@@ -425,14 +415,14 @@ func zipResource(path string, topLevelFolder string) {
 
 func deployOpts() *ForceDeployOptions {
 	var opts ForceDeployOptions
-	opts.AllowMissingFiles = *allowMissingFilesFlag
-	opts.AutoUpdatePackage = *autoUpdatePackageFlag
-	opts.CheckOnly = *checkOnlyFlag
-	opts.IgnoreWarnings = *ignoreWarningsFlag
-	opts.PurgeOnDelete = *purgeOnDeleteFlag
-	opts.RollbackOnError = *rollBackOnErrorFlag
-	opts.TestLevel = *testLevelFlag
-	if *runAllTestsFlag {
+	opts.AllowMissingFiles = allowMissingFilesFlag
+	opts.AutoUpdatePackage = autoUpdatePackageFlag
+	opts.CheckOnly = checkOnlyFlag
+	opts.IgnoreWarnings = ignoreWarningsFlag
+	opts.PurgeOnDelete = purgeOnDeleteFlag
+	opts.RollbackOnError = rollBackOnErrorFlag
+	opts.TestLevel = testLevelFlag
+	if runAllTestsFlag {
 		opts.TestLevel = "RunAllTestsInOrg"
 	}
 	opts.RunTests = testsToRun

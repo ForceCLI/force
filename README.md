@@ -15,38 +15,62 @@ Can be downloaded from the [Current Release Page](https://github.com/ForceCLI/fo
 
 ### Usage
 
-    Usage: force <command> [<args>]
+See [docs/force.md](docs/force.md) for all supported commands.
 
-    Available commands:
-       login       Log in to force.com
-       logout      Log out from force.com
-       logins      List force.com logins used
-       active      Show or set the active force.com account
-       whoami      Show information about the active account
-       describe    Describe the object or list of available objects
-       sobject     Manage standard & custom objects
-       field       Manage sobject fields
-       record      Create, modify, or view records
-       bulk        Load csv file use Bulk API
-       fetch       Export specified artifact(s) to a local directory
-       import      Import metadata from a local directory
-       export      Export metadata to a local directory
-       query       Execute a SOQL statement
-       apex        Execute anonymous Apex code
-       log         Fetch debug logs
-       oauth       Manage ConnectedApp credentials
-       test        Run apex tests
-       security    Displays the OLS and FLS for a given SObject
-       version     Display current version
-       apiversion  Set the Salesforce API version metadata is pulled with
-       push        Deploy single artifact from a local directory
-       aura        Retrieve or deploy Aura components
-       password    See password status or reset password
-       notify      Should notifications be used
-       limits      Display current limits
-       help        Show this help
+Tab completion simplifies use of the force CLI.
+Enable bash completion or see `force completion --help` for other options.
 
-    Run 'force help [command]' for details.
+```
+$ source <(force completion bash)
+```
+
+    Usage:
+      force [command]
+
+    Available Commands:
+      active       Show or set the active force.com account
+      apex         Execute anonymous Apex code
+      apiversion   Display/Set current API version
+      bigobject    Manage big objects
+      bulk         Load csv file or query data using Bulk API
+      completion   Generate the autocompletion script for the specified shell
+      create       Creates a new, empty Apex Class, Trigger, Visualforce page, or Component.
+      datapipe     Manage DataPipes
+      describe     Describe the object or list of available objects
+      eventlogfile List and fetch event log file
+      export       Export metadata to a local directory
+      fetch        Export specified artifact(s) to a local directory
+      field        Manage SObject fields
+      help         Help about any command
+      import       Import metadata from a local directory
+      limits       Display current limits
+      log          Fetch debug logs
+      login        force login [-i=<instance>] [<-u=username> <-p=password>] [-scratch] [-s]
+      logins       List force.com logins used
+      logout       Log out from Force.com
+      notify       Should notifications be used
+      oauth        Manage ConnectedApp credentials
+      open         Open a browser window, logged into an authenticated Salesforce org
+      package      Manage installed packages
+      password     See password status or reset password
+      push         Deploy metadata from a local directory
+      query        Execute a SOQL statement
+      quickdeploy  Quick deploy validation id
+      record       Create, modify, or view records
+      rest         Execute a REST request
+      security     Displays the OLS and FLS for a given SObject
+      sobject      Manage standard & custom objects
+      test         Run apex tests
+      trace        Manage trace flags
+      usedxauth    Authenticate with SFDX Scratch Org User
+      version      Display current version
+      whoami       Show information about the active account
+
+    Flags:
+      -a, --account username   account username to use
+      -h, --help               help for force
+
+    Use "force [command] --help" for more information about a command.
 
 ### login
 When you login using the CLI a record of the login is saved. Eventually your token will expire requiring re-authentication. The default login is for all production instances of salesforce.com. Two predefined non-production instances are available using the test and pre aliases.  You can set an arbitrary instance to log in to by specifying the instance url in the form of subdomain.domain. For example login-blitz.soma.salesforce.com.

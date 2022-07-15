@@ -11,65 +11,48 @@ import (
 	"github.com/ForceCLI/force/config"
 	. "github.com/ForceCLI/force/error"
 	. "github.com/ForceCLI/force/lib"
-)
-
-var cmdExport = &Command{
-	Run:   runExport,
-	Usage: "export [options] [dir]",
-	Short: "Export metadata to a local directory",
-	Long: `
-Export metadata to a local directory
-
-Export Options
-  -w, -warnings  # Display warnings about metadata that cannot be retrieved
-  -x, -exclude   # Exclude given metadata type
-
-Examples:
-
-  force export
-
-  force export org/schema
-
-  force export -x ApexClass -x CustomObject
-`,
-	MaxExpectedArgs: 1,
-}
-
-type metadataList []string
-
-func (i *metadataList) String() string {
-	return fmt.Sprint(*i)
-}
-
-func (i *metadataList) Set(value string) error {
-	*i = append(*i, value)
-	return nil
-}
-
-var (
-	showWarnings         bool
-	excludeMetadataNames metadataList
+	"github.com/spf13/cobra"
 )
 
 func init() {
-	cmdExport.Flag.BoolVar(&showWarnings, "w", false, "show warnings")
-	cmdExport.Flag.BoolVar(&showWarnings, "warnings", false, "show warnings")
-	cmdExport.Flag.Var(&excludeMetadataNames, "x", "exclude metadata type")
-	cmdExport.Flag.Var(&excludeMetadataNames, "exclude", "exclude metadata type")
+	exportCmd.Flags().BoolP("warnings", "w", false, "display warnings about metadata that cannot be retrieved")
+	exportCmd.Flags().StringSliceP("exclude", "x", []string{}, "exclude metadata type")
+
+	RootCmd.AddCommand(exportCmd)
 }
 
-func runExport(cmd *Command, args []string) {
-	// Get path from args if available
-	var err error
-	var root string
-	if len(args) == 1 {
-		root, err = filepath.Abs(args[0])
-	}
-	if err != nil {
-		fmt.Printf("Error obtaining file path\n")
-		ErrorAndExit(err.Error())
-	}
-	force, _ := ActiveForce()
+var exportCmd = &cobra.Command{
+	Use:   "export [dir]",
+	Short: "Export metadata to a local directory",
+	Example: `
+  force export
+  force export org/schema
+  force export -x ApexClass -x CustomObject
+`,
+	Args: cobra.MaximumNArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		var root string
+		var err error
+		if len(args) == 1 {
+			root, err = filepath.Abs(args[0])
+			if err != nil {
+				fmt.Printf("Error obtaining file path\n")
+				ErrorAndExit(err.Error())
+			}
+		} else {
+			root, err = config.GetSourceDir()
+			if err != nil {
+				fmt.Printf("Error obtaining root directory\n")
+				ErrorAndExit(err.Error())
+			}
+		}
+		excludeMetadataNames, _ := cmd.Flags().GetStringSlice("exclude")
+		showWarnings, _ := cmd.Flags().GetBool("warnings")
+		runExport(root, excludeMetadataNames, showWarnings)
+	},
+}
+
+func runExport(root string, excludeMetadataNames []string, showWarnings bool) {
 	sobjects, err := force.ListSobjects()
 	if err != nil {
 		ErrorAndExit(err.Error())
@@ -79,7 +62,7 @@ func runExport(cmd *Command, args []string) {
 
 	sort.Strings(excludeMetadataNames)
 
-	if !isExcluded(customObject) {
+	if !isExcluded(excludeMetadataNames, customObject) {
 		stdObjects := make([]string, 1, len(sobjects)+1)
 		stdObjects[0] = "*"
 		for _, sobject := range sobjects {
@@ -195,7 +178,7 @@ func runExport(cmd *Command, args []string) {
 	}
 
 	for _, name := range metadataNames {
-		if !isExcluded(name) {
+		if !isExcluded(excludeMetadataNames, name) {
 			query = append(query, ForceMetadataQueryElement{Name: []string{name}, Members: []string{"*"}})
 		}
 	}
@@ -215,16 +198,8 @@ func runExport(cmd *Command, args []string) {
 			ErrorAndExit(err.Error())
 		}
 
-		if !isExcluded(string(foldersType)) {
+		if !isExcluded(excludeMetadataNames, string(foldersType)) {
 			query = append(query, ForceMetadataQueryElement{Name: []string{string(foldersType)}, Members: members})
-		}
-	}
-
-	if root == "" {
-		root, err = config.GetSourceDir()
-		if err != nil {
-			fmt.Printf("Error obtaining root directory\n")
-			ErrorAndExit(err.Error())
 		}
 	}
 
@@ -251,7 +226,7 @@ func runExport(cmd *Command, args []string) {
 	fmt.Printf("Exported to %s\n", root)
 }
 
-func isExcluded(name string) bool {
+func isExcluded(excludeMetadataNames []string, name string) bool {
 	index := sort.SearchStrings(excludeMetadataNames, name)
 
 	return index < len(excludeMetadataNames) && excludeMetadataNames[index] == name

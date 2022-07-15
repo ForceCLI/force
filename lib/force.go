@@ -453,12 +453,8 @@ func (f *Force) CreateDataPipelineJob(id string) (result ForceCreateRecordResult
 }
 
 func (f *Force) GetDataPipeline(name string) (results ForceQueryResult, err error) {
-
 	query := fmt.Sprintf("SELECT Id, MasterLabel, DeveloperName, ScriptContent, ScriptType FROM DataPipeline Where DeveloperName = '%s'", name)
-	results, err = f.QueryDataPipeline(query)
-
-	return
-
+	return f.QueryDataPipeline(query)
 }
 
 func (f *Force) QueryDataPipeline(soql string) (results ForceQueryResult, err error) {
@@ -472,7 +468,6 @@ func (f *Force) QueryDataPipeline(soql string) (results ForceQueryResult, err er
 	json.Unmarshal(body, &results)
 
 	return
-
 }
 
 func (f *Force) QueryDataPipelineJob(soql string) (results ForceQueryResult, err error) {
@@ -486,7 +481,6 @@ func (f *Force) QueryDataPipelineJob(soql string) (results ForceQueryResult, err
 	json.Unmarshal(body, &results)
 
 	return
-
 }
 
 func (f *Force) GetAuraBundles() (bundles AuraDefinitionBundleResult, definitions AuraDefinitionBundleResult, err error) {

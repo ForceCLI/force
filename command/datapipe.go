@@ -7,53 +7,131 @@ import (
 
 	. "github.com/ForceCLI/force/error"
 	. "github.com/ForceCLI/force/lib"
+	"github.com/spf13/cobra"
 )
 
-var cmdDataPipe = &Command{
-	Usage: "datapipe <command> [<args>]",
+func init() {
+	dataPipeCreateCmd.Flags().StringP("name", "n", "", "data pipeline name")
+	dataPipeCreateCmd.Flags().StringP("masterlabel", "l", "", "master label")
+	dataPipeCreateCmd.Flags().StringP("scriptcontent", "c", defaultContent, "script content")
+	dataPipeCreateCmd.Flags().StringP("apiversion", "v", ApiVersionNumber(), "script content")
+	dataPipeCreateCmd.Flags().StringP("scripttype", "t", "Pig", "script type")
+
+	dataPipeUpdateCmd.Flags().StringP("name", "n", "", "data pipeline name")
+	dataPipeUpdateCmd.Flags().StringP("masterlabel", "l", "", "master label")
+	dataPipeUpdateCmd.Flags().StringP("scriptcontent", "c", defaultContent, "script content")
+	dataPipeUpdateCmd.Flags().StringP("apiversion", "v", ApiVersionNumber(), "script content")
+	dataPipeUpdateCmd.Flags().StringP("scripttype", "t", "Pig", "script type")
+
+	dataPipeListCmd.Flags().StringP("format", "f", "json", "format (csv or json)")
+
+	dataPipeDeleteCmd.Flags().StringP("name", "n", "", "data pipeline name")
+
+	dataPipeCreateJobCmd.Flags().StringP("name", "n", "", "data pipeline name")
+	dataPipeQueryJobCmd.Flags().StringP("jobid", "j", "", "id of data pipeline job")
+
+	dataPipeCreateCmd.MarkFlagRequired("name")
+	dataPipeUpdateCmd.MarkFlagRequired("name")
+	dataPipeDeleteCmd.MarkFlagRequired("name")
+
+	dataPipeCreateJobCmd.MarkFlagRequired("name")
+	dataPipeQueryJobCmd.MarkFlagRequired("jobid")
+
+	dataPipeCmd.AddCommand(dataPipeCreateCmd)
+	dataPipeCmd.AddCommand(dataPipeUpdateCmd)
+	dataPipeCmd.AddCommand(dataPipeDeleteCmd)
+	dataPipeCmd.AddCommand(dataPipeListCmd)
+	dataPipeCmd.AddCommand(dataPipeCreateJobCmd)
+	dataPipeCmd.AddCommand(dataPipeListJobsCmd)
+	dataPipeCmd.AddCommand(dataPipeQueryJobCmd)
+
+	RootCmd.AddCommand(dataPipeCmd)
+}
+
+var dataPipeCreateCmd = &cobra.Command{
+	Use:   "create",
+	Short: "Create Data Pipeline",
+	Args:  cobra.MaximumNArgs(0),
+	Run: func(cmd *cobra.Command, args []string) {
+		name, _ := cmd.Flags().GetString("name")
+		masterLabel, _ := cmd.Flags().GetString("masterlabel")
+		apiVersion, _ := cmd.Flags().GetString("apiversion")
+		scriptContent, _ := cmd.Flags().GetString("scriptcontent")
+		scriptType, _ := cmd.Flags().GetString("scriptType")
+		runDataPipelineCreate(name, masterLabel, apiVersion, scriptContent, scriptType)
+	},
+}
+
+var dataPipeUpdateCmd = &cobra.Command{
+	Use:   "update",
+	Short: "Update Data Pipeline",
+	Args:  cobra.MaximumNArgs(0),
+	Run: func(cmd *cobra.Command, args []string) {
+		name, _ := cmd.Flags().GetString("name")
+		masterLabel, _ := cmd.Flags().GetString("masterlabel")
+		scriptContent, _ := cmd.Flags().GetString("scriptcontent")
+		runDataPipelineUpdate(name, masterLabel, scriptContent)
+	},
+}
+
+var dataPipeDeleteCmd = &cobra.Command{
+	Use:   "delete",
+	Short: "Delete Data Pipeline",
+	Args:  cobra.MaximumNArgs(0),
+	Run: func(cmd *cobra.Command, args []string) {
+		name, _ := cmd.Flags().GetString("name")
+		runDataPipelineDelete(name)
+	},
+}
+
+var dataPipeListCmd = &cobra.Command{
+	Use:   "list",
+	Short: "List Data Pipelines",
+	Args:  cobra.MaximumNArgs(0),
+	Run: func(cmd *cobra.Command, args []string) {
+		format, _ := cmd.Flags().GetString("format")
+		runDataPipelineList(format)
+	},
+}
+
+var dataPipeCreateJobCmd = &cobra.Command{
+	Use:   "createjob",
+	Short: "Create Data Pipeline Job",
+	Args:  cobra.MaximumNArgs(0),
+	Run: func(cmd *cobra.Command, args []string) {
+		name, _ := cmd.Flags().GetString("name")
+		runDataPipelineJob(name)
+	},
+}
+
+var dataPipeListJobsCmd = &cobra.Command{
+	Use:   "listjobs",
+	Short: "List Data Pipeline Jobs",
+	Args:  cobra.MaximumNArgs(0),
+	Run: func(cmd *cobra.Command, args []string) {
+		runDataPipelineListJobs()
+	},
+}
+
+var dataPipeQueryJobCmd = &cobra.Command{
+	Use:   "queryjob",
+	Short: "Query Data Pipeline Job",
+	Args:  cobra.MaximumNArgs(0),
+	Run: func(cmd *cobra.Command, args []string) {
+		jobId, _ := cmd.Flags().GetString("jobid")
+		runDataPipelineQueryJob(jobId)
+	},
+}
+
+var dataPipeCmd = &cobra.Command{
+	Use:   "datapipe <command> [<args>]",
 	Short: "Manage DataPipes",
-	Long: `
-Manage DataPipes
-
-Usage:
-
-  force datapipe create -n <name> [-l masterlabel] [-t scripttype] [-c scriptcontent] [-v apiversion]
-
-  force datapipe update -n <name> [-l masterlabel] [-t scripttype] [-c scriptcontent] [-v apiversion]
-
-  force datapipe delete -n <name>
-
-  force datapipe list -f <"csv" or "json">
-
-  force datapipe query -q <query string>
-
-  force datapipe createjob -n <pipeline name>
-
-Commands:
-  create        creates a new dataPipe
-  update        update a dataPipe
-  delete        delete a datapipe
-  list          list all datapipes
-  query         query for a specific datapipe(s)
-  createjob     creates a new job for a specific datapipe
-  listjobs      list the status of submitted jobs
-  queryjob      returns data about a datapipeline job (not implemented)
-  retrieve      (not implemented)
-
-Examples:
-
+	Example: `
   force datapipe create -n=MyPipe -l="My Pipe" -t=Pig -v=34.0 \
   -c="A = load 'force://soql/Select Id, Name From Contact' using \
   gridforce.hadoop.pig.loadstore.func.ForceStorage();"
-
-Defaults
-  -l Defaults to the name
-  -t Pig (only option available currently)
-  -c Pig script template
-  -v Current API version *Number only
-
 `,
-	MaxExpectedArgs: -1,
+	Args: cobra.MaximumNArgs(0),
 }
 
 var defaultContent = `
@@ -62,85 +140,17 @@ A = load 'ffx://REPLACE_ME' using gridforce.hadoop.pig.loadstore.func.ForceStora
 Store A  into 'ffx://REPLACE_ME_TOO' using gridforce.hadoop.pig.loadstore.func.ForceStorage();
 `
 
-var (
-	dpname        string
-	masterlabel   string
-	scriptcontent string
-	apiversion    string
-	scripttype    string
-	query         string
-	format        string
-	jobid         string
-)
-
-func init() {
-	cmdDataPipe.Flag.StringVar(&dpname, "name", "", "set datapipeline name")
-	cmdDataPipe.Flag.StringVar(&dpname, "n", "", "set datapipeline name")
-	cmdDataPipe.Flag.StringVar(&masterlabel, "masterlabel", "", "set master label")
-	cmdDataPipe.Flag.StringVar(&masterlabel, "l", "", "set master label")
-	cmdDataPipe.Flag.StringVar(&scriptcontent, "scriptcontent", defaultContent, "set script content")
-	cmdDataPipe.Flag.StringVar(&scriptcontent, "c", defaultContent, "set script content")
-	cmdDataPipe.Flag.StringVar(&apiversion, "apiversion", ApiVersionNumber(), "set api version")
-	cmdDataPipe.Flag.StringVar(&apiversion, "v", ApiVersionNumber(), "set api version")
-	cmdDataPipe.Flag.StringVar(&scripttype, "scripttype", "Pig", "set script type")
-	cmdDataPipe.Flag.StringVar(&scripttype, "t", "Pig", "set script type")
-	cmdDataPipe.Flag.StringVar(&query, "q", "", "SOQL query string on DataPipeline object")
-	cmdDataPipe.Flag.StringVar(&query, "query", "", "SOQL query string on DataPipeline object")
-	cmdDataPipe.Flag.StringVar(&format, "f", "json", "format for listing datapipelines (csv or json)")
-	cmdDataPipe.Flag.StringVar(&format, "format", "json", "format for listing datapipelines (csv or json)")
-	cmdDataPipe.Flag.StringVar(&jobid, "j", "json", "Id of data pipline job to retrieve")
-	cmdDataPipe.Flag.StringVar(&jobid, "jobid", "json", "Id of data pipline job to retrieve")
-	cmdDataPipe.Run = runDataPipe
-}
-
-func runDataPipe(cmd *Command, args []string) {
-	if len(args) == 0 {
-		cmd.PrintUsage()
-	} else {
-		if err := cmd.Flag.Parse(args[1:]); err != nil {
-			os.Exit(2)
-		}
-
-		switch args[0] {
-		case "create":
-			runDataPipelineCreate()
-		case "update":
-			runDataPipelineUpdate()
-		case "delete":
-			runDataPipelineDelete()
-		case "list":
-			runDataPipelineList()
-		case "query":
-			runDataPipelineQuery()
-		case "createjob":
-			runDataPipelineJob()
-		case "listjobs":
-			runDataPipelineListJobs()
-		case "queryjob":
-			runDataPipelineQueryJob()
-		default:
-			ErrorAndExit("no such command: %s", args[0])
-		}
-	}
-}
-
-func runDataPipelineJob() {
-	if len(dpname) == 0 {
-		ErrorAndExit("You need to provide the name of a pipeline to create a job for.")
-	}
-	force, _ := ActiveForce()
-	id := GetDataPipelineId(dpname)
+func runDataPipelineJob(name string) {
+	id := GetDataPipelineId(name)
 	_, err, _ := force.CreateDataPipelineJob(id)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
-	fmt.Printf("Successfully created DataPipeline job for %s\n", dpname)
+	fmt.Printf("Successfully created DataPipeline job for %s\n", name)
 }
 
 func runDataPipelineListJobs() {
-	//query = "SELECT Id, DataPipeline.DeveloperName, Status, FailureState, LastModifiedDate, CreatedDate, CreatedById, DataPipelineId, JobErrorMessage FROM DataPipelineJob"
-	query = "SELECT Id, DataPipeline.DeveloperName, Status, FailureState FROM DataPipelineJob"
-	force, _ := ActiveForce()
+	query := "SELECT Id, DataPipeline.DeveloperName, Status, FailureState FROM DataPipelineJob"
 	result, err := force.QueryDataPipelineJob(query)
 	if err != nil {
 		ErrorAndExit(err.Error())
@@ -149,10 +159,8 @@ func runDataPipelineListJobs() {
 	force.DisplayAllForceRecordsf(result, "csv")
 }
 
-func runDataPipelineQueryJob() {
-	//query = "SELECT Id, DataPipeline.DeveloperName, Status, FailureState, LastModifiedDate, CreatedDate, CreatedById, DataPipelineId, JobErrorMessage FROM DataPipelineJob"
-	query = fmt.Sprintf("SELECT Id, DataPipeline.DeveloperName, Status, FailureState, JobErrorMessage FROM DataPipelineJob Where id = '%s'", jobid)
-	force, _ := ActiveForce()
+func runDataPipelineQueryJob(jobId string) {
+	query := fmt.Sprintf("SELECT Id, DataPipeline.DeveloperName, Status, FailureState, JobErrorMessage FROM DataPipelineJob Where id = '%s'", jobId)
 	result, err := force.QueryDataPipelineJob(query)
 	if err != nil {
 		ErrorAndExit(err.Error())
@@ -161,52 +169,29 @@ func runDataPipelineQueryJob() {
 	force.DisplayAllForceRecordsf(result, "csv")
 }
 
-func runDataPipelineQuery() {
-	if len(query) == 0 {
-		ErrorAndExit("You have to supply a SOQL query using the -q flag.")
-	}
-	force, _ := ActiveForce()
-	result, err := force.QueryDataPipeline(query)
-	if err != nil {
-		ErrorAndExit(err.Error())
-	}
-
-	fmt.Println("Result: \n", result)
-}
-
-func runDataPipelineCreate() {
-	if len(dpname) == 0 {
-		ErrorAndExit("You must specify a name for the datapipeline using the -n flag.")
-	}
+func runDataPipelineCreate(name, masterlabel, apiversion, scriptcontent, scripttype string) {
 	if len(masterlabel) == 0 {
-		masterlabel = dpname
+		masterlabel = name
 	}
-
-	force, _ := ActiveForce()
-	_, err, _ := force.CreateDataPipeline(dpname, masterlabel, apiversion, scriptcontent, scripttype)
+	_, err, _ := force.CreateDataPipeline(name, masterlabel, apiversion, scriptcontent, scripttype)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
-	fmt.Printf("DataPipeline %s successfully created.\n", dpname)
+	fmt.Printf("DataPipeline %s successfully created.\n", name)
 }
 
-func runDataPipelineUpdate() {
-	if len(dpname) == 0 {
-		ErrorAndExit("You must specify a name for the datapipeline using the -n flag.")
-	}
+func runDataPipelineUpdate(name, masterlabel, scriptcontent string) {
 	if len(masterlabel) == 0 && len(scriptcontent) == 0 {
 		ErrorAndExit("You can change the master label or the script content.")
 	}
 
-	force, _ := ActiveForce()
-
-	result, err := force.GetDataPipeline(dpname)
+	result, err := force.GetDataPipeline(name)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
 
 	if len(result.Records) == 0 {
-		ErrorAndExit("No data pipeline found named " + dpname)
+		ErrorAndExit("No data pipeline found named " + name)
 	}
 	for _, record := range result.Records {
 		var id string
@@ -228,51 +213,48 @@ func runDataPipelineUpdate() {
 		if err != nil {
 			ErrorAndExit(err.Error())
 		}
-		fmt.Printf("%s successfully updated.\n", dpname)
+		fmt.Printf("%s successfully updated.\n", name)
 	}
 }
 
 func readScriptFile(path string) (content string, err error) {
 	data, err := ioutil.ReadFile(path)
+	if err != nil {
+		return "", err
+	}
 	content = string(data)
-	return
+	return content, nil
 }
 
 func GetDataPipelineId(name string) (id string) {
-	force, _ := ActiveForce()
-
-	result, err := force.GetDataPipeline(dpname)
+	result, err := force.GetDataPipeline(name)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
 
 	if len(result.Records) == 0 {
-		ErrorAndExit("No data pipeline found named " + dpname)
+		ErrorAndExit("No data pipeline found named " + name)
 	}
 
 	record := result.Records[0]
 	id = record["Id"].(string)
-	return
+	return id
 }
 
-func runDataPipelineDelete() {
-	force, _ := ActiveForce()
-
-	id := GetDataPipelineId(dpname)
+func runDataPipelineDelete(name string) {
+	id := GetDataPipelineId(name)
 	err := force.DeleteDataPipeline(id)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
-	fmt.Printf("%s successfully deleted.\n", dpname)
+	fmt.Printf("%s successfully deleted.\n", name)
 }
 
-func runDataPipelineList() {
-	force, _ := ActiveForce()
-	query = "SELECT Id, MasterLabel, DeveloperName, ScriptType FROM DataPipeline"
+func runDataPipelineList(format string) {
+	query := "SELECT Id, MasterLabel, DeveloperName, ScriptType FROM DataPipeline"
 	result, err := force.QueryDataPipeline(query)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
-
 	force.DisplayAllForceRecordsf(result, format)
 }

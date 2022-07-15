@@ -4,26 +4,21 @@ import (
 	"fmt"
 
 	. "github.com/ForceCLI/force/lib"
+	"github.com/spf13/cobra"
 )
 
-//Dood, what
-var cmdVersion = &Command{
-	Run:   runVersion,
-	Usage: "version",
+func init() {
+	RootCmd.AddCommand(versionCmd)
+}
+
+var versionCmd = &cobra.Command{
+	Use:   "version",
 	Short: "Display current version",
-	Long: `
-Display current version
-
-Examples:
-
+	Example: `
   force version
 `,
-	MaxExpectedArgs: 0,
-}
-
-func init() {
-}
-
-func runVersion(cmd *Command, args []string) {
-	fmt.Println(Version)
+	Args: cobra.MaximumNArgs(0),
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println(Version)
+	},
 }

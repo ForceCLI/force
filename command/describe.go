@@ -5,94 +5,98 @@ import (
 
 	. "github.com/ForceCLI/force/error"
 	. "github.com/ForceCLI/force/lib"
-)
-
-var cmdDescribe = &Command{
-	Usage: "describe (metadata|sobject) [-n=<name> -json]",
-	Short: "Describe the object or list of available objects",
-	Long: `
-  -n, -name       # name of specific metadata to retrieve
-  -json           # output in JSON format
-
-  Examples
-
-  force describe -t=metadata -n=CustomObject
-  force describe -t=sobject -n=Account
-  `,
-	MaxExpectedArgs: 0,
-}
-
-var (
-	jsonout  bool
-	metaItem string
+	"github.com/spf13/cobra"
 )
 
 func init() {
-	cmdDescribe.Flag.StringVar(&metaItem, "name", "", "name of metadata")
-	cmdDescribe.Flag.StringVar(&metaItem, "n", "", "name of metadata")
-	cmdDescribe.Flag.StringVar(&metadataType, "t", "", "Type of metadata to describe")
-	cmdDescribe.Flag.StringVar(&metadataType, "type", "", "Type of metadata to describe")
-	cmdDescribe.Flag.BoolVar(&jsonout, "j", false, "Unpage any static resources")
-	cmdDescribe.Flag.BoolVar(&jsonout, "json", false, "Unpage any static resources")
-	cmdDescribe.Run = runDescribe
+	describeMetadataCmd.Flags().StringP("name", "n", "", "name of metadata")
+	describeMetadataCmd.Flags().BoolP("json", "j", false, "json output")
+	describeSobjectCmd.Flags().StringP("name", "n", "", "name of sobject")
+	describeSobjectCmd.Flags().BoolP("json", "j", false, "json output")
+
+	describeCmd.AddCommand(describeMetadataCmd)
+	describeCmd.AddCommand(describeSobjectCmd)
+	RootCmd.AddCommand(describeCmd)
 }
 
-func runDescribe(cmd *Command, args []string) {
-	if len(metadataType) == 0 {
-		ErrorAndExit("You must specify metadata or sobject for description\nexample: force describe -t metadata")
-	}
-	if metadataType != "metadata" && metadataType != "sobject" {
-		ErrorAndExit("Only metadata and sobject can be described")
-	}
+var describeMetadataCmd = &cobra.Command{
+	Use:   "metadata",
+	Short: "Describe metadata",
+	Args:  cobra.ExactArgs(0),
+	Run: func(cmd *cobra.Command, args []string) {
+		item, _ := cmd.Flags().GetString("name")
+		json, _ := cmd.Flags().GetBool("json")
+		describeMetadata(item, json)
+	},
+}
 
-	force, _ := ActiveForce()
+var describeSobjectCmd = &cobra.Command{
+	Use:   "sobject",
+	Short: "Describe sobject",
+	Args:  cobra.ExactArgs(0),
+	Run: func(cmd *cobra.Command, args []string) {
+		item, _ := cmd.Flags().GetString("name")
+		json, _ := cmd.Flags().GetBool("json")
+		describeSObject(item, json)
+	},
+}
 
-	if metadataType == "metadata" {
-		if len(metaItem) == 0 {
-			// List all metadata
-			describe, err := force.Metadata.DescribeMetadata()
-			if err != nil {
-				ErrorAndExit(err.Error())
-			}
-			if jsonout {
-				DisplayMetadataListJson(describe.MetadataObjects)
-			} else {
-				DisplayMetadataList(describe.MetadataObjects)
-			}
+var describeCmd = &cobra.Command{
+	Use:   "describe (metadata|sobject) [flags]",
+	Short: "Describe the object or list of available objects",
+	Example: `
+  force describe metadata -n=CustomObject
+  force describe sobject -n=Account
+  `,
+	Args: cobra.ExactArgs(0),
+}
+
+func describeMetadata(item string, json bool) {
+	if len(item) == 0 {
+		// List all metadata
+		describe, err := force.Metadata.DescribeMetadata()
+		if err != nil {
+			ErrorAndExit(err.Error())
+		}
+		if json {
+			DisplayMetadataListJson(describe.MetadataObjects)
 		} else {
-			// List all metdata object of metaItem type
-			body, err := force.Metadata.ListMetadata(metaItem)
-			if err != nil {
-				ErrorAndExit(err.Error())
-			}
-			var res struct {
-				Response ListMetadataResponse `xml:"Body>listMetadataResponse"`
-			}
-			if err = xml.Unmarshal(body, &res); err != nil {
-				ErrorAndExit(err.Error())
-			}
-			if jsonout {
-				DisplayListMetadataResponseJson(res.Response)
-			} else {
-				DisplayListMetadataResponse(res.Response)
-			}
+			DisplayMetadataList(describe.MetadataObjects)
 		}
 	} else {
-		if len(metaItem) == 0 {
-			// list all sobject
-			if jsonout {
-				l := getSobjectList(make([]string, 0))
-				DisplayForceSobjectsJson(l)
-			} else {
-				runSobjectList(make([]string, 0))
-			}
-		} else {
-			// describe sobject
-			desc, err := force.DescribeSObject(metaItem)
-			if err != nil {
-				ErrorAndExit(err.Error())
-			}
-			DisplayForceSobjectDescribe(desc)
+		// List all metdata object of metaItem type
+		body, err := force.Metadata.ListMetadata(item)
+		if err != nil {
+			ErrorAndExit(err.Error())
 		}
+		var res struct {
+			Response ListMetadataResponse `xml:"Body>listMetadataResponse"`
+		}
+		if err = xml.Unmarshal(body, &res); err != nil {
+			ErrorAndExit(err.Error())
+		}
+		if json {
+			DisplayListMetadataResponseJson(res.Response)
+		} else {
+			DisplayListMetadataResponse(res.Response)
+		}
+	}
+}
+func describeSObject(item string, json bool) {
+	if len(item) == 0 {
+		// list all sobject
+		if json {
+			l := getSobjectList("")
+			DisplayForceSobjectsJson(l)
+		} else {
+			runSobjectList("")
+		}
+	} else {
+		// describe sobject
+		desc, err := force.DescribeSObject(item)
+		if err != nil {
+			ErrorAndExit(err.Error())
+		}
+		DisplayForceSobjectDescribe(desc)
 	}
 }

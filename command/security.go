@@ -12,11 +12,28 @@ import (
 	"github.com/ForceCLI/force/desktop"
 	. "github.com/ForceCLI/force/error"
 	. "github.com/ForceCLI/force/lib"
+	"github.com/spf13/cobra"
 )
 
 ////////////////////////////////////////////////////////////////////////
 // Parse the permissions for a given profile and return a Profile struct
 ////////////////////////////////////////////////////////////////////////
+
+func init() {
+	RootCmd.AddCommand(securityCmd)
+}
+
+var securityCmd = &cobra.Command{
+	Use:   "security [SObject]",
+	Short: "Displays the OLS and FLS for a given SObject",
+	Example: `
+  force security Case
+`,
+	Args: cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		runSecurity(args[0])
+	},
+}
 
 type XLS interface {
 	addProperty(name string, value string)
@@ -50,8 +67,6 @@ func (o *OLS) addProperty(name string, value string) {
 	case "viewAllRecords":
 		o.viewAllRecords = value
 	}
-
-	//	fmt.Println("Object Property " + name + "=" + value)
 }
 func (o *OLS) getProperty(name string) string {
 	switch name {
@@ -233,37 +248,14 @@ func parseCustomObjectXML(objectName string, text string) CustomObject {
 
 /////////////////////////////////////////////////////////
 
-var cmdSecurity = &Command{
-	Run:   runSecurity,
-	Usage: "security [SObject]",
-	Short: "Displays the OLS and FLS for a given SObject",
-	Long: `
-Displays the OLS and FLS for a given SObject
-
-Examples:
-
-  force security Case
-`,
-	MaxExpectedArgs: -1,
-}
-
-func runSecurity(cmd *Command, args []string) {
+func runSecurity(sobject string) {
 	wd, _ := os.Getwd()
 	root := filepath.Join(wd, ".")
 
-	var query ForceMetadataQuery
-
-	if len(args) == 1 {
-		query = ForceMetadataQuery{
-			{Name: []string{"Profile"}, Members: []string{"*"}},
-			{Name: []string{"CustomObject"}, Members: args},
-		}
-	} else {
-		fmt.Println("Pass an SObject name")
-		return
+	query := ForceMetadataQuery{
+		{Name: []string{"Profile"}, Members: []string{"*"}},
+		{Name: []string{"CustomObject"}, Members: []string{sobject}},
 	}
-
-	force, _ := ActiveForce()
 
 	// Step 1: retrieve the desired metadata
 	files, problems, err := force.Metadata.Retrieve(query)
@@ -284,7 +276,7 @@ func runSecurity(cmd *Command, args []string) {
 			profiles.PushBack(parseProfileXML(profileName, string(data)))
 		} else if strings.HasPrefix(name, "objects/") {
 			objectName := strings.TrimSuffix(strings.TrimPrefix(name, "objects/"), ".object")
-			if objectName == args[0] {
+			if strings.ToLower(objectName) == strings.ToLower(sobject) {
 				theObject = parseCustomObjectXML(objectName, string(data))
 			}
 		}
