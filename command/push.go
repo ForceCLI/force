@@ -127,11 +127,11 @@ func runPush(cmd *Command, args []string) {
 
 		// Replace aura/lwc file reference with full bundle folder because only the
 		// main component can be deployed by itself.
-		resorucepathsToPush := make(metaName, 0)
+		resourcepathsToPush := make(metaName, 0)
 		for _, fsPath := range resourcepaths {
-			resorucepathsToPush = append(resorucepathsToPush, replaceComponentWithBundle(fsPath))
+			resourcepathsToPush = append(resourcepathsToPush, replaceComponentWithBundle(fsPath))
 		}
-		resourcepaths = resorucepathsToPush
+		resourcepaths = resourcepathsToPush
 
 		validatePushByMetadataTypeCommand()
 		PushByPaths(resourcepaths, false, namePaths, deployOpts())
