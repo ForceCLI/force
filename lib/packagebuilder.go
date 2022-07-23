@@ -201,6 +201,18 @@ type addFileOutput struct {
 	IsBad    bool
 }
 
+func isFolderMetadata(path string) bool {
+	if !strings.HasSuffix(path, "-meta.xml") {
+		return false
+	}
+	dirPath := strings.TrimSuffix(path, "-meta.xml")
+	f, err := os.Stat(dirPath)
+	if err != nil {
+		return false
+	}
+	return f.Mode().IsDir()
+}
+
 func (pb *PackageBuilder) addFile(fpath string) (out addFileOutput, err error) {
 	fpath, err = filepath.Abs(fpath)
 	if err != nil {
@@ -222,19 +234,25 @@ func (pb *PackageBuilder) addFile(fpath string) (out addFileOutput, err error) {
 		return
 	}
 
-	fpath = MetaPathToSourcePath(fpath)
-	metaName, fname := getMetaTypeFromPath(fpath)
+	isFolderMetadata := isFolderMetadata(fpath)
+	// Path with -meta.xml stripped
+	spath := MetaPathToSourcePath(fpath)
+	metaName, fname := getMetaTypeFromPath(spath)
 	out.Filename = fname
-	if !isDestructiveChanges && !strings.HasSuffix(fpath, "-meta.xml") {
+	if isFolderMetadata {
+		pb.AddMetaToPackage(metaName, fname)
+	} else if !isDestructiveChanges && !strings.HasSuffix(spath, "-meta.xml") {
 		pb.AddMetaToPackage(metaName, fname)
 	}
 
 	// If it's a push, we want to actually add the files
 	if pb.IsPush {
 		if isDestructiveChanges {
-			err = pb.addDestructiveChanges(fpath)
+			err = pb.addFileOnly(fpath)
+		} else if isFolderMetadata {
+			err = pb.addFileOnlyWithDir(fpath)
 		} else {
-			err = pb.addFileToWorkingDir(metaName, fpath)
+			err = pb.addFileAndMetadata(metaName, spath)
 		}
 	}
 
@@ -284,7 +302,7 @@ func (pb *PackageBuilder) AddDirectory(fpath string) (namePaths map[string]strin
 }
 
 // Adds the file to a temp directory for deploy
-func (pb *PackageBuilder) addFileToWorkingDir(metaName string, fpath string) (err error) {
+func (pb *PackageBuilder) addFileAndMetadata(metaName string, fpath string) (err error) {
 	// Get relative dir from source
 	srcDir := filepath.Dir(filepath.Dir(fpath))
 	for _, mp := range metapaths {
@@ -325,13 +343,30 @@ func (pb *PackageBuilder) addFileToWorkingDir(metaName string, fpath string) (er
 	return
 }
 
-func (pb *PackageBuilder) addDestructiveChanges(fpath string) (err error) {
+// e.g. add /path/to/src/destructiveChanges.xml to zip file as
+// destructiveChanges.xml
+func (pb *PackageBuilder) addFileOnly(fpath string) (err error) {
 	fdata, err := ioutil.ReadFile(fpath)
 	if err != nil {
 		return
 	}
 
 	frel, _ := filepath.Rel(filepath.Dir(fpath), fpath)
+	pb.Files[frel] = fdata
+
+	return
+}
+
+// e.g. add /path/to/src/dashboards/Example-meta.xml to zip file as
+// dashboards/Example-meta.xml
+func (pb *PackageBuilder) addFileOnlyWithDir(fpath string) (err error) {
+	fdata, err := ioutil.ReadFile(fpath)
+	if err != nil {
+		return
+	}
+
+	srcDir := filepath.Dir(filepath.Dir(fpath))
+	frel, _ := filepath.Rel(srcDir, fpath)
 	pb.Files[frel] = fdata
 
 	return
