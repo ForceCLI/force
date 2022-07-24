@@ -3,8 +3,9 @@ LDFLAGS = -ldflags "-X github.com/ForceCLI/force/lib.Version=${VERSION}"
 EXECUTABLE=force
 WINDOWS=$(EXECUTABLE)_windows_amd64.exe
 LINUX=$(EXECUTABLE)_linux_amd64
-OSX=$(EXECUTABLE)_osx_amd64
-ALL=$(WINDOWS) $(LINUX) $(OSX)
+OSX_AMD64=$(EXECUTABLE)_osx_amd64
+OSX_ARM64=$(EXECUTABLE)_osx_arm64
+ALL=$(WINDOWS) $(LINUX) $(OSX_AMD64) $(OSX_ARM64)
 
 default:
 	go build ${LDFLAGS}
@@ -18,8 +19,11 @@ $(WINDOWS):
 $(LINUX):
 	env GOOS=linux GOARCH=amd64 go build -v -o $(LINUX) ${LDFLAGS}
 
-$(OSX):
-	env GOOS=darwin GOARCH=amd64 go build -v -o $(OSX) ${LDFLAGS}
+$(OSX_AMD64):
+	env GOOS=darwin GOARCH=amd64 go build -v -o $(OSX_AMD64) ${LDFLAGS}
+
+$(OSX_ARM64):
+	env GOOS=darwin GOARCH=arm64 go build -v -o $(OSX_ARM64) ${LDFLAGS}
 
 $(basename $(WINDOWS)).zip: $(WINDOWS)
 	zip $@ $<
