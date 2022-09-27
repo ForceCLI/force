@@ -37,6 +37,7 @@ type HttpMethod string
 const (
 	HttpMethodPost  HttpMethod = http.MethodPost
 	HttpMethodPatch HttpMethod = http.MethodPatch
+	HttpMethodPut   HttpMethod = http.MethodPut
 )
 
 func doRequest(request *http.Request) (res *http.Response, err error) {

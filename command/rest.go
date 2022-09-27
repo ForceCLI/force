@@ -27,6 +27,8 @@ Examples:
 
   force rest post "/tooling/sobjects/CustomField/00D9A0000000TgcUAE" path/to/definition.json
 
+  force rest put "/tooling/sobjects/CustomField/00D9A0000000TgcUAE" path/to/definition.json
+
 `,
 	MaxExpectedArgs: -1,
 }
@@ -50,7 +52,11 @@ func runRest(cmd *Command, args []string) {
 
 	if len(args) == 0 {
 		cmd.PrintUsage()
-	} else if strings.ToLower(args[0]) == "get" {
+		return
+	}
+	action := strings.ToUpper(args[0])
+	switch action {
+	case "GET":
 		url := "/"
 		if len(args) > 1 {
 			url = args[1]
@@ -65,7 +71,7 @@ func runRest(cmd *Command, args []string) {
 		}
 		msg = strings.Replace(data, "null", "\"null\"", -1)
 		fmt.Println(msg)
-	} else if strings.ToLower(args[0]) == "post" || strings.ToLower(args[0]) == "patch" {
+	case "POST", "PATCH", "PUT":
 		if len(args) < 2 {
 			cmd.PrintUsage()
 			os.Exit(1)
@@ -81,18 +87,18 @@ func runRest(cmd *Command, args []string) {
 			ErrorAndExit(err.Error())
 		}
 		if absoluteURLFlag {
-			data, err = force.PostPatchAbsolute(url, string(input), strings.ToUpper(args[0]))
+			data, err = force.PostPatchAbsolute(url, string(input), action)
 		} else {
-			data, err = force.PostPatchREST(url, string(input), strings.ToUpper(args[0]))
+			data, err = force.PostPatchREST(url, string(input), action)
 		}
 		if err != nil {
 			ErrorAndExit(err.Error())
 		}
 		data = string(data)
 		data = strings.Replace(data, "null", "\"null\"", -1)
-		msg = fmt.Sprintf("%s %s\n%s", strings.ToUpper(args[0]), url, data)
+		msg = fmt.Sprintf("%s %s\n%s", action, url, data)
 		fmt.Println(msg)
-	} else {
+	default:
 		cmd.PrintUsage()
 		os.Exit(1)
 	}

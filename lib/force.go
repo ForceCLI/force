@@ -1024,6 +1024,8 @@ func (f *Force) GetREST(url string) (result string, err error) {
 func (f *Force) PostPatchAbsolute(url string, content string, method string) (result string, err error) {
 	if method == "POST" {
 		return f.PostAbsolute(url, content)
+	} else if method == "PUT" {
+		return f.PutAbsolute(url, content)
 	} else {
 		return f.PatchAbsolute(url, content)
 	}
@@ -1032,6 +1034,8 @@ func (f *Force) PostPatchAbsolute(url string, content string, method string) (re
 func (f *Force) PostPatchREST(url string, content string, method string) (result string, err error) {
 	if method == "POST" {
 		return f.PostREST(url, content)
+	} else if method == "PUT" {
+		return f.PutREST(url, content)
 	} else {
 		return f.PatchREST(url, content)
 	}
@@ -1050,13 +1054,24 @@ func (f *Force) PostREST(url string, content string) (result string, err error) 
 
 func (f *Force) PatchAbsolute(url string, content string) (result string, err error) {
 	qualifiedUrl := f.qualifyUrl(url)
-	body, err := f.httpPostPatchWithRetry(qualifiedUrl, content, ContentTypeJson, HttpMethodPost)
+	body, err := f.httpPostPatchWithRetry(qualifiedUrl, content, ContentTypeJson, HttpMethodPatch)
 	return string(body), err
 }
 
 func (f *Force) PatchREST(url string, content string) (result string, err error) {
 	fullUrl := fullRestUrl(url)
 	return f.PatchAbsolute(fullUrl, content)
+}
+
+func (f *Force) PutAbsolute(url string, content string) (result string, err error) {
+	qualifiedUrl := f.qualifyUrl(url)
+	body, err := f.httpPostPatchWithRetry(qualifiedUrl, content, ContentTypeJson, HttpMethodPut)
+	return string(body), err
+}
+
+func (f *Force) PutREST(url string, content string) (result string, err error) {
+	fullUrl := fullRestUrl(url)
+	return f.PutAbsolute(fullUrl, content)
 }
 
 func (f *Force) getForceResult(url string) (results ForceQueryResult, err error) {
