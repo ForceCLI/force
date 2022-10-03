@@ -121,6 +121,7 @@ func runExport(cmd *Command, args []string) {
 		"CustomApplication",
 		"CustomApplicationComponent",
 		"CustomField",
+		"CustomHelpMenuSection",
 		"CustomLabels",
 		"CustomMetadata",
 		"CustomNotificationType",
