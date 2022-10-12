@@ -5,8 +5,8 @@ jobs:
       - image: cimg/go:1.18
     steps:
       - checkout
-      - run: go get -u github.com/mitchellh/gox
-      - run: go get -u github.com/tcnksm/ghr
+      - run: go install github.com/mitchellh/gox@v1.0.1
+      - run: go install github.com/tcnksm/ghr@v0.16.0
       - run: sudo apt-get update && sudo apt-get install p7zip-full
       - restore_cache: # restores saved cache if no changes are detected since last run
           keys:
