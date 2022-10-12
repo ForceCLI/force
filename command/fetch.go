@@ -15,45 +15,39 @@ import (
 	"github.com/ForceCLI/force/config"
 	. "github.com/ForceCLI/force/error"
 	. "github.com/ForceCLI/force/lib"
+	"github.com/spf13/cobra"
 )
 
-var cmdFetch = &Command{
-	Usage: "fetch -t ApexClass",
+func init() {
+	fetchCmd.Flags().StringSliceVarP(&metadataName, "name", "n", []string{}, "names of metadata")
+	fetchCmd.Flags().StringSliceVarP(&metadataTypes, "type", "t", []string{}, "Type of metadata to fetch")
+	fetchCmd.Flags().StringVarP(&targetDirectory, "directory", "d", "", "Use to specify the root directory of your project")
+	fetchCmd.Flags().BoolVarP(&unpack, "unpack", "u", false, "Unpack any static resources")
+	fetchCmd.Flags().BoolVarP(&preserveZip, "preserve", "p", false, "keep zip file on disk")
+	fetchCmd.Flags().StringVarP(&packageXml, "xml", "x", "", "Package.xml file to use for fetch.")
+	makefile = true
+	RootCmd.AddCommand(fetchCmd)
+}
+
+var fetchCmd = &cobra.Command{
+	Use:   "fetch -t ApexClass",
 	Short: "Export specified artifact(s) to a local directory",
 	Long: `
-  -t, -type       # type of metadata to retrieve (multiple ok if -n not used)
-  -n, -name       # name of specific metadata to retrieve (must be used with -type)
-  -d, -directory  # override the default target directory
-  -u, -unpack     # unpack any zipped static resources (ignored if type is not StaticResource)
-  -p, -preserve   # preserve the zip file
-  -x, -xml        # provide a package.xml file to fetch data specified within
-
 Export specified artifact(s) to a local directory. Use "package" type to retrieve an unmanaged package.
-
-Examples
-
+`,
+	Example: `
   force fetch -t=CustomObject -n=Book__c -n=Author__c
   force fetch -t Aura -n MyComponent -d /Users/me/Documents/Project/home
   force fetch -t AuraDefinitionBundle -t ApexClass
   force fetch -x myproj/metadata/package.xml
 `,
-	MaxExpectedArgs: 0,
+	Args: cobra.MaximumNArgs(0),
+	Run: func(cmd *cobra.Command, args []string) {
+		runFetch()
+	},
 }
 
-type metaName []string
-
-func (i *metaName) String() string {
-	return fmt.Sprint(*i)
-}
-
-func (i *metaName) Set(value string) error {
-	// That would permit usages such as
-	//	-deltaT 10s -deltaT 15s
-	for _, name := range strings.Split(value, ",") {
-		*i = append(*i, name)
-	}
-	return nil
-}
+type metaName = []string
 
 var (
 	metadataTypes   metaName
@@ -66,26 +60,7 @@ var (
 	packageXml      string
 )
 
-func init() {
-	cmdFetch.Flag.Var(&metadataName, "name", "names of metadata")
-	cmdFetch.Flag.Var(&metadataName, "n", "names of metadata")
-	cmdFetch.Flag.Var(&metadataTypes, "t", "Type of metadata to fetch")
-	cmdFetch.Flag.Var(&metadataTypes, "type", "Type of metadata to fetch")
-	cmdFetch.Flag.StringVar(&targetDirectory, "d", "", "Use to specify the root directory of your project")
-	cmdFetch.Flag.StringVar(&targetDirectory, "directory", "", "Use to specify the root directory of your project")
-	cmdFetch.Flag.BoolVar(&unpack, "u", false, "Unpack any static resources")
-	cmdFetch.Flag.BoolVar(&unpack, "unpack", false, "Unpack any static resources")
-	cmdFetch.Flag.BoolVar(&preserveZip, "p", false, "keep zip file on disk")
-	cmdFetch.Flag.BoolVar(&preserveZip, "preserve", false, "keep zip file on disk")
-	cmdFetch.Flag.StringVar(&packageXml, "x", "", "Package.xml file to use for fetch.")
-	cmdFetch.Flag.StringVar(&packageXml, "xml", "", "Package.xml file to use for fetch.")
-	cmdFetch.Run = runFetch
-	makefile = true
-}
-
-func runFetchAura2(cmd *Command, entityname string) {
-	force, _ := ActiveForce()
-
+func runFetchAura2(entityname string) {
 	var bundles AuraDefinitionBundleResult
 	var definitions AuraDefinitionBundleResult
 	var err error
@@ -229,10 +204,7 @@ func getWildcardQuery(force *Force, metadataTypes metaName) (query ForceMetadata
 	return
 }
 
-func runFetch(cmd *Command, args []string) {
-
-	force, _ := ActiveForce()
-
+func runFetch() {
 	if len(packageXml) == 0 && len(metadataTypes) == 0 {
 		ErrorAndExit("must specify object type and/or object name or package xml path")
 	}
@@ -248,10 +220,10 @@ func runFetch(cmd *Command, args []string) {
 	if len(metadataTypes) == 1 && strings.ToLower(metadataTypes[0]) == "aura" {
 		if len(metadataName) > 0 {
 			for names := range metadataName {
-				runFetchAura2(cmd, metadataName[names])
+				runFetchAura2(metadataName[names])
 			}
 		} else {
-			runFetchAura2(cmd, "")
+			runFetchAura2("")
 		}
 	} else if len(metadataTypes) == 1 && strings.ToLower(metadataTypes[0]) == "package" {
 		if len(metadataName) > 0 {

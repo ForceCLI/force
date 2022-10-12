@@ -11,11 +11,65 @@ import (
 
 	. "github.com/ForceCLI/force/error"
 	. "github.com/ForceCLI/force/lib"
+	"github.com/spf13/cobra"
 )
 
-var cmdSobject = &Command{
-	Run:   runSobject,
-	Usage: "sobject",
+func init() {
+	sobjectCmd.AddCommand(sobjectListCmd)
+	sobjectCmd.AddCommand(sobjectCreateCmd)
+	sobjectCmd.AddCommand(sobjectDeleteCmd)
+	sobjectCmd.AddCommand(sobjectImportCmd)
+
+	RootCmd.AddCommand(sobjectCmd)
+}
+
+var sobjectListCmd = &cobra.Command{
+	Use:                   "list [name]",
+	Short:                 "List standard and custom objects",
+	DisableFlagsInUseLine: true,
+	Args:                  cobra.MaximumNArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		object := ""
+		if len(args) > 0 {
+			object = args[0]
+		}
+		runSobjectList(object)
+	},
+}
+
+var sobjectCreateCmd = &cobra.Command{
+	Use:                   "create <object> [<field>:<type> [<option>:<value>]]",
+	Short:                 "Create custom object",
+	DisableFlagsInUseLine: true,
+	Args:                  cobra.MinimumNArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		runSobjectCreate(args)
+	},
+}
+
+var sobjectDeleteCmd = &cobra.Command{
+	Use:                   "Delete <object>",
+	Short:                 "Delete custom object",
+	DisableFlagsInUseLine: true,
+	Args:                  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		runSobjectDelete(args[0])
+	},
+}
+
+var sobjectImportCmd = &cobra.Command{
+	Use:                   "import",
+	Short:                 "Import custom object",
+	Long:                  "Create a custom object with custom fields from a query result on stdin",
+	DisableFlagsInUseLine: true,
+	Args:                  cobra.MaximumNArgs(0),
+	Run: func(cmd *cobra.Command, args []string) {
+		runSobjectImport()
+	},
+}
+
+var sobjectCmd = &cobra.Command{
+	Use:   "sobject",
 	Short: "Manage standard & custom objects",
 	Long: `
 Manage sobjects
@@ -23,53 +77,28 @@ Manage sobjects
 Usage:
 
   force sobject list
-
   force sobject create <object> [<field>:<type> [<option>:<value>]]
-
   force sobject delete <object>
-
   force sobject import
-
-Examples:
-
+`,
+	Example: `
   force sobject list
-
   force sobject create Todo Description:string
-
   force sobject delete Todo
 `,
-	MaxExpectedArgs: -1,
+	DisableFlagsInUseLine: true,
+	Args:                  cobra.MaximumNArgs(0),
 }
 
-func runSobject(cmd *Command, args []string) {
-	if len(args) == 0 {
-		cmd.PrintUsage()
-	} else {
-		switch args[0] {
-		case "list":
-			runSobjectList(args[1:])
-		case "create", "add":
-			runSobjectCreate(args[1:])
-		case "delete", "remove":
-			runSobjectDelete(args[1:])
-		case "import":
-			runSobjectImport(args[1:])
-		default:
-			ErrorAndExit("no such command: %s", args[0])
-		}
-	}
-}
-
-func getSobjectList(args []string) (l []ForceSobject) {
-	force, _ := ActiveForce()
+func getSobjectList(object string) (l []ForceSobject) {
 	sobjects, err := force.ListSobjects()
 	if err != nil {
 		ErrorAndExit(fmt.Sprintf("ERROR: %s\n", err))
 	}
 
 	for _, sobject := range sobjects {
-		if len(args) == 1 {
-			if strings.Contains(sobject["name"].(string), args[0]) {
+		if len(object) > 0 {
+			if strings.Contains(strings.ToLower(sobject["name"].(string)), strings.ToLower(object)) {
 				l = append(l, sobject)
 			}
 		} else {
@@ -78,16 +107,13 @@ func getSobjectList(args []string) (l []ForceSobject) {
 	}
 	return
 }
-func runSobjectList(args []string) {
-	l := getSobjectList(args)
+
+func runSobjectList(object string) {
+	l := getSobjectList(object)
 	DisplayForceSobjects(l)
 }
 
 func runSobjectCreate(args []string) {
-	if len(args) < 1 {
-		ErrorAndExit("must specify object name")
-	}
-	force, _ := ActiveForce()
 	if err := force.Metadata.CreateCustomObject(args[0]); err != nil {
 		ErrorAndExit(err.Error())
 	}
@@ -99,18 +125,14 @@ func runSobjectCreate(args []string) {
 	}
 }
 
-func runSobjectDelete(args []string) {
-	if len(args) < 1 {
-		ErrorAndExit("must specify object")
-	}
-	force, _ := ActiveForce()
-	if err := force.Metadata.DeleteCustomObject(args[0]); err != nil {
+func runSobjectDelete(object string) {
+	if err := force.Metadata.DeleteCustomObject(object); err != nil {
 		ErrorAndExit(err.Error())
 	}
 	fmt.Println("Custom object deleted")
 }
 
-func runSobjectImport(args []string) {
+func runSobjectImport() {
 	var objectDef = `
 <cmd:sObjects>
 	<cmd:type>%s</cmd:type>
@@ -157,7 +179,6 @@ func runSobjectImport(args []string) {
 		soapMsg += fmt.Sprintf(objectDef, objectType, fields)
 	}
 
-	force, _ := ActiveForce()
 	response, err := force.Partner.SoapExecuteCore("create", soapMsg)
 
 	type errorData struct {

@@ -3,28 +3,26 @@ package command
 import (
 	. "github.com/ForceCLI/force/error"
 	. "github.com/ForceCLI/force/lib"
+	"github.com/spf13/cobra"
 )
 
-var cmdWhoami = &Command{
-	Run:   runWhoami,
-	Usage: "whoami",
-	Short: "Show information about the active account",
-	Long: `
-Show information about the active account
-
-Examples:
-
-  force whoami
-`,
-	MaxExpectedArgs: 0,
+func init() {
+	RootCmd.AddCommand(whoamiCmd)
 }
 
-func runWhoami(cmd *Command, args []string) {
-	force, _ := ActiveForce()
-	me, err := force.Whoami()
-	if err != nil {
-		ErrorAndExit(err.Error())
-	} else if len(args) == 0 {
-		DisplayForceRecord(me)
-	}
+var whoamiCmd = &cobra.Command{
+	Use:   "whoami",
+	Short: "Show information about the active account",
+	Example: `
+  force whoami
+`,
+	Args: cobra.MaximumNArgs(0),
+	Run: func(cmd *cobra.Command, args []string) {
+		me, err := force.Whoami()
+		if err != nil {
+			ErrorAndExit(err.Error())
+		} else if len(args) == 0 {
+			DisplayForceRecord(me)
+		}
+	},
 }

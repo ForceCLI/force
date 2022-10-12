@@ -6,11 +6,98 @@ import (
 
 	. "github.com/ForceCLI/force/error"
 	. "github.com/ForceCLI/force/lib"
+	"github.com/spf13/cobra"
 )
 
-var cmdRecord = &Command{
-	Run:   runRecord,
-	Usage: "record <command> [<args>]",
+func init() {
+	recordCmd.AddCommand(recordGetCmd)
+	recordCmd.AddCommand(recordCreateCmd)
+	recordCmd.AddCommand(recordUpdateCmd)
+	recordCmd.AddCommand(recordDeleteCmd)
+	recordCmd.AddCommand(recordMergeCmd)
+	recordCmd.AddCommand(recordUndeleteCmd)
+	RootCmd.AddCommand(recordCmd)
+}
+
+var recordGetCmd = &cobra.Command{
+	Use:   "get <object> <id>",
+	Short: "Get record details",
+	Long: `
+View record
+
+Usage:
+
+  force record get <object> <id>
+
+  force record get <object> <extid>:<value>
+`,
+	Args:                  cobra.ExactArgs(2),
+	DisableFlagsInUseLine: true,
+	Run: func(cmd *cobra.Command, args []string) {
+		runRecordGet(args[0], args[1])
+	},
+}
+
+var recordCreateCmd = &cobra.Command{
+	Use:                   "create <object> [<field>:<value>...]",
+	Short:                 "Create new record",
+	Args:                  cobra.MinimumNArgs(1),
+	DisableFlagsInUseLine: true,
+	Run: func(cmd *cobra.Command, args []string) {
+		object := args[0]
+		fields := args[1:]
+		runRecordCreate(object, fields)
+	},
+}
+
+var recordUpdateCmd = &cobra.Command{
+	Use:                   "update <object> <id> [<field>:<value>...]",
+	Short:                 "Update record",
+	Args:                  cobra.MinimumNArgs(2),
+	DisableFlagsInUseLine: true,
+	Run: func(cmd *cobra.Command, args []string) {
+		object := args[0]
+		id := args[1]
+		fields := args[2:]
+		runRecordUpdate(object, id, fields)
+	},
+}
+
+var recordDeleteCmd = &cobra.Command{
+	Use:                   "delete <object> <id>",
+	Short:                 "Delete record",
+	Args:                  cobra.ExactArgs(2),
+	DisableFlagsInUseLine: true,
+	Run: func(cmd *cobra.Command, args []string) {
+		runRecordDelete(args[0], args[1])
+	},
+}
+
+var recordMergeCmd = &cobra.Command{
+	Use:                   "merge <object> <masterId> <duplicateId>",
+	Short:                 "Merge records",
+	Args:                  cobra.ExactArgs(3),
+	DisableFlagsInUseLine: true,
+	Run: func(cmd *cobra.Command, args []string) {
+		object := args[0]
+		masterId := args[1]
+		duplicateId := args[2]
+		runRecordMerge(object, masterId, duplicateId)
+	},
+}
+
+var recordUndeleteCmd = &cobra.Command{
+	Use:                   "undelete <id>...",
+	Short:                 "Undelete records",
+	Args:                  cobra.MinimumNArgs(1),
+	DisableFlagsInUseLine: true,
+	Run: func(cmd *cobra.Command, args []string) {
+		runRecordUndelete(args)
+	},
+}
+
+var recordCmd = &cobra.Command{
+	Use:   "record <command> [<args>]",
 	Short: "Create, modify, or view records",
 	Long: `
 Create, modify, or view records
@@ -18,89 +105,28 @@ Create, modify, or view records
 Usage:
 
   force record get <object> <id>
-
   force record get <object> <extid>:<value>
-
   force record create <object> [<fields>]
-
-  force record create:bulk <object> <file> [<format>] [<concurrency mode>]
-
   force record update <object> <id> [<fields>]
-
   force record update <object> <extid>:<value> [<fields>]
-
   force record delete <object> <id>
-
   force record merge <object> <masterId> <duplicateId>
-
   force record undelete <id>
-
-Examples:
-
+`,
+	Example: `
   force record get User 00Ei0000000000
-
   force record get User username:user@name.org
-
   force record create User Name:"David Dollar" Phone:0000000000
-
   force record update User 00Ei0000000000 State:GA
-
   force record update User username:user@name.org State:GA
-
   force record delete User 00Ei0000000000
-
   force record merge Contact 0033c00002YDNNWAA5 0033c00002YDPqkAAH
-
   force record undelete 0033c00002YDNNWAA5
 `,
-	MaxExpectedArgs: -1,
 }
 
-func runRecord(cmd *Command, args []string) {
-	if len(args) == 0 {
-		cmd.PrintUsage()
-	} else {
-		switch args[0] {
-		case "get":
-			runRecordGet(args[1:])
-		case "create", "add":
-			runRecordCreate(args[1:])
-		case "create:bulk":
-			if len(args) == 3 {
-				createBulkInsertJob(args[2], args[1], "CSV", "Parallel")
-			} else if len(args) == 4 {
-				if strings.EqualFold(args[3], "parallel") || strings.EqualFold(args[3], "serial") {
-					createBulkInsertJob(args[2], args[1], "CSV", args[3])
-				} else {
-					createBulkInsertJob(args[2], args[1], args[3], "Parallel")
-				}
-			} else if len(args) == 5 {
-				if strings.EqualFold(args[3], "parallel") || strings.EqualFold(args[3], "serial") {
-					createBulkInsertJob(args[2], args[1], args[4], args[3])
-				} else if strings.EqualFold(args[4], "parallel") || strings.EqualFold(args[4], "serial") {
-					createBulkInsertJob(args[2], args[1], args[3], args[4])
-				}
-			}
-		case "update":
-			runRecordUpdate(args[1:])
-		case "delete", "remove":
-			runRecordDelete(args[1:])
-		case "merge":
-			runRecordMerge(args[1:])
-		case "undelete":
-			runRecordUndelete(args[1:])
-		default:
-			ErrorAndExit("no such command: %s", args[0])
-		}
-	}
-}
-
-func runRecordGet(args []string) {
-	if len(args) != 2 {
-		ErrorAndExit("must specify object and id")
-	}
-	force, _ := ActiveForce()
-	object, err := force.GetRecord(args[0], args[1])
+func runRecordGet(sobject, id string) {
+	object, err := force.GetRecord(sobject, id)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	} else {
@@ -108,40 +134,25 @@ func runRecordGet(args []string) {
 	}
 }
 
-func runRecordCreate(args []string) {
-	if len(args) < 1 {
-		ErrorAndExit("must specify object")
-	}
-	force, _ := ActiveForce()
-	attrs := ParseArgumentAttrs(args[1:])
-	id, err, emessages := force.CreateRecord(args[0], attrs)
+func runRecordCreate(object string, fields []string) {
+	attrs := parseArgumentAttrs(fields)
+	id, err, emessages := force.CreateRecord(object, attrs)
 	if err != nil {
 		ErrorAndExit(err.Error(), emessages[0].ErrorCode)
 	}
 	fmt.Printf("Record created: %s\n", id)
 }
 
-func runRecordUpdate(args []string) {
-	if len(args) < 2 {
-		ErrorAndExit("must specify object and id")
-	}
-	force, _ := ActiveForce()
-	attrs := ParseArgumentAttrs(args[2:])
-	err := force.UpdateRecord(args[0], args[1], attrs)
+func runRecordUpdate(object string, id string, fields []string) {
+	attrs := parseArgumentAttrs(fields)
+	err := force.UpdateRecord(object, id, attrs)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
 	fmt.Println("Record updated")
 }
 
-func runRecordMerge(args []string) {
-	if len(args) < 3 {
-		ErrorAndExit("must specify object, master id, and duplicate id")
-	}
-	force, _ := ActiveForce()
-	object := args[0]
-	masterId := args[1]
-	duplicateId := args[2]
+func runRecordMerge(object, masterId, duplicateId string) {
 	err := force.Partner.Merge(object, masterId, duplicateId)
 	if err != nil {
 		ErrorAndExit(err.Error())
@@ -150,10 +161,6 @@ func runRecordMerge(args []string) {
 }
 
 func runRecordUndelete(args []string) {
-	if len(args) < 1 {
-		ErrorAndExit("must specify id")
-	}
-	force, _ := ActiveForce()
 	res, err := force.Partner.UndeleteMany(args)
 	if err != nil {
 		ErrorAndExit(err.Error())
@@ -170,14 +177,19 @@ func runRecordUndelete(args []string) {
 	}
 }
 
-func runRecordDelete(args []string) {
-	if len(args) != 2 {
-		ErrorAndExit("must specify object and id")
-	}
-	force, _ := ActiveForce()
-	err := force.DeleteRecord(args[0], args[1])
+func runRecordDelete(object, id string) {
+	err := force.DeleteRecord(object, id)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
 	fmt.Println("Record deleted")
+}
+
+func parseArgumentAttrs(pairs []string) (parsed map[string]string) {
+	parsed = make(map[string]string)
+	for _, pair := range pairs {
+		split := strings.SplitN(pair, ":", 2)
+		parsed[split[0]] = split[1]
+	}
+	return
 }

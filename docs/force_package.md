@@ -1,0 +1,21 @@
+## force package
+
+Manage installed packages
+
+### Options
+
+```
+  -h, --help   help for package
+```
+
+### Options inherited from parent commands
+
+```
+  -a, --account username   account username to use
+```
+
+### SEE ALSO
+
+* [force](force.md)	 - force CLI
+* [force package install](force_package_install.md)	 - Installed packages
+

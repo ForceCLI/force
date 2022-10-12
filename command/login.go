@@ -6,18 +6,30 @@ import (
 	"os"
 
 	"github.com/bgentry/speakeasy"
+	"github.com/spf13/cobra"
 
 	. "github.com/ForceCLI/force/error"
 	. "github.com/ForceCLI/force/lib"
 )
 
-var cmdLogin = &Command{
-	Usage: "login",
-	Short: "force login [-i=<instance>] [<-u=username> <-p=password>] [-scratch] [-s]",
-	Long: `
-  force login [-i=<instance>] [<-u=username> <-p=password> <-v=apiversion] [-scratch] [-s]
+func init() {
+	loginCmd.Flags().StringP("user", "u", "", "username for SOAP login")
+	loginCmd.Flags().StringP("password", "p", "", "password for SOAP login")
+	loginCmd.Flags().StringP("api-version", "v", "", "API version to use")
+	loginCmd.Flags().String("connected-app-client-id", "", "Client Id (aka Consumer Key) to use instead of default")
+	loginCmd.Flags().StringP("key", "k", "", "JWT signing key filename")
+	loginCmd.Flags().BoolP("skip", "s", false, "skip login if already authenticated and only save token (useful with SSO)")
+	loginCmd.Flags().Bool("scratch", false, "create new scratch org and log in")
+	loginCmd.Flags().StringP("instance", "i", "", `Defaults to 'login' or last
+		logged in system. non-production server to login to (values are 'pre',
+		'test', or full instance url`)
+	RootCmd.AddCommand(loginCmd)
+}
 
-  Examples:
+var loginCmd = &cobra.Command{
+	Use:   "login",
+	Short: "force login [-i=<instance>] [<-u=username> <-p=password>] [-scratch] [-s]",
+	Example: `
     force login
     force login -i=test
     force login -u=un -p=pw
@@ -28,56 +40,87 @@ var cmdLogin = &Command{
     force login --connected-app-client-id <my-consumer-key> -u username -key jwt.key
     force login -scratch
 `,
-	MaxExpectedArgs: 0,
+	Args: cobra.MaximumNArgs(0),
+	Run: func(cmd *cobra.Command, args []string) {
+		if connectedAppClientId, _ := cmd.Flags().GetString("connected-app-client-id"); connectedAppClientId != "" {
+			ClientId = connectedAppClientId
+		}
+		if scratch, _ := cmd.Flags().GetBool("scratch"); scratch {
+			scratchLogin()
+			return
+		}
+		endpoint := getEndpoint(cmd)
+		selectApiVersion(cmd)
+		username, _ := cmd.Flags().GetString("user")
+		keyFile, _ := cmd.Flags().GetString("key")
+		switch {
+		case username == "":
+			skipLogin, _ := cmd.Flags().GetBool("skip")
+			oauthLogin(endpoint, skipLogin)
+		case keyFile != "":
+			jwtLogin(endpoint, username, keyFile)
+		default:
+			password, _ := cmd.Flags().GetString("password")
+			passwordLogin(endpoint, username, password)
+		}
+	},
 }
 
-func init() {
-	cmdLogin.Run = runLogin
+func scratchLogin() {
+	_, err := ForceScratchLoginAndSave(os.Stderr)
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
 }
 
-var (
-	instance = cmdLogin.Flag.String("i", "", `Defaults to 'login' or last
-		logged in system. non-production server to login to (values are 'pre',
-		'test', or full instance url`)
-	userName             = cmdLogin.Flag.String("u", "", "Username for Soap Login")
-	password             = cmdLogin.Flag.String("p", "", "Password for Soap Login")
-	api_version          = cmdLogin.Flag.String("v", "", "API Version to use")
-	connectedAppClientId = cmdLogin.Flag.String("connected-app-client-id", "", "Client Id (aka Consumer Key) to use instead of default")
-	keyFile              = cmdLogin.Flag.String("key", "", "JWT Signing Key Filename")
-	skipLogin            = cmdLogin.Flag.Bool("s", false, "Skip login if already authenticated (useful with SSO)")
-	scratchOrg           = cmdLogin.Flag.Bool("scratch", false, "Create new Scratch Org and Log In")
-)
+func oauthLogin(endpoint string, skipLogin bool) {
+	var err error
+	if skipLogin {
+		_, err = ForceLoginAtEndpointWithPromptAndSave(endpoint, os.Stdout, "consent")
+	} else {
+		_, err = ForceLoginAtEndpointAndSave(endpoint, os.Stdout)
+	}
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
+}
 
-func runLogin(cmd *Command, args []string) {
-	if *scratchOrg {
-		_, err := ForceScratchLoginAndSave(os.Stderr)
+func jwtLogin(endpoint, username, keyfile string) {
+	assertion, err := JwtAssertionForEndpoint(endpoint, username, keyfile, ClientId)
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
+	_, err = ForceLoginAtEndpointAndSaveJWT(endpoint, assertion, os.Stdout)
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
+}
+
+func passwordLogin(endpoint, username, password string) {
+	if len(password) == 0 {
+		var err error
+		password, err = speakeasy.Ask("Password: ")
 		if err != nil {
 			ErrorAndExit(err.Error())
 		}
-		return
 	}
+	_, err := ForceLoginAtEndpointAndSaveSoap(endpoint, username, password, os.Stdout)
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
+}
+
+func getEndpoint(cmd *cobra.Command) string {
 	endpoint := "https://login.salesforce.com"
 	// If no instance specified, try to get last endpoint used
-	if *instance == "" {
-		currentEndpointUrl, err := CurrentEndpointUrl()
+	var instance string
+	if instance, _ = cmd.Flags().GetString("instance"); instance == "" {
+		currentEndpointUrl, err := currentEndpointUrl()
 		if err == nil && currentEndpointUrl != "" {
 			endpoint = currentEndpointUrl
 		}
 	}
-
-	if *api_version != "" {
-		// Todo verify format of version is 30.0
-		SetApiVersion(*api_version)
-	} else {
-		//override api version in case of a new login
-		SetApiVersion(DefaultApiVersionNumber)
-	}
-
-	if *connectedAppClientId != "" {
-		ClientId = *connectedAppClientId
-	}
-
-	switch *instance {
+	switch instance {
 	case "login":
 		endpoint = "https://login.salesforce.com"
 	case "test":
@@ -87,18 +130,18 @@ func runLogin(cmd *Command, args []string) {
 	case "mobile1":
 		endpoint = "https://mobile1.t.pre.salesforce.com"
 	default:
-		if *instance != "" {
+		if instance != "" {
 			//need to determine the form of the endpoint
-			uri, err := url.Parse(*instance)
+			uri, err := url.Parse(instance)
 			if err != nil {
-				ErrorAndExit("Unable to parse endpoint: %s", *instance)
+				ErrorAndExit("Unable to parse endpoint: %s", instance)
 			}
 			// Could be short hand?
 			if uri.Host == "" {
-				uri, err = url.Parse(fmt.Sprintf("https://%s", *instance))
+				uri, err = url.Parse(fmt.Sprintf("https://%s", instance))
 				//fmt.Println(uri)
 				if err != nil {
-					ErrorAndExit("Could not identify host: %s", *instance)
+					ErrorAndExit("Could not identify host: %s", instance)
 				}
 			}
 			endpoint = uri.Scheme + "://" + uri.Host
@@ -106,49 +149,10 @@ func runLogin(cmd *Command, args []string) {
 			fmt.Println("Loaded Endpoint: (" + endpoint + ")")
 		}
 	}
-
-	if len(*userName) == 0 {
-		// OAuth Login
-		var err error
-		if *skipLogin {
-			_, err = ForceLoginAtEndpointWithPromptAndSave(endpoint, os.Stdout, "consent")
-		} else {
-			_, err = ForceLoginAtEndpointAndSave(endpoint, os.Stdout)
-		}
-		if err != nil {
-			ErrorAndExit(err.Error())
-		}
-		return
-	}
-
-	if len(*keyFile) != 0 {
-		// JWT Login
-		assertion, err := JwtAssertionForEndpoint(endpoint, *userName, *keyFile, ClientId)
-		if err != nil {
-			ErrorAndExit(err.Error())
-		}
-		_, err = ForceLoginAtEndpointAndSaveJWT(endpoint, assertion, os.Stdout)
-		if err != nil {
-			ErrorAndExit(err.Error())
-		}
-		return
-	}
-
-	// Username/Password Login
-	if len(*password) == 0 {
-		var err error
-		*password, err = speakeasy.Ask("Password: ")
-		if err != nil {
-			ErrorAndExit(err.Error())
-		}
-	}
-	_, err := ForceLoginAtEndpointAndSaveSoap(endpoint, *userName, *password, os.Stdout)
-	if err != nil {
-		ErrorAndExit(err.Error())
-	}
+	return endpoint
 }
 
-func CurrentEndpoint() (endpoint ForceEndpoint, customUrl string, err error) {
+func currentEndpoint() (endpoint ForceEndpoint, customUrl string, err error) {
 	Log.Info("Deprecated call to CurrentEndpoint.  Use CurrentEndpointUrl.")
 	creds, err := ActiveCredentials(false)
 	if err != nil {
@@ -159,10 +163,20 @@ func CurrentEndpoint() (endpoint ForceEndpoint, customUrl string, err error) {
 	return
 }
 
-func CurrentEndpointUrl() (endpoint string, err error) {
+func currentEndpointUrl() (endpoint string, err error) {
 	creds, err := ActiveCredentials(false)
 	if err != nil {
 		return "", err
 	}
 	return creds.EndpointUrl, nil
+}
+
+func selectApiVersion(cmd *cobra.Command) {
+	if apiVersion, _ := cmd.Flags().GetString("api-version"); apiVersion != "" {
+		// Todo verify format of version is 30.0
+		SetApiVersion(apiVersion)
+	} else {
+		//override api version in case of a new login
+		SetApiVersion(DefaultApiVersionNumber)
+	}
 }

@@ -4,12 +4,17 @@ import (
 	"fmt"
 
 	. "github.com/ForceCLI/force/error"
-	. "github.com/ForceCLI/force/lib"
+	"github.com/spf13/cobra"
 )
 
-var cmdOauth = &Command{
-	Run:   runOauth,
-	Usage: "oauth <command> [<args>]",
+func init() {
+	oauthCmd.AddCommand(oauthCreateCmd)
+
+	RootCmd.AddCommand(oauthCmd)
+}
+
+var oauthCmd = &cobra.Command{
+	Use:   "oauth <command> [<args>]",
 	Short: "Manage ConnectedApp credentials",
 	Long: `
 Manage ConnectedApp credentials
@@ -17,46 +22,36 @@ Manage ConnectedApp credentials
 Usage:
 
   force oauth create <name> <callback>
+  `,
 
-Examples:
-
+	Example: `
   force oauth create MyApp http://localhost:3835/oauth/callback
 `,
-	MaxExpectedArgs: -1,
 }
 
-func runOauth(cmd *Command, args []string) {
-	if len(args) == 0 {
-		cmd.PrintUsage()
-	} else {
-		switch args[0] {
-		case "create", "add":
-			runOauthCreate(cmd, args[1:])
-		default:
-			ErrorAndExit("no such command: %s", args[0])
-		}
-	}
+var oauthCreateCmd = &cobra.Command{
+	Use:   "create <name> <callback>",
+	Short: "Create ConnectedApp",
+	Long: `
+Create ConnectedApp
+
+Usage:
+
+  force oauth create <name> <callback>
+  `,
+	Example: `
+  force oauth create MyApp http://localhost:3835/oauth/callback
+`,
+	Args: cobra.ExactArgs(2),
+	Run: func(cmd *cobra.Command, args []string) {
+		runOauthCreate(args[0], args[1])
+	},
 }
 
-func runOauthCreate(cmd *Command, args []string) {
-	if len(args) != 2 {
-		ErrorAndExit("must specify name and callback")
-	}
-	force, _ := ActiveForce()
-	err := force.Metadata.CreateConnectedApp(args[0], args[1])
+func runOauthCreate(name, callback string) {
+	err := force.Metadata.CreateConnectedApp(name, callback)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
-	apps, err := force.Metadata.ListConnectedApps()
-	if err != nil {
-		ErrorAndExit(err.Error())
-	}
-	runFetch(cmd, []string{"ConnectedApp", args[0]})
-	for _, app := range apps {
-		if app.Name == args[0] {
-			//url := fmt.Sprintf("%s/%s", force.Credentials.InstanceUrl, app.Id)
-			//Open(url)
-		}
-	}
-	fmt.Println("OAuth credentials created")
+	fmt.Println("Connected App created")
 }

@@ -5,47 +5,30 @@ import (
 	"fmt"
 
 	. "github.com/ForceCLI/force/error"
-	. "github.com/ForceCLI/force/lib"
-)
-
-var cmdQuickDeploy = &Command{
-	Usage: "quickdeploy [deployment options] <validation id>",
-	Short: "Quick deploy validation id",
-	Long: `
-Quick deploy validation id
-
-Deployment Options
-  -verbose, -v	  Provide detailed feedback on operation
-
-Examples:
-
-  force quickdeploy 0Af1200000FFbBzCAL
-
-  force quickdeploy -v 0Af0b000000ZvXH
-`,
-	MaxExpectedArgs: -1,
-}
-
-var (
-	verboseFlag = cmdQuickDeploy.Flag.Bool("verbose", false, "give more verbose output")
+	"github.com/spf13/cobra"
 )
 
 func init() {
-	cmdQuickDeploy.Run = runQuickDeploy
-	cmdQuickDeploy.Flag.BoolVar(verboseFlag, "v", false, "give more verbose output")
+	quickDeployCmd.Flags().BoolP("verbose", "v", false, "give more verbose output")
+	RootCmd.AddCommand(quickDeployCmd)
 }
 
-func runQuickDeploy(cmd *Command, args []string) {
-	if len(args) != 1 {
-		ErrorAndExit("The quickdeploy command only accepts a single validation id")
-	}
-	quickDeployId := args[0]
+var quickDeployCmd = &cobra.Command{
+	Use:   "quickdeploy <validation id>",
+	Short: "Quick deploy validation id",
+	Example: `
+  force quickdeploy 0Af1200000FFbBzCAL
+  force quickdeploy -v 0Af0b000000ZvXH
+`,
+	Args:                  cobra.ExactValidArgs(1),
+	DisableFlagsInUseLine: false,
+	Run: func(cmd *cobra.Command, args []string) {
+		verbose, _ := cmd.Flags().GetBool("verbose")
+		runQuickDeploy(args[0], verbose)
+	},
+}
 
-	force, err := ActiveForce()
-	if err != nil {
-		ErrorAndExit(err.Error())
-	}
-
+func runQuickDeploy(quickDeployId string, verbose bool) {
 	result, err := force.Metadata.DeployRecentValidation(quickDeployId)
 	problems := result.Details.ComponentFailures
 	successes := result.Details.ComponentSuccesses
@@ -54,7 +37,7 @@ func runQuickDeploy(cmd *Command, args []string) {
 	}
 
 	fmt.Printf("\nFailures - %d\n", len(problems))
-	if *verboseFlag {
+	if verbose {
 		for _, problem := range problems {
 			if problem.FullName == "" {
 				fmt.Println(problem.Problem)
@@ -65,7 +48,7 @@ func runQuickDeploy(cmd *Command, args []string) {
 	}
 
 	fmt.Printf("\nSuccesses - %d\n", len(successes))
-	if *verboseFlag {
+	if verbose {
 		for _, success := range successes {
 			if success.FullName != "package.xml" {
 				verb := "unchanged"

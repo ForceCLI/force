@@ -6,47 +6,41 @@ import (
 
 	. "github.com/ForceCLI/force/error"
 	. "github.com/ForceCLI/force/lib"
+	"github.com/spf13/cobra"
 )
 
-var cmdApiVersion = &Command{
-	Run:   runApiVersion,
-	Usage: "apiversion",
+var apiVersionCmd = &cobra.Command{
+	Use:   "apiversion",
 	Short: "Display/Set current API version",
-	Long: `
-Display/Set current API version
-
-Examples:
-
+	Example: `
   force apiversion
   force apiversion 40.0
 `,
-	MaxExpectedArgs: 1,
+	Args:                  cobra.MaximumNArgs(1),
+	DisableFlagsInUseLine: true,
+	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) == 1 {
+			setApiVersion(args[0])
+		} else {
+			fmt.Println(ApiVersion())
+		}
+	},
 }
 
 func init() {
+	RootCmd.AddCommand(apiVersionCmd)
 }
 
-func runApiVersion(cmd *Command, args []string) {
-	if len(args) == 1 {
-		apiVersionNumber := args[0]
-		matched, err := regexp.MatchString("^\\d{2}\\.0$", apiVersionNumber)
-		if err != nil {
-			ErrorAndExit("%v", err)
-		}
-		if !matched {
-			ErrorAndExit("apiversion must be in the form of nn.0.")
-		}
-		force, err := ActiveForce()
-		if err != nil {
-			ErrorAndExit(err.Error())
-		}
-		err = force.UpdateApiVersion(apiVersionNumber)
-		if err != nil {
-			ErrorAndExit("%v", err)
-		}
-	} else if len(args) == 0 {
-		fmt.Println(ApiVersion())
-	} else {
-		ErrorAndExit("The apiversion command only accepts a single argument in the form of nn.0")
+func setApiVersion(apiVersionNumber string) {
+	matched, err := regexp.MatchString("^\\d{2}\\.0$", apiVersionNumber)
+	if err != nil {
+		ErrorAndExit("%v", err)
+	}
+	if !matched {
+		ErrorAndExit("apiversion must be in the form of nn.0.")
+	}
+	err = force.UpdateApiVersion(apiVersionNumber)
+	if err != nil {
+		ErrorAndExit("%v", err)
 	}
 }

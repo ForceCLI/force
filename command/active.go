@@ -8,81 +8,72 @@ import (
 
 	. "github.com/ForceCLI/force/config"
 	. "github.com/ForceCLI/force/error"
-	. "github.com/ForceCLI/force/lib"
-)
-
-var cmdActive = &Command{
-	Usage: "active [account]",
-	Short: "Show or set the active force.com account",
-	Long: `
-Set the active force.com account
-
-Examples:
-
-  force active
-  force active user@example.org
-
-Options:
-  -json, -j     Output in JSON format
-  -local, -l    Set active account locally, for current directory
-  -session, -s  Output session id
-`,
-	MaxExpectedArgs: 1,
-}
-var (
-	tojson    bool
-	account   string
-	local     bool
-	sessionId bool
+	"github.com/spf13/cobra"
 )
 
 func init() {
-	cmdActive.Flag.BoolVar(&tojson, "j", false, "output to json")
-	cmdActive.Flag.BoolVar(&tojson, "json", false, "output to json")
-	cmdActive.Flag.StringVar(&account, "a", "", "deprecated: set active account")
-	cmdActive.Flag.StringVar(&account, "account", "", "deprecated: set active account")
-	cmdActive.Flag.BoolVar(&local, "l", false, "set active account for current directory")
-	cmdActive.Flag.BoolVar(&local, "local", false, "set active account for current directory")
-	cmdActive.Flag.BoolVar(&sessionId, "session", false, "display session id")
-	cmdActive.Flag.BoolVar(&sessionId, "s", false, "display session id")
-	cmdActive.Run = runActive
+	activeCmd.Flags().BoolP("json", "j", false, "output in JSON format")
+	activeCmd.Flags().BoolP("local", "l", false, "set active account locally, for current directory")
+	activeCmd.Flags().BoolP("session", "s", false, "output session id")
+	RootCmd.AddCommand(activeCmd)
 }
 
-func runActive(cmd *Command, args []string) {
-	if account == "" && len(args) == 0 {
-		creds, err := ActiveCredentials(true)
-		if err != nil {
-			ErrorAndExit(err.Error())
+var activeCmd = &cobra.Command{
+	Use:   "active [account]",
+	Short: "Show or set the active force.com account",
+	Long:  "Get or set the active force.com account",
+	Example: `
+  force active
+  force active user@example.org
+  `,
+	Args: cobra.MaximumNArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) == 0 {
+			printCurrentAccount(cmd)
+			return
 		}
-		if sessionId {
-			fmt.Println(creds.AccessToken)
-		} else if tojson {
-			fmt.Printf(fmt.Sprintf("{ \"login\": \"%s\", \"instanceUrl\": \"%s\", \"namespace\":\"%s\" }", creds.SessionName(), creds.InstanceUrl, creds.UserInfo.OrgNamespace))
+		local, _ := cmd.Flags().GetBool("local")
+		setAccount(args[0], local)
+	},
+}
+
+func printCurrentAccount(cmd *cobra.Command) {
+	if force == nil {
+		ErrorAndExit("No active session")
+	}
+	creds := force.Credentials
+	if creds == nil || creds.UserInfo == nil {
+		ErrorAndExit("No active session")
+	}
+	sessionId, _ := cmd.Flags().GetBool("session")
+	tojson, _ := cmd.Flags().GetBool("json")
+	if sessionId {
+		fmt.Println(creds.AccessToken)
+	} else if tojson {
+		fmt.Printf(fmt.Sprintf("{ \"login\": \"%s\", \"instanceUrl\": \"%s\", \"namespace\":\"%s\" }", creds.SessionName(), creds.InstanceUrl, creds.UserInfo.OrgNamespace))
+	} else {
+		fmt.Println(fmt.Sprintf("%s - %s - ns:%s", creds.SessionName(), creds.InstanceUrl, creds.UserInfo.OrgNamespace))
+	}
+}
+
+func setAccount(account string, local bool) {
+	accounts, _ := Config.List("accounts")
+	i := sort.SearchStrings(accounts, account)
+	if i < len(accounts) && accounts[i] == account {
+		if runtime.GOOS == "windows" {
+			cmd := exec.Command("title", account)
+			cmd.Run()
 		} else {
-			fmt.Println(fmt.Sprintf("%s - %s - ns:%s", creds.SessionName(), creds.InstanceUrl, creds.UserInfo.OrgNamespace))
+			title := fmt.Sprintf("\033];%s\007", account)
+			fmt.Printf(title)
+		}
+		fmt.Printf("%s now active\n", account)
+		if local {
+			Config.SaveLocal("current", "account", account)
+		} else {
+			Config.SaveGlobal("current", "account", account)
 		}
 	} else {
-		if account == "" {
-			account = args[0]
-		}
-		accounts, _ := Config.List("accounts")
-		i := sort.SearchStrings(accounts, account)
-		if i < len(accounts) && accounts[i] == account {
-			if runtime.GOOS == "windows" {
-				cmd := exec.Command("title", account)
-				cmd.Run()
-			} else {
-				title := fmt.Sprintf("\033];%s\007", account)
-				fmt.Printf(title)
-			}
-			fmt.Printf("%s now active\n", account)
-			if local {
-				Config.SaveLocal("current", "account", account)
-			} else {
-				Config.SaveGlobal("current", "account", account)
-			}
-		} else {
-			ErrorAndExit(fmt.Sprintf("no such account %s\n", account))
-		}
+		ErrorAndExit(fmt.Sprintf("no such account %s\n", account))
 	}
 }

@@ -6,11 +6,19 @@ import (
 
 	. "github.com/ForceCLI/force/error"
 	. "github.com/ForceCLI/force/lib"
+	"github.com/spf13/cobra"
 )
 
-var cmdField = &Command{
-	Run:   runField,
-	Usage: "field",
+func init() {
+	fieldCmd.AddCommand(fieldListCmd)
+	fieldCmd.AddCommand(fieldCreateCmd)
+	fieldCmd.AddCommand(fieldDeleteCmd)
+	fieldCmd.AddCommand(fieldTypeCmd)
+	RootCmd.AddCommand(fieldCmd)
+}
+
+var fieldCmd = &cobra.Command{
+	Use:   "field",
 	Short: "Manage SObject fields",
 	Long: `
 Manage SObject fields
@@ -22,51 +30,69 @@ Usage:
   force field delete <object> <field>
   force field type
   force field type <fieldtype>
+  `,
 
-Examples:
-
+	Example: `
   force field list Todo__c
-	force field create Inspection__c "Final Outcome":picklist picklist:"Pass, Fail, Redo"
+  force field create Inspection__c "Final Outcome":picklist picklist:"Pass, Fail, Redo"
   force field create Todo__c Due:DateTime required:true
   force field delete Todo__c Due
-  force field type     #displays all the supported field types
-  force field type email   #displays the required and optional attributes
-
+  force field type     # displays all the supported field types
+  force field type email   # displays the required and optional attributes
 `,
-	MaxExpectedArgs: -1,
+	DisableFlagsInUseLine: true,
 }
 
-func runField(cmd *Command, args []string) {
-	if len(args) == 0 {
-		cmd.PrintUsage()
-	} else {
-		switch args[0] {
-		case "list":
-			runFieldList(args[1:])
-		case "create", "add":
-			runFieldCreate(args[1:])
-		case "delete", "remove":
-			runFieldDelete(args[1:])
-		case "type":
-			if len(args) == 1 {
-				DisplayFieldTypes()
-			} else if len(args) == 2 {
-				DisplayFieldDetails(args[1])
-			} else {
-				ErrorAndExit("must specify one type at most")
-			}
-		default:
-			ErrorAndExit("no such command: %s", args[0])
+var fieldListCmd = &cobra.Command{
+	Use:                   "list <object>",
+	Short:                 "List SObject fields",
+	Args:                  cobra.ExactArgs(1),
+	DisableFlagsInUseLine: true,
+	Run: func(cmd *cobra.Command, args []string) {
+		runFieldList(args[0])
+	},
+}
+
+var fieldCreateCmd = &cobra.Command{
+	Use:   "create <object> <field>:<type> [<option>:<value>]",
+	Short: "Create SObject fields",
+	Example: `
+  force field create Inspection__c "Final Outcome":picklist picklist:"Pass, Fail, Redo"
+  force field create Todo__c Due:DateTime required:true
+`,
+	Args:                  cobra.MinimumNArgs(2),
+	DisableFlagsInUseLine: true,
+	Run: func(cmd *cobra.Command, args []string) {
+		runFieldCreate(args)
+	},
+}
+
+var fieldDeleteCmd = &cobra.Command{
+	Use:                   "delete <object> <field>",
+	Short:                 "Delete SObject field",
+	Args:                  cobra.ExactArgs(2),
+	DisableFlagsInUseLine: true,
+	Run: func(cmd *cobra.Command, args []string) {
+		runFieldDelete(args[0], args[1])
+	},
+}
+
+var fieldTypeCmd = &cobra.Command{
+	Use:                   "type [field type]",
+	Short:                 "Display SObject field type details",
+	Args:                  cobra.MaximumNArgs(1),
+	DisableFlagsInUseLine: true,
+	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) == 0 {
+			DisplayFieldTypes()
+		} else {
+			DisplayFieldDetails(args[0])
 		}
-	}
+	},
 }
 
-func runFieldList(args []string) {
-	if len(args) != 1 {
-		ErrorAndExit("must specify object")
-	}
-	force, _ := ActiveForce()
-	sobject, err := force.GetSobject(args[0])
+func runFieldList(object string) {
+	sobject, err := force.GetSobject(object)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
@@ -74,12 +100,6 @@ func runFieldList(args []string) {
 }
 
 func runFieldCreate(args []string) {
-	if len(args) < 2 {
-		ErrorAndExit("must specify object and at least one field")
-	}
-
-	force, _ := ActiveForce()
-
 	parts := strings.Split(args[1], ":")
 	if len(parts) != 2 {
 		ErrorAndExit("must specify name:type for fields")
@@ -107,12 +127,8 @@ func runFieldCreate(args []string) {
 	fmt.Println("Custom field created")
 }
 
-func runFieldDelete(args []string) {
-	if len(args) != 2 {
-		ErrorAndExit("must specify object and field")
-	}
-	force, _ := ActiveForce()
-	if err := force.Metadata.DeleteCustomField(args[0], args[1]); err != nil {
+func runFieldDelete(object, field string) {
+	if err := force.Metadata.DeleteCustomField(object, field); err != nil {
 		ErrorAndExit(err.Error())
 	}
 	fmt.Println("Custom field deleted")

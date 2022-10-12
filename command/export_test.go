@@ -6,7 +6,6 @@ import (
 
 func TestIsExcluded(t *testing.T) {
 	excluded := []string{"ApexClass", "CustomThing"}
-	excludeMetadataNames = append(excludeMetadataNames, excluded...)
 
 	testCases := []struct {
 		input    string
@@ -18,7 +17,7 @@ func TestIsExcluded(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.input, func(t *testing.T) {
-			got := isExcluded(test.input)
+			got := isExcluded(excluded, test.input)
 
 			if got != test.expected {
 				t.Errorf("Expected %v got %v for %s entry", test.expected, got, test.input)

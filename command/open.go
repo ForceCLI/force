@@ -6,36 +6,38 @@ import (
 	desktop "github.com/ForceCLI/force/desktop"
 	. "github.com/ForceCLI/force/error"
 	. "github.com/ForceCLI/force/lib"
+	"github.com/spf13/cobra"
 )
 
-var cmdOpen = &Command{
-	Usage: "open [account]",
+func init() {
+	RootCmd.AddCommand(openCmd)
+}
+
+var openCmd = &cobra.Command{
+	Use:   "open [account]",
 	Short: "Open a browser window, logged into an authenticated Salesforce org",
 	Long: `
 Open a browser window, logged into an authenticated Salesforce org.
 By default, the active account is used.
-
-  force open [account]
 `,
-	MaxExpectedArgs: 1,
+	Example: `
+  force open user@example.com
+`,
+	Args: cobra.MaximumNArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		var err error
+		if len(args) != 0 {
+			force, err = GetForce(args[0])
+			if err != nil {
+				ErrorAndExit(err.Error())
+			}
+		}
+		runOpen()
+	},
 }
 
-func init() {
-	cmdOpen.Run = runOpen
-}
-
-func runOpen(cmd *Command, args []string) {
-	var force *Force
-	var err error
-	if len(args) > 0 {
-		force, err = GetForce(args[0])
-	} else {
-		force, err = ActiveForce()
-	}
-	if err != nil {
-		ErrorAndExit(err.Error())
-	}
-	_, err = force.Whoami()
+func runOpen() {
+	_, err := force.Whoami()
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}

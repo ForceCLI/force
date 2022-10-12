@@ -1222,7 +1222,7 @@ func (fm *ForceMetadata) DeployWithTempFile(soap string, filename string) {
 	ioutil.WriteFile(xmlfile, []byte(soap), 0777)
 	namePaths := make(map[string]string)
 	byName := false
-	PushByPaths([]string{xmlfile}, byName, namePaths, new(ForceDeployOptions))
+	PushByPaths(fm.Force, []string{xmlfile}, byName, namePaths, new(ForceDeployOptions))
 }
 
 func (fm *ForceMetadata) Deploy(files ForceMetadataFiles, options ForceDeployOptions) (results ForceCheckDeploymentStatusResult, err error) {

@@ -4,56 +4,54 @@ import (
 	"fmt"
 
 	. "github.com/ForceCLI/force/error"
-	. "github.com/ForceCLI/force/lib"
+	"github.com/spf13/cobra"
 )
 
-var cmdTrace = &Command{
-	Run:   runTrace,
-	Usage: "trace <command>",
+func init() {
+	traceCmd.AddCommand(traceStartCmd)
+	traceCmd.AddCommand(traceListCmd)
+	traceCmd.AddCommand(traceDeleteCmd)
+	RootCmd.AddCommand(traceCmd)
+}
+
+var traceStartCmd = &cobra.Command{
+	Use:   "start [user id]",
+	Short: "Set trace flag",
+	Args:  cobra.MaximumNArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		runStartTrace(args...)
+	},
+}
+
+var traceListCmd = &cobra.Command{
+	Use:   "list",
+	Short: "List trace flags",
+	Args:  cobra.MaximumNArgs(0),
+	Run: func(cmd *cobra.Command, args []string) {
+		runQueryTrace()
+	},
+}
+
+var traceDeleteCmd = &cobra.Command{
+	Use:   "delete <id>",
+	Short: "Delete trace flag",
+	Args:  cobra.ExactValidArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		runDeleteTrace(args[0])
+	},
+}
+
+var traceCmd = &cobra.Command{
+	Use:   "trace <command>",
 	Short: "Manage trace flags",
-	Long: `
-Manage trace flags
-
-Examples:
-
+	Example: `
   force trace start [user id]
-
   force trace list
-
   force trace delete <id>
 `,
-	MaxExpectedArgs: -1,
-}
-
-func init() {
-}
-
-func runTrace(cmd *Command, args []string) {
-	if len(args) == 0 {
-		cmd.PrintUsage()
-		return
-	}
-	switch args[0] {
-	case "list":
-		runQueryTrace()
-	case "start":
-		if len(args) == 2 {
-			runStartTrace(args[1])
-		} else {
-			runStartTrace()
-		}
-	case "delete":
-		if len(args) != 2 {
-			ErrorAndExit("You need to provide the id of a TraceFlag to delete.")
-		}
-		runDeleteTrace(args[1])
-	default:
-		ErrorAndExit("no such command: %s", args[0])
-	}
 }
 
 func runQueryTrace() {
-	force, _ := ActiveForce()
 	result, err := force.QueryTraceFlags()
 	if err != nil {
 		ErrorAndExit(err.Error())
@@ -62,7 +60,6 @@ func runQueryTrace() {
 }
 
 func runStartTrace(userId ...string) {
-	force, _ := ActiveForce()
 	_, err, _ := force.StartTrace(userId...)
 	if err != nil {
 		ErrorAndExit(err.Error())
@@ -71,7 +68,6 @@ func runStartTrace(userId ...string) {
 }
 
 func runDeleteTrace(id string) {
-	force, _ := ActiveForce()
 	err := force.DeleteToolingRecord("TraceFlag", id)
 	if err != nil {
 		ErrorAndExit(err.Error())

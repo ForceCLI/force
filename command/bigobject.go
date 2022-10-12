@@ -2,18 +2,60 @@ package command
 
 import (
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 
 	"github.com/ForceCLI/inflect"
+	"github.com/spf13/cobra"
 
 	. "github.com/ForceCLI/force/error"
 	. "github.com/ForceCLI/force/lib"
 )
 
-var cmdBigObject = &Command{
-	Usage: "bigobject",
+func init() {
+	bigObjectCreateCmd.Flags().StringSliceP("field", "f", []string{}, "field definition")
+	bigObjectCreateCmd.Flags().StringP("label", "l", "", "big object label")
+	bigObjectCreateCmd.Flags().StringP("plural", "p", "", "big object plural label")
+	bigObjectCreateCmd.MarkFlagRequired("label")
+
+	bigObjectCmd.AddCommand(bigObjectListCmd)
+	bigObjectCmd.AddCommand(bigObjectCreateCmd)
+	RootCmd.AddCommand(bigObjectCmd)
+}
+
+var bigObjectListCmd = &cobra.Command{
+	Use:                   "list [object]",
+	Short:                 "List big objects",
+	Args:                  cobra.MaximumNArgs(1),
+	DisableFlagsInUseLine: true,
+	Run: func(cmd *cobra.Command, args []string) {
+		object := ""
+		if len(args) > 0 {
+			object = args[0]
+		}
+		getBigObjectList(object)
+	},
+}
+
+var bigObjectCreateCmd = &cobra.Command{
+	Use:   "create",
+	Short: "Create big object",
+	Args:  cobra.MaximumNArgs(0),
+	Example: `
+  force bigobject create -n=MyObject -l="My Object" -p="My Objects" \
+  -f=name:Field1+label:"Field 1"+type:Text+length:120 \
+  -f=name:MyDate+type=dateTime
+`,
+	Run: func(cmd *cobra.Command, args []string) {
+		fields, _ := cmd.Flags().GetStringSlice("field")
+		label, _ := cmd.Flags().GetString("label")
+		plural, _ := cmd.Flags().GetString("plural")
+		runBigObjectCreate(fields, label, plural)
+	},
+}
+
+var bigObjectCmd = &cobra.Command{
+	Use:   "bigobject",
 	Short: "Manage big objects",
 	Long: `
 Manage big objects
@@ -29,10 +71,9 @@ Usage:
   		Type = text: name, label, length
   		Type = datetime: name, label
   		Type = lookup: name, label, referenceTo, relationshipName
+`,
 
-
-Examples:
-
+	Example: `
   force bigobject list
 
   force bigobject create -n=MyObject -l="My Object" -p="My Objects" \
@@ -40,63 +81,7 @@ Examples:
   -f=name:MyDate+type=dateTime
 
 `,
-	MaxExpectedArgs: -1,
-}
-
-type boField []string
-
-func (i *boField) String() string {
-	return fmt.Sprint(*i)
-}
-
-func (i *boField) Set(value string) error {
-	// That would permit usages such as
-	//	-deltaT 10s -deltaT 15s
-	for _, name := range strings.Split(value, ",") {
-		*i = append(*i, name)
-	}
-	return nil
-}
-
-var (
-	fields           boField
-	deploymentStatus string
-	objectLabel      string
-	pluralLabel      string
-)
-
-func init() {
-	cmdBigObject.Flag.Var(&fields, "field", "names of metadata")
-	cmdBigObject.Flag.Var(&fields, "f", "names of metadata")
-	cmdBigObject.Flag.StringVar(&deploymentStatus, "deployment", "Deployed", "deployment status")
-	cmdBigObject.Flag.StringVar(&deploymentStatus, "d", "Deployed", "deployment status")
-	cmdBigObject.Flag.StringVar(&objectLabel, "label", "", "big object label")
-	cmdBigObject.Flag.StringVar(&objectLabel, "l", "", "big object label")
-	cmdBigObject.Flag.StringVar(&pluralLabel, "plural", "", "big object plural label")
-	cmdBigObject.Flag.StringVar(&pluralLabel, "p", "", "big object plural label")
-	cmdBigObject.Run = runBigObject
-}
-
-func runBigObject(cmd *Command, args []string) {
-	if len(args) == 0 {
-		cmd.PrintUsage()
-	} else {
-		if err := cmd.Flag.Parse(args[1:]); err != nil {
-			os.Exit(2)
-		}
-		switch args[0] {
-		case "list":
-			if len(args) <= 2 {
-				getBigObjectList(args[1:])
-			} else {
-				cmd.InvalidInvocation(args)
-			}
-		case "create":
-			runBigObjectCreate(args[1:])
-		default:
-			ErrorAndExit("no such command: %s", args[0])
-		}
-	}
+	Args: cobra.MaximumNArgs(0),
 }
 
 func parseField(fielddata string) (result BigObjectField) {
@@ -159,16 +144,15 @@ func validateField(originField BigObjectField) (field BigObjectField) {
 	return
 }
 
-func getBigObjectList(args []string) (l []ForceSobject) {
-	force, _ := ActiveForce()
+func getBigObjectList(object string) (l []ForceSobject) {
 	sobjects, err := force.ListSobjects()
 	if err != nil {
 		ErrorAndExit(fmt.Sprintf("ERROR: %s\n", err))
 	}
 
 	for _, sobject := range sobjects {
-		if len(args) == 1 {
-			if strings.Contains(sobject["name"].(string), args[0]) {
+		if len(object) > 0 {
+			if strings.Contains(strings.ToLower(sobject["name"].(string)), strings.ToLower(object)) {
 				l = append(l, sobject)
 			}
 		} else {
@@ -178,28 +162,23 @@ func getBigObjectList(args []string) (l []ForceSobject) {
 	return
 }
 
-func runBigObjectCreate(args []string) {
+func runBigObjectCreate(fields []string, label, plural string) {
 	var fieldObjects = make([]BigObjectField, len(fields))
 	for i, field := range fields {
 		fieldObjects[i] = parseField(field)
 	}
 
 	var object = BigObject{
-		DeploymentStatus: deploymentStatus,
-		Label:            objectLabel,
-		PluralLabel:      pluralLabel,
+		DeploymentStatus: "Deployed",
+		Label:            label,
+		PluralLabel:      plural,
 		Fields:           fieldObjects,
-	}
-	if len(object.Label) == 0 {
-		ErrorAndExit("Please provide a label for your big object using the -l flag.")
 	}
 	if len(object.PluralLabel) == 0 {
 		object.PluralLabel = inflect.Pluralize(object.Label)
 	}
-	force, _ := ActiveForce()
 	if err := force.Metadata.CreateBigObject(object); err != nil {
 		ErrorAndExit(err.Error())
 	}
 	fmt.Println("Big object created")
-
 }

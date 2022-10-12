@@ -14,7 +14,7 @@ import (
 
 // Creates a package that includes everything in the passed in string slice
 // and then deploys the package to salesforce
-func PushByPaths(fpaths []string, byName bool, namePaths map[string]string, opts *ForceDeployOptions) {
+func PushByPaths(force *Force, fpaths []string, byName bool, namePaths map[string]string, opts *ForceDeployOptions) {
 	pb := NewPushBuilder()
 	var badPaths []string
 	for _, fpath := range fpaths {
@@ -53,7 +53,7 @@ func PushByPaths(fpaths []string, byName bool, namePaths map[string]string, opts
 	if len(badPaths) == 0 {
 		Log.Info("Deploying now...")
 		t0 := time.Now()
-		deployFiles(pb.ForceMetadataFiles(), byName, namePaths, opts)
+		deployFiles(force, pb.ForceMetadataFiles(), byName, namePaths, opts)
 		t1 := time.Now()
 		Log.Info(fmt.Sprintf("The deployment took %v to run.\n", t1.Sub(t0)))
 	} else {
@@ -61,8 +61,7 @@ func PushByPaths(fpaths []string, byName bool, namePaths map[string]string, opts
 	}
 }
 
-func deployFiles(files ForceMetadataFiles, byName bool, namePaths map[string]string, opts *ForceDeployOptions) {
-	force, _ := ActiveForce()
+func deployFiles(force *Force, files ForceMetadataFiles, byName bool, namePaths map[string]string, opts *ForceDeployOptions) {
 	result, err := force.Metadata.Deploy(files, *opts)
 	err = processDeployResults(result, byName, namePaths, err)
 	if err != nil {
@@ -152,8 +151,7 @@ func processDeployResults(result ForceCheckDeploymentStatusResult, byName bool, 
 // Deploy a previously create package. This is used for "force push package". In this case the
 // --path flag should be pointing to a zip file that may or may not have come from a different
 // org altogether
-func DeployPackage(resourcepaths []string, opts *ForceDeployOptions) {
-	force, _ := ActiveForce()
+func DeployPackage(force *Force, resourcepaths []string, opts *ForceDeployOptions) {
 	for _, name := range resourcepaths {
 		zipfile, err := ioutil.ReadFile(name)
 		result, err := force.Metadata.DeployZipFile(force.Metadata.MakeDeploySoap(*opts), zipfile)
