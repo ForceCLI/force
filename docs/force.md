@@ -30,7 +30,7 @@ force
 * [force import](force_import.md)	 - Import metadata from a local directory
 * [force limits](force_limits.md)	 - Display current limits
 * [force log](force_log.md)	 - Fetch debug logs
-* [force login](force_login.md)	 - force login [-i=<instance>] [<-u=username> <-p=password>] [-scratch] [-s]
+* [force login](force_login.md)	 - Log into Salesforce and store a session token
 * [force logins](force_logins.md)	 - List force.com logins used
 * [force logout](force_logout.md)	 - Log out from Force.com
 * [force notify](force_notify.md)	 - Should notifications be used

@@ -21,23 +21,26 @@ func init() {
 	loginCmd.Flags().BoolP("skip", "s", false, "skip login if already authenticated and only save token (useful with SSO)")
 	loginCmd.Flags().Bool("scratch", false, "create new scratch org and log in")
 	loginCmd.Flags().StringP("instance", "i", "", `Defaults to 'login' or last
-		logged in system. non-production server to login to (values are 'pre',
-		'test', or full instance url`)
+logged in system. non-production server to login to (values are 'pre',
+'test', or full instance url`)
 	RootCmd.AddCommand(loginCmd)
 }
 
 var loginCmd = &cobra.Command{
 	Use:   "login",
-	Short: "force login [-i=<instance>] [<-u=username> <-p=password>] [-scratch] [-s]",
+	Short: "Log into Salesforce and store a session token",
+	Long: `Log into Salesforce and store a session token.  By default, OAuth is
+used and a refresh token will be stored as well.  The refresh token is used
+to get a new session token automatically when needed.`,
 	Example: `
     force login
-    force login -i=test
-    force login -u=un -p=pw
-    force login -i=test -u=un -p=pw
-    force login -i=na1-blitz01.soma.salesforce.com -u=un -p=pw -v 39.0
+    force login -i test
+    force login -i example--dev.sandbox.my.salesforce.com
+    force login -u user@example.com -p password
+    force login -i test -u user@example.com -p password
     force login -i my-domain.my.salesforce.com -u username -p password
     force login -i my-domain.my.salesforce.com -s[kipLogin]
-    force login --connected-app-client-id <my-consumer-key> -u username -key jwt.key
+    force login --connected-app-client-id <my-consumer-key> -u user@example.com -key jwt.key
     force login -scratch
 `,
 	Args: cobra.MaximumNArgs(0),
