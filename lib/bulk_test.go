@@ -1,12 +1,13 @@
 package lib_test
 
 import (
+	"net/http"
+
 	. "github.com/ForceCLI/force/lib"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/ghttp"
 	"github.com/rgalanakis/golangal"
-	"net/http"
 )
 
 var _ = Describe("bulk", func() {
@@ -26,7 +27,7 @@ var _ = Describe("bulk", func() {
 		It("invokes the callback with the response", func() {
 			sfServer.AppendHandlers(
 				CombineHandlers(
-					VerifyRequest("GET", "/services/async/45.0/job//batch/batch1/result/result1"),
+					VerifyRequest("GET", "/services/async/"+ApiVersionNumber()+"/job//batch/batch1/result/result1"),
 					RespondWith(200, "abc"),
 				),
 			)
@@ -44,7 +45,7 @@ var _ = Describe("bulk", func() {
 		It("propagates errors", func() {
 			sfServer.AppendHandlers(
 				CombineHandlers(
-					VerifyRequest("GET", "/services/async/45.0/job//batch/batch1/result/result1"),
+					VerifyRequest("GET", "/services/async/"+ApiVersionNumber()+"/job//batch/batch1/result/result1"),
 					RespondWith(400, "<LoginFault><exceptionCode>Yo</exceptionCode></LoginFault>", XmlHeaders),
 				),
 			)
@@ -58,7 +59,7 @@ var _ = Describe("bulk", func() {
 <batchInfoList xmlns="http://www.force.com/2009/06/asyncapi/dataload" />`
 			sfServer.AppendHandlers(
 				CombineHandlers(
-					VerifyRequest("GET", "/services/async/45.0/job/myjobid/batch"),
+					VerifyRequest("GET", "/services/async/"+ApiVersionNumber()+"/job/myjobid/batch"),
 					RespondWith(200, body, XmlHeaders),
 				),
 			)
@@ -74,7 +75,7 @@ var _ = Describe("bulk", func() {
 </batchInfoList>`
 			sfServer.AppendHandlers(
 				CombineHandlers(
-					VerifyRequest("GET", "/services/async/45.0/job/myjobid/batch"),
+					VerifyRequest("GET", "/services/async/"+ApiVersionNumber()+"/job/myjobid/batch"),
 					RespondWith(200, body, XmlHeaders),
 				),
 			)
@@ -88,7 +89,7 @@ var _ = Describe("bulk", func() {
 		It("handles faults", func() {
 			sfServer.AppendHandlers(
 				CombineHandlers(
-					VerifyRequest("GET", "/services/async/45.0/job/myjobid/batch"),
+					VerifyRequest("GET", "/services/async/"+ApiVersionNumber()+"/job/myjobid/batch"),
 					RespondWith(400, loginFaultBody, XmlHeaders),
 				),
 			)
