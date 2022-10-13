@@ -12,7 +12,8 @@ import (
 )
 
 var (
-	account string
+	account     string
+	_apiVersion string
 
 	force *Force
 )
@@ -27,6 +28,7 @@ func init() {
 	}
 	RootCmd.SetArgs(args)
 	RootCmd.PersistentFlags().StringVarP(&account, "account", "a", "", "account `username` to use")
+	RootCmd.PersistentFlags().StringVarP(&_apiVersion, "apiversion", "V", "", "API version to use")
 }
 
 var RootCmd = &cobra.Command{
@@ -55,6 +57,12 @@ func initializeSession() {
 	}
 	if err != nil {
 		ErrorAndExit(err.Error())
+	}
+	if _apiVersion != "" {
+		err := SetApiVersion(_apiVersion)
+		if err != nil {
+			ErrorAndExit(err.Error())
+		}
 	}
 }
 
