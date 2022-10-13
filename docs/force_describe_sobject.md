@@ -1,6 +1,12 @@
 ## force describe sobject
 
-Describe sobject
+List sobjects
+
+### Synopsis
+
+With no name specified, list all SObjects in the org.  Specifying an
+object name will retrieve all of the details about the object.
+
 
 ```
 force describe sobject [flags]
@@ -22,5 +28,5 @@ force describe sobject [flags]
 
 ### SEE ALSO
 
-* [force describe](force_describe.md)	 - Describe the object or list of available objects
+* [force describe](force_describe.md)	 - Describe the types of metadata available in the org
 

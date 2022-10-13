@@ -2,8 +2,24 @@
 
 Describe metadata
 
+### Synopsis
+
+List the metadata in the org.  With no type specified, lists all
+metadata types supported.  Specifying a type will list the individual metadata
+components of that type.
+
+
 ```
 force describe metadata [flags]
+```
+
+### Examples
+
+```
+
+  force describe metadata
+  force describe metadata -t MatchingRule -j
+  
 ```
 
 ### Options
@@ -11,7 +27,7 @@ force describe metadata [flags]
 ```
   -h, --help          help for metadata
   -j, --json          json output
-  -n, --name string   name of metadata
+  -t, --type string   type of metadata
 ```
 
 ### Options inherited from parent commands
@@ -22,5 +38,5 @@ force describe metadata [flags]
 
 ### SEE ALSO
 
-* [force describe](force_describe.md)	 - Describe the object or list of available objects
+* [force describe](force_describe.md)	 - Describe the types of metadata available in the org
 

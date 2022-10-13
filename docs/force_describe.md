@@ -1,13 +1,14 @@
 ## force describe
 
-Describe the object or list of available objects
+Describe the types of metadata available in the org
 
 ### Examples
 
 ```
 
-  force describe metadata -n=CustomObject
-  force describe sobject -n=Account
+  force describe metadata
+  force describe metadata -t MatchingRule -j
+  force describe sobject -n Account
   
 ```
 
@@ -27,5 +28,5 @@ Describe the object or list of available objects
 
 * [force](force.md)	 - force CLI
 * [force describe metadata](force_describe_metadata.md)	 - Describe metadata
-* [force describe sobject](force_describe_sobject.md)	 - Describe sobject
+* [force describe sobject](force_describe_sobject.md)	 - List sobjects
 

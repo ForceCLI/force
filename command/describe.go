@@ -9,7 +9,7 @@ import (
 )
 
 func init() {
-	describeMetadataCmd.Flags().StringP("name", "n", "", "name of metadata")
+	describeMetadataCmd.Flags().StringP("type", "t", "", "type of metadata")
 	describeMetadataCmd.Flags().BoolP("json", "j", false, "json output")
 	describeSobjectCmd.Flags().StringP("name", "n", "", "name of sobject")
 	describeSobjectCmd.Flags().BoolP("json", "j", false, "json output")
@@ -22,18 +22,29 @@ func init() {
 var describeMetadataCmd = &cobra.Command{
 	Use:   "metadata",
 	Short: "Describe metadata",
-	Args:  cobra.ExactArgs(0),
+	Long: `List the metadata in the org.  With no type specified, lists all
+metadata types supported.  Specifying a type will list the individual metadata
+components of that type.
+`,
+	Example: `
+  force describe metadata
+  force describe metadata -t MatchingRule -j
+  `,
+	Args: cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
-		item, _ := cmd.Flags().GetString("name")
+		metadataType, _ := cmd.Flags().GetString("type")
 		json, _ := cmd.Flags().GetBool("json")
-		describeMetadata(item, json)
+		describeMetadata(metadataType, json)
 	},
 }
 
 var describeSobjectCmd = &cobra.Command{
 	Use:   "sobject",
-	Short: "Describe sobject",
-	Args:  cobra.ExactArgs(0),
+	Short: "List sobjects",
+	Long: `With no name specified, list all SObjects in the org.  Specifying an
+object name will retrieve all of the details about the object.
+`,
+	Args: cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
 		item, _ := cmd.Flags().GetString("name")
 		json, _ := cmd.Flags().GetBool("json")
@@ -43,10 +54,11 @@ var describeSobjectCmd = &cobra.Command{
 
 var describeCmd = &cobra.Command{
 	Use:   "describe (metadata|sobject) [flags]",
-	Short: "Describe the object or list of available objects",
+	Short: "Describe the types of metadata available in the org",
 	Example: `
-  force describe metadata -n=CustomObject
-  force describe sobject -n=Account
+  force describe metadata
+  force describe metadata -t MatchingRule -j
+  force describe sobject -n Account
   `,
 	Args: cobra.ExactArgs(0),
 }
@@ -82,6 +94,7 @@ func describeMetadata(item string, json bool) {
 		}
 	}
 }
+
 func describeSObject(item string, json bool) {
 	if len(item) == 0 {
 		// list all sobject
