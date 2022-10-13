@@ -1,13 +1,20 @@
 package command
 
 import (
+	"encoding/json"
 	"fmt"
-	"regexp"
 
 	. "github.com/ForceCLI/force/error"
 	. "github.com/ForceCLI/force/lib"
 	"github.com/spf13/cobra"
 )
+
+func init() {
+	apiVersionListCmd.Flags().BoolP("json", "j", false, "json output")
+	apiVersionCmd.AddCommand(apiVersionListCmd)
+
+	RootCmd.AddCommand(apiVersionCmd)
+}
 
 var apiVersionCmd = &cobra.Command{
 	Use:   "apiversion",
@@ -15,6 +22,7 @@ var apiVersionCmd = &cobra.Command{
 	Example: `
   force apiversion
   force apiversion 40.0
+  force apiversion list
 `,
 	Args:                  cobra.MaximumNArgs(1),
 	DisableFlagsInUseLine: true,
@@ -27,20 +35,42 @@ var apiVersionCmd = &cobra.Command{
 	},
 }
 
-func init() {
-	RootCmd.AddCommand(apiVersionCmd)
+var apiVersionListCmd = &cobra.Command{
+	Use:   "list",
+	Short: "List API versions supported by org",
+	Example: `
+  force apiversion list
+`,
+	Args:                  cobra.MaximumNArgs(0),
+	DisableFlagsInUseLine: true,
+	Run: func(cmd *cobra.Command, args []string) {
+		json, _ := cmd.Flags().GetBool("json")
+		listApiVersions(json)
+	},
 }
 
 func setApiVersion(apiVersionNumber string) {
-	matched, err := regexp.MatchString("^\\d{2}\\.0$", apiVersionNumber)
+	err := force.UpdateApiVersion(apiVersionNumber)
 	if err != nil {
 		ErrorAndExit("%v", err)
 	}
-	if !matched {
-		ErrorAndExit("apiversion must be in the form of nn.0.")
-	}
-	err = force.UpdateApiVersion(apiVersionNumber)
+}
+
+func listApiVersions(jsonOutput bool) {
+	data, err := force.GetAbsolute("/services/data")
 	if err != nil {
-		ErrorAndExit("%v", err)
+		ErrorAndExit(err.Error())
+	}
+	if jsonOutput {
+		fmt.Println(data)
+		return
+	}
+	var versions []map[string]string
+	err = json.Unmarshal([]byte(data), &versions)
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
+	for _, v := range versions {
+		fmt.Printf("%s (%s)\n", v["version"], v["label"])
 	}
 }

@@ -15,8 +15,9 @@ force rest put <url> [file] [flags]
 ### Options inherited from parent commands
 
 ```
-  -A, --absolute           use URL as-is (do not prepend /services/data/vXX.0)
-  -a, --account username   account username to use
+  -A, --absolute            use URL as-is (do not prepend /services/data/vXX.0)
+  -a, --account username    account username to use
+  -V, --apiversion string   API version to use
 ```
 
 ### SEE ALSO

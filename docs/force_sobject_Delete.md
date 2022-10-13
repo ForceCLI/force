@@ -15,7 +15,8 @@ force sobject Delete <object>
 ### Options inherited from parent commands
 
 ```
-  -a, --account username   account username to use
+  -a, --account username    account username to use
+  -V, --apiversion string   API version to use
 ```
 
 ### SEE ALSO

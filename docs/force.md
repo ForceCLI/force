@@ -9,8 +9,9 @@ force
 ### Options
 
 ```
-  -a, --account username   account username to use
-  -h, --help               help for force
+  -a, --account username    account username to use
+  -V, --apiversion string   API version to use
+  -h, --help                help for force
 ```
 
 ### SEE ALSO

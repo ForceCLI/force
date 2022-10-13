@@ -9,7 +9,6 @@ force datapipe update [flags]
 ### Options
 
 ```
-  -v, --apiversion string      script content (default "45.0")
   -h, --help                   help for update
   -l, --masterlabel string     master label
   -n, --name string            data pipeline name
@@ -20,7 +19,8 @@ force datapipe update [flags]
 ### Options inherited from parent commands
 
 ```
-  -a, --account username   account username to use
+  -a, --account username    account username to use
+  -V, --apiversion string   API version to use
 ```
 
 ### SEE ALSO

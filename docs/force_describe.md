@@ -21,7 +21,8 @@ Describe the types of metadata available in the org
 ### Options inherited from parent commands
 
 ```
-  -a, --account username   account username to use
+  -a, --account username    account username to use
+  -V, --apiversion string   API version to use
 ```
 
 ### SEE ALSO
