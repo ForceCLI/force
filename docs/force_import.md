@@ -24,8 +24,10 @@ force import [flags]
   -c, --checkonly           set check only
   -d, --directory string    relative path to package.xml (default "metadata")
   -h, --help                help for import
+  -w, --ignorecoverage      suppress code coverage warnings
   -i, --ignorewarnings      set ignore warnings
   -p, --purgeondelete       set purge on delete
+  -q, --quiet               only output failures
   -r, --rollbackonerror     set roll back on error
   -t, --runalltests         set run all tests
       --test strings        Test(s) to run
