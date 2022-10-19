@@ -10,11 +10,13 @@ import (
 	"strings"
 
 	. "github.com/ForceCLI/force/error"
+	"github.com/ForceCLI/force/lib"
 	. "github.com/ForceCLI/force/lib"
 	"github.com/spf13/cobra"
 )
 
 func init() {
+	importCmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "only output failures")
 	importCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "give more verbose output")
 	importCmd.Flags().BoolVarP(&rollBackOnErrorFlag, "rollbackonerror", "r", false, "set roll back on error")
 	importCmd.Flags().BoolVarP(&runAllTestsFlag, "runalltests", "t", false, "set run all tests")
@@ -24,6 +26,7 @@ func init() {
 	importCmd.Flags().BoolVarP(&allowMissingFilesFlag, "allowmissingfiles", "m", false, "set allow missing files")
 	importCmd.Flags().BoolVarP(&autoUpdatePackageFlag, "autoupdatepackage", "u", false, "set auto update package")
 	importCmd.Flags().BoolVarP(&ignoreWarningsFlag, "ignorewarnings", "i", false, "set ignore warnings")
+	importCmd.Flags().BoolVarP(&ignoreCodeCoverageWarnings, "ignorecoverage", "w", false, "suppress code coverage warnings")
 	importCmd.Flags().StringVarP(&directory, "directory", "d", "metadata", "relative path to package.xml")
 	importCmd.Flags().StringSliceVarP(&testsToRun, "test", "", []string{}, "Test(s) to run")
 	RootCmd.AddCommand(importCmd)
@@ -44,17 +47,19 @@ var importCmd = &cobra.Command{
 }
 
 var (
-	testsToRun            metaName
-	rollBackOnErrorFlag   bool
-	runAllTestsFlag       bool
-	testLevelFlag         string
-	checkOnlyFlag         bool
-	purgeOnDeleteFlag     bool
-	allowMissingFilesFlag bool
-	autoUpdatePackageFlag bool
-	ignoreWarningsFlag    bool
-	directory             string
-	verbose               bool
+	testsToRun                 metaName
+	rollBackOnErrorFlag        bool
+	runAllTestsFlag            bool
+	testLevelFlag              string
+	checkOnlyFlag              bool
+	purgeOnDeleteFlag          bool
+	allowMissingFilesFlag      bool
+	autoUpdatePackageFlag      bool
+	ignoreWarningsFlag         bool
+	ignoreCodeCoverageWarnings bool
+	directory                  string
+	verbose                    bool
+	quiet                      bool
 )
 
 func runImport() {
@@ -117,6 +122,10 @@ func runImport() {
 	}
 	DeploymentOptions.RunTests = testsToRun
 
+	if quiet {
+		var l quietLogger
+		lib.Log = l
+	}
 	result, err := force.Metadata.Deploy(files, DeploymentOptions)
 	problems := result.Details.ComponentFailures
 	successes := result.Details.ComponentSuccesses
@@ -127,27 +136,30 @@ func runImport() {
 		ErrorAndExit(err.Error())
 	}
 
-	fmt.Printf("\nSuccesses - %d\n", len(successes))
-	if verbose {
-		for _, success := range successes {
-			if success.FullName != "package.xml" {
-				verb := "unchanged"
-				if success.Changed {
-					verb = "changed"
-				} else if success.Deleted {
-					verb = "deleted"
-				} else if success.Created {
-					verb = "created"
+	if !quiet {
+		fmt.Printf("\nSuccesses - %d\n", len(successes))
+		if verbose {
+			for _, success := range successes {
+				if success.FullName != "package.xml" {
+					verb := "unchanged"
+					if success.Changed {
+						verb = "changed"
+					} else if success.Deleted {
+						verb = "deleted"
+					} else if success.Created {
+						verb = "created"
+					}
+					fmt.Printf("%s\n\tstatus: %s\n\tid=%s\n", success.FullName, verb, success.Id)
 				}
-				fmt.Printf("%s\n\tstatus: %s\n\tid=%s\n", success.FullName, verb, success.Id)
 			}
 		}
-
 	}
 
-	fmt.Printf("\nTest Successes - %d\n", len(testSuccesses))
-	for _, failure := range testSuccesses {
-		fmt.Printf("  [PASS]  %s::%s\n", failure.Name, failure.MethodName)
+	if !quiet {
+		fmt.Printf("\nTest Successes - %d\n", len(testSuccesses))
+		for _, failure := range testSuccesses {
+			fmt.Printf("  [PASS]  %s::%s\n", failure.Name, failure.MethodName)
+		}
 	}
 
 	fmt.Printf("\nFailures - %d\n", len(problems))
@@ -165,7 +177,7 @@ func runImport() {
 		fmt.Println(failure.StackTrace)
 	}
 
-	if len(codeCoverageWarnings) > 0 {
+	if !ignoreCodeCoverageWarnings && len(codeCoverageWarnings) > 0 {
 		fmt.Printf("\nCode Coverage Warnings - %d\n", len(codeCoverageWarnings))
 		for _, warning := range codeCoverageWarnings {
 			fmt.Printf("\n %s: %s\n", warning.Name, warning.Message)
@@ -182,5 +194,12 @@ func runImport() {
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
-	fmt.Printf("Imported from %s\n", root)
+	if !quiet {
+		fmt.Printf("Imported from %s\n", root)
+	}
+}
+
+type quietLogger struct{}
+
+func (l quietLogger) Info(args ...interface{}) {
 }
