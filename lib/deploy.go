@@ -154,7 +154,7 @@ func processDeployResults(result ForceCheckDeploymentStatusResult, byName bool, 
 func DeployPackage(force *Force, resourcepaths []string, opts *ForceDeployOptions) {
 	for _, name := range resourcepaths {
 		zipfile, err := ioutil.ReadFile(name)
-		result, err := force.Metadata.DeployZipFile(force.Metadata.MakeDeploySoap(*opts), zipfile)
+		result, err := force.Metadata.DeployZipFile(zipfile, *opts)
 		byName := false
 		namePaths := make(map[string]string)
 		err = processDeployResults(result, byName, namePaths, err)

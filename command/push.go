@@ -27,14 +27,14 @@ var (
 
 func init() {
 	// Deploy options
-	pushCmd.Flags().BoolVarP(&rollBackOnErrorFlag, "rollbackonerror", "r", false, "set roll back on error")
-	pushCmd.Flags().BoolVar(&runAllTestsFlag, "runalltests", false, "set run all tests")
-	pushCmd.Flags().StringVarP(&testLevelFlag, "testlevel", "l", "NoTestRun", "set test level")
-	pushCmd.Flags().BoolVarP(&checkOnlyFlag, "checkonly", "c", false, "set check only")
-	pushCmd.Flags().BoolVarP(&purgeOnDeleteFlag, "purgeondelete", "p", false, "set purge on delete")
-	pushCmd.Flags().BoolVarP(&allowMissingFilesFlag, "allowmissingfiles", "m", false, "set allow missing files")
-	pushCmd.Flags().BoolVarP(&autoUpdatePackageFlag, "autoupdatepackage", "u", false, "set auto update package")
-	pushCmd.Flags().BoolVarP(&ignoreWarningsFlag, "ignorewarnings", "i", false, "set ignore warnings")
+	pushCmd.Flags().BoolP("rollbackonerror", "r", false, "roll back deployment on error")
+	pushCmd.Flags().Bool("runalltests", false, "run all tests (equivalent to --testlevel RunAllTestsInOrg)")
+	pushCmd.Flags().StringP("testlevel", "l", "NoTestRun", "test level")
+	pushCmd.Flags().BoolP("checkonly", "c", false, "check only deploy")
+	pushCmd.Flags().BoolP("purgeondelete", "p", false, "purge metadata from org on delete")
+	pushCmd.Flags().BoolP("allowmissingfiles", "m", false, "set allow missing files")
+	pushCmd.Flags().BoolP("autoupdatepackage", "u", false, "set auto update package")
+	pushCmd.Flags().BoolP("ignorewarnings", "i", false, "ignore warnings")
 
 	// Ways to push
 	pushCmd.Flags().StringSliceVarP(&resourcepaths, "filepath", "f", []string{}, "Path to resource(s)")
@@ -63,15 +63,16 @@ File path can be specified as - to read from stdin; see examples
 `,
 	DisableFlagsInUseLine: false,
 	Run: func(cmd *cobra.Command, args []string) {
+		options := getDeploymentOptions(cmd)
 		if cmd.Flags().Changed("test") && len(testsToRun) == 0 {
 			// NoTestRun can't be used when deploying to production, but
 			// RunSpecifiedTests can be used with an empty set of tests by passing
 			// `--test ''`
-			testLevelFlag = "RunSpecifiedTests"
+			options.TestLevel = "RunSpecifiedTests"
 			testsToRun = []string{""}
 		}
 		metadataType, _ := cmd.Flags().GetString("type")
-		runPush(metadataType, args)
+		runPush(metadataType, args, options)
 	},
 }
 
@@ -87,9 +88,9 @@ func replaceComponentWithBundle(inputPathToFile string) string {
 	return inputPathToFile
 }
 
-func runPush(metadataType string, args []string) {
+func runPush(metadataType string, args []string, options ForceDeployOptions) {
 	if strings.ToLower(metadataType) == "package" {
-		pushPackage()
+		pushPackage(options)
 		return
 	}
 	// Treat trailing args as file paths
@@ -124,18 +125,18 @@ func runPush(metadataType string, args []string) {
 		resourcepaths = resourcepathsToPush
 
 		validatePushByMetadataTypeCommand(metadataType)
-		PushByPaths(force, resourcepaths, false, namePaths, deployOpts())
+		PushByPaths(force, resourcepaths, false, namePaths, &options)
 	} else {
 		if len(metadataName) > 0 {
 			if len(metadataType) != 0 {
 				validatePushByMetadataTypeCommand(metadataType)
-				pushByMetadataType()
+				pushByMetadataType(options)
 			} else {
 				ErrorAndExit("The -type (-t) parameter is required.")
 			}
 		} else {
 			validatePushByMetadataTypeCommand(metadataType)
-			pushByMetadataType()
+			pushByMetadataType(options)
 		}
 	}
 }
@@ -193,7 +194,7 @@ func wildCardSearch(metaFolder string, name string) []string {
 	return ret
 }
 
-func pushPackage() {
+func pushPackage(options ForceDeployOptions) {
 	if len(resourcepaths) == 0 {
 		var packageFolder = findPackageFolder(metadataName[0])
 		zipResource(packageFolder, metadataName[0])
@@ -201,7 +202,7 @@ func pushPackage() {
 		//var dir, _ = os.Getwd();
 		//ErrorAndExit(fmt.Sprintf("No resource path sepcified. %s, %s", metadataName[0], dir))
 	}
-	DeployPackage(force, resourcepaths, deployOpts())
+	DeployPackage(force, resourcepaths, &options)
 }
 
 // Return the name of the first element of an XML file. We need this
@@ -303,7 +304,7 @@ func FilenameMatchesMetadataName(filename string, metadataName string) bool {
 // name(s) passed on the -name flag(s). This method also looks for unpacked
 // static resource so that it can repack them and update the actual ".resource"
 // file.
-func pushByMetadataType() {
+func pushByMetadataType(options ForceDeployOptions) {
 	// TODO: get all files that match these types and make a list out of them
 
 	// Walk the metaFolder obtained during validation and compile a list of resources
@@ -378,7 +379,7 @@ func pushByMetadataType() {
 	})
 
 	// Push these files to the package maker/sender
-	PushByPaths(force, files, true, namePaths, deployOpts())
+	PushByPaths(force, files, true, namePaths, &options)
 }
 
 // Just zip up what ever is in the path
@@ -411,20 +412,4 @@ func zipResource(path string, topLevelFolder string) {
 	zipdata := zipfile.Bytes()
 	ioutil.WriteFile(path+".resource", zipdata, 0644)
 	return
-}
-
-func deployOpts() *ForceDeployOptions {
-	var opts ForceDeployOptions
-	opts.AllowMissingFiles = allowMissingFilesFlag
-	opts.AutoUpdatePackage = autoUpdatePackageFlag
-	opts.CheckOnly = checkOnlyFlag
-	opts.IgnoreWarnings = ignoreWarningsFlag
-	opts.PurgeOnDelete = purgeOnDeleteFlag
-	opts.RollbackOnError = rollBackOnErrorFlag
-	opts.TestLevel = testLevelFlag
-	if runAllTestsFlag {
-		opts.TestLevel = "RunAllTestsInOrg"
-	}
-	opts.RunTests = testsToRun
-	return &opts
 }
