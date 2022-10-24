@@ -96,15 +96,17 @@ type ForceConnectedApp struct {
 }
 
 type ComponentFailure struct {
-	Changed     bool   `xml:"changed"`
-	Created     bool   `xml:"created"`
-	Deleted     bool   `xml:"deleted"`
-	FileName    string `xml:"fileName"`
-	FullName    string `xml:"fullName"`
-	LineNumber  int    `xml:"lineNumber"`
-	Problem     string `xml:"problem"`
-	ProblemType string `xml:"problemType"`
-	Success     bool   `xml:"success"`
+	Changed       bool   `xml:"changed"`
+	ColumnNumber  int    `xml:"columnNumber"`
+	ComponentType string `xml:"componentType"`
+	Created       bool   `xml:"created"`
+	Deleted       bool   `xml:"deleted"`
+	FileName      string `xml:"fileName"`
+	FullName      string `xml:"fullName"`
+	LineNumber    int    `xml:"lineNumber"`
+	Problem       string `xml:"problem"`
+	ProblemType   string `xml:"problemType"`
+	Success       bool   `xml:"success"`
 }
 
 type ComponentSuccess struct {
@@ -170,6 +172,11 @@ type ForceCheckDeploymentStatusResult struct {
 	Status                   string           `xml:"status"`
 	StateDetail              string           `xml:"stateDetail"`
 	Success                  bool             `xml:"success"`
+}
+
+type ForceCancelDeployResult struct {
+	Done bool   `xml:"done"`
+	Id   string `xml:"id"`
 }
 
 type ForceMetadataDeployProblem struct {
@@ -717,6 +724,20 @@ func (results ForceCheckDeploymentStatusResult) String() string {
 	return fmt.Sprintf("Status: %s%s %s", results.Status, complete, results.StateDetail)
 }
 
+func (fm *ForceMetadata) CancelDeploy(id string) (ForceCancelDeployResult, error) {
+	var cancelResult ForceCancelDeployResult
+	body, err := fm.soapExecute("cancelDeploy", fmt.Sprintf("<id>%s</id>", id))
+	if err != nil {
+		return cancelResult, err
+	}
+
+	if err = xml.Unmarshal(body, &cancelResult); err != nil {
+		return cancelResult, err
+	}
+
+	return cancelResult, nil
+}
+
 func (fm *ForceMetadata) CheckDeployStatus(id string) (results ForceCheckDeploymentStatusResult, err error) {
 	body, err := fm.soapExecute("checkDeployStatus", fmt.Sprintf("<id>%s</id><includeDetails>true</includeDetails>", id))
 	if err != nil {
@@ -1225,36 +1246,53 @@ func (fm *ForceMetadata) DeployWithTempFile(soap string, filename string) {
 	PushByPaths(fm.Force, []string{xmlfile}, byName, namePaths, new(ForceDeployOptions))
 }
 
+// Deploy metadata and wait unti deploy is complete, then return results
 func (fm *ForceMetadata) Deploy(files ForceMetadataFiles, options ForceDeployOptions) (results ForceCheckDeploymentStatusResult, err error) {
-	soap := fm.MakeDeploySoap(options)
-
 	zipfile, err := fm.MakeZip(files)
 
-	results, err = fm.DeployZipFile(soap, zipfile)
+	results, err = fm.DeployZipFile(zipfile, options)
 	return
 }
 
-func (fm *ForceMetadata) DeployZipFile(soap string, zipfile []byte) (results ForceCheckDeploymentStatusResult, err error) {
-	encoded := base64.StdEncoding.EncodeToString(zipfile)
-	body, err := fm.soapExecute("deploy", fmt.Sprintf(soap, encoded))
+// Start a deployment of metadata and return the deploy id
+func (fm *ForceMetadata) StartDeploy(files ForceMetadataFiles, options ForceDeployOptions) (string, error) {
+	zipfile, err := fm.MakeZip(files)
 	if err != nil {
-		return
+		return "", err
 	}
+	return fm.startDeployZipFile(zipfile, options)
+}
 
-	var status struct {
-		Id string `xml:"Body>deployResponse>result>id"`
-	}
-	if err = xml.Unmarshal(body, &status); err != nil {
-		return
+func (fm *ForceMetadata) DeployZipFile(zipfile []byte, options ForceDeployOptions) (results ForceCheckDeploymentStatusResult, err error) {
+	deployId, err := fm.startDeployZipFile(zipfile, options)
+	if err != nil {
+		return results, err
 	}
 	for {
-		results, err = fm.CheckDeployStatus(status.Id)
+		results, err = fm.CheckDeployStatus(deployId)
 		if err != nil || results.Done {
 			return
 		}
 		Log.Info(results)
 		time.Sleep(5000 * time.Millisecond)
 	}
+}
+
+func (fm *ForceMetadata) startDeployZipFile(zipfile []byte, options ForceDeployOptions) (string, error) {
+	soap := fm.MakeDeploySoap(options)
+	encoded := base64.StdEncoding.EncodeToString(zipfile)
+	body, err := fm.soapExecute("deploy", fmt.Sprintf(soap, encoded))
+	if err != nil {
+		return "", err
+	}
+
+	var status struct {
+		Id string `xml:"Body>deployResponse>result>id"`
+	}
+	if err = xml.Unmarshal(body, &status); err != nil {
+		return "", err
+	}
+	return status.Id, nil
 }
 
 func (fm *ForceMetadata) DeployRecentValidation(validationId string) (results ForceCheckDeploymentStatusResult, err error) {

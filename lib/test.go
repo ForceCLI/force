@@ -2,8 +2,14 @@ package lib
 
 import (
 	"encoding/xml"
-	"errors"
+	"fmt"
+	"os"
 	"strings"
+	"time"
+
+	"github.com/pkg/errors"
+
+	"k8s.io/kubernetes/test/utils/junit"
 )
 
 type TestRunner interface {
@@ -118,4 +124,152 @@ func (partner *ForcePartner) RunTests(tests []string, namespace string) (output 
 	}
 	output = result
 	return
+}
+
+func (c TestCoverage) ToJunit() (string, error) {
+	testSuite := junit.TestSuite{
+		Name:      "apex",
+		Timestamp: time.Now(),
+	}
+	for index := range c.SMethodNames {
+		testSuite.TestCases = append(testSuite.TestCases, &junit.TestCase{
+			Name:      c.SMethodNames[index],
+			Classname: c.SClassNames[index],
+		})
+	}
+
+	for index := range c.FMethodNames {
+		method := junit.TestCase{
+			Name:      c.FMethodNames[index],
+			Classname: c.FClassNames[index],
+		}
+		method.Failures = append(method.Failures, &junit.Failure{
+			Message: c.FMessage[index],
+			Value:   c.FStackTrace[index],
+		})
+		testSuite.TestCases = append(testSuite.TestCases, &method)
+	}
+	testSuite.Update()
+	output, err := xml.MarshalIndent(testSuite, "", "   ")
+	if err != nil {
+		return "", errors.Wrap(err, "Unable to format result for junit")
+	}
+	return string(output), nil
+}
+
+func (r ForceCheckDeploymentStatusResult) ToString(duration float64, verbose bool) string {
+	c := r.Details
+	problems := c.ComponentFailures
+	successes := c.ComponentSuccesses
+	testFailures := c.RunTestResult.TestFailures
+	testSuccesses := c.RunTestResult.TestSuccesses
+	var b strings.Builder
+
+	fmt.Fprintf(&b, "\nSuccesses - %d\n", len(successes))
+	if verbose {
+		for _, success := range successes {
+			if success.FullName != "package.xml" {
+				verb := "unchanged"
+				if success.Changed {
+					verb = "changed"
+				} else if success.Deleted {
+					verb = "deleted"
+				} else if success.Created {
+					verb = "created"
+				}
+				fmt.Fprintf(&b, "%s\n\tstatus: %s\n\tid=%s\n", success.FullName, verb, success.Id)
+			}
+		}
+	}
+
+	fmt.Fprintf(&b, "\nTest Successes - %d\n", len(testSuccesses))
+	for _, success := range testSuccesses {
+		fmt.Fprintf(&b, "  [PASS]  %s::%s\n", success.Name, success.MethodName)
+	}
+
+	fmt.Fprintf(&b, "\nFailures - %d\n", len(problems))
+	for _, problem := range problems {
+		if problem.FullName == "" {
+			fmt.Println(problem.Problem)
+		} else {
+			fmt.Fprintf(&b, "\"%s\", line %d: %s %s\n", problem.FullName, problem.LineNumber, problem.ProblemType, problem.Problem)
+		}
+	}
+
+	fmt.Fprintf(&b, "\nTest Failures - %d\n", len(testFailures))
+	for _, failure := range testFailures {
+		fmt.Fprintf(&b, "\n  [FAIL]  %s::%s: %s\n", failure.Name, failure.MethodName, failure.Message)
+		fmt.Fprintln(&b, failure.StackTrace)
+	}
+	return b.String()
+}
+
+func (r ForceCheckDeploymentStatusResult) ToJunit(duration float64) (string, error) {
+	c := r.Details
+	hostname, _ := os.Hostname()
+	testSuite := junit.TestSuite{
+		Name:      "apex",
+		Time:      duration,
+		Hostname:  hostname,
+		Timestamp: time.Now(),
+	}
+	problems := c.ComponentFailures
+	testFailures := c.RunTestResult.TestFailures
+	testSuccesses := c.RunTestResult.TestSuccesses
+	for _, problem := range problems {
+		if problem.FullName == "" {
+			e := junit.TestCase{
+				Name:      problem.Problem,
+				Classname: "UNKNOWN",
+			}
+			e.Errors = append(e.Errors, &junit.Error{Message: problem.Problem})
+			testSuite.TestCases = append(testSuite.TestCases, &e)
+		} else {
+			e := junit.TestCase{
+				Name:      problem.FullName,
+				Classname: problem.ComponentType,
+			}
+			e.Errors = append(e.Errors, &junit.Error{
+				Type:    problem.ProblemType,
+				Message: problem.Problem,
+				Value:   fmt.Sprintf("Line: %d, Column: %d", problem.LineNumber, problem.ColumnNumber),
+			})
+			testSuite.TestCases = append(testSuite.TestCases, &e)
+		}
+	}
+
+	for _, success := range testSuccesses {
+		testSuite.TestCases = append(testSuite.TestCases, &junit.TestCase{
+			Name:      success.MethodName,
+			Classname: success.Name,
+			Time:      float64(success.Time),
+		})
+	}
+
+	for _, failure := range testFailures {
+		e := junit.TestCase{
+			Name:      failure.MethodName,
+			Classname: failure.Name,
+			Time:      float64(failure.Time),
+		}
+		e.Failures = append(e.Failures, &junit.Failure{
+			Message: failure.Message,
+			Value:   failure.StackTrace,
+		})
+		testSuite.TestCases = append(testSuite.TestCases, &e)
+	}
+	testSuite.Update()
+	output, err := xml.MarshalIndent(testSuite, "", "   ")
+	if err != nil {
+		return "", errors.Wrap(err, "Unable to format result for junit")
+	}
+	return string(output), nil
+}
+
+func (r ForceCheckDeploymentStatusResult) HasComponentFailures() bool {
+	return len(r.Details.ComponentFailures) > 0
+}
+
+func (r ForceCheckDeploymentStatusResult) HasTestFailures() bool {
+	return len(r.Details.RunTestResult.TestFailures) > 0
 }

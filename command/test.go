@@ -20,6 +20,7 @@ var (
 func init() {
 	testCmd.Flags().BoolVarP(&verboselogging, "verbose", "v", false, "set verbose logging")
 	testCmd.Flags().StringVarP(&namespaceTestFlag, "namespace", "n", "", "namespace to run tests in")
+	testCmd.Flags().StringP("reporttype", "f", "text", "report type format (text or junit)")
 	testCmd.Flags().StringVarP(&classFlag, "class", "c", "", "class to run tests from")
 	RootCmd.AddCommand(testCmd)
 }
@@ -41,7 +42,8 @@ Examples:
 `,
 
 	Run: func(cmd *cobra.Command, args []string) {
-		runTests(args)
+		reportFormat, _ := cmd.Flags().GetString("reporttype")
+		runTests(reportFormat, args)
 	},
 }
 
@@ -104,7 +106,7 @@ func GenerateResults(output TestCoverage) string {
 	return result
 }
 
-func runTests(args []string) {
+func runTests(reportFormat string, args []string) {
 	if len(args) < 1 && classFlag == "" {
 		ErrorAndExit("must specify tests to run")
 	}
@@ -114,23 +116,34 @@ func runTests(args []string) {
 	for i, t := range args {
 		args[i] = strings.Replace(t, "::", ".", 1)
 	}
-	output, err := RunTests(force.Partner, args, namespaceTestFlag)
+	result, err := RunTests(force.Partner, args, namespaceTestFlag)
 
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
 	if verboselogging {
-		fmt.Println(output.Log)
+		fmt.Println(result.Log)
 		fmt.Println()
 	}
 
-	results := GenerateResults(output)
-	fmt.Print(results)
+	junitOutput := reportFormat == "junit"
+	switch {
+	case junitOutput:
+		output, err := result.ToJunit()
+		if err != nil {
+			ErrorAndExit(err.Error())
+		}
+		fmt.Println(output)
+		return
+	default:
+		results := GenerateResults(result)
+		fmt.Print(results)
 
-	success := len(output.FMethodNames) == 0
-	// Handle notifications
-	desktop.NotifySuccess("test", success)
-	if !success {
-		ErrorAndExit("Tests Failed")
+		success := len(result.FMethodNames) == 0
+		// Handle notifications
+		desktop.NotifySuccess("test", success)
+		if !success {
+			ErrorAndExit("Tests Failed")
+		}
 	}
 }
