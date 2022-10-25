@@ -28,7 +28,7 @@ func init() {
 	importCmd.Flags().BoolP("autoupdatepackage", "u", false, "set auto update package")
 	importCmd.Flags().BoolP("ignorewarnings", "i", false, "ignore warnings")
 
-	importCmd.Flags().StringSliceVarP(&testsToRun, "test", "", []string{}, "Test(s) to run")
+	importCmd.Flags().StringSliceP("test", "", []string{}, "Test(s) to run")
 
 	importCmd.Flags().BoolVarP(&ignoreCodeCoverageWarnings, "ignorecoverage", "w", false, "suppress code coverage warnings")
 	importCmd.Flags().BoolVarP(&exitCodeOnTestFailure, "erroronfailure", "E", true, "exit with an error code if any tests fail")
@@ -60,7 +60,6 @@ var importCmd = &cobra.Command{
 }
 
 var (
-	testsToRun                 metaName
 	quiet                      bool
 	verbose                    bool
 	exitCodeOnTestFailure      bool
@@ -208,11 +207,18 @@ func getDeploymentOptions(cmd *cobra.Command) ForceDeployOptions {
 	deploymentOptions.PurgeOnDelete, _ = cmd.Flags().GetBool("purgeondelete")
 	deploymentOptions.RollbackOnError, _ = cmd.Flags().GetBool("rollbackonerror")
 	deploymentOptions.TestLevel, _ = cmd.Flags().GetString("testlevel")
+	deploymentOptions.RunTests, _ = cmd.Flags().GetStringSlice("test")
 	runAllTests, _ := cmd.Flags().GetBool("runalltests")
 	if runAllTests {
 		deploymentOptions.TestLevel = "RunAllTestsInOrg"
 	}
-	deploymentOptions.RunTests = testsToRun
+	if cmd.Flags().Changed("test") && len(deploymentOptions.RunTests) == 0 {
+		// NoTestRun can't be used when deploying to production, but
+		// RunSpecifiedTests can be used with an empty set of tests by passing
+		// `--test ''`
+		deploymentOptions.TestLevel = "RunSpecifiedTests"
+		deploymentOptions.RunTests = []string{""}
+	}
 	return deploymentOptions
 }
 

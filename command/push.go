@@ -38,7 +38,7 @@ func init() {
 
 	// Ways to push
 	pushCmd.Flags().StringSliceVarP(&resourcepaths, "filepath", "f", []string{}, "Path to resource(s)")
-	pushCmd.Flags().StringSliceVar(&testsToRun, "test", []string{}, "Test(s) to run")
+	pushCmd.Flags().StringSlice("test", []string{}, "Test(s) to run")
 	pushCmd.Flags().StringP("type", "t", "", "Metatdata type")
 	pushCmd.Flags().StringSliceVarP(&metadataName, "name", "n", []string{}, "name of metadata object")
 	RootCmd.AddCommand(pushCmd)
@@ -64,13 +64,6 @@ File path can be specified as - to read from stdin; see examples
 	DisableFlagsInUseLine: false,
 	Run: func(cmd *cobra.Command, args []string) {
 		options := getDeploymentOptions(cmd)
-		if cmd.Flags().Changed("test") && len(testsToRun) == 0 {
-			// NoTestRun can't be used when deploying to production, but
-			// RunSpecifiedTests can be used with an empty set of tests by passing
-			// `--test ''`
-			options.TestLevel = "RunSpecifiedTests"
-			testsToRun = []string{""}
-		}
 		metadataType, _ := cmd.Flags().GetString("type")
 		runPush(metadataType, args, options)
 	},
