@@ -72,3 +72,8 @@ func Execute() {
 		os.Exit(1)
 	}
 }
+
+type quietLogger struct{}
+
+func (l quietLogger) Info(args ...interface{}) {
+}
