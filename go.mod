@@ -10,6 +10,7 @@ require (
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869
 	github.com/devangel/config v0.0.0-20160113214547-0bb295da1e55
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
+	github.com/olekukonko/tablewriter v0.0.5
 	github.com/onsi/ginkgo v1.12.0
 	github.com/onsi/gomega v1.20.1
 	github.com/pkg/errors v0.9.1
@@ -27,6 +28,7 @@ require (
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/kr/text v0.1.0 // indirect
+	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect

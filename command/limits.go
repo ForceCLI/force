@@ -1,11 +1,13 @@
 package command
 
 import (
-	"fmt"
+	"os"
 	"sort"
+	"strconv"
 
 	. "github.com/ForceCLI/force/error"
 	. "github.com/ForceCLI/force/lib"
+	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 )
 
@@ -40,6 +42,8 @@ func runLimits() {
 }
 
 func printLimits(result map[string]ForceLimit) {
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"Limit", "Maximum", "Remaining"})
 	//sort keys
 	var keys []string
 	for k := range result {
@@ -47,8 +51,10 @@ func printLimits(result map[string]ForceLimit) {
 	}
 	sort.Strings(keys)
 
-	//print map
 	for _, k := range keys {
-		fmt.Println(k, "\n ", result[k].Max, "maximum\n", result[k].Remaining, "remaining\n ")
+		table.Append([]string{k, strconv.FormatInt(result[k].Max, 10), strconv.FormatInt(result[k].Remaining, 10)})
+	}
+	if table.NumLines() > 0 {
+		table.Render()
 	}
 }
