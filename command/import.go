@@ -239,8 +239,3 @@ func stopDeployUponSignal(force *Force, deployId string) {
 		}
 	}()
 }
-
-type quietLogger struct{}
-
-func (l quietLogger) Info(args ...interface{}) {
-}
