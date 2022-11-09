@@ -16,6 +16,7 @@ var BatchInfoTemplate = `
 Id 			%s
 JobId 			%s
 State 			%s
+StateMessage		%s
 CreatedDate 		%s
 SystemModstamp 		%s
 NumberRecordsProcessed  %d
@@ -90,7 +91,7 @@ func DisplayBatchList(batchInfos []BatchInfo) {
 }
 
 func DisplayBatchInfo(batchInfo BatchInfo, w io.Writer) {
-	fmt.Fprintf(w, BatchInfoTemplate, batchInfo.Id, batchInfo.JobId, batchInfo.State,
+	fmt.Fprintf(w, BatchInfoTemplate, batchInfo.Id, batchInfo.JobId, batchInfo.State, batchInfo.StateMessage,
 		batchInfo.CreatedDate, batchInfo.SystemModstamp,
 		batchInfo.NumberRecordsProcessed)
 }
