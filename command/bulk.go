@@ -68,6 +68,9 @@ func init() {
 		cmd.Flags().StringP("concurrencymode", "m", "Parallel", "Concurrency `mode`.  Valid options are Serial and Parallel.")
 		cmd.Flags().BoolP("wait", "w", false, "Wait for job to complete")
 	}
+	for _, cmd := range cmds[:len(cmds)-1] {
+		cmd.Flags().IntP("batchsize", "b", 10000, "Batch size")
+	}
 
 	bulkUpsertCmd.Flags().StringP("externalid", "e", "", "The external Id field for upserting data")
 	bulkUpsertCmd.MarkFlagRequired("externalid")
@@ -220,7 +223,8 @@ func runBulkCmd(cmd *cobra.Command, args []string) {
 	format, _ := cmd.Flags().GetString("format")
 	concurrencyMode, _ := cmd.Flags().GetString("concurrencymode")
 	wait, _ := cmd.Flags().GetBool("wait")
-	jobInfo, batchInfo := startBulkJob(cmd.Name(), file, objectType, externalId, format, concurrencyMode)
+	batchSize, _ := cmd.Flags().GetInt("batchsize")
+	jobInfo, batchInfo := startBulkJob(cmd.Name(), file, objectType, externalId, format, concurrencyMode, batchSize)
 	if !wait {
 		fmt.Printf("Job created ( %s ) - for job status use\n force bulk batch %s %s\n", jobInfo.Id, jobInfo.Id, batchInfo.Id)
 		return
@@ -243,12 +247,12 @@ func waitForJob(jobInfo JobInfo) {
 	}
 }
 
-func startBulkJob(jobType string, csvFilePath string, objectType string, externalId string, format string, concurrencyMode string) (JobInfo, BatchInfo) {
+func startBulkJob(jobType string, csvFilePath string, objectType string, externalId string, format string, concurrencyMode string, batchSize int) (JobInfo, BatchInfo) {
 	jobInfo, err := createBulkJob(objectType, jobType, format, externalId, concurrencyMode, nil)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
-	batchInfo, err := addBatchToJob(csvFilePath, jobInfo)
+	batchInfo, err := addBatchToJob(csvFilePath, jobInfo, batchSize)
 	closeBulkJob(jobInfo.Id)
 	if err != nil {
 		ErrorAndExit(err.Error())
@@ -415,8 +419,8 @@ func getBatchDetails(jobId string, batchId string) (batchInfo BatchInfo) {
 	return
 }
 
-func addBatchToJob(csvFilePath string, job JobInfo) (result BatchInfo, err error) {
-	batches, err := SplitCSV(csvFilePath, 10000)
+func addBatchToJob(csvFilePath string, job JobInfo, batchSize int) (result BatchInfo, err error) {
+	batches, err := SplitCSV(csvFilePath, batchSize)
 	if err != nil {
 		return
 	}
@@ -432,6 +436,9 @@ func addBatchToJob(csvFilePath string, job JobInfo) (result BatchInfo, err error
 }
 
 func SplitCSV(csvFilePath string, batchsize int) (batches []string, err error) {
+	if batchsize <= 0 {
+		return nil, fmt.Errorf("Invalid batch size.  Must be greater than zero.")
+	}
 	f, err := os.Open(csvFilePath)
 	if err != nil {
 		return
