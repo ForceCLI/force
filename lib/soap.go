@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"strings"
 )
 
@@ -107,6 +108,10 @@ func (s *Soap) Execute(action, query string) (response []byte, err error) {
 		return
 	}
 	defer res.Body.Close()
+	if res.Header.Get(http.CanonicalHeaderKey("x-sfdc-edge-err")) == "true" {
+		err = errors.New("Unexpected error from Salesforce Edge")
+		return
+	}
 	if res.StatusCode == 401 {
 		err = errors.New("authorization expired, please run `force login`")
 		return

@@ -132,15 +132,25 @@ func runImport(root string, options ForceDeployOptions, reportFormat string) {
 	}
 	stopDeployUponSignal(force, deployId)
 	var result ForceCheckDeploymentStatusResult
+	retrying := false
 	for {
 		result, err = force.Metadata.CheckDeployStatus(deployId)
 		if err != nil {
-			ErrorAndExit(err.Error())
+			if retrying {
+				ErrorAndExit(err.Error())
+			} else {
+				retrying = true
+				Log.Info(fmt.Sprintf("Received error checking deploy status: %s.  Will retry once before aborting.", err.Error()))
+			}
+		} else {
+			retrying = false
 		}
 		if result.Done {
 			break
 		}
-		Log.Info(result)
+		if !retrying {
+			Log.Info(result)
+		}
 		time.Sleep(5000 * time.Millisecond)
 	}
 	endTime := time.Now()

@@ -749,7 +749,8 @@ func (fm *ForceMetadata) CheckDeployStatus(id string) (results ForceCheckDeploym
 	}
 
 	if err = xml.Unmarshal(body, &deployResult); err != nil {
-		ErrorAndExit(err.Error())
+		err = errors.New("Error decoding SOAP body: " + err.Error())
+		return results, err
 	}
 
 	results = deployResult.Results
