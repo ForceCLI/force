@@ -9,6 +9,7 @@ force bulk upsert <External_Id_Field__c> <object> <file> [flags]
 ### Options
 
 ```
+  -b, --batchsize int          Batch size (default 10000)
   -m, --concurrencymode mode   Concurrency mode.  Valid options are Serial and Parallel. (default "Parallel")
   -e, --externalid string      The external Id field for upserting data
   -f, --format format          file format (default "CSV")

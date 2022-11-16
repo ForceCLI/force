@@ -32,16 +32,16 @@ force push [flags]
 ```
   -m, --allowmissingfiles   set allow missing files
   -u, --autoupdatepackage   set auto update package
-  -c, --checkonly           set check only
+  -c, --checkonly           check only deploy
   -f, --filepath strings    Path to resource(s)
   -h, --help                help for push
-  -i, --ignorewarnings      set ignore warnings
+  -i, --ignorewarnings      ignore warnings
   -n, --name strings        name of metadata object
-  -p, --purgeondelete       set purge on delete
-  -r, --rollbackonerror     set roll back on error
-      --runalltests         set run all tests
+  -p, --purgeondelete       purge metadata from org on delete
+  -r, --rollbackonerror     roll back deployment on error
+      --runalltests         run all tests (equivalent to --testlevel RunAllTestsInOrg)
       --test strings        Test(s) to run
-  -l, --testlevel string    set test level (default "NoTestRun")
+  -l, --testlevel string    test level (default "NoTestRun")
   -t, --type string         Metatdata type
 ```
 

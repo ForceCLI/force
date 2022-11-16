@@ -9,6 +9,7 @@ force bulk hardDelete <object> <file> [flags]
 ### Options
 
 ```
+  -b, --batchsize int          Batch size (default 10000)
   -m, --concurrencymode mode   Concurrency mode.  Valid options are Serial and Parallel. (default "Parallel")
   -f, --format format          file format (default "CSV")
   -h, --help                   help for hardDelete

@@ -5,11 +5,11 @@ Display current limits
 ### Synopsis
 
 
-	Use the limits command to display limits information for your organization.
+Use the limits command to display limits information for your organization.
 
-	 -- Max is the limit total for the organization.
+-- Max is the limit total for the organization.
 
-	 -- Remaining is the total number of calls or events left for the organization.
+-- Remaining is the total number of calls or events left for the organization.
 
 ```
 force limits [flags]
@@ -18,7 +18,8 @@ force limits [flags]
 ### Options
 
 ```
-  -h, --help   help for limits
+  -h, --help         help for limits
+  -w, --warn float   warning percentange.  highlight if remaining is less. (default 10)
 ```
 
 ### Options inherited from parent commands

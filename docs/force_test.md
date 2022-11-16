@@ -24,10 +24,11 @@ force test (all | classname... | classname.method...) [flags]
 ### Options
 
 ```
-  -c, --class string       class to run tests from
-  -h, --help               help for test
-  -n, --namespace string   namespace to run tests in
-  -v, --verbose            set verbose logging
+  -c, --class string        class to run tests from
+  -h, --help                help for test
+  -n, --namespace string    namespace to run tests in
+  -f, --reporttype string   report type format (text or junit) (default "text")
+  -v, --verbose             set verbose logging
 ```
 
 ### Options inherited from parent commands

@@ -19,20 +19,23 @@ force import [flags]
 ### Options
 
 ```
-  -m, --allowmissingfiles   set allow missing files
-  -u, --autoupdatepackage   set auto update package
-  -c, --checkonly           set check only
-  -d, --directory string    relative path to package.xml (default "metadata")
-  -h, --help                help for import
-  -w, --ignorecoverage      suppress code coverage warnings
-  -i, --ignorewarnings      set ignore warnings
-  -p, --purgeondelete       set purge on delete
-  -q, --quiet               only output failures
-  -r, --rollbackonerror     set roll back on error
-  -t, --runalltests         set run all tests
-      --test strings        Test(s) to run
-  -l, --testLevel string    set test level (default "NoTestRun")
-  -v, --verbose             give more verbose output
+  -m, --allowmissingfiles    set allow missing files
+  -u, --autoupdatepackage    set auto update package
+  -c, --checkonly            check only deploy
+  -d, --directory string     relative path to package.xml (default "src")
+  -E, --erroronfailure       exit with an error code if any tests fail (default true)
+  -h, --help                 help for import
+  -w, --ignorecoverage       suppress code coverage warnings
+  -i, --ignorewarnings       ignore warnings
+  -p, --purgeondelete        purge metadata from org on delete
+  -q, --quiet                only output failures
+  -f, --reporttype string    report type format (text or junit) (default "text")
+  -r, --rollbackonerror      roll back deployment on error
+  -t, --runalltests          run all tests (equivalent to --testlevel RunAllTestsInOrg)
+  -U, --suppressunexpected   suppress "An unexpected error occurred" messages (default true)
+      --test strings         Test(s) to run
+  -l, --testlevel string     test level (default "NoTestRun")
+  -v, --verbose              give more verbose output
 ```
 
 ### Options inherited from parent commands

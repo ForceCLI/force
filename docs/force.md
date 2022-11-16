@@ -39,6 +39,7 @@ force
 * [force open](force_open.md)	 - Open a browser window, logged into an authenticated Salesforce org
 * [force package](force_package.md)	 - Manage installed packages
 * [force password](force_password.md)	 - See password status or reset password
+* [force pubsub](force_pubsub.md)	 - 
 * [force push](force_push.md)	 - Deploy metadata from a local directory
 * [force query](force_query.md)	 - Execute a SOQL statement
 * [force quickdeploy](force_quickdeploy.md)	 - Quick deploy validation id
