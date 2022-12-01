@@ -634,6 +634,26 @@ func (f *Force) GetSobject(name string) (sobject ForceSobject, err error) {
 	return
 }
 
+func (f *Force) AbortableQueryAndSend(qs string, processor chan<- ForceRecord, abort <-chan bool, options ...func(*QueryOptions)) error {
+	defer func() {
+		close(processor)
+	}()
+
+	qopts := f.legacyQueryOptions(qs, options...)
+	err := query.Query(func(records []query.Record) bool {
+		for _, row := range records {
+			select {
+			case <-abort:
+				return false
+			default:
+				processor <- row.Raw
+			}
+		}
+		return true
+	}, qopts...)
+	return err
+}
+
 func (f *Force) QueryAndSend(qs string, processor chan<- ForceRecord, options ...func(*QueryOptions)) error {
 	defer func() {
 		close(processor)
