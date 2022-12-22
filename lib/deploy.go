@@ -134,6 +134,16 @@ func processDeployResults(result ForceCheckDeploymentStatusResult, byName bool, 
 		for _, warning := range codeCoverageWarnings {
 			fmt.Printf("\n %s: %s\n", warning.Name, warning.Message)
 		}
+		for _, c := range result.Details.RunTestResult.CodeCoverage {
+			component := c.Name
+			if c.Namespace != "" {
+				component = c.Namespace + "." + c.Name
+			}
+
+			for _, line := range c.LocationsNotCovered {
+				fmt.Printf("%s %s: Line %d not covered\n", c.Type, component, line.Line)
+			}
+		}
 	}
 
 	// Handle notifications
