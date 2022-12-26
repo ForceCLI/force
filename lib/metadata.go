@@ -138,6 +138,23 @@ type CodeCoverageWarning struct {
 	Message string `xml:"message"`
 }
 
+type CodeCoverage struct {
+	Id                     string               `xml:"id"`
+	LocationsNotCovered    []LocationNotCovered `xml:"locationsNotCovered"`
+	Name                   string               `xml:"name"`
+	Namespace              string               `xml:"namespace"`
+	Type                   string               `xml:"type"`
+	NumLocations           int                  `xml:"numLocations"`
+	NumLocationsNotCovered int                  `xml:"numLocationsNotCovered"`
+}
+
+type LocationNotCovered struct {
+	Column        int     `xml:"column"`
+	Line          int     `xml:"line"`
+	NumExecutions int     `xml:"numExecutions"`
+	Time          float32 `xml:"time"`
+}
+
 type RunTestResult struct {
 	NumberOfFailures     int                   `xml:"numFailures"`
 	NumberOfTestsRun     int                   `xml:"numTestsRun"`
@@ -145,6 +162,7 @@ type RunTestResult struct {
 	TestFailures         []TestFailure         `xml:"failures"`
 	TestSuccesses        []TestSuccess         `xml:"successes"`
 	CodeCoverageWarnings []CodeCoverageWarning `xml:"codeCoverageWarnings"`
+	CodeCoverage         []CodeCoverage        `xml:"codeCoverage"`
 }
 
 type ComponentDetails struct {
