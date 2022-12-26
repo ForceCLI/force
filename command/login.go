@@ -19,11 +19,20 @@ func init() {
 	loginCmd.Flags().String("connected-app-client-id", "", "Client Id (aka Consumer Key) to use instead of default")
 	loginCmd.Flags().StringP("key", "k", "", "JWT signing key filename")
 	loginCmd.Flags().BoolP("skip", "s", false, "skip login if already authenticated and only save token (useful with SSO)")
-	loginCmd.Flags().Bool("scratch", false, "create new scratch org and log in")
 	loginCmd.Flags().StringP("instance", "i", "", `Defaults to 'login' or last
 logged in system. non-production server to login to (values are 'pre',
 'test', or full instance url`)
+
+	loginCmd.AddCommand(scratchCmd)
 	RootCmd.AddCommand(loginCmd)
+}
+
+var scratchCmd = &cobra.Command{
+	Use:   "scratch",
+	Short: "Create scratch org and log in",
+	Run: func(cmd *cobra.Command, args []string) {
+		scratchLogin()
+	},
 }
 
 var loginCmd = &cobra.Command{
@@ -41,16 +50,12 @@ to get a new session token automatically when needed.`,
     force login -i my-domain.my.salesforce.com -u username -p password
     force login -i my-domain.my.salesforce.com -s[kipLogin]
     force login --connected-app-client-id <my-consumer-key> -u user@example.com -key jwt.key
-    force login -scratch
+    force login scratch
 `,
 	Args: cobra.MaximumNArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
 		if connectedAppClientId, _ := cmd.Flags().GetString("connected-app-client-id"); connectedAppClientId != "" {
 			ClientId = connectedAppClientId
-		}
-		if scratch, _ := cmd.Flags().GetBool("scratch"); scratch {
-			scratchLogin()
-			return
 		}
 		endpoint := getEndpoint(cmd)
 		selectApiVersion(cmd)
