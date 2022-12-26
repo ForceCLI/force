@@ -52,9 +52,13 @@ func runUseDXAuth(alias string) {
 		}
 	}
 
+	// non-scratch org status
 	connStatus := fmt.Sprintf("%s", auth["connectedStatus"])
+	// scratch org status
+	status := fmt.Sprintf("%s", auth["status"])
 	username := fmt.Sprintf("%s", auth["username"])
-	if connStatus == "Connected" || connStatus == "Unknown" {
+	switch {
+	case connStatus == "Connected" || connStatus == "Unknown" || status == "Active":
 		authData, err := GetSFDXAuth(username)
 		if err != nil {
 			ErrorAndExit(err.Error())
@@ -69,7 +73,7 @@ func runUseDXAuth(alias string) {
 		} else {
 			fmt.Printf("Now using DX credentials for %s\n", username)
 		}
-	} else {
+	default:
 		ErrorAndExit("Could not determine connection status for %s", username)
 	}
 }
