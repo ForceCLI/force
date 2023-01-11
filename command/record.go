@@ -128,7 +128,7 @@ Usage:
 func runRecordGet(sobject, id string) {
 	object, err := force.GetRecord(sobject, id)
 	if err != nil {
-		ErrorAndExit(err.Error())
+		ErrorAndExit("Failed to get record: %s", err.Error())
 	} else {
 		DisplayForceRecord(object)
 	}
@@ -138,7 +138,7 @@ func runRecordCreate(object string, fields []string) {
 	attrs := parseArgumentAttrs(fields)
 	id, err, emessages := force.CreateRecord(object, attrs)
 	if err != nil {
-		ErrorAndExit(err.Error(), emessages[0].ErrorCode)
+		ErrorAndExit("Failed to create record: %s (%s)", err.Error(), emessages[0].ErrorCode)
 	}
 	fmt.Printf("Record created: %s\n", id)
 }
@@ -147,7 +147,7 @@ func runRecordUpdate(object string, id string, fields []string) {
 	attrs := parseArgumentAttrs(fields)
 	err := force.UpdateRecord(object, id, attrs)
 	if err != nil {
-		ErrorAndExit(err.Error())
+		ErrorAndExit("Failed to update record: %s", err.Error())
 	}
 	fmt.Println("Record updated")
 }
@@ -155,7 +155,7 @@ func runRecordUpdate(object string, id string, fields []string) {
 func runRecordMerge(object, masterId, duplicateId string) {
 	err := force.Partner.Merge(object, masterId, duplicateId)
 	if err != nil {
-		ErrorAndExit(err.Error())
+		ErrorAndExit("Failed to merge records: %s", err.Error())
 	}
 	fmt.Println("Records merged")
 }
@@ -163,7 +163,7 @@ func runRecordMerge(object, masterId, duplicateId string) {
 func runRecordUndelete(args []string) {
 	res, err := force.Partner.UndeleteMany(args)
 	if err != nil {
-		ErrorAndExit(err.Error())
+		ErrorAndExit("Failed to undelete record: %s", err.Error())
 	}
 	errored := false
 	for _, r := range res {
@@ -180,7 +180,7 @@ func runRecordUndelete(args []string) {
 func runRecordDelete(object, id string) {
 	err := force.DeleteRecord(object, id)
 	if err != nil {
-		ErrorAndExit(err.Error())
+		ErrorAndExit("Failed to delete record: %s", err.Error())
 	}
 	fmt.Println("Record deleted")
 }
