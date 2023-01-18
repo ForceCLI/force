@@ -63,7 +63,10 @@ func PushByPaths(force *Force, fpaths []string, byName bool, namePaths map[strin
 
 func deployFiles(force *Force, files ForceMetadataFiles, byName bool, namePaths map[string]string, opts *ForceDeployOptions) {
 	result, err := force.Metadata.Deploy(files, *opts)
-	err = processDeployResults(result, byName, namePaths, err)
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
+	err = processDeployResults(result, byName, namePaths)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
@@ -71,9 +74,9 @@ func deployFiles(force *Force, files ForceMetadataFiles, byName bool, namePaths 
 }
 
 // Process and display the result of the push operation
-func processDeployResults(result ForceCheckDeploymentStatusResult, byName bool, namePaths map[string]string, deployErr error) (err error) {
-	if deployErr != nil {
-		ErrorAndExit(deployErr.Error())
+func processDeployResults(result ForceCheckDeploymentStatusResult, byName bool, namePaths map[string]string) error {
+	if result.ErrorStatusCode != "" {
+		return fmt.Errorf("Deploy failed: %s (%s)", result.ErrorMessage, result.ErrorStatusCode)
 	}
 
 	problems := result.Details.ComponentFailures
@@ -148,6 +151,7 @@ func processDeployResults(result ForceCheckDeploymentStatusResult, byName bool, 
 
 	// Handle notifications
 	desktop.NotifySuccess("push", len(problems) == 0)
+	var err error
 	if len(problems) > 0 {
 		err = errors.New("Some components failed deployment")
 	} else if len(testFailures) > 0 {
@@ -155,7 +159,7 @@ func processDeployResults(result ForceCheckDeploymentStatusResult, byName bool, 
 	} else if !result.Success {
 		err = errors.New(fmt.Sprintf("Status: %s", result.Status))
 	}
-	return
+	return err
 }
 
 // Deploy a previously create package. This is used for "force push package". In this case the
@@ -165,9 +169,12 @@ func DeployPackage(force *Force, resourcepaths []string, opts *ForceDeployOption
 	for _, name := range resourcepaths {
 		zipfile, err := ioutil.ReadFile(name)
 		result, err := force.Metadata.DeployZipFile(zipfile, *opts)
+		if err != nil {
+			ErrorAndExit(err.Error())
+		}
 		byName := false
 		namePaths := make(map[string]string)
-		err = processDeployResults(result, byName, namePaths, err)
+		err = processDeployResults(result, byName, namePaths)
 		if err != nil {
 			ErrorAndExit(err.Error())
 		}
