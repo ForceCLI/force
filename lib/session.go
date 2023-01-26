@@ -29,7 +29,8 @@ func (f *Force) refreshOauth() (err error) {
 	}
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	Log.Info("Refreshing Session Token")
-	res, err := doRequest(req)
+	// Follow Redirects and re-POST upon a 302 response.
+	res, err := doRequest(req, redirectPostOn302)
 	if err != nil {
 		return
 	}
