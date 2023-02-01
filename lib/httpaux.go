@@ -2,6 +2,7 @@ package lib
 
 import (
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -40,7 +41,34 @@ const (
 	HttpMethodPut   HttpMethod = http.MethodPut
 )
 
-func doRequest(request *http.Request) (res *http.Response, err error) {
+type clientOption func(*http.Client)
+
+func redirectPostOn302(c *http.Client) {
+	// From https://stackoverflow.com/a/70510879/120731
+	c.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+		if len(via) >= 10 {
+			return errors.New("stopped after 10 redirects")
+		}
+
+		lastReq := via[len(via)-1]
+		if req.Response.StatusCode == 302 && lastReq.Method == http.MethodPost {
+			req.Method = http.MethodPost
+
+			// Get the body of the original request, set here, since req.Body will be nil if a 302 was returned
+			if via[0].GetBody != nil {
+				var err error
+				req.Body, err = via[0].GetBody()
+				if err != nil {
+					return err
+				}
+				req.ContentLength = via[0].ContentLength
+			}
+		}
+		return nil
+	}
+}
+
+func doRequest(request *http.Request, clientOptions ...clientOption) (res *http.Response, err error) {
 	client := &http.Client{}
 	client.Timeout = time.Duration(Timeout) * time.Millisecond
 	if sslKeyLogWriter != nil {
@@ -59,6 +87,9 @@ func doRequest(request *http.Request) (res *http.Response, err error) {
 			TLSHandshakeTimeout:   10 * time.Second,
 			ExpectContinueTimeout: 1 * time.Second,
 		}
+	}
+	for _, option := range clientOptions {
+		option(client)
 	}
 	return client.Do(request)
 }
