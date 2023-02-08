@@ -71,6 +71,7 @@ var metapaths = []metapath{
 	metapath{path: "delegateGroups", name: "DelegateGroup"},
 	metapath{path: "documents", name: "Document", hasFolder: true},
 	metapath{path: "duplicateRules", name: "DuplicateRule"},
+	metapath{path: "dw", name: "DataWeaveResource"},
 	metapath{path: "EmbeddedServiceConfig", name: "EmbeddedServiceConfig"},
 	metapath{path: "email", name: "EmailTemplate", hasFolder: true},
 	metapath{path: "escalationRules", name: "EscalationRules"},
@@ -261,7 +262,7 @@ func (pb *PackageBuilder) addFile(fpath string) (out addFileOutput, err error) {
 	return
 }
 
-//AddDirectory Recursively add files contained in provided directory
+// AddDirectory Recursively add files contained in provided directory
 func (pb *PackageBuilder) AddDirectory(fpath string) (namePaths map[string]string, badPaths []string, err error) {
 	namePaths = make(map[string]string)
 
