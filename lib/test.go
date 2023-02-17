@@ -9,7 +9,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"k8s.io/kubernetes/test/utils/junit"
+	"github.com/ForceCLI/force/lib/junit"
 )
 
 type TestRunner interface {
