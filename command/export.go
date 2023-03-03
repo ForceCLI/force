@@ -114,6 +114,7 @@ func runExport(root string, excludeMetadataNames []string, showWarnings bool) {
 		"CustomSite",
 		"CustomTab",
 		"DataCategoryGroup",
+		"DataWeaveResource",
 		"DuplicateRule",
 		"EntitlementProcess",
 		"EntitlementSettings",
