@@ -250,6 +250,27 @@ type BundleManifest struct {
 	Files []ComponentFile
 }
 
+type QueryPlan struct {
+	Cardinality          int64           `json:"cardinality"`
+	Fields               []string        `json:"fields"`
+	LeadingOperationType string          `json:"leadingOperationType"`
+	Notes                []QueryPlanNote `json:"notes"`
+	RelativeCost         float64         `json:"relativeCost"`
+	SObjectCardinality   int64           `json:"sobjectCardinality"`
+	SObjectType          string          `json:"sobjectType"`
+}
+
+type QueryPlanNote struct {
+	Description   string   `json:"description"`
+	Fields        []string `json:"fields"`
+	TableEnumOrId string   `json:"tableEnumOrId"`
+}
+
+type QueryPlanResult struct {
+	Plans       []QueryPlan `json:"plans"`
+	SourceQuery string      `json:"sourceQuery"`
+}
+
 func NewForce(creds *ForceSession) (force *Force) {
 	force = new(Force)
 	force.Credentials = creds
@@ -1028,6 +1049,17 @@ func (f *Force) GetAbsolute(url string) (string, error) {
 		return "", err
 	}
 	return string(data), nil
+}
+
+func (f *Force) Explain(query string) (QueryPlanResult, error) {
+	var result QueryPlanResult
+	url := "/query/?explain=" + url.QueryEscape(query)
+	body, err := f.makeHttpRequestSync(NewRequest("GET").RestUrl(url))
+	if err != nil {
+		return result, err
+	}
+	err = json.Unmarshal(body, &result)
+	return result, err
 }
 
 func (f *Force) GetREST(url string) (result string, err error) {
