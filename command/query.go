@@ -68,21 +68,21 @@ func runQuery(query string, format string, queryAll bool, useTooling bool, expla
 		table.SetRowLine(true)
 		table.SetHeader([]string{
 			"SObject Type",
+			"SObject Cardinality",
+			"Cardinality",
 			"Leading Operation Type",
 			"Relative Cost",
-			"Cardinality",
-			"SObject Cardinality",
 			"Fields",
 			// Note Fields
-			"Description",
+			"Note",
 			"Fields",
 			"Table Enum Or Id",
 		})
 		table.SetColumnAlignment([]int{
 			tablewriter.ALIGN_LEFT,
+			tablewriter.ALIGN_RIGHT,
+			tablewriter.ALIGN_RIGHT,
 			tablewriter.ALIGN_LEFT,
-			tablewriter.ALIGN_RIGHT,
-			tablewriter.ALIGN_RIGHT,
 			tablewriter.ALIGN_RIGHT,
 			tablewriter.ALIGN_LEFT,
 			tablewriter.ALIGN_LEFT,
@@ -95,10 +95,10 @@ func runQuery(query string, format string, queryAll bool, useTooling bool, expla
 			for _, note := range plan.Notes {
 				table.Append([]string{
 					plan.SObjectType,
+					strconv.FormatInt(plan.SObjectCardinality, 10),
+					strconv.FormatInt(plan.Cardinality, 10),
 					plan.LeadingOperationType,
 					fmt.Sprintf("%05f", plan.RelativeCost),
-					strconv.FormatInt(plan.Cardinality, 10),
-					strconv.FormatInt(plan.SObjectCardinality, 10),
 					strings.Join(plan.Fields, "\n"),
 					note.Description,
 					strings.Join(note.Fields, "\n"),
