@@ -9,7 +9,7 @@ import (
 	"regexp"
 	"strings"
 
-	. "github.com/ForceCLI/force/error"
+	"github.com/pkg/errors"
 )
 
 // Structs for XML building
@@ -40,105 +40,106 @@ type metapath struct {
 }
 
 var metapaths = []metapath{
-	metapath{path: "actionLinkGroupTemplates", name: "ActionLinkGroupTemplate"},
-	metapath{path: "analyticSnapshots", name: "AnalyticSnapshot"},
-	metapath{path: "applications", name: "CustomApplication"},
-	metapath{path: "appMenus", name: "AppMenu"},
-	metapath{path: "approvalProcesses", name: "ApprovalProcess"},
-	metapath{path: "assignmentRules", name: "AssignmentRules"},
-	metapath{path: "audience", name: "Audience"},
-	metapath{path: "authproviders", name: "AuthProvider"},
-	metapath{path: "aura", name: "AuraDefinitionBundle", hasFolder: true, onlyFolder: true},
-	metapath{path: "autoResponseRules", name: "AutoResponseRules"},
-	metapath{path: "callCenters", name: "CallCenter"},
-	metapath{path: "cachePartitions", name: "PlatformCachePartition"},
-	metapath{path: "certs", name: "Certificate"},
-	metapath{path: "channelLayouts", name: "ChannelLayout"},
-	metapath{path: "classes", name: "ApexClass"},
-	metapath{path: "communities", name: "Community"},
-	metapath{path: "components", name: "ApexComponent"},
-	metapath{path: "connectedApps", name: "ConnectedApp"},
-	metapath{path: "contentassets", name: "ContentAsset"},
-	metapath{path: "corsWhitelistOrigins", name: "CorsWhitelistOrigin"},
-	metapath{path: "customApplicationComponents", name: "CustomApplicationComponent"},
-	metapath{path: "customMetadata", name: "CustomMetadata"},
-	metapath{path: "notificationtypes", name: "CustomNotificationType"},
-	metapath{path: "customHelpMenuSections", name: "CustomHelpMenuSection"},
-	metapath{path: "customPermissions", name: "CustomPermission"},
-	metapath{path: "dashboards", name: "Dashboard", hasFolder: true},
-	metapath{path: "dataSources", name: "ExternalDataSource"},
-	metapath{path: "datacategorygroups", name: "DataCategoryGroup"},
-	metapath{path: "delegateGroups", name: "DelegateGroup"},
-	metapath{path: "documents", name: "Document", hasFolder: true},
-	metapath{path: "duplicateRules", name: "DuplicateRule"},
-	metapath{path: "dw", name: "DataWeaveResource"},
-	metapath{path: "EmbeddedServiceConfig", name: "EmbeddedServiceConfig"},
-	metapath{path: "email", name: "EmailTemplate", hasFolder: true},
-	metapath{path: "escalationRules", name: "EscalationRules"},
-	metapath{path: "experiences", name: "ExperienceBundle"},
-	metapath{path: "feedFilters", name: "CustomFeedFilter"},
-	metapath{path: "flexipages", name: "FlexiPage"},
-	metapath{path: "flowDefinitions", name: "FlowDefinition"},
-	metapath{path: "flows", name: "Flow"},
-	metapath{path: "globalPicklists", name: "GlobalPicklist"},
-	metapath{path: "globalValueSets", name: "GlobalValueSet"},
-	metapath{path: "globalValueSetTranslations", name: "GlobalValueSetTranslation"},
-	metapath{path: "groups", name: "Group"},
-	metapath{path: "homePageComponents", name: "HomePageComponent"},
-	metapath{path: "homePageLayouts", name: "HomePageLayout"},
-	metapath{path: "installedPackages", name: "InstalledPackage"},
-	metapath{path: "labels", name: "CustomLabels"},
-	metapath{path: "layouts", name: "Layout"},
-	metapath{path: "LeadConvertSettings", name: "LeadConvertSettings"},
-	metapath{path: "letterhead", name: "Letterhead"},
-	metapath{path: "lwc", name: "LightningComponentBundle", hasFolder: true, onlyFolder: true},
-	metapath{path: "matchingRules", name: "MatchingRules"},
-	metapath{path: "matchingRules", name: "MatchingRule"},
-	metapath{path: "namedCredentials", name: "NamedCredential"},
-	metapath{path: "notificationTypeConfig", name: "NotificationTypeConfig"},
-	metapath{path: "networks", name: "Network"},
-	metapath{path: "objects", name: "CustomObject"},
-	metapath{path: "objectTranslations", name: "CustomObjectTranslation"},
-	metapath{path: "pages", name: "ApexPage"},
-	metapath{path: "pathAssistants", name: "PathAssistant"},
-	metapath{path: "permissionsets", name: "PermissionSet"},
-	metapath{path: "permissionsetgroups", name: "PermissionSetGroup"},
-	metapath{path: "platformEventChannels", name: "PlatformEventChannel"},
-	metapath{path: "platformEventChannelMembers", name: "PlatformEventChannelMember"},
-	metapath{path: "PlatformEventSubscriberConfigs", name: "PlatformEventSubscriberConfig"},
-	metapath{path: "postTemplates", name: "PostTemplate"},
-	metapath{path: "profiles", name: "Profile", extension: ".profile"},
-	metapath{path: "postTemplates", name: "PostTemplate"},
-	metapath{path: "postTemplates", name: "PostTemplate"},
-	metapath{path: "profiles", name: "Profile"},
-	metapath{path: "profileSessionSettings", name: "ProfileSessionSetting"},
-	metapath{path: "queues", name: "Queue"},
-	metapath{path: "quickActions", name: "QuickAction"},
-	metapath{path: "restrictionRules", name: "RestrictionRule"},
-	metapath{path: "remoteSiteSettings", name: "RemoteSiteSetting"},
-	metapath{path: "reports", name: "Report", hasFolder: true},
-	metapath{path: "reportTypes", name: "ReportType"},
-	metapath{path: "roles", name: "Role"},
-	metapath{path: "scontrols", name: "Scontrol"},
-	metapath{path: "settings", name: "Settings"},
-	metapath{path: "sharingRules", name: "SharingRules"},
-	metapath{path: "siteDotComSites", name: "SiteDotCom"},
-	metapath{path: "sites", name: "CustomSite"},
-	metapath{path: "standardValueSets", name: "StandardValueSet"},
-	metapath{path: "staticresources", name: "StaticResource"},
-	metapath{path: "synonymDictionaries", name: "SynonymDictionary"},
-	metapath{path: "tabs", name: "CustomTab"},
-	metapath{path: "translations", name: "Translations"},
-	metapath{path: "triggers", name: "ApexTrigger"},
-	metapath{path: "weblinks", name: "CustomPageWebLink"},
-	metapath{path: "workflows", name: "Workflow"},
-	metapath{path: "cspTrustedSites", name: "CspTrustedSite"},
+	{path: "actionLinkGroupTemplates", name: "ActionLinkGroupTemplate"},
+	{path: "analyticSnapshots", name: "AnalyticSnapshot"},
+	{path: "applications", name: "CustomApplication"},
+	{path: "appMenus", name: "AppMenu"},
+	{path: "approvalProcesses", name: "ApprovalProcess"},
+	{path: "assignmentRules", name: "AssignmentRules"},
+	{path: "audience", name: "Audience"},
+	{path: "authproviders", name: "AuthProvider"},
+	{path: "aura", name: "AuraDefinitionBundle", hasFolder: true, onlyFolder: true},
+	{path: "autoResponseRules", name: "AutoResponseRules"},
+	{path: "callCenters", name: "CallCenter"},
+	{path: "cachePartitions", name: "PlatformCachePartition"},
+	{path: "certs", name: "Certificate"},
+	{path: "channelLayouts", name: "ChannelLayout"},
+	{path: "classes", name: "ApexClass"},
+	{path: "communities", name: "Community"},
+	{path: "components", name: "ApexComponent"},
+	{path: "connectedApps", name: "ConnectedApp"},
+	{path: "contentassets", name: "ContentAsset"},
+	{path: "corsWhitelistOrigins", name: "CorsWhitelistOrigin"},
+	{path: "customApplicationComponents", name: "CustomApplicationComponent"},
+	{path: "customMetadata", name: "CustomMetadata"},
+	{path: "notificationtypes", name: "CustomNotificationType"},
+	{path: "customHelpMenuSections", name: "CustomHelpMenuSection"},
+	{path: "customPermissions", name: "CustomPermission"},
+	{path: "dashboards", name: "Dashboard", hasFolder: true},
+	{path: "dataSources", name: "ExternalDataSource"},
+	{path: "datacategorygroups", name: "DataCategoryGroup"},
+	{path: "delegateGroups", name: "DelegateGroup"},
+	{path: "documents", name: "Document", hasFolder: true},
+	{path: "duplicateRules", name: "DuplicateRule"},
+	{path: "dw", name: "DataWeaveResource"},
+	{path: "EmbeddedServiceConfig", name: "EmbeddedServiceConfig"},
+	{path: "email", name: "EmailTemplate", hasFolder: true},
+	{path: "escalationRules", name: "EscalationRules"},
+	{path: "experiences", name: "ExperienceBundle"},
+	{path: "feedFilters", name: "CustomFeedFilter"},
+	{path: "flexipages", name: "FlexiPage"},
+	{path: "flowDefinitions", name: "FlowDefinition"},
+	{path: "flows", name: "Flow"},
+	{path: "globalPicklists", name: "GlobalPicklist"},
+	{path: "globalValueSets", name: "GlobalValueSet"},
+	{path: "globalValueSetTranslations", name: "GlobalValueSetTranslation"},
+	{path: "groups", name: "Group"},
+	{path: "homePageComponents", name: "HomePageComponent"},
+	{path: "homePageLayouts", name: "HomePageLayout"},
+	{path: "installedPackages", name: "InstalledPackage"},
+	{path: "labels", name: "CustomLabels"},
+	{path: "layouts", name: "Layout"},
+	{path: "LeadConvertSettings", name: "LeadConvertSettings"},
+	{path: "letterhead", name: "Letterhead"},
+	{path: "lwc", name: "LightningComponentBundle", hasFolder: true, onlyFolder: true},
+	{path: "matchingRules", name: "MatchingRules"},
+	{path: "matchingRules", name: "MatchingRule"},
+	{path: "namedCredentials", name: "NamedCredential"},
+	{path: "notificationTypeConfig", name: "NotificationTypeConfig"},
+	{path: "networks", name: "Network"},
+	{path: "objects", name: "CustomObject"},
+	{path: "objectTranslations", name: "CustomObjectTranslation"},
+	{path: "pages", name: "ApexPage"},
+	{path: "pathAssistants", name: "PathAssistant"},
+	{path: "permissionsets", name: "PermissionSet"},
+	{path: "permissionsetgroups", name: "PermissionSetGroup"},
+	{path: "platformEventChannels", name: "PlatformEventChannel"},
+	{path: "platformEventChannelMembers", name: "PlatformEventChannelMember"},
+	{path: "PlatformEventSubscriberConfigs", name: "PlatformEventSubscriberConfig"},
+	{path: "postTemplates", name: "PostTemplate"},
+	{path: "profiles", name: "Profile", extension: ".profile"},
+	{path: "postTemplates", name: "PostTemplate"},
+	{path: "postTemplates", name: "PostTemplate"},
+	{path: "profiles", name: "Profile"},
+	{path: "profileSessionSettings", name: "ProfileSessionSetting"},
+	{path: "queues", name: "Queue"},
+	{path: "quickActions", name: "QuickAction"},
+	{path: "restrictionRules", name: "RestrictionRule"},
+	{path: "remoteSiteSettings", name: "RemoteSiteSetting"},
+	{path: "reports", name: "Report", hasFolder: true},
+	{path: "reportTypes", name: "ReportType"},
+	{path: "roles", name: "Role"},
+	{path: "scontrols", name: "Scontrol"},
+	{path: "settings", name: "Settings"},
+	{path: "sharingRules", name: "SharingRules"},
+	{path: "siteDotComSites", name: "SiteDotCom"},
+	{path: "sites", name: "CustomSite"},
+	{path: "standardValueSets", name: "StandardValueSet"},
+	{path: "staticresources", name: "StaticResource"},
+	{path: "synonymDictionaries", name: "SynonymDictionary"},
+	{path: "tabs", name: "CustomTab"},
+	{path: "translations", name: "Translations"},
+	{path: "triggers", name: "ApexTrigger"},
+	{path: "weblinks", name: "CustomPageWebLink"},
+	{path: "workflows", name: "Workflow"},
+	{path: "cspTrustedSites", name: "CspTrustedSite"},
 }
 
 type PackageBuilder struct {
 	IsPush   bool
 	Metadata map[string]MetaType
 	Files    ForceMetadataFiles
+	Root     string
 }
 
 func NewPushBuilder() PackageBuilder {
@@ -167,9 +168,6 @@ func (pb PackageBuilder) PackageXml() []byte {
 
 	byteXml, _ := xml.MarshalIndent(p, "", "    ")
 	byteXml = append([]byte(xml.Header), byteXml...)
-	//if err := ioutil.WriteFile("mypackage.xml", byteXml, 0644); err != nil {
-	//ErrorAndExit(err.Error())
-	//}
 	return byteXml
 }
 
@@ -193,15 +191,163 @@ func MetaPathToSourcePath(mpath string) (spath string) {
 	return
 }
 
-// Add a file to the builder
-func (pb *PackageBuilder) AddFile(fpath string) (fname string, err error) {
-	out, err := pb.addFile(fpath)
-	return out.Filename, err
+func (pb *PackageBuilder) AddFile(fpath string) error {
+	fpath, err := filepath.Abs(fpath)
+	if err != nil {
+		return err
+	}
+	_, err = os.Stat(fpath)
+	if err != nil {
+		return err
+	}
+
+	isDestructiveChanges, err := regexp.MatchString("destructiveChanges(Pre|Post)?"+regexp.QuoteMeta(".")+"xml", fpath)
+	if err != nil {
+		return err
+	}
+	if isDestructiveChanges {
+		err = pb.addFileOnly(fpath)
+		return err
+	}
+
+	if lwcJsTestFile.MatchString(fpath) {
+		// If this is a JS test file, just ignore it entirely,
+		// don't consider it bad.
+		return nil
+	}
+
+	isFolderMetadata := isFolderMetadata(fpath)
+	// Path with -meta.xml stripped
+	spath := MetaPathToSourcePath(fpath)
+	metaName, fname, err := pb.getMetaTypeForRelativePath(spath)
+	if err != nil {
+		return err
+	}
+	if isFolderMetadata {
+		pb.AddMetaToPackage(metaName, fname)
+	} else if !strings.HasSuffix(spath, "-meta.xml") {
+		pb.AddMetaToPackage(metaName, fname)
+	}
+	if pb.isComponent(fpath) {
+		pb.AddMetaToPackage(metaName, fname)
+	}
+
+	// If it's a push, we want to actually add the files
+	if pb.IsPush {
+		if isFolderMetadata {
+			err = pb.addFileOnly(fpath)
+		} else {
+			err = pb.addFileAndMetaXml(spath)
+		}
+	}
+
+	return nil
 }
 
-type addFileOutput struct {
-	Filename string
-	IsBad    bool
+func (pb *PackageBuilder) AddMetadataType(metadataType string) error {
+	metaFolder, err := pb.MetadataDir(metadataType)
+	if err != nil {
+		return fmt.Errorf("Could not get metadata directry: %w", err)
+	}
+	return pb.AddDirectory(metaFolder)
+}
+
+func (pb *PackageBuilder) AddMetadataItem(metadataType string, name string) error {
+	metaFolder, err := pb.MetadataDir(metadataType)
+	if err != nil {
+		return fmt.Errorf("Could not get metadata directry: %w", err)
+	}
+	if filePath, err := findMetadataPath(metaFolder, name); err != nil {
+		return fmt.Errorf("Could not find path for %s of type %s: %w", name, metadataType, err)
+	} else {
+		return pb.Add(filePath)
+	}
+}
+
+func (pb *PackageBuilder) Add(path string) error {
+	f, err := os.Stat(path)
+	if err != nil {
+		return err
+	}
+	if f.Mode().IsDir() {
+		return pb.AddDirectory(path)
+	} else {
+		return pb.AddFile(path)
+	}
+}
+
+// AddDirectory Recursively add files contained in provided directory
+func (pb *PackageBuilder) AddDirectory(fpath string) error {
+	fpath, err := filepath.Abs(fpath)
+	if err != nil {
+		return fmt.Errorf("Cound not find %s: %w", fpath, err)
+	}
+
+	isComponent := pb.isComponent(fpath)
+	metadataType, metadataName, err := pb.getMetaTypeForRelativePath(fpath)
+	if err != nil {
+		return fmt.Errorf("Unable to add directory: %w", err)
+	}
+	if isComponent && metadataName != "" {
+		pb.AddMetaToPackage(metadataType, metadataName)
+	}
+
+	if m := correspondingMetadata(fpath); m != "" {
+		if err = pb.AddFile(m); err != nil {
+			return fmt.Errorf("Failed to add metadata for directory: %w", err)
+		}
+	}
+
+	files, err := ioutil.ReadDir(fpath)
+	if err != nil {
+		return err
+	}
+
+	for _, f := range files {
+		dirOrFilePath := fpath + "/" + f.Name()
+		if strings.HasPrefix(f.Name(), ".") {
+			Log.Info("Ignoring hidden file: " + dirOrFilePath)
+			continue
+		}
+
+		if f.IsDir() {
+			if lwcJsTestDir.MatchString(dirOrFilePath) {
+				// Normally malformed paths would indicate invalid metadata,
+				// but LWC tests should never be deployed. We may want to consider this logic/behavior,
+				// such that we don't call `addFile` on directories in some cases; if we could
+				// avoid the addFile call on the __tests__ dir, we could avoid this check.
+				continue
+			}
+			err := pb.AddDirectory(dirOrFilePath)
+			if err != nil {
+				return err
+			}
+			continue
+		}
+
+		if isComponent {
+			err = pb.addFileOnly(dirOrFilePath)
+		} else {
+			err = pb.AddFile(dirOrFilePath)
+		}
+
+	}
+	return err
+}
+
+func (pb *PackageBuilder) isComponent(fpath string) bool {
+	relativePath, _ := filepath.Rel(pb.Root, fpath)
+	parts := strings.Split(relativePath, string(os.PathSeparator))
+	if len(parts) == 0 {
+		return false
+	}
+	metadataRoot := parts[0]
+	for _, mp := range metapaths {
+		if metadataRoot == mp.path {
+			return mp.onlyFolder
+		}
+	}
+	return false
 }
 
 func isFolderMetadata(path string) bool {
@@ -216,134 +362,44 @@ func isFolderMetadata(path string) bool {
 	return f.Mode().IsDir()
 }
 
-func (pb *PackageBuilder) addFile(fpath string) (out addFileOutput, err error) {
-	fpath, err = filepath.Abs(fpath)
-	if err != nil {
-		return
+func correspondingMetadata(path string) string {
+	fmeta := path + "-meta.xml"
+	if _, err := os.Stat(fmeta); err != nil {
+		return ""
 	}
-	_, err = os.Stat(fpath)
-	if err != nil {
-		return
-	}
-
-	isDestructiveChanges, err := regexp.MatchString("destructiveChanges(Pre|Post)?"+regexp.QuoteMeta(".")+"xml", fpath)
-	if err != nil {
-		return
-	}
-
-	if lwcJsTestFile.MatchString(fpath) {
-		// If this is a JS test file, just ignore it entirely,
-		// don't consider it bad.
-		return
-	}
-
-	isFolderMetadata := isFolderMetadata(fpath)
-	// Path with -meta.xml stripped
-	spath := MetaPathToSourcePath(fpath)
-	metaName, fname := getMetaTypeFromPath(spath)
-	out.Filename = fname
-	if isFolderMetadata {
-		pb.AddMetaToPackage(metaName, fname)
-	} else if !isDestructiveChanges && !strings.HasSuffix(spath, "-meta.xml") {
-		pb.AddMetaToPackage(metaName, fname)
-	}
-
-	// If it's a push, we want to actually add the files
-	if pb.IsPush {
-		if isDestructiveChanges {
-			err = pb.addFileOnly(fpath)
-		} else if isFolderMetadata {
-			err = pb.addFileOnlyWithDir(fpath)
-		} else {
-			err = pb.addFileAndMetadata(metaName, spath)
-		}
-	}
-
-	out.IsBad = out.Filename == ""
-	return
-}
-
-// AddDirectory Recursively add files contained in provided directory
-func (pb *PackageBuilder) AddDirectory(fpath string) (namePaths map[string]string, badPaths []string, err error) {
-	namePaths = make(map[string]string)
-
-	files, err := ioutil.ReadDir(fpath)
-	if err != nil {
-		badPaths = append(badPaths, fpath)
-		return
-	}
-
-	for _, f := range files {
-		dirOrFilePath := fpath + "/" + f.Name()
-		if f.IsDir() {
-			if lwcJsTestDir.MatchString(dirOrFilePath) {
-				// Normally malformed paths would indicate invalid metadata,
-				// but LWC tests should never be deployed. We may want to consider this logic/behavior,
-				// such that we don't call `addFile` on directories in some cases; if we could
-				// avoid the addFile call on the __tests__ dir, we could avoid this check.
-				continue
-			}
-			dirNamePaths, dirBadPath, err := pb.AddDirectory(dirOrFilePath)
-			if err != nil {
-				badPaths = append(badPaths, dirBadPath...)
-			} else {
-				for dirContentName, dirContentPath := range dirNamePaths {
-					namePaths[dirContentName] = dirContentPath
-				}
-			}
-		}
-
-		addFileOut, err := pb.addFile(dirOrFilePath)
-
-		if (err != nil) || (addFileOut.IsBad) {
-			badPaths = append(badPaths, dirOrFilePath)
-		} else {
-			namePaths[addFileOut.Filename] = dirOrFilePath
-		}
-	}
-	return
+	return fmeta
 }
 
 // Adds the file to a temp directory for deploy
-func (pb *PackageBuilder) addFileAndMetadata(metaName string, fpath string) (err error) {
-	// Get relative dir from source
-	srcDir := filepath.Dir(filepath.Dir(fpath))
-	for _, mp := range metapaths {
-		if metaName == mp.name && mp.hasFolder {
-			srcDir = filepath.Dir(srcDir)
-		}
-	}
-	frel, _ := filepath.Rel(srcDir, fpath)
-
-	// Try to find meta file
-	hasMeta := true
-	fmeta := fpath + "-meta.xml"
-	fmetarel := ""
-	if _, err = os.Stat(fmeta); err != nil {
-		if os.IsNotExist(err) {
-			hasMeta = false
-		} else {
-			// Has error
-			return
-		}
-	} else {
-		// Should be present since we worked back to srcDir
-		fmetarel, _ = filepath.Rel(srcDir, fmeta)
-	}
-
+func (pb *PackageBuilder) addFileAndMetaXml(fpath string) error {
 	fdata, err := ioutil.ReadFile(fpath)
 	if err != nil {
-		return
+		return errors.Wrap(err, "failed to add file")
 	}
-
+	frel, err := filepath.Rel(pb.Root, fpath)
+	if err != nil {
+		return err
+	}
 	pb.Files[frel] = fdata
-	if hasMeta {
-		fdata, err = ioutil.ReadFile(fmeta)
-		pb.Files[fmetarel] = fdata
-		return
-	}
 
-	return
+	// Try to find meta file
+	fmeta := fpath + "-meta.xml"
+	if _, err = os.Stat(fmeta); err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		} else {
+			// Has error
+			return errors.Wrap(err, "failed to add file metadata")
+		}
+	}
+	fmetarel, _ := filepath.Rel(pb.Root, fmeta)
+	fdata, err = ioutil.ReadFile(fmeta)
+	if err != nil {
+		return err
+	}
+	pb.Files[fmetarel] = fdata
+
+	return nil
 }
 
 // e.g. add /path/to/src/destructiveChanges.xml to zip file as
@@ -354,22 +410,10 @@ func (pb *PackageBuilder) addFileOnly(fpath string) (err error) {
 		return
 	}
 
-	frel, _ := filepath.Rel(filepath.Dir(fpath), fpath)
-	pb.Files[frel] = fdata
-
-	return
-}
-
-// e.g. add /path/to/src/dashboards/Example-meta.xml to zip file as
-// dashboards/Example-meta.xml
-func (pb *PackageBuilder) addFileOnlyWithDir(fpath string) (err error) {
-	fdata, err := ioutil.ReadFile(fpath)
+	frel, err := filepath.Rel(pb.Root, fpath)
 	if err != nil {
-		return
+		return err
 	}
-
-	srcDir := filepath.Dir(filepath.Dir(fpath))
-	frel, _ := filepath.Rel(srcDir, fpath)
 	pb.Files[frel] = fdata
 
 	return
@@ -398,23 +442,20 @@ func (pb *PackageBuilder) AddMetaToPackage(metaName string, name string) {
 }
 
 // Gets metadata type name and target name from a file path
-func getMetaTypeFromPath(fpath string) (metaName string, name string) {
-	fpath, err := filepath.Abs(fpath)
+func (pb *PackageBuilder) getMetaTypeForRelativePath(fpath string) (metaName string, name string, err error) {
+	fpath, err = filepath.Abs(fpath)
 	if err != nil {
-		ErrorAndExit("Cound not find " + fpath)
+		return "", "", fmt.Errorf("Cound not find %s: %w", fpath, err)
 	}
 	if _, err := os.Stat(fpath); err != nil {
-		ErrorAndExit("Cound not open " + fpath)
+		return "", "", fmt.Errorf("Cound not open %s: %w", fpath, err)
 	}
 
 	// Get the metadata type and name for the file
-	metaName, fileName := getMetaForPath(fpath)
-	name = strings.TrimSuffix(fileName, filepath.Ext(fileName))
-	//name = strings.TrimSuffix(name, filepath.Ext(name))
-	return
+	return pb.GetMetaForAbsolutePath(fpath)
 }
 
-func findMetapathForFile(file string) (path metapath) {
+func FindMetapathForFile(file string) (string, error) {
 	parentDir := filepath.Dir(file)
 	parentName := filepath.Base(parentDir)
 	grandparentName := filepath.Base(filepath.Dir(parentDir))
@@ -422,50 +463,92 @@ func findMetapathForFile(file string) (path metapath) {
 
 	for _, mp := range metapaths {
 		if mp.hasFolder && grandparentName == mp.path {
-			return mp
+			return mp.path, nil
 		}
 		if mp.path == parentName {
-			return mp
+			return mp.path, nil
 		}
 	}
 
 	// Hmm, maybe we can use the extension to determine the type
 	for _, mp := range metapaths {
 		if mp.extension == fileExtension {
-			return mp
+			return mp.path, nil
 		}
 	}
-	return
+	return "", fmt.Errorf("metadata path not found")
 }
 
 // Gets meta type and name based on a path
-func getMetaForPath(path string) (metaName string, objectName string) {
-	parentDir := filepath.Dir(path)
-	parentName := filepath.Base(parentDir)
-	grandparentName := filepath.Base(filepath.Dir(parentDir))
-	fileName := filepath.Base(path)
-
-	for _, mp := range metapaths {
-		if mp.hasFolder && grandparentName == mp.path {
-			metaName = mp.name
-			if mp.onlyFolder {
-				objectName = parentName
-			} else {
-				objectName = parentName + "/" + fileName
-			}
-			return
-		}
-		if mp.path == parentName {
-			metaName = mp.name
-			objectName = fileName
-			return
+func (pb *PackageBuilder) GetMetaForAbsolutePath(path string) (metaName string, objectName string, err error) {
+	if pb.Root == "" {
+		return "", "", errors.Wrap(err, "PackageBuilder.Root is not set")
+	}
+	relativePath, err := filepath.Rel(pb.Root, path)
+	if err != nil {
+		return "", "", errors.Wrap(err, "Failed to create relative path")
+	}
+	parts := strings.Split(relativePath, string(os.PathSeparator))
+	metadataRoot := parts[0]
+	objectName = ""
+	if len(parts) > 1 {
+		objectName = strings.TrimSuffix(strings.Join(parts[1:], string(os.PathSeparator)), filepath.Ext(path))
+		if pb.isComponent(path) {
+			objectName = parts[1]
 		}
 	}
 
-	// Unknown, so use path
-	metaName = parentName
-	objectName = fileName
-	return
+	for _, mp := range metapaths {
+		if metadataRoot == mp.path {
+			return mp.name, objectName, nil
+		}
+	}
+
+	return "", "", fmt.Errorf("Unable to identify metadata type for %s", path)
+}
+
+func (pb *PackageBuilder) MetadataDir(metadataType string) (path string, err error) {
+	for _, mp := range metapaths {
+		if strings.ToLower(metadataType) == strings.ToLower(mp.name) {
+			return filepath.Join(pb.Root, mp.path), nil
+		}
+	}
+	return "", fmt.Errorf("Unknown metadata type: %s", metadataType)
+}
+
+// Get the path to a metadata file from the source folder and metadata name
+func findMetadataPath(folder string, metadataName string) (string, error) {
+	info, err := os.Stat(folder)
+	if err != nil {
+		return "", err
+	}
+	if !info.IsDir() {
+		return "", fmt.Errorf("Invalid directory %s", folder)
+	}
+	filePath := ""
+	err = filepath.Walk(folder, func(path string, f os.FileInfo, err error) error {
+		ext := filepath.Ext(f.Name())
+		if err != nil {
+			Log.Info("Error looking for metadata: " + err.Error())
+			return nil
+		}
+		rel, err := filepath.Rel(folder, path)
+		if err != nil {
+			return err
+		}
+		if strings.ToLower(strings.TrimSuffix(rel, ext)) == strings.ToLower(metadataName) {
+			filePath = path
+		}
+		return nil
+	})
+	if err != nil {
+		Log.Info("Error looking for metadata: " + err.Error())
+		return "", err
+	}
+	if filePath == "" {
+		return "", fmt.Errorf("Failed to find %s in %s", metadataName, folder)
+	}
+	return filePath, nil
 }
 
 var lwcJsTestFile = regexp.MustCompile(".*\\.test\\.js$")

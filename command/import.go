@@ -1,24 +1,20 @@
 package command
 
 import (
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
-	"os/signal"
 	"os/user"
 	"path/filepath"
 	"strings"
-	"syscall"
-	"time"
 
 	. "github.com/ForceCLI/force/error"
-	"github.com/ForceCLI/force/lib"
 	. "github.com/ForceCLI/force/lib"
 	"github.com/spf13/cobra"
 )
 
 func init() {
+	// Deploy options
 	importCmd.Flags().BoolP("rollbackonerror", "r", false, "roll back deployment on error")
 	importCmd.Flags().BoolP("runalltests", "t", false, "run all tests (equivalent to --testlevel RunAllTestsInOrg)")
 	importCmd.Flags().StringP("testlevel", "l", "NoTestRun", "test level")
@@ -27,18 +23,19 @@ func init() {
 	importCmd.Flags().BoolP("allowmissingfiles", "m", false, "set allow missing files")
 	importCmd.Flags().BoolP("autoupdatepackage", "u", false, "set auto update package")
 	importCmd.Flags().BoolP("ignorewarnings", "i", false, "ignore warnings")
-
 	importCmd.Flags().StringSliceP("test", "", []string{}, "Test(s) to run")
 
-	importCmd.Flags().BoolVarP(&ignoreCodeCoverageWarnings, "ignorecoverage", "w", false, "suppress code coverage warnings")
-	importCmd.Flags().BoolVarP(&exitCodeOnTestFailure, "erroronfailure", "E", true, "exit with an error code if any tests fail")
-	importCmd.Flags().BoolVarP(&suppressUnexpectedError, "suppressunexpected", "U", true, `suppress "An unexpected error occurred" messages`)
+	// Output options
+	importCmd.Flags().BoolP("ignorecoverage", "w", false, "suppress code coverage warnings")
+	importCmd.Flags().BoolP("suppressunexpected", "U", true, `suppress "An unexpected error occurred" messages`)
+	importCmd.Flags().BoolP("quiet", "q", false, "only output failures")
+	importCmd.Flags().CountP("verbose", "v", "give more verbose output")
+	importCmd.Flags().StringP("reporttype", "f", "text", "report type format (text or junit)")
+
 	importCmd.Flags().StringP("directory", "d", "src", "relative path to package.xml")
 
-	importCmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "only output failures")
-	importCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "give more verbose output")
+	importCmd.Flags().BoolVarP(&exitCodeOnTestFailure, "erroronfailure", "E", true, "exit with an error code if any tests fail")
 
-	importCmd.Flags().StringP("reporttype", "f", "text", "report type format (text or junit)")
 	RootCmd.AddCommand(importCmd)
 }
 
@@ -53,18 +50,16 @@ var importCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		options := getDeploymentOptions(cmd)
 		srcDir := sourceDir(cmd)
-		reportFormat, _ := cmd.Flags().GetString("reporttype")
-		runImport(srcDir, options, reportFormat)
+
+		displayOptions := getDeploymentOutputOptions(cmd)
+
+		runImport(srcDir, options, displayOptions)
 	},
 	Args: cobra.MaximumNArgs(0),
 }
 
 var (
-	quiet                      bool
-	verbose                    bool
-	exitCodeOnTestFailure      bool
-	suppressUnexpectedError    bool
-	ignoreCodeCoverageWarnings bool
+	exitCodeOnTestFailure bool
 )
 
 func sourceDir(cmd *cobra.Command) string {
@@ -98,7 +93,7 @@ func sourceDir(cmd *cobra.Command) string {
 	return root
 }
 
-func runImport(root string, options ForceDeployOptions, reportFormat string) {
+func runImport(root string, options ForceDeployOptions, displayOptions *deployOutputOptions) {
 	files := make(ForceMetadataFiles)
 	if _, err := os.Stat(filepath.Join(root, "package.xml")); os.IsNotExist(err) {
 		ErrorAndExit(" \n" + filepath.Join(root, "package.xml") + "\ndoes not exist")
@@ -120,132 +115,11 @@ func runImport(root string, options ForceDeployOptions, reportFormat string) {
 		ErrorAndExit(err.Error())
 	}
 
-	if quiet {
-		var l quietLogger
-		lib.Log = l
+	err = deploy(force, files, &options, displayOptions)
+	if err == nil && displayOptions.reportFormat == "text" && !displayOptions.quiet {
+		fmt.Printf("Imported from %s\n", root)
 	}
-
-	startTime := time.Now()
-	deployId, err := force.Metadata.StartDeploy(files, options)
-	if err != nil {
+	if err != nil && exitCodeOnTestFailure {
 		ErrorAndExit(err.Error())
 	}
-	stopDeployUponSignal(force, deployId)
-	var result ForceCheckDeploymentStatusResult
-	retrying := false
-	for {
-		result, err = force.Metadata.CheckDeployStatus(deployId)
-		if err != nil {
-			if retrying {
-				ErrorAndExit(err.Error())
-			} else {
-				retrying = true
-				Log.Info(fmt.Sprintf("Received error checking deploy status: %s.  Will retry once before aborting.", err.Error()))
-			}
-		} else {
-			retrying = false
-		}
-		if result.Done {
-			break
-		}
-		if !retrying {
-			Log.Info(result)
-		}
-		time.Sleep(5000 * time.Millisecond)
-	}
-	endTime := time.Now()
-	duration := endTime.Sub(startTime)
-
-	junitOutput := reportFormat == "junit"
-
-	if suppressUnexpectedError {
-		filteredComponentFailures := result.Details.ComponentFailures[:0]
-		for _, f := range result.Details.ComponentFailures {
-			if !strings.HasPrefix(f.Problem, `An unexpected error occurred. Please include this ErrorId`) {
-				filteredComponentFailures = append(filteredComponentFailures, f)
-			}
-		}
-		result.Details.ComponentFailures = filteredComponentFailures
-	}
-
-	switch {
-	case quiet:
-	case junitOutput:
-		output, err := result.ToJunit(duration.Seconds())
-		if err != nil {
-			ErrorAndExit(err.Error())
-		}
-		fmt.Println(output)
-		if result.HasComponentFailures() || (result.HasTestFailures() && exitCodeOnTestFailure) || !result.Success {
-			os.Exit(1)
-		}
-		return
-	default:
-		output := result.ToString(duration.Seconds(), verbose)
-		fmt.Println(output)
-
-		codeCoverageWarnings := result.Details.RunTestResult.CodeCoverageWarnings
-		if !ignoreCodeCoverageWarnings && len(codeCoverageWarnings) > 0 {
-			fmt.Printf("\nCode Coverage Warnings - %d\n", len(codeCoverageWarnings))
-			for _, warning := range codeCoverageWarnings {
-				fmt.Printf("\n %s: %s\n", warning.Name, warning.Message)
-			}
-		}
-
-		if result.HasComponentFailures() {
-			err = errors.New("Some components failed deployment")
-		} else if result.HasTestFailures() && exitCodeOnTestFailure {
-			err = errors.New("Some tests failed")
-		} else if !result.Success {
-			err = errors.New(fmt.Sprintf("Status: %s, Status Code: %s, Error Message: %s", result.Status, result.ErrorStatusCode, result.ErrorMessage))
-		}
-		if err != nil {
-			ErrorAndExit(err.Error())
-		}
-		if !quiet {
-			fmt.Printf("Imported from %s\n", root)
-		}
-	}
-}
-
-func getDeploymentOptions(cmd *cobra.Command) ForceDeployOptions {
-	var deploymentOptions ForceDeployOptions
-	deploymentOptions.AllowMissingFiles, _ = cmd.Flags().GetBool("allowmissingfiles")
-	deploymentOptions.AutoUpdatePackage, _ = cmd.Flags().GetBool("autoupdatepackage")
-	deploymentOptions.CheckOnly, _ = cmd.Flags().GetBool("checkonly")
-	deploymentOptions.IgnoreWarnings, _ = cmd.Flags().GetBool("ignorewarnings")
-	deploymentOptions.PurgeOnDelete, _ = cmd.Flags().GetBool("purgeondelete")
-	deploymentOptions.RollbackOnError, _ = cmd.Flags().GetBool("rollbackonerror")
-	deploymentOptions.TestLevel, _ = cmd.Flags().GetString("testlevel")
-	deploymentOptions.RunTests, _ = cmd.Flags().GetStringSlice("test")
-	runAllTests, _ := cmd.Flags().GetBool("runalltests")
-	if runAllTests {
-		deploymentOptions.TestLevel = "RunAllTestsInOrg"
-	}
-	if cmd.Flags().Changed("test") && len(deploymentOptions.RunTests) == 0 {
-		// NoTestRun can't be used when deploying to production, but
-		// RunSpecifiedTests can be used with an empty set of tests by passing
-		// `--test ''`
-		deploymentOptions.TestLevel = "RunSpecifiedTests"
-		deploymentOptions.RunTests = []string{""}
-	}
-	return deploymentOptions
-}
-
-func stopDeployUponSignal(force *Force, deployId string) {
-	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
-
-	go func() {
-		interuptsReceived := 0
-		for {
-			<-sigs
-			if interuptsReceived > 0 {
-				os.Exit(1)
-			}
-			fmt.Fprintf(os.Stderr, "Cancelling deploy %s\n", deployId)
-			force.Metadata.CancelDeploy(deployId)
-			interuptsReceived++
-		}
-	}()
 }
