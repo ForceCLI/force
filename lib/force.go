@@ -181,6 +181,10 @@ type ForceQueryResult struct {
 	NextRecordsUrl string
 }
 
+type ForceSearchResult struct {
+	SearchRecords []ForceRecord `json:"searchRecords"`
+}
+
 type ForceSobjectsResult struct {
 	Encoding     string
 	MaxBatchSize int
@@ -733,6 +737,20 @@ func (f *Force) legacyQueryOptions(qs string, options ...func(*QueryOptions)) []
 		qopts = append(qopts, query.Tooling)
 	}
 	return qopts
+}
+
+func (f *Force) Search(qs string) ([]ForceRecord, error) {
+	url := "/search/?q=" + url.QueryEscape(qs)
+	body, err := f.makeHttpRequestSync(NewRequest("GET").RestUrl(url))
+	if err != nil {
+		return nil, err
+	}
+	r := ForceSearchResult{}
+	err = json.Unmarshal(body, &r)
+	if err != nil {
+		return nil, err
+	}
+	return r.SearchRecords, nil
 }
 
 func (f *Force) Get(url string) (object ForceRecord, err error) {
