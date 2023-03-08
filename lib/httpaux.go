@@ -115,7 +115,7 @@ type httpRequestInput struct {
 	Url      string
 	Headers  map[string]string
 	Callback HttpCallback
-	Retrier  *httpRetrier
+	retrier  *HttpRetrier
 	Body     io.Reader
 }
 
@@ -137,35 +137,53 @@ func (r *httpRequestInput) WithContent(ct ContentType) *httpRequestInput {
 // The caller is responsible for closing the response body when it's finished.
 type HttpCallback func(*http.Response) error
 
-type httpRetrier struct {
+type HttpRetrier struct {
 	attempt       int
 	maxAttempts   int
-	retryOnErrors []error
+	retryOnErrors []func(res *http.Response, err error) bool
+	backoffDelay  time.Duration
 }
 
-func (r *httpRetrier) Reauth() *httpRetrier {
-	if r.maxAttempts == 0 {
-		r.maxAttempts = 1
+func DefaultRetrier() *HttpRetrier {
+	return (&HttpRetrier{maxAttempts: 2, backoffDelay: time.Duration(0)}).Reauth()
+}
+
+func (r *HttpRetrier) Reauth() *HttpRetrier {
+	return r.AppendErrorCheck(func(res *http.Response, err error) bool {
+		return err == SessionExpiredError
+	})
+}
+
+func (r *HttpRetrier) AppendErrorCheck(check func(res *http.Response, err error) bool) *HttpRetrier {
+	r.retryOnErrors = append(r.retryOnErrors, check)
+	return r
+}
+
+func (r *HttpRetrier) BackoffDelay(bd time.Duration) *HttpRetrier {
+	r.backoffDelay = bd
+	return r
+}
+
+func NewHttpRetrier(maxAttempts int, backoffDelay time.Duration, retryOnErrors []func(res *http.Response, err error) bool) *HttpRetrier {
+	return &HttpRetrier{
+		maxAttempts:   maxAttempts,
+		retryOnErrors: retryOnErrors,
+		backoffDelay:  backoffDelay,
 	}
-	r.retryOnErrors = append(r.retryOnErrors, SessionExpiredError)
-	return r
 }
 
-func (r *httpRetrier) Attempts(max int) *httpRetrier {
-	r.maxAttempts = max
-	return r
-}
-
-func (r *httpRetrier) ShouldRetry(res *http.Response, err error) bool {
+func (r *HttpRetrier) shouldRetry(res *http.Response, err error) bool {
 	if err == nil {
 		return false
 	}
 	if r.attempt >= r.maxAttempts {
 		return false
 	}
+
 	r.attempt += 1
-	for _, e := range r.retryOnErrors {
-		if err == e {
+
+	for _, f := range r.retryOnErrors {
+		if f(res, err) {
 			return true
 		}
 	}
