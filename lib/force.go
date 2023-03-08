@@ -1169,10 +1169,6 @@ func (f *Force) makeHttpRequest(input *httpRequestInput) error {
 			return cberr
 		}
 
-		if input.retrier.backoffDelay > 0 && input.retrier.attempt < input.retrier.maxAttempts {
-			time.Sleep(time.Duration(rand.Int63n(int64(input.retrier.backoffDelay / time.Nanosecond))))
-		}
-
 		if err == SessionExpiredError {
 			// If refreshing causes an error, we should return the original error.
 			// Otherwise we end up retrying even if we haven't updated auth.
@@ -1180,7 +1176,10 @@ func (f *Force) makeHttpRequest(input *httpRequestInput) error {
 				return err
 			}
 			f.setHttpInputAuth(input)
+		} else if input.retrier.backoffDelay > 0 && input.retrier.attempt < input.retrier.maxAttempts {
+			time.Sleep(time.Duration(rand.Int63n(int64(input.retrier.backoffDelay / time.Nanosecond))))
 		}
+
 	}
 }
 
@@ -1268,15 +1267,14 @@ func (f *Force) httpPostPatchWithRetry(url string, rbody string, contenttype Con
 			return nil, err
 		}
 
-		if f.retrier.backoffDelay > 0 && f.retrier.attempt < f.retrier.maxAttempts {
-			time.Sleep(time.Duration(rand.Int63n(int64(f.retrier.backoffDelay / time.Nanosecond))))
-		}
-
 		if err == SessionExpiredError {
 			if refreshedErr := f.RefreshSession(); refreshedErr != nil {
 				return body, err
 			}
+		} else if f.retrier.backoffDelay > 0 && f.retrier.attempt < f.retrier.maxAttempts {
+			time.Sleep(time.Duration(rand.Int63n(int64(f.retrier.backoffDelay / time.Nanosecond))))
 		}
+
 	}
 }
 
