@@ -24,7 +24,7 @@ force login [flags]
     force login -i my-domain.my.salesforce.com -u username -p password
     force login -i my-domain.my.salesforce.com -s[kipLogin]
     force login --connected-app-client-id <my-consumer-key> -u user@example.com -key jwt.key
-    force login -scratch
+    force login scratch
 
 ```
 
@@ -39,7 +39,6 @@ force login [flags]
                                          'test', or full instance url
   -k, --key string                       JWT signing key filename
   -p, --password string                  password for SOAP login
-      --scratch                          create new scratch org and log in
   -s, --skip                             skip login if already authenticated and only save token (useful with SSO)
   -u, --user string                      username for SOAP login
 ```
@@ -54,4 +53,5 @@ force login [flags]
 ### SEE ALSO
 
 * [force](force.md)	 - force CLI
+* [force login scratch](force_login_scratch.md)	 - Create scratch org and log in
 

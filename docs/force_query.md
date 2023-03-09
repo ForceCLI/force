@@ -22,6 +22,7 @@ force query [flags] <soql statement>
 
 ```
   -A, --all             use queryAll to include deleted and archived records in query results
+  -e, --explain         return query plans
   -f, --format string   output format: csv, json, json-pretty, console (default "console")
   -h, --help            help for query
   -t, --tooling         use Tooling API

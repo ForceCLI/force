@@ -9,6 +9,7 @@ force datapipe create [flags]
 ### Options
 
 ```
+  -v, --apiversion string      script content (default "55.0")
   -h, --help                   help for create
   -l, --masterlabel string     master label
   -n, --name string            data pipeline name
@@ -19,8 +20,7 @@ force datapipe create [flags]
 ### Options inherited from parent commands
 
 ```
-  -a, --account username    account username to use
-  -V, --apiversion string   API version to use
+  -a, --account username   account username to use
 ```
 
 ### SEE ALSO

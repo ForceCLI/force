@@ -45,6 +45,7 @@ force
 * [force quickdeploy](force_quickdeploy.md)	 - Quick deploy validation id
 * [force record](force_record.md)	 - Create, modify, or view records
 * [force rest](force_rest.md)	 - Execute a REST request
+* [force search](force_search.md)	 - Execute a SOSL statement
 * [force security](force_security.md)	 - Displays the OLS and FLS for a given SObject
 * [force sobject](force_sobject.md)	 - Manage standard & custom objects
 * [force test](force_test.md)	 - Run apex tests

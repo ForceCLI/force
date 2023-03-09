@@ -1,25 +1,23 @@
-## force whoami
+## force search
 
-Show information about the active account
+Execute a SOSL statement
 
 ```
-force whoami [flags]
+force search [flags] <sosl statement>
 ```
 
 ### Examples
 
 ```
 
-  force whoami
+  force search "FIND {Jane Doe} IN ALL FIELDS RETURNING Account (Id, Name)"
 
 ```
 
 ### Options
 
 ```
-  -h, --help       help for whoami
-  -i, --id         Get user id of the active account
-  -u, --username   Get username of the active account
+  -h, --help   help for search
 ```
 
 ### Options inherited from parent commands
