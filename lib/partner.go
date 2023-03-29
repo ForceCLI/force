@@ -60,6 +60,10 @@ func (partner *ForcePartner) ExecuteAnonymous(apex string) (output string, err e
 		err = errors.New(message)
 		return
 	}
+	if !result.Success {
+		err = errors.New(result.ExceptionMessage)
+		return result.Log, err
+	}
 	output = result.Log
 	return
 }
