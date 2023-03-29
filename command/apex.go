@@ -47,10 +47,10 @@ func runApexFromStdin(testContext bool) {
 	} else {
 		output, err = execute(code)
 	}
+	fmt.Println(output)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
-	fmt.Println(output)
 }
 
 func runApexInFile(filename string, testContext bool) {
@@ -64,10 +64,10 @@ func runApexInFile(filename string, testContext bool) {
 	} else {
 		output, err = execute(code)
 	}
+	fmt.Println(output)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
-	fmt.Println(output)
 }
 
 func executeAsTest(code []byte) (string, error) {
