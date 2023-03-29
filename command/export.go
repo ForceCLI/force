@@ -146,6 +146,7 @@ func runExport(root string, excludeMetadataNames []string, showWarnings bool) {
 		"MobileSettings",
 		"NamedFilter",
 		"Network",
+		"NotificationTypeConfig",
 		"OpportunitySettings",
 		"PermissionSet",
 		"PermissionSetGroup",

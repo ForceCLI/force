@@ -95,6 +95,7 @@ var metapaths = []metapath{
 	metapath{path: "matchingRules", name: "MatchingRules"},
 	metapath{path: "matchingRules", name: "MatchingRule"},
 	metapath{path: "namedCredentials", name: "NamedCredential"},
+	metapath{path: "notificationTypeConfig", name: "NotificationTypeConfig"},
 	metapath{path: "networks", name: "Network"},
 	metapath{path: "objects", name: "CustomObject"},
 	metapath{path: "objectTranslations", name: "CustomObjectTranslation"},
