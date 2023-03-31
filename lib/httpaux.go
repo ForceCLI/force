@@ -164,7 +164,7 @@ func (r *HttpRetrier) BackoffDelay(bd time.Duration) *HttpRetrier {
 	return r
 }
 
-func NewHttpRetrier(maxAttempts int, backoffDelay time.Duration, retryOnErrors []func(res *http.Response, err error) bool) *HttpRetrier {
+func NewHttpRetrier(maxAttempts int, backoffDelay time.Duration, retryOnErrors ...func(res *http.Response, err error) bool) *HttpRetrier {
 	return &HttpRetrier{
 		maxAttempts:   maxAttempts,
 		retryOnErrors: retryOnErrors,
