@@ -1161,6 +1161,7 @@ func (f *Force) makeHttpRequestSync(req *Request) (body []byte, err error) {
 func (f *Force) makeHttpRequest(input *httpRequestInput) error {
 	for {
 		res, err := f._makeHttpRequestWithoutRetry(input)
+
 		if !input.retrier.shouldRetry(res, err) {
 			if err != nil {
 				return err
@@ -1252,6 +1253,8 @@ func (f *Force) _coerceHttpError(res *http.Response, body []byte) error {
 }
 
 func (f *Force) httpPostPatchWithRetry(url string, rbody string, contenttype ContentType, method HttpMethod, requestOptions ...func(*http.Request)) ([]byte, error) {
+	retrier := f.GetRetrier()
+
 	for {
 		res, err := f.httpPostPatch(url, rbody, contenttype, method, requestOptions...)
 		var body []byte
@@ -1263,7 +1266,7 @@ func (f *Force) httpPostPatchWithRetry(url string, rbody string, contenttype Con
 		if err == nil {
 			return body, nil
 		}
-		if !f.retrier.shouldRetry(res, err) {
+		if !retrier.shouldRetry(res, err) {
 			return nil, err
 		}
 
@@ -1271,8 +1274,8 @@ func (f *Force) httpPostPatchWithRetry(url string, rbody string, contenttype Con
 			if refreshedErr := f.RefreshSession(); refreshedErr != nil {
 				return body, err
 			}
-		} else if f.retrier.backoffDelay > 0 && f.retrier.attempt < f.retrier.maxAttempts {
-			time.Sleep(time.Duration(rand.Int63n(int64(f.retrier.backoffDelay / time.Nanosecond))))
+		} else if retrier.backoffDelay > 0 && retrier.attempt < retrier.maxAttempts {
+			time.Sleep(time.Duration(rand.Int63n(int64(retrier.backoffDelay / time.Nanosecond))))
 		}
 
 	}
@@ -1517,7 +1520,11 @@ func (force *Force) GetPartner() *ForcePartner {
 }
 
 func (force *Force) GetRetrier() *HttpRetrier {
-	return force.retrier
+	if force.retrier == nil {
+		return &HttpRetrier{}
+	}
+
+	return NewHttpRetrier(force.retrier.maxAttempts, force.retrier.backoffDelay, force.retrier.retryOnErrors...)
 }
 
 func (force *Force) WithRetrier(retrier *HttpRetrier) *Force {

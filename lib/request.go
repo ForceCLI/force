@@ -141,10 +141,6 @@ func (f *Force) ExecuteRequest(r *Request) (*Response, error) {
 
 	retrier := f.GetRetrier()
 
-	if retrier == nil {
-		retrier = &HttpRetrier{}
-	}
-
 	reqResp := &Response{}
 	inp := &httpRequestInput{
 		Method:   r.method,

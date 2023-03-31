@@ -179,7 +179,6 @@ func (r *HttpRetrier) shouldRetry(res *http.Response, err error) bool {
 	if r.attempt >= r.maxAttempts {
 		return false
 	}
-
 	r.attempt += 1
 
 	for _, f := range r.retryOnErrors {
