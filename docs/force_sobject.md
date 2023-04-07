@@ -41,8 +41,8 @@ Usage:
 ### SEE ALSO
 
 * [force](force.md)	 - force CLI
-* [force sobject Delete](force_sobject_Delete.md)	 - Delete custom object
 * [force sobject create](force_sobject_create.md)	 - Create custom object
+* [force sobject delete](force_sobject_delete.md)	 - Delete custom object
 * [force sobject import](force_sobject_import.md)	 - Import custom object
 * [force sobject list](force_sobject_list.md)	 - List standard and custom objects
 

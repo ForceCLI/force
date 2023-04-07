@@ -165,7 +165,7 @@ func (r ForceCheckDeploymentStatusResult) ToString(duration float64, verbose boo
 	testSuccesses := c.RunTestResult.TestSuccesses
 	var b strings.Builder
 
-	fmt.Fprintf(&b, "\nSuccesses - %d\n", len(successes))
+	fmt.Fprintf(&b, "\nSuccesses - %d\n", len(successes)-1)
 	if verbose {
 		for _, success := range successes {
 			if success.FullName != "package.xml" {
@@ -177,7 +177,7 @@ func (r ForceCheckDeploymentStatusResult) ToString(duration float64, verbose boo
 				} else if success.Created {
 					verb = "created"
 				}
-				fmt.Fprintf(&b, "%s\n\tstatus: %s\n\tid=%s\n", success.FullName, verb, success.Id)
+				fmt.Fprintf(&b, "\t%s: %s\n", success.FullName, verb)
 			}
 		}
 	}

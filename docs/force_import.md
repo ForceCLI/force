@@ -35,7 +35,7 @@ force import [flags]
   -U, --suppressunexpected   suppress "An unexpected error occurred" messages (default true)
       --test strings         Test(s) to run
   -l, --testlevel string     test level (default "NoTestRun")
-  -v, --verbose              give more verbose output
+  -v, --verbose count        give more verbose output
 ```
 
 ### Options inherited from parent commands

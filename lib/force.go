@@ -248,12 +248,6 @@ type ComponentFile struct {
 	ComponentId string
 }
 
-type BundleManifest struct {
-	Name  string
-	Id    string
-	Files []ComponentFile
-}
-
 type QueryPlan struct {
 	Cardinality          int64           `json:"cardinality"`
 	Fields               []string        `json:"fields"`
@@ -824,12 +818,6 @@ func (f *Force) CreateRecord(sobject string, attrs map[string]string) (id string
 	json.Unmarshal(body, &result)
 	id = result.Id
 	return
-}
-
-func (f *Force) SetFLS(profileId string, objectName string, fieldName string) {
-	// First, write out a file to a temporary location with a package.xml
-
-	f.Metadata.UpdateFLSOnProfile(objectName, fieldName)
 }
 
 func (f *Force) QueryProfile(fields ...string) (results ForceQueryResult, err error) {

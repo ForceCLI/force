@@ -30,19 +30,24 @@ force push [flags]
 ### Options
 
 ```
-  -m, --allowmissingfiles   set allow missing files
-  -u, --autoupdatepackage   set auto update package
-  -c, --checkonly           check only deploy
-  -f, --filepath strings    Path to resource(s)
-  -h, --help                help for push
-  -i, --ignorewarnings      ignore warnings
-  -n, --name strings        name of metadata object
-  -p, --purgeondelete       purge metadata from org on delete
-  -r, --rollbackonerror     roll back deployment on error
-      --runalltests         run all tests (equivalent to --testlevel RunAllTestsInOrg)
-      --test strings        Test(s) to run
-  -l, --testlevel string    test level (default "NoTestRun")
-  -t, --type string         Metatdata type
+  -m, --allowmissingfiles    set allow missing files
+  -u, --autoupdatepackage    set auto update package
+  -c, --checkonly            check only deploy
+  -f, --filepath strings     Path to resource(s)
+  -h, --help                 help for push
+  -w, --ignorecoverage       suppress code coverage warnings
+  -i, --ignorewarnings       ignore warnings
+  -n, --name strings         name of metadata object
+  -p, --purgeondelete        purge metadata from org on delete
+  -q, --quiet                only output failures
+      --reporttype string    report type format (text or junit) (default "text")
+  -r, --rollbackonerror      roll back deployment on error
+      --runalltests          run all tests (equivalent to --testlevel RunAllTestsInOrg)
+  -U, --suppressunexpected   suppress "An unexpected error occurred" messages
+      --test strings         Test(s) to run
+  -l, --testlevel string     test level (default "NoTestRun")
+  -t, --type strings         Metatdata type
+  -v, --verbose count        give more verbose output
 ```
 
 ### Options inherited from parent commands

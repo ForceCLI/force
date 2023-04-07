@@ -1,9 +1,10 @@
 package lib_test
 
 import (
-	. "github.com/ForceCLI/force/lib"
 	"io/ioutil"
 	"os"
+
+	. "github.com/ForceCLI/force/lib"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -26,6 +27,7 @@ var _ = Describe("Packagebuilder", func() {
 		BeforeEach(func() {
 			pb = NewPushBuilder()
 			tempDir, _ = ioutil.TempDir("", "packagebuilder-test")
+			pb.Root = tempDir + "/src"
 		})
 
 		AfterEach(func() {
@@ -43,7 +45,7 @@ var _ = Describe("Packagebuilder", func() {
 			})
 
 			It("should add the file to package", func() {
-				_, err := pb.AddFile(apexClassPath)
+				err := pb.AddFile(apexClassPath)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(pb.Files).To(HaveKey("classes/Test.cls"))
 			})
@@ -65,7 +67,7 @@ var _ = Describe("Packagebuilder", func() {
 			})
 
 			It("should add the file to package", func() {
-				_, err := pb.AddFile(apexClassMetadataPath)
+				err := pb.AddFile(apexClassMetadataPath)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(pb.Files).To(HaveKey("classes/Test.cls-meta.xml"))
 			})
@@ -90,7 +92,7 @@ var _ = Describe("Packagebuilder", func() {
 			})
 
 			It("should add both files to package", func() {
-				_, err := pb.AddFile(apexClassMetadataPath)
+				err := pb.AddFile(apexClassMetadataPath)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(pb.Files).To(HaveKey("classes/Test.cls"))
 				Expect(pb.Files).To(HaveKey("classes/Test.cls-meta.xml"))
@@ -108,7 +110,7 @@ var _ = Describe("Packagebuilder", func() {
 			})
 
 			It("should add the file to package", func() {
-				_, err := pb.AddFile(customMetadataPath)
+				err := pb.AddFile(customMetadataPath)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(pb.Files).To(HaveKey("customMetadata/My_Type.My_Object.md"))
 			})
@@ -121,7 +123,7 @@ var _ = Describe("Packagebuilder", func() {
 
 		Context("when adding a non-existent file", func() {
 			It("should not add the file to package", func() {
-				_, err := pb.AddFile(tempDir + "/no/such/file")
+				err := pb.AddFile(tempDir + "/no/such/file")
 				Expect(err).To(HaveOccurred())
 				Expect(pb.Files).To(BeEmpty())
 			})
@@ -142,9 +144,8 @@ var _ = Describe("Packagebuilder", func() {
 			It("should add the file to the package and package.xml", func() {
 				filePath := componentDir + "/mycomponent.js"
 				mustWrite(filePath, `export default const x = 1;`)
-				res, err := pb.AddFile(filePath)
+				err := pb.AddFile(filePath)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(res).To(Equal("mycomponent"))
 				Expect(pb.Files).To(HaveKey("lwc/mycomponent/mycomponent.js"))
 				Expect(pb.Metadata).To(HaveKey("LightningComponentBundle"))
 				Expect(pb.Metadata["LightningComponentBundle"].Members[0]).To(Equal("mycomponent"))
@@ -153,9 +154,8 @@ var _ = Describe("Packagebuilder", func() {
 			It("should not add test files to package or package.xml", func() {
 				filePath := componentDir + "/mycomponent.test.js"
 				mustWrite(filePath, `export default const x = 1;`)
-				res, err := pb.AddFile(filePath)
+				err := pb.AddFile(filePath)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(res).To(Equal(""))
 				Expect(pb.Files).To(BeEmpty())
 				Expect(pb.Metadata).To(BeEmpty())
 			})
@@ -167,19 +167,21 @@ var _ = Describe("Packagebuilder", func() {
 			BeforeEach(func() {
 				pb = NewPushBuilder()
 				tempDir, _ := ioutil.TempDir("", "packagebuilder-test")
-				destructiveChangesPath = tempDir + "/destructiveChanges.xml"
+				pb.Root = tempDir
+				destructiveChangesPath = tempDir + "/src/destructiveChanges.xml"
 				destructiveChangesXml := `<?xml version="1.0" encoding="UTF-8"?>
 					<Package xmlns="http://soap.sforce.com/2006/04/metadata">
 					<version>34.0</version>
 					</Package>
 				`
-				ioutil.WriteFile(destructiveChangesPath, []byte(destructiveChangesXml), 0644)
+				mustMkdir(tempDir + "/src")
+				mustWrite(destructiveChangesPath, destructiveChangesXml)
 			})
 
 			It("should add the file to package", func() {
-				_, err := pb.AddFile(destructiveChangesPath)
+				err := pb.AddFile(destructiveChangesPath)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(pb.Files).To(HaveKey("destructiveChanges.xml"))
+				Expect(pb.Files).To(HaveKey("src/destructiveChanges.xml"))
 			})
 			It("should not add the file to the package.xml", func() {
 				pb.AddFile(destructiveChangesPath)
@@ -195,6 +197,7 @@ var _ = Describe("Packagebuilder", func() {
 		BeforeEach(func() {
 			pb = NewPushBuilder()
 			tempDir, _ = ioutil.TempDir("", "packagebuilder-test")
+			pb.Root = tempDir + "/src"
 		})
 
 		AfterEach(func() {
@@ -209,14 +212,22 @@ var _ = Describe("Packagebuilder", func() {
 				mustMkdir(lwcRoot)
 			})
 
-			It("should not add a file to the package or package.xml", func() {
+			It("should add directory contents", func() {
 				mustWrite(lwcRoot+"/supercomponent.js", "export default const x = 1;")
-				namePaths, badPaths, err := pb.AddDirectory(lwcRoot)
+				err := pb.AddDirectory(lwcRoot)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(badPaths).To(BeEmpty())
-				Expect(namePaths).To(HaveKeyWithValue("supercomponent", HaveSuffix("/src/lwc/supercomponent/supercomponent.js")))
 				Expect(pb.Files).To(HaveKey("lwc/supercomponent/supercomponent.js"))
 				Expect(pb.Metadata).To(HaveKey("LightningComponentBundle"))
+				Expect(pb.Metadata["LightningComponentBundle"].Members[0]).To(Equal("supercomponent"))
+			})
+
+			It("should add components in subdirectories", func() {
+				mustWrite(lwcRoot+"/supercomponent.js", "export default const x = 1;")
+				err := pb.AddDirectory(tempDir + "/src/lwc")
+				Expect(err).ToNot(HaveOccurred())
+				Expect(pb.Files).To(HaveKey("lwc/supercomponent/supercomponent.js"))
+				Expect(pb.Metadata).To(HaveKey("LightningComponentBundle"))
+				Expect(pb.Metadata["LightningComponentBundle"].Members[0]).To(Equal("supercomponent"))
 			})
 
 			It("ignores test files and folders", func() {
@@ -225,13 +236,45 @@ var _ = Describe("Packagebuilder", func() {
 				mustMkdir(lwcRoot + "/__tests__")
 				mustWrite(lwcRoot+"/__tests__/supercomponent.test.js", "")
 
-				namePaths, badPaths, err := pb.AddDirectory(lwcRoot)
+				err := pb.AddDirectory(lwcRoot)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(badPaths).To(BeEmpty())
-				Expect(namePaths).To(HaveKeyWithValue("supercomponent", HaveSuffix("/src/lwc/supercomponent/supercomponent.js")))
 				Expect(pb.Files).To(HaveKey("lwc/supercomponent/supercomponent.js"))
 				Expect(pb.Metadata).To(HaveKey("LightningComponentBundle"))
 			})
+		})
+	})
+
+	Describe("GetMetaForAbsolutePath", func() {
+		var pb PackageBuilder
+
+		BeforeEach(func() {
+			pb = NewFetchBuilder()
+			pb.Root = "/path/to/src"
+		})
+
+		Describe("adding a folder of lightning web components", func() {
+
+			It("should handle LWC component directories", func() {
+				metadataType, metadataName, err := pb.GetMetaForAbsolutePath("/path/to/src/lwc/supercomponent")
+				Expect(err).ToNot(HaveOccurred())
+				Expect(metadataType).To(Equal("LightningComponentBundle"))
+				Expect(metadataName).To(Equal("supercomponent"))
+			})
+
+			It("should handle LWC component files", func() {
+				metadataType, metadataName, err := pb.GetMetaForAbsolutePath("/path/to/src/lwc/supercomponent/component.js")
+				Expect(err).ToNot(HaveOccurred())
+				Expect(metadataType).To(Equal("LightningComponentBundle"))
+				Expect(metadataName).To(Equal("supercomponent"))
+			})
+
+			It("should handle normal components", func() {
+				metadataType, metadataName, err := pb.GetMetaForAbsolutePath("/path/to/src/classes/MyClass.cls")
+				Expect(err).ToNot(HaveOccurred())
+				Expect(metadataType).To(Equal("ApexClass"))
+				Expect(metadataName).To(Equal("MyClass"))
+			})
+
 		})
 	})
 })
