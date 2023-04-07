@@ -48,7 +48,7 @@ var sobjectCreateCmd = &cobra.Command{
 }
 
 var sobjectDeleteCmd = &cobra.Command{
-	Use:                   "Delete <object>",
+	Use:                   "delete <object>",
 	Short:                 "Delete custom object",
 	DisableFlagsInUseLine: true,
 	Args:                  cobra.ExactArgs(1),
