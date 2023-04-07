@@ -1,5 +1,6 @@
 VERSION=$(shell git describe --abbrev=0 --always)
 LDFLAGS = -ldflags "-X github.com/ForceCLI/force/lib.Version=${VERSION}"
+GCFLAGS = -gcflags="all=-N -l"
 EXECUTABLE=force
 WINDOWS=$(EXECUTABLE)_windows_amd64.exe
 LINUX=$(EXECUTABLE)_linux_amd64
@@ -12,6 +13,9 @@ default:
 
 install:
 	go install ${LDFLAGS}
+
+install-debug:
+	go install ${LDFLAGS} ${GCFLAGS}
 
 $(WINDOWS):
 	env GOOS=windows GOARCH=amd64 go build -v -o $(WINDOWS) ${LDFLAGS}
