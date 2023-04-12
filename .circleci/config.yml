@@ -2,7 +2,7 @@ version: 2
 jobs:
   build:
     docker:
-      - image: cimg/go:1.18
+      - image: cimg/go:1.20
     steps:
       - checkout
       - run: go install github.com/mitchellh/gox@v1.0.1
