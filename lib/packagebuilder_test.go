@@ -162,13 +162,13 @@ var _ = Describe("Packagebuilder", func() {
 		})
 
 		Context("when adding a destructiveChanges file", func() {
-			var destructiveChangesPath string
+			var tempDir string
 
 			BeforeEach(func() {
 				pb = NewPushBuilder()
-				tempDir, _ := ioutil.TempDir("", "packagebuilder-test")
-				pb.Root = tempDir
-				destructiveChangesPath = tempDir + "/src/destructiveChanges.xml"
+				tempDir, _ = ioutil.TempDir("", "packagebuilder-test")
+				pb.Root = tempDir + "/src"
+				destructiveChangesPath := tempDir + "/src/destructiveChanges.xml"
 				destructiveChangesXml := `<?xml version="1.0" encoding="UTF-8"?>
 					<Package xmlns="http://soap.sforce.com/2006/04/metadata">
 					<version>34.0</version>
@@ -176,16 +176,22 @@ var _ = Describe("Packagebuilder", func() {
 				`
 				mustMkdir(tempDir + "/src")
 				mustWrite(destructiveChangesPath, destructiveChangesXml)
+				mustWrite(tempDir+"/destructiveChanges.xml", destructiveChangesXml)
 			})
 
 			It("should add the file to package", func() {
-				err := pb.AddFile(destructiveChangesPath)
+				err := pb.AddFile(tempDir + "/src/destructiveChanges.xml")
 				Expect(err).ToNot(HaveOccurred())
-				Expect(pb.Files).To(HaveKey("src/destructiveChanges.xml"))
+				Expect(pb.Files).To(HaveKey("destructiveChanges.xml"))
 			})
 			It("should not add the file to the package.xml", func() {
-				pb.AddFile(destructiveChangesPath)
+				pb.AddFile(tempDir + "/src/destructiveChanges.xml")
 				Expect(pb.Metadata).To(BeEmpty())
+			})
+			It("should allow adding the file outside the root directory", func() {
+				err := pb.AddFile(tempDir + "/destructiveChanges.xml")
+				Expect(err).ToNot(HaveOccurred())
+				Expect(pb.Files).To(HaveKey("destructiveChanges.xml"))
 			})
 		})
 	})

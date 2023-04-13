@@ -407,16 +407,19 @@ func (pb *PackageBuilder) addFileAndMetaXml(fpath string) error {
 func (pb *PackageBuilder) addFileOnly(fpath string) (err error) {
 	fdata, err := ioutil.ReadFile(fpath)
 	if err != nil {
-		return
+		return err
 	}
 
 	frel, err := filepath.Rel(pb.Root, fpath)
 	if err != nil {
 		return err
 	}
+	if !filepath.IsLocal(frel) {
+		frel = filepath.Base(frel)
+	}
 	pb.Files[frel] = fdata
 
-	return
+	return err
 }
 
 func (pb *PackageBuilder) contains(members []string, name string) bool {
