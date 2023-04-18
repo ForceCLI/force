@@ -22,6 +22,8 @@ func init() {
 
 var pubsubCmd = &cobra.Command{
 	Use:                   "pubsub subscribe [channel]",
+	Short:                 "Subscribe to a pub/sub channel",
+	Long:                  "Subscribe to a pub/sub channel to stream Change Data Capture or custom Platform Events",
 	DisableFlagsInUseLine: true,
 }
 

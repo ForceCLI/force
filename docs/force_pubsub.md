@@ -1,6 +1,10 @@
 ## force pubsub
 
+Subscribe to a pub/sub channel
 
+### Synopsis
+
+Subscribe to a pub/sub channel to stream Change Data Capture or custom Platform Events
 
 ### Options
 

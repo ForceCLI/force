@@ -42,5 +42,5 @@ force pubsub subscribe [channel] [flags]
 
 ### SEE ALSO
 
-* [force pubsub](force_pubsub.md)	 - 
+* [force pubsub](force_pubsub.md)	 - Subscribe to a pub/sub channel
 
