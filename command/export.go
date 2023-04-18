@@ -95,6 +95,7 @@ func runExport(root string, excludeMetadataNames []string, showWarnings bool) {
 		"CallCenter",
 		"CaseSettings",
 		"ChatterAnswersSettings",
+		"CleanDataService",
 		"CompanySettings",
 		"Community",
 		"CompactLayout",
