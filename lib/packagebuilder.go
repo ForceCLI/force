@@ -55,6 +55,7 @@ var metapaths = []metapath{
 	{path: "certs", name: "Certificate"},
 	{path: "channelLayouts", name: "ChannelLayout"},
 	{path: "classes", name: "ApexClass"},
+	{path: "cleanDataServices", name: "CleanDataService"},
 	{path: "communities", name: "Community"},
 	{path: "components", name: "ApexComponent"},
 	{path: "connectedApps", name: "ConnectedApp"},
