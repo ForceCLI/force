@@ -13,6 +13,7 @@ force log
   force log [list]
   force log <id>
   force log delete <id>
+  force log tail
 
 ```
 
@@ -33,4 +34,5 @@ force log
 
 * [force](force.md)	 - force CLI
 * [force log delete](force_log_delete.md)	 - Delete debug logs
+* [force log tail](force_log_tail.md)	 - Stream debug logs
 

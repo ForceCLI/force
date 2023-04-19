@@ -1,14 +1,18 @@
 package command
 
 import (
+	"encoding/json"
 	"fmt"
 
 	. "github.com/ForceCLI/force/error"
+	. "github.com/ForceCLI/force/lib"
+	"github.com/ForceCLI/force/lib/bayeux"
 	"github.com/spf13/cobra"
 )
 
 func init() {
 	logCmd.AddCommand(deleteLogCmd)
+	logCmd.AddCommand(tailLogCmd)
 	RootCmd.AddCommand(logCmd)
 }
 
@@ -19,6 +23,7 @@ var logCmd = &cobra.Command{
   force log [list]
   force log <id>
   force log delete <id>
+  force log tail
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 || args[0] == "list" {
@@ -44,6 +49,19 @@ var deleteLogCmd = &cobra.Command{
 	DisableFlagsInUseLine: true,
 }
 
+var tailLogCmd = &cobra.Command{
+	Use:   "tail",
+	Short: "Stream debug logs",
+	Example: `
+  force log tail
+`,
+	Run: func(cmd *cobra.Command, args []string) {
+		tailLogs()
+	},
+	Args:                  cobra.ExactArgs(0),
+	DisableFlagsInUseLine: true,
+}
+
 func getAllLogs() {
 	records, err := force.QueryLogs()
 	if err != nil {
@@ -66,4 +84,34 @@ func getLog(logId string) {
 		ErrorAndExit(err.Error())
 	}
 	fmt.Println(log)
+}
+
+type logEvent struct {
+	Event struct {
+		CreatedDate string `json:"createdDate"`
+		Type        string `json:"type"`
+	} `json:"event"`
+	Sobject struct {
+		Id string `json:"id"`
+	} `json:"sobject"`
+}
+
+func tailLogs() {
+	client := bayeux.NewClient(force)
+	msgs := make(chan *bayeux.Message)
+	if err := client.Subscribe("/systemTopic/Logging", msgs); err != nil {
+		ErrorAndExit(err.Error())
+	}
+	// Disconnect from server and stop background loop.
+	defer client.Close()
+
+	for msg := range msgs {
+		var newLog logEvent
+		if err := json.Unmarshal(msg.Data, &newLog); err == nil {
+			getLog(newLog.Sobject.Id)
+		} else {
+			Log.Info(fmt.Sprintf("Received unexpected message on channel %s: %s\n", msg.Channel, string(msg.Data)))
+		}
+	}
+
 }
