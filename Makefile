@@ -18,16 +18,16 @@ install-debug:
 	go install ${LDFLAGS} ${GCFLAGS}
 
 $(WINDOWS):
-	env GOOS=windows GOARCH=amd64 go build -v -o $(WINDOWS) ${LDFLAGS}
+	env CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -v -o $(WINDOWS) ${LDFLAGS}
 
 $(LINUX):
-	env GOOS=linux GOARCH=amd64 go build -v -o $(LINUX) ${LDFLAGS}
+	env CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -o $(LINUX) ${LDFLAGS}
 
 $(OSX_AMD64):
-	env GOOS=darwin GOARCH=amd64 go build -v -o $(OSX_AMD64) ${LDFLAGS}
+	env CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -v -o $(OSX_AMD64) ${LDFLAGS}
 
 $(OSX_ARM64):
-	env GOOS=darwin GOARCH=arm64 go build -v -o $(OSX_ARM64) ${LDFLAGS}
+	env CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -v -o $(OSX_ARM64) ${LDFLAGS}
 
 $(basename $(WINDOWS)).zip: $(WINDOWS)
 	zip $@ $<
