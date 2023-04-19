@@ -7,12 +7,14 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/http/cookiejar"
 	"os"
 	"runtime"
 	"time"
 )
 
 var sslKeyLogWriter *os.File
+var cookieJar *cookiejar.Jar
 
 func init() {
 	if f := os.Getenv("SSLKEYLOGFILE"); f != "" {
@@ -71,6 +73,13 @@ func redirectPostOn302(c *http.Client) {
 func doRequest(request *http.Request, clientOptions ...clientOption) (res *http.Response, err error) {
 	client := &http.Client{}
 	client.Timeout = time.Duration(Timeout) * time.Millisecond
+	if cookieJar == nil {
+		cookieJar, err = cookiejar.New(nil)
+		if err != nil {
+			return nil, fmt.Errorf("Could not initialize cookie jar: %w", err)
+		}
+	}
+	client.Jar = cookieJar
 	if sslKeyLogWriter != nil {
 		client.Transport = &http.Transport{
 			TLSClientConfig: &tls.Config{

@@ -13,6 +13,7 @@ require (
 	github.com/devangel/config v0.0.0-20160113214547-0bb295da1e55
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/linkedin/goavro/v2 v2.12.0
+	github.com/obeattie/ohmyglob v0.0.0-20150811221449-290764208a0d
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/onsi/ginkgo v1.12.0
 	github.com/onsi/gomega v1.10.0
@@ -22,9 +23,11 @@ require (
 	golang.org/x/crypto v0.6.0
 	google.golang.org/grpc v1.39.0-dev
 	google.golang.org/protobuf v1.28.1
+	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
 )
 
 require (
+	github.com/cihub/seelog v0.0.0-20170130134532-f561c5e57575 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
