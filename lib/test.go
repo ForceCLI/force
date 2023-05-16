@@ -263,7 +263,8 @@ func (r ForceCheckDeploymentStatusResult) ToJunit(duration float64) (string, err
 	if err != nil {
 		return "", errors.Wrap(err, "Unable to format result for junit")
 	}
-	return string(output), nil
+	const declaration = `<?xml version="1.0" encoding="UTF-8"?>`
+	return fmt.Sprintf("%s\n%s", declaration, string(output)), nil
 }
 
 func (r ForceCheckDeploymentStatusResult) HasComponentFailures() bool {
