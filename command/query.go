@@ -92,7 +92,11 @@ func runQuery(query string, format string, queryAll bool, useTooling bool, expla
 		table.SetAutoMergeCellsByColumnIndex([]int{0, 1, 2, 3, 4, 5})
 
 		for _, plan := range result.Plans {
-			for _, note := range plan.Notes {
+			notes := plan.Notes
+			if len(notes) == 0 {
+				notes = append(notes, QueryPlanNote{})
+			}
+			for _, note := range notes {
 				table.Append([]string{
 					plan.SObjectType,
 					strconv.FormatInt(plan.SObjectCardinality, 10),
