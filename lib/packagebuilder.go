@@ -42,6 +42,7 @@ type metapath struct {
 var metapaths = []metapath{
 	{path: "actionLinkGroupTemplates", name: "ActionLinkGroupTemplate"},
 	{path: "analyticSnapshots", name: "AnalyticSnapshot"},
+	{path: "apexEmailNotifications", name: "ApexEmailNotifications"},
 	{path: "applications", name: "CustomApplication"},
 	{path: "appMenus", name: "AppMenu"},
 	{path: "approvalProcesses", name: "ApprovalProcess"},

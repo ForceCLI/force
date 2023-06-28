@@ -82,6 +82,7 @@ func runExport(root string, excludeMetadataNames []string, showWarnings bool) {
 		"AnalyticSnapshot",
 		"ApexClass",
 		"ApexComponent",
+		"ApexEmailNotifications",
 		"ApexPage",
 		"ApexTrigger",
 		"ApprovalProcess",
