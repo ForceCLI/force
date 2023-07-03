@@ -110,10 +110,10 @@ var bulkUpdateCmd = &cobra.Command{
 }
 
 var bulkUpsertCmd = &cobra.Command{
-	Use:   "upsert <External_Id_Field__c> <object> <file>",
+	Use:   "upsert -e <External_Id_Field__c> <object> <file>",
 	Short: "Upsert records from csv file using Bulk API",
 	Run:   runBulkCmd,
-	Args:  cobra.ExactArgs(3),
+	Args:  cobra.ExactArgs(2),
 }
 
 var bulkDeleteCmd = &cobra.Command{
@@ -201,7 +201,7 @@ var bulkCmd = &cobra.Command{
   force bulk insert Account [csv file]
   force bulk update Account [csv file]
   force bulk delete Account [csv file]
-  force bulk upsert ExternalIdField__c Account [csv file]
+  force bulk upsert -e ExternalIdField__c Account [csv file]
   force bulk job [job id]
   force bulk batches [job id]
   force Bulk batch [job id] [batch id]
@@ -215,7 +215,6 @@ func runBulkCmd(cmd *cobra.Command, args []string) {
 	externalId := ""
 	if cmd.Name() == "upsert" {
 		externalId, _ = cmd.Flags().GetString("externalid")
-		args = args[1:]
 	}
 
 	objectType := args[0]
