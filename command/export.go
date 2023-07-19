@@ -126,6 +126,7 @@ func runExport(root string, excludeMetadataNames []string, showWarnings bool) {
 		"FieldSet",
 		"FlexiPage",
 		"Flow",
+		"FlowTest",
 		"FlowDefinition",
 		"Folder",
 		"ForecastingSettings",
