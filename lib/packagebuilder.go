@@ -441,8 +441,9 @@ func (pb *PackageBuilder) AddMetaToPackage(metaName string, name string) {
 		mt.Name = metaName
 	}
 
-	if !pb.contains(mt.Members, name) {
-		mt.Members = append(mt.Members, name)
+	canonicalName := filepath.ToSlash(name)
+	if !pb.contains(mt.Members, canonicalName) {
+		mt.Members = append(mt.Members, canonicalName)
 		pb.Metadata[metaName] = mt
 	}
 }
