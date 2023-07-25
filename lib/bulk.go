@@ -4,15 +4,14 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
-	"github.com/ForceCLI/force/lib/internal"
 	"io"
 	"net/http"
 	"strings"
+
+	"github.com/ForceCLI/force/lib/internal"
 )
 
-type BatchResult struct {
-	Results []Result
-}
+type BatchResult []Result
 
 type BatchResultChunk struct {
 	HasCSVHeader bool
@@ -308,8 +307,22 @@ func (f *Force) RetrieveBulkJobQueryResultsAndSend(job JobInfo, batchId string, 
 }
 
 func (f *Force) RetrieveBulkBatchResults(jobId string, batchId string) (BatchResult, error) {
-	err := errors.New("this method was never working right, please report an issue in GitHub if you were using it")
-	return BatchResult{}, err
+	var result BatchResult
+	url := fmt.Sprintf("%s/services/async/%s/job/%s/batch/%s/result", f.Credentials.InstanceUrl, apiVersionNumber, jobId, batchId)
+	resp, err := f.httpGetBulk(url)
+	if err != nil {
+		return result, err
+	}
+	var unmarshal internal.Unmarshaler
+	if resp.ContentType == ContentTypeJson {
+		unmarshal = internal.JsonUnmarshal
+	} else {
+		unmarshal = internal.XmlUnmarshal
+	}
+	if err := unmarshal(resp.ReadResponseBody, &result); err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 // NewBatchResultChannelHttpCallback returns a new reporter that will send chunks of a read body into
