@@ -192,10 +192,16 @@ type ForceSobjectsResult struct {
 }
 
 type Result struct {
-	Id      string
-	Success bool
-	Created bool
-	Message string
+	Id      string        `json:"id"`
+	Success bool          `json:"success"`
+	Created bool          `json:"created"`
+	Errors  []ResultError `json:"errors"`
+}
+
+type ResultError struct {
+	StatusCode string   `json:"statusCode"`
+	Message    string   `json:"message"`
+	Fields     []string `json:"fields"`
 }
 
 type QueryOptions struct {
