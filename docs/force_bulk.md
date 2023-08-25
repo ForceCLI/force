@@ -9,7 +9,7 @@ Load csv file or query data using Bulk API
   force bulk insert Account [csv file]
   force bulk update Account [csv file]
   force bulk delete Account [csv file]
-  force bulk upsert ExternalIdField__c Account [csv file]
+  force bulk upsert -e ExternalIdField__c Account [csv file]
   force bulk job [job id]
   force bulk batches [job id]
   force Bulk batch [job id] [batch id]

@@ -23,6 +23,7 @@ force
 * [force bulk](force_bulk.md)	 - Load csv file or query data using Bulk API
 * [force create](force_create.md)	 - Creates a new, empty Apex Class, Trigger, Visualforce page, or Component.
 * [force datapipe](force_datapipe.md)	 - Manage DataPipes
+* [force deploys](force_deploys.md)	 - Manage metadata deployments
 * [force describe](force_describe.md)	 - Describe the types of metadata available in the org
 * [force eventlogfile](force_eventlogfile.md)	 - List and fetch event log file
 * [force export](force_export.md)	 - Export metadata to a local directory

@@ -3,7 +3,7 @@
 Upsert records from csv file using Bulk API
 
 ```
-force bulk upsert <External_Id_Field__c> <object> <file> [flags]
+force bulk upsert -e <External_Id_Field__c> <object> <file> [flags]
 ```
 
 ### Options
