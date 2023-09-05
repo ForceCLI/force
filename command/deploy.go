@@ -93,7 +93,7 @@ func deploy(force *Force, files ForceMetadataFiles, deployOptions *ForceDeployOp
 			return fmt.Errorf("Failed to generate output: %w", err)
 		}
 		fmt.Println(output)
-		if result.HasComponentFailures() || (result.HasTestFailures() && exitCodeOnTestFailure) || !result.Success {
+		if result.HasComponentFailures() || (result.HasTestFailures() && errorOnTestFailure) || !result.Success {
 			return fmt.Errorf("Deploy unsuccessful")
 		}
 		return nil
@@ -123,7 +123,7 @@ func deploy(force *Force, files ForceMetadataFiles, deployOptions *ForceDeployOp
 
 		if result.HasComponentFailures() {
 			err = errors.New("Some components failed deployment")
-		} else if result.HasTestFailures() && exitCodeOnTestFailure {
+		} else if result.HasTestFailures() && errorOnTestFailure {
 			err = errors.New("Some tests failed")
 		} else if !result.Success {
 			err = errors.New(fmt.Sprintf("Status: %s, Status Code: %s, Error Message: %s", result.Status, result.ErrorStatusCode, result.ErrorMessage))

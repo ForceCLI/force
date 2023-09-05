@@ -34,7 +34,7 @@ func init() {
 
 	importCmd.Flags().StringP("directory", "d", "src", "relative path to package.xml")
 
-	importCmd.Flags().BoolVarP(&exitCodeOnTestFailure, "erroronfailure", "E", true, "exit with an error code if any tests fail")
+	importCmd.Flags().BoolVarP(&errorOnTestFailure, "erroronfailure", "E", true, "exit with an error code if any tests fail")
 
 	RootCmd.AddCommand(importCmd)
 }
@@ -59,7 +59,7 @@ var importCmd = &cobra.Command{
 }
 
 var (
-	exitCodeOnTestFailure bool
+	errorOnTestFailure bool
 )
 
 func sourceDir(cmd *cobra.Command) string {
@@ -119,7 +119,7 @@ func runImport(root string, options ForceDeployOptions, displayOptions *deployOu
 	if err == nil && displayOptions.reportFormat == "text" && !displayOptions.quiet {
 		fmt.Printf("Imported from %s\n", root)
 	}
-	if err != nil && exitCodeOnTestFailure {
+	if err != nil {
 		ErrorAndExit(err.Error())
 	}
 }
