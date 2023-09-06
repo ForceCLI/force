@@ -34,7 +34,7 @@ func init() {
 
 	importCmd.Flags().StringP("directory", "d", "src", "relative path to package.xml")
 
-	importCmd.Flags().BoolVarP(&errorOnTestFailure, "erroronfailure", "E", true, "exit with an error code if any tests fail")
+	importCmd.Flags().BoolP("erroronfailure", "E", true, "exit with an error code if any tests fail")
 
 	RootCmd.AddCommand(importCmd)
 }
@@ -57,10 +57,6 @@ var importCmd = &cobra.Command{
 	},
 	Args: cobra.MaximumNArgs(0),
 }
-
-var (
-	errorOnTestFailure bool
-)
 
 func sourceDir(cmd *cobra.Command) string {
 	directory, _ := cmd.Flags().GetString("directory")

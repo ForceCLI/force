@@ -20,21 +20,23 @@ type deployOutputOptions struct {
 	reportFormat               string
 	ignoreCodeCoverageWarnings bool
 	suppressUnexpectedError    bool
+	errorOnTestFailure         bool
 }
 
-func defaultDisplayOptions() *deployOutputOptions {
+func defaultDeployOutputOptions() *deployOutputOptions {
 	o := deployOutputOptions{
 		reportFormat:               "text",
 		quiet:                      false,
 		verbosity:                  0,
 		ignoreCodeCoverageWarnings: false,
 		suppressUnexpectedError:    false,
+		errorOnTestFailure:         true,
 	}
 	return &o
 }
 
-func deploy(force *Force, files ForceMetadataFiles, deployOptions *ForceDeployOptions, displayOptions *deployOutputOptions) error {
-	if displayOptions.quiet {
+func deploy(force *Force, files ForceMetadataFiles, deployOptions *ForceDeployOptions, outputOptions *deployOutputOptions) error {
+	if outputOptions.quiet {
 		previousLogger := Log
 		var l quietLogger
 		Log = l
@@ -73,9 +75,9 @@ func deploy(force *Force, files ForceMetadataFiles, deployOptions *ForceDeployOp
 	endTime := time.Now()
 	duration := endTime.Sub(startTime)
 
-	junitOutput := displayOptions.reportFormat == "junit"
+	junitOutput := outputOptions.reportFormat == "junit"
 
-	if displayOptions.suppressUnexpectedError {
+	if outputOptions.suppressUnexpectedError {
 		filteredComponentFailures := result.Details.ComponentFailures[:0]
 		for _, f := range result.Details.ComponentFailures {
 			if !strings.HasPrefix(f.Problem, `An unexpected error occurred. Please include this ErrorId`) {
@@ -86,28 +88,28 @@ func deploy(force *Force, files ForceMetadataFiles, deployOptions *ForceDeployOp
 	}
 
 	switch {
-	case displayOptions.quiet:
+	case outputOptions.quiet:
 	case junitOutput:
 		output, err := result.ToJunit(duration.Seconds())
 		if err != nil {
 			return fmt.Errorf("Failed to generate output: %w", err)
 		}
 		fmt.Println(output)
-		if result.HasComponentFailures() || (result.HasTestFailures() && errorOnTestFailure) || !result.Success {
+		if result.HasComponentFailures() || (result.HasTestFailures() && outputOptions.errorOnTestFailure) || !result.Success {
 			return fmt.Errorf("Deploy unsuccessful")
 		}
 		return nil
 	default:
-		output := result.ToString(duration.Seconds(), displayOptions.verbosity > 0)
+		output := result.ToString(duration.Seconds(), outputOptions.verbosity > 0)
 		fmt.Println(output)
 
 		codeCoverageWarnings := result.Details.RunTestResult.CodeCoverageWarnings
-		if !displayOptions.ignoreCodeCoverageWarnings && len(codeCoverageWarnings) > 0 {
+		if !outputOptions.ignoreCodeCoverageWarnings && len(codeCoverageWarnings) > 0 {
 			fmt.Printf("\nCode Coverage Warnings - %d\n", len(codeCoverageWarnings))
 			for _, warning := range codeCoverageWarnings {
 				fmt.Printf("\n %s: %s\n", warning.Name, warning.Message)
 			}
-			if displayOptions.verbosity > 1 {
+			if outputOptions.verbosity > 1 {
 				for _, c := range result.Details.RunTestResult.CodeCoverage {
 					component := c.Name
 					if c.Namespace != "" {
@@ -123,7 +125,7 @@ func deploy(force *Force, files ForceMetadataFiles, deployOptions *ForceDeployOp
 
 		if result.HasComponentFailures() {
 			err = errors.New("Some components failed deployment")
-		} else if result.HasTestFailures() && errorOnTestFailure {
+		} else if result.HasTestFailures() && outputOptions.errorOnTestFailure {
 			err = errors.New("Some tests failed")
 		} else if !result.Success {
 			err = errors.New(fmt.Sprintf("Status: %s, Status Code: %s, Error Message: %s", result.Status, result.ErrorStatusCode, result.ErrorMessage))
@@ -154,19 +156,33 @@ func stopDeployUponSignal(force *Force, deployId string) {
 }
 
 func getDeploymentOutputOptions(cmd *cobra.Command) *deployOutputOptions {
-	displayOptions := defaultDisplayOptions()
+	outputOptions := defaultDeployOutputOptions()
 
-	displayOptions.reportFormat, _ = cmd.Flags().GetString("reporttype")
-	displayOptions.quiet, _ = cmd.Flags().GetBool("quiet")
-	displayOptions.verbosity, _ = cmd.Flags().GetCount("verbose")
+	if reportFormat, err := cmd.Flags().GetString("reporttype"); err == nil {
+		outputOptions.reportFormat = reportFormat
+	}
 
-	ignoreCoverageWarnings, _ := cmd.Flags().GetBool("ignorecoverage")
-	displayOptions.ignoreCodeCoverageWarnings = ignoreCoverageWarnings
+	if quiet, err := cmd.Flags().GetBool("quiet"); err == nil {
+		outputOptions.quiet = quiet
+	}
 
-	suppressUnexpectedError, _ := cmd.Flags().GetBool("suppressunexpected")
-	displayOptions.suppressUnexpectedError = suppressUnexpectedError
+	if verbosity, err := cmd.Flags().GetCount("verbose"); err == nil {
+		outputOptions.verbosity = verbosity
+	}
 
-	return displayOptions
+	if ignoreCoverageWarnings, err := cmd.Flags().GetBool("ignorecoverage"); err == nil {
+		outputOptions.ignoreCodeCoverageWarnings = ignoreCoverageWarnings
+	}
+
+	if suppressUnexpectedError, err := cmd.Flags().GetBool("suppressunexpected"); err == nil {
+		outputOptions.suppressUnexpectedError = suppressUnexpectedError
+	}
+
+	if errorOnTestFailure, err := cmd.Flags().GetBool("erroronfailure"); err == nil {
+		outputOptions.errorOnTestFailure = errorOnTestFailure
+	}
+
+	return outputOptions
 }
 
 func getDeploymentOptions(cmd *cobra.Command) ForceDeployOptions {
