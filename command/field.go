@@ -171,7 +171,7 @@ func updateFLSOnProfile(force *Force, objectName string, fieldName string) (err 
 	if err != nil {
 		return fmt.Errorf("Could not add profile: %w", err)
 	}
-	displayOptions := defaultDisplayOptions()
+	displayOptions := defaultDeployOutputOptions()
 	displayOptions.quiet = true
 	return deploy(force, pb.ForceMetadataFiles(), new(ForceDeployOptions), displayOptions)
 }
