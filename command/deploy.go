@@ -35,6 +35,8 @@ func defaultDeployOutputOptions() *deployOutputOptions {
 	return &o
 }
 
+var testFailureError = errors.New("Apex tests failed")
+
 func deploy(force *Force, files ForceMetadataFiles, deployOptions *ForceDeployOptions, outputOptions *deployOutputOptions) error {
 	if outputOptions.quiet {
 		previousLogger := Log
@@ -95,8 +97,11 @@ func deploy(force *Force, files ForceMetadataFiles, deployOptions *ForceDeployOp
 			return fmt.Errorf("Failed to generate output: %w", err)
 		}
 		fmt.Println(output)
-		if result.HasComponentFailures() || (result.HasTestFailures() && outputOptions.errorOnTestFailure) || !result.Success {
+		if result.HasComponentFailures() || !result.Success {
 			return fmt.Errorf("Deploy unsuccessful")
+		}
+		if result.HasTestFailures() {
+			return testFailureError
 		}
 		return nil
 	default:
@@ -125,13 +130,13 @@ func deploy(force *Force, files ForceMetadataFiles, deployOptions *ForceDeployOp
 
 		if result.HasComponentFailures() {
 			err = errors.New("Some components failed deployment")
-		} else if result.HasTestFailures() && outputOptions.errorOnTestFailure {
-			err = errors.New("Some tests failed")
+		} else if result.HasTestFailures() {
+			err = testFailureError
 		} else if !result.Success {
 			err = errors.New(fmt.Sprintf("Status: %s, Status Code: %s, Error Message: %s", result.Status, result.ErrorStatusCode, result.ErrorMessage))
 		}
 		if err != nil {
-			return fmt.Errorf("Deploy unsuccessful")
+			return fmt.Errorf("Deploy unsuccessful: %w", err)
 		}
 	}
 	return nil

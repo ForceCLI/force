@@ -1,6 +1,7 @@
 package command
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -115,7 +116,7 @@ func runImport(root string, options ForceDeployOptions, displayOptions *deployOu
 	if err == nil && displayOptions.reportFormat == "text" && !displayOptions.quiet {
 		fmt.Printf("Imported from %s\n", root)
 	}
-	if err != nil {
+	if err != nil && (!errors.Is(err, testFailureError) || displayOptions.errorOnTestFailure) {
 		ErrorAndExit(err.Error())
 	}
 }
