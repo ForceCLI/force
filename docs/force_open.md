@@ -24,7 +24,8 @@ force open [account] [flags]
 ### Options
 
 ```
-  -h, --help   help for open
+  -h, --help           help for open
+  -s, --start string   relative URL to open
 ```
 
 ### Options inherited from parent commands

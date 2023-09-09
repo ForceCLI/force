@@ -2,6 +2,7 @@ package command
 
 import (
 	"fmt"
+	"net/url"
 
 	desktop "github.com/ForceCLI/force/desktop"
 	. "github.com/ForceCLI/force/error"
@@ -10,6 +11,7 @@ import (
 )
 
 func init() {
+	openCmd.Flags().StringP("start", "s", "", "relative URL to open")
 	RootCmd.AddCommand(openCmd)
 }
 
@@ -32,17 +34,21 @@ By default, the active account is used.
 				ErrorAndExit(err.Error())
 			}
 		}
-		runOpen()
+		startUrl, _ := cmd.Flags().GetString("start")
+		runOpen(startUrl)
 	},
 }
 
-func runOpen() {
+func runOpen(startUrl string) {
 	_, err := force.Whoami()
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
-	url := fmt.Sprintf("%s/secur/frontdoor.jsp?sid=%s", force.Credentials.InstanceUrl, force.Credentials.AccessToken)
-	err = desktop.Open(url)
+	openUrl := fmt.Sprintf("%s/secur/frontdoor.jsp?sid=%s", force.Credentials.InstanceUrl, force.Credentials.AccessToken)
+	if startUrl != "" {
+		openUrl = fmt.Sprintf("%s&retURL=%s", openUrl, url.QueryEscape(startUrl))
+	}
+	err = desktop.Open(openUrl)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
