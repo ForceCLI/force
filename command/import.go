@@ -1,6 +1,7 @@
 package command
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -34,7 +35,7 @@ func init() {
 
 	importCmd.Flags().StringP("directory", "d", "src", "relative path to package.xml")
 
-	importCmd.Flags().BoolVarP(&errorOnTestFailure, "erroronfailure", "E", true, "exit with an error code if any tests fail")
+	importCmd.Flags().BoolP("erroronfailure", "E", true, "exit with an error code if any tests fail")
 
 	RootCmd.AddCommand(importCmd)
 }
@@ -57,10 +58,6 @@ var importCmd = &cobra.Command{
 	},
 	Args: cobra.MaximumNArgs(0),
 }
-
-var (
-	errorOnTestFailure bool
-)
 
 func sourceDir(cmd *cobra.Command) string {
 	directory, _ := cmd.Flags().GetString("directory")
@@ -119,7 +116,7 @@ func runImport(root string, options ForceDeployOptions, displayOptions *deployOu
 	if err == nil && displayOptions.reportFormat == "text" && !displayOptions.quiet {
 		fmt.Printf("Imported from %s\n", root)
 	}
-	if err != nil {
+	if err != nil && (!errors.Is(err, testFailureError) || displayOptions.errorOnTestFailure) {
 		ErrorAndExit(err.Error())
 	}
 }
