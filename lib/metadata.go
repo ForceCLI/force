@@ -1234,10 +1234,21 @@ func (fm *ForceMetadata) DeployZipFile(zipfile []byte, options ForceDeployOption
 	}
 }
 
+func deploySoapBody(zipfile []byte, options ForceDeployOptions) string {
+	if len(options.RunTests) > 0 {
+		options.TestLevel = "RunSpecifiedTests"
+	}
+	deployOptions, _ := xml.Marshal(options)
+	var soapBody strings.Builder
+	soapBody.WriteString("<zipFile>")
+	soapBody.WriteString(base64.StdEncoding.EncodeToString(zipfile))
+	soapBody.WriteString("</zipFile>")
+	soapBody.WriteString(string(deployOptions))
+	return soapBody.String()
+}
+
 func (fm *ForceMetadata) startDeployZipFile(zipfile []byte, options ForceDeployOptions) (string, error) {
-	soap := fm.MakeDeploySoap(options)
-	encoded := base64.StdEncoding.EncodeToString(zipfile)
-	body, err := fm.soapExecute("deploy", fmt.Sprintf(soap, encoded))
+	body, err := fm.soapExecute("deploy", deploySoapBody(zipfile, options))
 	if err != nil {
 		return "", err
 	}
