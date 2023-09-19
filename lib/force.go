@@ -2,6 +2,7 @@ package lib
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"encoding/xml"
 	"errors"
@@ -657,6 +658,32 @@ func (f *Force) GetSobject(name string) (sobject ForceSobject, err error) {
 	}
 	json.Unmarshal(body, &sobject)
 	return
+}
+
+func (f *Force) CancelableQueryAndSend(ctx context.Context, qs string, processor chan<- ForceRecord, options ...func(*QueryOptions)) error {
+	defer func() {
+		close(processor)
+	}()
+
+	qopts := f.legacyQueryOptions(qs, options...)
+	err := query.Query(func(records []query.Record) bool {
+		for _, row := range records {
+			select {
+			case <-ctx.Done():
+				return false
+			default:
+				processor <- row.Raw
+			}
+		}
+		return true
+	}, qopts...)
+	if err != nil {
+		return fmt.Errorf("Error querying records: %w", err)
+	}
+	if err = ctx.Err(); err != nil {
+		return fmt.Errorf("Query cancelled: %w", ctx.Err())
+	}
+	return err
 }
 
 func (f *Force) AbortableQueryAndSend(qs string, processor chan<- ForceRecord, abort <-chan bool, options ...func(*QueryOptions)) error {
