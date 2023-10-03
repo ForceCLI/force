@@ -13,6 +13,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/ForceCLI/force/lib/pubsub/proto"
+	"github.com/hamba/avro/v2"
 	"github.com/linkedin/goavro/v2"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -265,6 +266,82 @@ func (c *PubSubClient) fetchCodec(schemaId string) (*goavro.Codec, error) {
 	c.codecCache[schemaId] = codec
 
 	return codec, nil
+}
+
+// Wrapper function around the Publish RPC. This will add the OAuth credentials and produce a single hardcoded event to the specified topic.
+func (c *PubSubClient) Publish(channel string, message map[string]any) error {
+	topic, err := c.GetTopic(channel)
+	if err != nil {
+		return err
+	}
+	schema, err := c.GetSchema(topic.GetSchemaId())
+	if err != nil {
+		return err
+	}
+	Log.Info("Creating codec from schema...")
+	codec, err := avro.Parse(schema.SchemaJson)
+	if err != nil {
+		return err
+	}
+
+	if message["CreatedDate"] == nil {
+		message["CreatedDate"] = time.Now().Unix()
+	}
+	if message["CreatedById"] == nil {
+		message["CreatedById"] = c.session.UserInfo.UserId
+	}
+	switch message["CreatedDate"].(type) {
+	case int:
+		message["CreatedDate"] = int64(message["CreatedDate"].(int))
+	case time.Time:
+		message["CreatedDate"] = message["CreatedDate"].(time.Time).Unix()
+	}
+
+	payload, err := avro.Marshal(codec, message)
+	if err != nil {
+		return err
+	}
+
+	var trailer metadata.MD
+
+	req := &proto.PublishRequest{
+		TopicName: channel,
+		Events: []*proto.ProducerEvent{
+			{
+				SchemaId: schema.GetSchemaId(),
+				Payload:  payload,
+			},
+		},
+	}
+
+	ctx, cancelFn := context.WithTimeout(c.getAuthContext(), GRPCCallTimeout)
+	defer cancelFn()
+
+	pubResp, err := c.pubSubClient.Publish(ctx, req, grpc.Trailer(&trailer))
+	logTrailer(trailer)
+
+	if err != nil {
+		var errors []string
+		for _, r := range pubResp.GetResults() {
+			errors = append(errors, r.GetError().GetMsg())
+			Log.Info("Got Error", r.GetError().GetMsg())
+		}
+		if isAuthError(errors) {
+			return SessionExpiredError
+		}
+		return err
+	}
+
+	result := pubResp.GetResults()
+	if result == nil {
+		return fmt.Errorf("nil result returned when publishing to %s", channel)
+	}
+
+	if err := result[0].GetError(); err != nil {
+		return fmt.Errorf(result[0].GetError().GetMsg())
+	}
+
+	return nil
 }
 
 // Returns a new context with the necessary authentication parameters for the gRPC server

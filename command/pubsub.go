@@ -1,10 +1,13 @@
 package command
 
 import (
+	"fmt"
+
 	. "github.com/ForceCLI/force/error"
 	"github.com/ForceCLI/force/lib"
 	"github.com/ForceCLI/force/lib/pubsub"
 	"github.com/ForceCLI/force/lib/pubsub/proto"
+	"github.com/antonmedv/expr"
 
 	"github.com/spf13/cobra"
 )
@@ -16,7 +19,10 @@ func init() {
 	subscribeCmd.Flags().BoolP("quiet", "q", false, "disable status messages to stderr")
 	subscribeCmd.MarkFlagsMutuallyExclusive("replayid", "earliest")
 
+	publishCmd.Flags().BoolP("quiet", "q", false, "disable status messages to stderr")
+
 	pubsubCmd.AddCommand(subscribeCmd)
+	pubsubCmd.AddCommand(publishCmd)
 	RootCmd.AddCommand(pubsubCmd)
 }
 
@@ -61,4 +67,42 @@ var subscribeCmd = &cobra.Command{
 		}
 	},
 	Args: cobra.ExactArgs(1),
+}
+
+var publishCmd = &cobra.Command{
+	Use:   "publish <channel> <values>",
+	Short: "Publish event to a pub/sub channel",
+	Long:  "Publish an event to a pub/sub channel",
+	Example: `
+	force pubsub publish /event/My_Event__e '{My_Field__c: "My Value", CreatedDate: 946706400}'
+	`,
+	Run: func(cmd *cobra.Command, args []string) {
+		quiet, _ := cmd.Flags().GetBool("quiet")
+		if quiet {
+			var l quietLogger
+			lib.Log = l
+		}
+		channel := args[0]
+		message, err := exprToMap(args[1])
+		if err != nil {
+			ErrorAndExit(err.Error())
+		}
+		err = pubsub.Publish(force, channel, message)
+		if err != nil {
+			ErrorAndExit(err.Error())
+		}
+	},
+	Args: cobra.ExactArgs(2),
+}
+
+func exprToMap(e string) (map[string]any, error) {
+	out, err := expr.Eval(e, nil)
+	if err != nil {
+		return nil, fmt.Errorf("Invalid expression: %w", err)
+	}
+	message, ok := out.(map[string]any)
+	if !ok {
+		return nil, fmt.Errorf("Could not convert expression to map")
+	}
+	return message, nil
 }

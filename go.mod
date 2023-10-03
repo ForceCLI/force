@@ -7,11 +7,13 @@ require (
 	github.com/ForceCLI/force-md v0.0.0-20230407203303-8aa35b67422c
 	github.com/ForceCLI/inflect v0.0.0-20130829110746-cc00b5ad7a6a
 	github.com/ViViDboarder/gotifier v0.0.0-20140619195515-0f19f3d7c54c
+	github.com/antonmedv/expr v1.15.3
 	github.com/bgentry/speakeasy v0.1.0
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869
 	github.com/boljen/go-bitmap v0.0.0-20151001105940-23cd2fb0ce7d
 	github.com/devangel/config v0.0.0-20160113214547-0bb295da1e55
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
+	github.com/hamba/avro/v2 v2.16.0
 	github.com/linkedin/goavro/v2 v2.12.0
 	github.com/obeattie/ohmyglob v0.0.0-20150811221449-290764208a0d
 	github.com/olekukonko/tablewriter v0.0.5
@@ -35,10 +37,14 @@ require (
 	github.com/hpcloud/tail v1.0.0 // indirect
 	github.com/imdario/mergo v0.3.15 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
+	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/kr/text v0.1.0 // indirect
 	github.com/mattn/go-runewidth v0.0.14 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
+	github.com/mitchellh/mapstructure v1.5.0 // indirect
+	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
+	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
