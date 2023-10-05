@@ -69,6 +69,7 @@ func queryDeployRequests(format string) {
 	fields := []string{
 		"Id",
 		"Status",
+		"CreatedBy.Name",
 		"StartDate",
 		"CompletedDate",
 		"NumberComponentsDeployed",
