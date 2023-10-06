@@ -1,17 +1,27 @@
 version: 2
 jobs:
   build:
-    docker:
-      - image: cimg/go:1.20
+    machine:
+      image: ubuntu-2204:2023.07.2
     steps:
       - checkout
       - run: go install github.com/mitchellh/gox@v1.0.1
       - run: go install github.com/tcnksm/ghr@v0.16.0
       - run: sudo apt-get update && sudo apt-get install p7zip-full
+      - run: sudo bash -c "curl -L --output - https://github.com/crazy-max/xgo/releases/download/v0.30.0/xgo_0.30.0_linux_amd64.tar.gz | tar xvz -C /usr/local/bin/ ./xgo"
       - restore_cache: # restores saved cache if no changes are detected since last run
           keys:
             - go-mod-v4-{{ checksum "go.sum" }}
-      - run: make dist
+      - run:
+          command: |
+            sudo chmod 666 /var/run/docker.sock
+            if [ -f /var/run/docker-temp.sock ]; then
+              sudo chmod 666 /var/run/docker-temp.sock
+            fi
+      - run:
+          command: |
+            export GOPATH=/home/circleci/.go_workspace
+            make dist
       - save_cache:
           key: go-mod-v4-{{ checksum "go.sum" }}
           paths:
