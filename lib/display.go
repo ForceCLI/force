@@ -22,6 +22,12 @@ SystemModstamp 		%s
 NumberRecordsProcessed  %d
 `
 
+type NullValue string
+
+const nullFieldValue NullValue = ""
+
+func (e NullValue) String() string { return "(null)" }
+
 type ByXmlName []DescribeMetadataObject
 
 func (a ByXmlName) Len() int           { return len(a) }
@@ -323,7 +329,7 @@ func recordRow(record ForceRecord, columns []string, lengths map[string]int, pre
 			values[i] = strings.TrimSuffix(renderForceRecords(value, fmt.Sprintf("%s.%s", prefix, column), lengths), "\n")
 		default:
 			if value == nil {
-				values[i] = fmt.Sprintf(fmt.Sprintf(" %%-%ds ", lengths[column]-2), "(null)")
+				values[i] = fmt.Sprintf(fmt.Sprintf(" %%-%ds ", lengths[column]-2), "")
 			} else {
 				values[i] = fmt.Sprintf(fmt.Sprintf(" %%-%dv ", lengths[column]-2), value)
 			}
@@ -408,6 +414,10 @@ func flattenForceRecord(record ForceRecord) (flattened ForceRecord) {
 	flattened = make(ForceRecord)
 	for key, value := range record {
 		if key == "attributes" {
+			continue
+		}
+		if value == nil {
+			flattened[key] = nullFieldValue
 			continue
 		}
 		switch value := value.(type) {
