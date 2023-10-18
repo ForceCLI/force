@@ -4,8 +4,11 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
+	"github.com/ForceCLI/force/bubbles"
 	. "github.com/ForceCLI/force/error"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ssh/terminal"
@@ -24,9 +27,13 @@ func init() {
 	listDeployErrorsCmd.Flags().StringP("deploy-id", "d", "", "Deploy Id to cancel")
 	listDeployErrorsCmd.MarkFlagRequired("deploy-id")
 
+	watchDeployCmd.Flags().StringP("deploy-id", "d", "", "Deploy Id to cancel")
+	watchDeployCmd.MarkFlagRequired("deploy-id")
+
 	deploysCmd.AddCommand(listDeploysCmd)
 	deploysCmd.AddCommand(cancelDeployCmd)
 	deploysCmd.AddCommand(listDeployErrorsCmd)
+	deploysCmd.AddCommand(watchDeployCmd)
 
 	RootCmd.AddCommand(deploysCmd)
 }
@@ -62,6 +69,16 @@ var listDeployErrorsCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		deployId, _ := cmd.Flags().GetString("deploy-id")
 		displayErrors(deployId)
+	},
+}
+
+var watchDeployCmd = &cobra.Command{
+	Use:                   "watch",
+	Short:                 "Monitor metadata deploy",
+	DisableFlagsInUseLine: false,
+	Run: func(cmd *cobra.Command, args []string) {
+		deployId, _ := cmd.Flags().GetString("deploy-id")
+		watchDeploy(deployId)
 	},
 }
 
@@ -152,4 +169,23 @@ func displayErrors(deployId string) {
 	if table.NumLines() > 0 {
 		table.Render()
 	}
+}
+
+func watchDeploy(deployId string) {
+	d := bubbles.NewDeployModel()
+	p := tea.NewProgram(d)
+	go func() {
+		for {
+			result, err := force.Metadata.CheckDeployStatus(deployId)
+			if err != nil {
+				ErrorAndExit("Error checking deploy status: " + err.Error())
+			}
+			p.Send(bubbles.NewStatusMsg{result})
+			time.Sleep(2 * time.Second)
+			if result.Done {
+				p.Send(bubbles.QuitMsg{})
+			}
+		}
+	}()
+	p.Run()
 }
