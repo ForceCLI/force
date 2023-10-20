@@ -22,11 +22,11 @@ SystemModstamp 		%s
 NumberRecordsProcessed  %d
 `
 
-type NullValue string
+type NullValue struct{}
 
-const nullFieldValue NullValue = ""
-
-func (e NullValue) String() string { return "(null)" }
+var (
+	nullFieldValue = NullValue{}
+)
 
 type ByXmlName []DescribeMetadataObject
 
@@ -328,9 +328,12 @@ func recordRow(record ForceRecord, columns []string, lengths map[string]int, pre
 		case []ForceRecord:
 			values[i] = strings.TrimSuffix(renderForceRecords(value, fmt.Sprintf("%s.%s", prefix, column), lengths), "\n")
 		default:
-			if value == nil {
+			switch value.(type) {
+			case NullValue:
+				values[i] = fmt.Sprintf(fmt.Sprintf(" %%-%ds ", lengths[column]-2), "(null)")
+			case nil:
 				values[i] = fmt.Sprintf(fmt.Sprintf(" %%-%ds ", lengths[column]-2), "")
-			} else {
+			default:
 				values[i] = fmt.Sprintf(fmt.Sprintf(" %%-%dv ", lengths[column]-2), value)
 			}
 		}
@@ -400,9 +403,15 @@ func RenderForceRecordsCSV(records <-chan ForceRecord, done chan<- bool) {
 		}
 		myvalues := make([]string, len(keys))
 		for i, key := range keys {
-			var value = fmt.Sprintf(`%v`, flattenedRecord[key])
-			value = strings.Replace(value, "<nil>", "", -1)
-			value = strings.Replace(value, `"`, `""`, -1)
+			var value string
+			switch v := flattenedRecord[key].(type) {
+			case NullValue:
+				value = ""
+			default:
+				value = fmt.Sprintf(`%v`, v)
+				value = strings.Replace(value, "<nil>", "", -1)
+				value = strings.Replace(value, `"`, `""`, -1)
+			}
 			myvalues[i] = value
 		}
 		os.Stdout.WriteString(fmt.Sprintf(`"%s"%s`, strings.Join(myvalues, `","`), "\n"))
