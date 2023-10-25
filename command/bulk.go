@@ -56,8 +56,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ForceCLI/force/bubbles"
 	. "github.com/ForceCLI/force/error"
 	. "github.com/ForceCLI/force/lib"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
 )
 
@@ -67,6 +69,7 @@ func init() {
 		cmd.Flags().StringP("format", "f", "CSV", "file `format`")
 		cmd.Flags().StringP("concurrencymode", "m", "Parallel", "Concurrency `mode`.  Valid options are Serial and Parallel.")
 		cmd.Flags().BoolP("wait", "w", false, "Wait for job to complete")
+		cmd.Flags().BoolP("interactive", "i", false, "interactive mode.  implies --wait")
 	}
 	for _, cmd := range cmds[:len(cmds)-1] {
 		cmd.Flags().IntP("batchsize", "b", 10000, "Batch size")
@@ -89,6 +92,7 @@ func init() {
 	// Get Bulk Job Status
 	bulkCmd.AddCommand(bulkRetrieveCmd)
 	bulkCmd.AddCommand(bulkJobCmd)
+	bulkCmd.AddCommand(bulkWatchCmd)
 	bulkCmd.AddCommand(bulkBatchCmd)
 	bulkCmd.AddCommand(bulkBatchesCmd)
 
@@ -142,6 +146,10 @@ var bulkQueryCmd = &cobra.Command{
 		pkChunkParent, _ := cmd.Flags().GetString("parent")
 		jobInfo, batchId := startBulkQuery(objectType, query, format, concurrencyMode, pkChunkSize, pkChunkParent)
 		wait, _ := cmd.Flags().GetBool("wait")
+		interactive, _ := cmd.Flags().GetBool("interactive")
+		if interactive {
+			wait = true
+		}
 		if !wait {
 			fmt.Println("Query Submitted")
 			if pkChunkSize == 0 {
@@ -152,7 +160,11 @@ var bulkQueryCmd = &cobra.Command{
 			}
 			return
 		}
-		waitForJob(jobInfo)
+		if interactive {
+			startBubbleProgram(jobInfo)
+		} else {
+			waitForJob(jobInfo)
+		}
 		displayQueryResults(jobInfo)
 	},
 	Args: cobra.ExactArgs(2),
@@ -172,6 +184,15 @@ var bulkJobCmd = &cobra.Command{
 	Short: "Show bulk job details",
 	Run: func(cmd *cobra.Command, args []string) {
 		showJobDetails(args[0])
+	},
+	Args: cobra.ExactArgs(1),
+}
+
+var bulkWatchCmd = &cobra.Command{
+	Use:   "watch <jobId>",
+	Short: "Show bulk job details",
+	Run: func(cmd *cobra.Command, args []string) {
+		watchJob(args[0])
 	},
 	Args: cobra.ExactArgs(1),
 }
@@ -222,13 +243,41 @@ func runBulkCmd(cmd *cobra.Command, args []string) {
 	format, _ := cmd.Flags().GetString("format")
 	concurrencyMode, _ := cmd.Flags().GetString("concurrencymode")
 	wait, _ := cmd.Flags().GetBool("wait")
+	interactive, _ := cmd.Flags().GetBool("interactive")
+	if interactive {
+		wait = true
+	}
 	batchSize, _ := cmd.Flags().GetInt("batchsize")
 	jobInfo, batchInfo := startBulkJob(cmd.Name(), file, objectType, externalId, format, concurrencyMode, batchSize)
 	if !wait {
 		fmt.Printf("Job created ( %s ) - for job status use\n force bulk batch %s %s\n", jobInfo.Id, jobInfo.Id, batchInfo.Id)
 		return
 	}
-	waitForJob(jobInfo)
+	if interactive {
+		startBubbleProgram(jobInfo)
+	} else {
+		waitForJob(jobInfo)
+	}
+}
+
+func startBubbleProgram(jobInfo JobInfo) {
+	d := bubbles.NewJobModel()
+	p := tea.NewProgram(d, tea.WithOutput(os.Stderr))
+	go func() {
+		for {
+			status, err := force.GetJobInfo(jobInfo.Id)
+			if err != nil {
+				ErrorAndExit("Failed to get bulk job status: " + err.Error())
+			}
+			done := status.NumberBatchesCompleted+status.NumberBatchesFailed == status.NumberBatchesTotal
+			p.Send(bubbles.NewJobStatusMsg{JobInfo: status})
+			time.Sleep(2 * time.Second)
+			if done {
+				p.Send(bubbles.QuitMsg{})
+			}
+		}
+	}()
+	p.Run()
 }
 
 func waitForJob(jobInfo JobInfo) {
@@ -384,6 +433,11 @@ func retrieveBulkQueryResults(jobId string, batchId string, resultId string) (da
 func showJobDetails(jobId string) {
 	jobInfo := getJobDetails(jobId)
 	DisplayJobInfo(jobInfo, os.Stdout)
+}
+
+func watchJob(jobId string) {
+	jobInfo := getJobDetails(jobId)
+	startBubbleProgram(jobInfo)
 }
 
 func listBatches(jobId string) {

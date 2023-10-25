@@ -175,11 +175,13 @@ type ForceCheckDeploymentStatusResult struct {
 	CheckOnly                bool             `xml:"checkOnly"`
 	CompletedDate            time.Time        `xml:"completedDate"`
 	CreatedDate              time.Time        `xml:"createdDate"`
+	CreatedByName            string           `xml:"createdByName"`
 	Details                  ComponentDetails `xml:"details"`
 	Done                     bool             `xml:"done"`
 	Id                       string           `xml:"id"`
 	ErrorMessage             string           `xml:"errorMessage"`
 	ErrorStatusCode          string           `xml:"errorStatusCode"`
+	LastModifiedDate         time.Time        `xml:"lastModifiedDate"`
 	NumberComponentErrors    int              `xml:"numberComponentErrors"`
 	NumberComponentsDeployed int              `xml:"numberComponentsDeployed"`
 	NumberComponentsTotal    int              `xml:"numberComponentsTotal"`
