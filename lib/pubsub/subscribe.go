@@ -2,8 +2,10 @@ package pubsub
 
 import (
 	"fmt"
+	"strconv"
 
 	"encoding/base64"
+	"encoding/binary"
 
 	. "github.com/ForceCLI/force/lib"
 	"github.com/pkg/errors"
@@ -15,9 +17,9 @@ func Subscribe(f *Force, channel string, replayId string, replayPreset proto.Rep
 	var curReplayId []byte
 	var err error
 	if replayId != "" {
-		curReplayId, err = base64.StdEncoding.DecodeString(replayId)
+		curReplayId, err = parseReplayId(replayId)
 		if err != nil {
-			return errors.Wrap(err, "could not decode replay id")
+			return fmt.Errorf("Could not parse replay id: %w", err)
 		}
 	}
 
@@ -75,4 +77,19 @@ func Subscribe(f *Force, channel string, replayId string, replayPreset proto.Rep
 			Log.Info(fmt.Sprintf("error occurred while subscribing to topic: %v", err))
 		}
 	}
+}
+
+// Try to parse replay id as a number first, then as a base64-encoded byte
+// array
+func parseReplayId(replayId string) ([]byte, error) {
+	buf := make([]byte, 8)
+	if n, err := strconv.ParseInt(replayId, 10, 64); err == nil {
+		binary.BigEndian.PutUint64(buf, uint64(n))
+		return buf, nil
+	}
+	buf, err := base64.StdEncoding.DecodeString(replayId)
+	if err != nil {
+		return buf, errors.Wrap(err, "could not decode replay id")
+	}
+	return buf, nil
 }
