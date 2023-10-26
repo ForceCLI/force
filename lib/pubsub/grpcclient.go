@@ -3,7 +3,7 @@ package pubsub
 import (
 	"context"
 	"crypto/x509"
-	"encoding/base64"
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -189,7 +189,7 @@ func (c *PubSubClient) Subscribe(channel string, replayPreset proto.ReplayPreset
 				return curReplayId, err
 			}
 			fmt.Println(string(j))
-			Log.Info(fmt.Sprintf("ReplayId (%s): %s", channel, base64.StdEncoding.EncodeToString(curReplayId)))
+			Log.Info(fmt.Sprintf("ReplayId (%s): %d", channel, int64(binary.BigEndian.Uint64(curReplayId))))
 
 			// decrement our counter to keep track of how many events have been requested but not yet processed. If we're below our configured
 			// batch size then proactively request more events to stay ahead of the processor
