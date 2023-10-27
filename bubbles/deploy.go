@@ -14,7 +14,8 @@ import (
 
 type DeployModel struct {
 	force.ForceCheckDeploymentStatusResult
-	progress progress.Model
+	progress     progress.Model
+	testProgress progress.Model
 }
 
 type NewStatusMsg struct {
@@ -24,13 +25,16 @@ type NewStatusMsg struct {
 func (m DeployModel) Init() tea.Cmd {
 	return nil
 }
+
 func (m DeployModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmds []tea.Cmd
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.progress.Width = msg.Width - padding*2 - 4
 		if m.progress.Width > maxWidth {
 			m.progress.Width = maxWidth
 		}
+		m.testProgress.Width = m.progress.Width
 		return m, nil
 
 	case NewStatusMsg:
@@ -39,17 +43,26 @@ func (m DeployModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if completion < 0.01 {
 			completion = 0
 		}
-		cmd := m.progress.SetPercent(completion)
-		return m, cmd
+		cmds = append(cmds, m.progress.SetPercent(completion))
+
+		testCompletion := float64(m.NumberTestsCompleted) / float64(m.NumberTestsTotal)
+		if testCompletion < 0.01 {
+			testCompletion = 0
+		}
+		cmds = append(cmds, m.testProgress.SetPercent(testCompletion))
+
+		return m, tea.Batch(cmds...)
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "q", "ctrl+c":
 			return m, tea.Quit
 		}
 	case progress.FrameMsg:
-		progressModel, cmd := m.progress.Update(msg)
+		progressModel, progressCmd := m.progress.Update(msg)
 		m.progress = progressModel.(progress.Model)
-		return m, cmd
+		testProgressModel, testProgressCmd := m.testProgress.Update(msg)
+		m.testProgress = testProgressModel.(progress.Model)
+		return m, tea.Batch(progressCmd, testProgressCmd)
 	case QuitMsg:
 		return m, tea.Quit
 	}
@@ -85,6 +98,9 @@ func (m DeployModel) View() string {
 		header, "", id, status, stateDetail, success, createdDate, createdBy,
 		lastModifiedDate, totalComponents, deployedComponents, m.progress.View(), totalTests,
 		passedTests,
+	}
+	if m.NumberTestsCompleted > 0 {
+		components = append(components, m.testProgress.View())
 	}
 	if m.NumberTestsTotal > 0 {
 		components = append(components, "", testResultsHeader, numTestsRun, numTestsPassed, totalTime)
@@ -123,6 +139,7 @@ func (m DeployModel) View() string {
 
 func NewDeployModel() DeployModel {
 	return DeployModel{
-		progress: progress.New(progress.WithDefaultGradient()),
+		progress:     progress.New(progress.WithDefaultGradient()),
+		testProgress: progress.New(progress.WithDefaultGradient()),
 	}
 }
