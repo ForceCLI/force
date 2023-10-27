@@ -128,10 +128,35 @@ func runPush(metadataTypes []string, metadataNames []string, resourcePaths []str
 	}
 }
 
+func sourceDirFromPaths(resourcePaths []string) string {
+	p := ""
+	for _, path := range resourcePaths {
+		parts := strings.Split(path, string(os.PathSeparator))
+		first := parts[0]
+		if p == "" {
+			p = first
+		} else if p != first {
+			// We found more than one leading path component
+			fmt.Println("could not detect sourceDir from paths. " + p + " != " + first)
+			return ""
+		}
+	}
+	p, err := filepath.Abs(p)
+	if err != nil {
+		fmt.Println("could not detect sourceDir from paths:", err.Error())
+		return ""
+	}
+	return p
+}
+
 func pushByPaths(resourcePaths []string, deployOptions *ForceDeployOptions, displayOptions *deployOutputOptions) {
 	pb := NewPushBuilder()
-	sourceDir, err := config.GetSourceDir()
-	ExitIfNoSourceDir(err)
+	sourceDir := sourceDirFromPaths(resourcePaths)
+	var err error
+	if sourceDir == "" {
+		sourceDir, err = config.GetSourceDir()
+		ExitIfNoSourceDir(err)
+	}
 	pb.Root = sourceDir
 	for _, p := range resourcePaths {
 		f, err := os.Stat(p)
