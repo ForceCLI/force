@@ -91,6 +91,8 @@ func init() {
 
 	// Get Bulk Job Status
 	bulkCmd.AddCommand(bulkRetrieveCmd)
+	bulkCmd.AddCommand(bulkResultCmd)
+	bulkCmd.AddCommand(bulkRequestCmd)
 	bulkCmd.AddCommand(bulkJobCmd)
 	bulkCmd.AddCommand(bulkWatchCmd)
 	bulkCmd.AddCommand(bulkBatchCmd)
@@ -179,6 +181,24 @@ var bulkRetrieveCmd = &cobra.Command{
 	Args: cobra.ExactArgs(2),
 }
 
+var bulkResultCmd = &cobra.Command{
+	Use:   "result <jobId> <batchId>",
+	Short: "Retrieve job results using Bulk API",
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println(string(retrieveBulkJobBatchResult(args[0], args[1])))
+	},
+	Args: cobra.ExactArgs(2),
+}
+
+var bulkRequestCmd = &cobra.Command{
+	Use:   "request <jobId> <batchId>",
+	Short: "Retrieve job request using Bulk API",
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println(string(retrieveBulkJobBatchRequest(args[0], args[1])))
+	},
+	Args: cobra.ExactArgs(2),
+}
+
 var bulkJobCmd = &cobra.Command{
 	Use:   "job <jobId>",
 	Short: "Show bulk job details",
@@ -225,7 +245,7 @@ var bulkCmd = &cobra.Command{
   force bulk upsert -e ExternalIdField__c Account [csv file]
   force bulk job [job id]
   force bulk batches [job id]
-  force Bulk batch [job id] [batch id]
+  force bulk batch [job id] [batch id]
   force bulk query [-wait | -w] Account [SOQL]
   force bulk query [-chunk | -p]=50000 Account [SOQL]
   force bulk retrieve [job id] [batch id]
@@ -405,6 +425,22 @@ func getBulkQueryResults(jobId string, batchId string) (data []byte) {
 	}
 
 	return
+}
+
+func retrieveBulkJobBatchResult(jobId string, batchId string) (result []byte) {
+	result, err := force.RetrieveBulkQuery(jobId, batchId)
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
+	return result
+}
+
+func retrieveBulkJobBatchRequest(jobId string, batchId string) (result []byte) {
+	result, err := force.RetrieveBulkRequest(jobId, batchId)
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
+	return result
 }
 
 func retrieveBulkQuery(jobId string, batchId string) (resultIds []string) {
