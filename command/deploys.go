@@ -1,6 +1,7 @@
 package command
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -8,6 +9,7 @@ import (
 
 	"github.com/ForceCLI/force/bubbles"
 	. "github.com/ForceCLI/force/error"
+	. "github.com/ForceCLI/force/lib"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
@@ -28,7 +30,6 @@ func init() {
 	listDeployErrorsCmd.MarkFlagRequired("deploy-id")
 
 	watchDeployCmd.Flags().StringP("deploy-id", "d", "", "Deploy Id to cancel")
-	watchDeployCmd.MarkFlagRequired("deploy-id")
 
 	deploysCmd.AddCommand(listDeploysCmd)
 	deploysCmd.AddCommand(cancelDeployCmd)
@@ -76,10 +77,36 @@ var watchDeployCmd = &cobra.Command{
 	Use:                   "watch",
 	Short:                 "Monitor metadata deploy",
 	DisableFlagsInUseLine: false,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		deployId, _ := cmd.Flags().GetString("deploy-id")
+		if deployId == "" {
+			deployId = getCurrentDeploy()
+		}
+		if deployId == "" {
+			return fmt.Errorf("No active deploy.  Use --deploy-id for a past deploy.")
+		}
 		watchDeploy(deployId)
+		return nil
 	},
+}
+
+func getCurrentDeploy() string {
+	query := "SELECT Id FROM DeployRequest WHERE Status = 'InProgress' ORDER BY CreatedDate LIMIT 1"
+	queryOptions := func(options *QueryOptions) {
+		options.IsTooling = true
+	}
+	result, err := force.Query(fmt.Sprintf("%s", query), queryOptions)
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
+	if len(result.Records) != 1 {
+		return ""
+	}
+	record := result.Records[0]
+	if id, ok := record["Id"].(string); ok {
+		return id
+	}
+	return ""
 }
 
 func queryDeployRequests(format string) {
