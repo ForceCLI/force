@@ -131,9 +131,6 @@ func (r *Request) toHttpCallback(forceResponse *Response) HttpCallback {
 // ExecuteRequest executes an HTTP request based on Request,
 // processes the HTTP response in the configured way,
 // and returns the Response.
-//
-// ExecuteRequest will retry once on a SessionExpired error
-// (future versions may allow configurable retry behavior).
 func (f *Force) ExecuteRequest(r *Request) (*Response, error) {
 	var absUrl string
 	if r.absoluteUrl != "" {
@@ -141,13 +138,16 @@ func (f *Force) ExecuteRequest(r *Request) (*Response, error) {
 	} else {
 		absUrl = f.qualifyUrl(r.rootedUrl)
 	}
+
+	retrier := f.GetRetrier()
+
 	reqResp := &Response{}
 	inp := &httpRequestInput{
 		Method:   r.method,
 		Url:      absUrl,
 		Headers:  r.Headers,
 		Callback: r.toHttpCallback(reqResp),
-		Retrier:  (&httpRetrier{}).Reauth(),
+		retrier:  retrier,
 		Body:     r.body,
 	}
 	if !r.unauthed {

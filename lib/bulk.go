@@ -166,7 +166,7 @@ func (f *Force) BulkQuery(soql string, jobId string, contentType string, request
 	httpCt := httpContentTypeForJobContentType[jct]
 	unmarshal := httpResponseUnmarshalerForJobContentType[jct]
 
-	body, err := f.httpPostPatch(url, soql, httpCt, HttpMethodPost, requestOptions...)
+	body, err := f.httpPostPatchWithRetry(url, soql, httpCt, HttpMethodPost, requestOptions...)
 	if err != nil {
 		return BatchInfo{}, err
 	}
@@ -183,7 +183,7 @@ func (f *Force) AddBatchToJob(content string, job JobInfo) (BatchInfo, error) {
 		return BatchInfo{}, err
 	}
 	url := fmt.Sprintf("%s/services/async/%s/job/%s/batch", f.Credentials.InstanceUrl, apiVersionNumber, job.Id)
-	body, err := f.httpPostPatch(url, content, httpContentTypeForJobContentType[jct], HttpMethodPost)
+	body, err := f.httpPostPatchWithRetry(url, content, httpContentTypeForJobContentType[jct], HttpMethodPost)
 	if err != nil {
 		return BatchInfo{}, err
 	}

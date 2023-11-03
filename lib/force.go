@@ -9,11 +9,13 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math/rand"
 	"net"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/ForceCLI/force/desktop"
 	. "github.com/ForceCLI/force/error"
@@ -55,6 +57,7 @@ type Force struct {
 	Credentials *ForceSession
 	Metadata    *ForceMetadata
 	Partner     *ForcePartner
+	retrier     *HttpRetrier
 }
 
 type UserInfo struct {
@@ -281,6 +284,16 @@ func NewForce(creds *ForceSession) (force *Force) {
 	force.Credentials = creds
 	force.Metadata = NewForceMetadata(force)
 	force.Partner = NewForcePartner(force)
+	force.retrier = DefaultRetrier()
+	return
+}
+
+func NewForceWithRetrier(creds *ForceSession, retrier *HttpRetrier) (force *Force) {
+	force = new(Force)
+	force.Credentials = creds
+	force.Metadata = NewForceMetadata(force)
+	force.Partner = NewForcePartner(force)
+	force.retrier = retrier
 	return
 }
 
@@ -1187,13 +1200,15 @@ func (f *Force) makeHttpRequestSync(req *Request) (body []byte, err error) {
 func (f *Force) makeHttpRequest(input *httpRequestInput) error {
 	for {
 		res, err := f._makeHttpRequestWithoutRetry(input)
-		if !input.Retrier.ShouldRetry(res, err) {
+
+		if !input.retrier.shouldRetry(res, err) {
 			if err != nil {
 				return err
 			}
 			cberr := input.Callback(res)
 			return cberr
 		}
+
 		if err == SessionExpiredError {
 			// If refreshing causes an error, we should return the original error.
 			// Otherwise we end up retrying even if we haven't updated auth.
@@ -1201,7 +1216,10 @@ func (f *Force) makeHttpRequest(input *httpRequestInput) error {
 				return err
 			}
 			f.setHttpInputAuth(input)
+		} else if input.retrier.backoffDelay > 0 && input.retrier.attempt < input.retrier.maxAttempts {
+			time.Sleep(time.Duration(rand.Int63n(int64(input.retrier.backoffDelay / time.Nanosecond))))
 		}
+
 	}
 }
 
@@ -1274,17 +1292,35 @@ func (f *Force) _coerceHttpError(res *http.Response, body []byte) error {
 }
 
 func (f *Force) httpPostPatchWithRetry(url string, rbody string, contenttype ContentType, method HttpMethod, requestOptions ...func(*http.Request)) ([]byte, error) {
-	body, err := f.httpPostPatch(url, rbody, contenttype, method, requestOptions...)
-	if err == SessionExpiredError {
-		if err := f.RefreshSession(); err != nil {
+	retrier := f.GetRetrier()
+
+	for {
+		res, err := f.httpPostPatch(url, rbody, contenttype, method, requestOptions...)
+		var body []byte
+
+		if err == nil {
+			body, err = f.readResponseBody(res)
+		}
+
+		if err == nil {
+			return body, nil
+		}
+		if !retrier.shouldRetry(res, err) {
 			return nil, err
 		}
-		return f.httpPostPatch(url, rbody, contenttype, method, requestOptions...)
+
+		if err == SessionExpiredError {
+			if refreshedErr := f.RefreshSession(); refreshedErr != nil {
+				return body, err
+			}
+		} else if retrier.backoffDelay > 0 && retrier.attempt < retrier.maxAttempts {
+			time.Sleep(time.Duration(rand.Int63n(int64(retrier.backoffDelay / time.Nanosecond))))
+		}
+
 	}
-	return body, err
 }
 
-func (f *Force) httpPostPatch(url string, rbody string, contenttype ContentType, method HttpMethod, requestOptions ...func(*http.Request)) ([]byte, error) {
+func (f *Force) httpPostPatch(url string, rbody string, contenttype ContentType, method HttpMethod, requestOptions ...func(*http.Request)) (*http.Response, error) {
 	req, err := httpRequest(string(method), url, strings.NewReader(rbody))
 	if err != nil {
 		return nil, err
@@ -1297,25 +1333,31 @@ func (f *Force) httpPostPatch(url string, rbody string, contenttype ContentType,
 	req.Header.Add("X-SFDC-Session", f.Credentials.AccessToken)
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", f.Credentials.AccessToken))
 	req.Header.Add("Content-Type", string(contenttype))
+
 	res, err := doRequest(req)
-	if err != nil {
-		return nil, err
-	}
-	defer res.Body.Close()
+
 	if res.StatusCode == 401 {
 		return nil, SessionExpiredError
 	}
+
+	return res, err
+}
+
+func (f *Force) readResponseBody(res *http.Response) ([]byte, error) {
+	defer res.Body.Close()
+
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		return nil, err
 	}
 	if res.StatusCode/100 == 2 {
 		return body, nil
-	} else if res.StatusCode == 204 {
-		return []byte("Patch command succeeded...."), nil
-	} else {
-		return body, f._coerceHttpError(res, body)
 	}
+	if res.StatusCode == 204 {
+		return []byte("Patch command succeeded...."), nil
+	}
+
+	return body, f._coerceHttpError(res, body)
 }
 
 func (f *Force) httpPost(url string, attrs map[string]string) (body []byte, err error, emessages []ForceError) {
@@ -1514,4 +1556,21 @@ func (force *Force) GetCredentials() *ForceSession {
 
 func (force *Force) GetPartner() *ForcePartner {
 	return force.Partner
+}
+
+func (force *Force) GetRetrier() *HttpRetrier {
+	if force.retrier == nil {
+		return &HttpRetrier{}
+	}
+
+	return NewHttpRetrier(force.retrier.maxAttempts, force.retrier.backoffDelay, force.retrier.retryOnErrors...)
+}
+
+func (force *Force) WithRetrier(retrier *HttpRetrier) *Force {
+	return &Force{
+		Credentials: force.GetCredentials(),
+		Metadata:    force.GetMetadata(),
+		Partner:     force.GetPartner(),
+		retrier:     retrier,
+	}
 }
