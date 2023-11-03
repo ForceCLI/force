@@ -271,6 +271,15 @@ func (f *Force) RetrieveBulkQuery(jobId string, batchId string) ([]byte, error) 
 	return resp.ReadResponseBody, nil
 }
 
+func (f *Force) RetrieveBulkRequest(jobId string, batchId string) ([]byte, error) {
+	url := fmt.Sprintf("%s/services/async/%s/job/%s/batch/%s/request", f.Credentials.InstanceUrl, apiVersionNumber, jobId, batchId)
+	resp, err := f.httpGetBulk(url)
+	if err != nil {
+		return nil, err
+	}
+	return resp.ReadResponseBody, nil
+}
+
 func (f *Force) RetrieveBulkQueryResults(jobId string, batchId string, resultId string) ([]byte, error) {
 	url := fmt.Sprintf("%s/services/async/%s/job/%s/batch/%s/result/%s", f.Credentials.InstanceUrl, apiVersionNumber, jobId, batchId, resultId)
 	resp, err := f.httpGetBulk(url)
