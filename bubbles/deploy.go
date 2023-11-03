@@ -60,8 +60,10 @@ func (m DeployModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case progress.FrameMsg:
 		progressModel, progressCmd := m.progress.Update(msg)
 		m.progress = progressModel.(progress.Model)
+
 		testProgressModel, testProgressCmd := m.testProgress.Update(msg)
 		m.testProgress = testProgressModel.(progress.Model)
+
 		return m, tea.Batch(progressCmd, testProgressCmd)
 	case QuitMsg:
 		return m, tea.Quit
@@ -70,9 +72,19 @@ func (m DeployModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m DeployModel) View() string {
-	header := headerStyle.Render("Deployment Status")
+	headerLabel := "Deployment Status"
+	if m.CheckOnly {
+		headerLabel = "Validation Deployment Status"
+	}
+	header := headerStyle.Render(headerLabel)
 	id := infoStyle.Render(fmt.Sprintf("ID: %s", m.Id))
-	status := infoStyle.Render(fmt.Sprintf("Status: %s", m.Status))
+	var status string
+	switch m.Status {
+	case "Canceled", "Failed":
+		status = failureStyle.Render(fmt.Sprintf("Status: %s", m.Status))
+	default:
+		status = infoStyle.Render(fmt.Sprintf("Status: %s", m.Status))
+	}
 	stateDetail := detailStyle.Render(fmt.Sprintf("State Detail: %s", m.StateDetail))
 	success := infoStyle.Render(fmt.Sprintf("Success: %v", m.Success))
 	createdDate := infoStyle.Render(fmt.Sprintf("Created Date: %s", m.CreatedDate))
@@ -91,7 +103,7 @@ func (m DeployModel) View() string {
 	failuresHeader := subHeaderStyle.Render("Test Failures:")
 	failures := ""
 	for _, failure := range m.Details.RunTestResult.TestFailures {
-		failures += failureStyle.Render(fmt.Sprintf("Method: %s | Message: %s", failure.MethodName, failure.Message)) + "\n"
+		failures += failureStyle.Render(fmt.Sprintf("Method: %s::%s | Message: %s", failure.Name, failure.MethodName, failure.Message)) + "\n"
 	}
 
 	components := []string{
@@ -101,8 +113,10 @@ func (m DeployModel) View() string {
 	}
 	if m.NumberTestsCompleted > 0 {
 		components = append(components, m.testProgress.View())
+	} else {
+		components = append(components, m.testProgress.ViewAs(0))
 	}
-	if m.NumberTestsTotal > 0 {
+	if m.Details.RunTestResult.NumberOfTestsRun > 0 {
 		components = append(components, "", testResultsHeader, numTestsRun, numTestsPassed, totalTime)
 	}
 	if len(m.Details.RunTestResult.TestFailures) > 0 {
