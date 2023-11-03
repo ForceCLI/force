@@ -1,6 +1,7 @@
 package lib
 
 import (
+	"context"
 	"encoding/xml"
 	"errors"
 	"fmt"
@@ -116,6 +117,22 @@ func (f *Force) CreateBulkJob(jobInfo JobInfo, requestOptions ...func(*http.Requ
 		return result, err
 	}
 	return result, nil
+}
+
+func (f *Force) CloseBulkJobWithContext(ctx context.Context, jobId string) (JobInfo, error) {
+	done := make(chan struct{})
+	var jobInfo JobInfo
+	var err error
+	go func() {
+		defer close(done)
+		jobInfo, err = f.CloseBulkJob(jobId)
+	}()
+	select {
+	case <-ctx.Done():
+		return JobInfo{}, fmt.Errorf("CloseBulkJob canceled: %w", ctx.Err())
+	case <-done:
+		return jobInfo, err
+	}
 }
 
 func (f *Force) CloseBulkJob(jobId string) (JobInfo, error) {
