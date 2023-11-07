@@ -3,6 +3,7 @@ package bubbles
 import (
 	"bytes"
 	"fmt"
+	"math"
 	"strconv"
 
 	force "github.com/ForceCLI/force/lib"
@@ -40,13 +41,13 @@ func (m DeployModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case NewStatusMsg:
 		m.ForceCheckDeploymentStatusResult = msg.ForceCheckDeploymentStatusResult
 		completion := float64(m.NumberComponentsDeployed) / float64(m.NumberComponentsTotal)
-		if completion < 0.01 {
+		if math.IsNaN(completion) || completion < 0.01 {
 			completion = 0
 		}
 		cmds = append(cmds, m.progress.SetPercent(completion))
 
 		testCompletion := float64(m.NumberTestsCompleted) / float64(m.NumberTestsTotal)
-		if testCompletion < 0.01 {
+		if math.IsNaN(testCompletion) || testCompletion < 0.01 {
 			testCompletion = 0
 		}
 		cmds = append(cmds, m.testProgress.SetPercent(testCompletion))
