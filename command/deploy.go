@@ -17,6 +17,7 @@ import (
 type deployOutputOptions struct {
 	verbosity                  int
 	quiet                      bool
+	interactive                bool
 	reportFormat               string
 	ignoreCodeCoverageWarnings bool
 	suppressUnexpectedError    bool
@@ -37,6 +38,33 @@ func defaultDeployOutputOptions() *deployOutputOptions {
 
 var testFailureError = errors.New("Apex tests failed")
 
+func monitorDeploy(deployId string) (ForceCheckDeploymentStatusResult, error) {
+	var result ForceCheckDeploymentStatusResult
+	var err error
+	retrying := false
+	for {
+		result, err = force.Metadata.CheckDeployStatus(deployId)
+		if err != nil {
+			if retrying {
+				return result, fmt.Errorf("Error getting deploy status: %w", err)
+			} else {
+				retrying = true
+				Log.Info(fmt.Sprintf("Received error checking deploy status: %s.  Will retry once before aborting.", err.Error()))
+			}
+		} else {
+			retrying = false
+		}
+		if result.Done {
+			break
+		}
+		if !retrying {
+			Log.Info(result)
+		}
+		time.Sleep(5000 * time.Millisecond)
+	}
+	return result, err
+}
+
 func deploy(force *Force, files ForceMetadataFiles, deployOptions *ForceDeployOptions, outputOptions *deployOutputOptions) error {
 	if outputOptions.quiet {
 		previousLogger := Log
@@ -52,27 +80,13 @@ func deploy(force *Force, files ForceMetadataFiles, deployOptions *ForceDeployOp
 		ErrorAndExit(err.Error())
 	}
 	stopDeployUponSignal(force, deployId)
-	var result ForceCheckDeploymentStatusResult
-	retrying := false
-	for {
-		result, err = force.Metadata.CheckDeployStatus(deployId)
-		if err != nil {
-			if retrying {
-				return fmt.Errorf("Error getting deploy status: %w", err)
-			} else {
-				retrying = true
-				Log.Info(fmt.Sprintf("Received error checking deploy status: %s.  Will retry once before aborting.", err.Error()))
-			}
-		} else {
-			retrying = false
-		}
-		if result.Done {
-			break
-		}
-		if !retrying {
-			Log.Info(result)
-		}
-		time.Sleep(5000 * time.Millisecond)
+	if outputOptions.interactive {
+		watchDeploy(deployId)
+		return nil
+	}
+	result, err := monitorDeploy(deployId)
+	if err != nil {
+		return err
 	}
 	endTime := time.Now()
 	duration := endTime.Sub(startTime)
@@ -173,6 +187,10 @@ func getDeploymentOutputOptions(cmd *cobra.Command) *deployOutputOptions {
 
 	if verbosity, err := cmd.Flags().GetCount("verbose"); err == nil {
 		outputOptions.verbosity = verbosity
+	}
+
+	if interactive, err := cmd.Flags().GetBool("interactive"); err == nil {
+		outputOptions.interactive = interactive
 	}
 
 	if ignoreCoverageWarnings, err := cmd.Flags().GetBool("ignorecoverage"); err == nil {

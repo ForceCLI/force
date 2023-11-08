@@ -30,6 +30,7 @@ func init() {
 	importCmd.Flags().BoolP("ignorecoverage", "w", false, "suppress code coverage warnings")
 	importCmd.Flags().BoolP("suppressunexpected", "U", true, `suppress "An unexpected error occurred" messages`)
 	importCmd.Flags().BoolP("quiet", "q", false, "only output failures")
+	importCmd.Flags().BoolP("interactive", "I", false, "interactive mode")
 	importCmd.Flags().CountP("verbose", "v", "give more verbose output")
 	importCmd.Flags().StringP("reporttype", "f", "text", "report type format (text or junit)")
 
