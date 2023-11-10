@@ -11,7 +11,7 @@ import (
 	. "github.com/ForceCLI/force/error"
 )
 
-func (f *Force) userInfo() (userinfo UserInfo, err error) {
+func (f *Force) UserInfo() (userinfo UserInfo, err error) {
 	url := fmt.Sprintf("%s/services/oauth2/userinfo", f.Credentials.InstanceUrl)
 	login, err := f.makeHttpRequestSync(NewRequest("GET").AbsoluteUrl(url))
 	if err != nil {
@@ -23,7 +23,7 @@ func (f *Force) userInfo() (userinfo UserInfo, err error) {
 
 func getUserInfo(creds ForceSession) (userinfo UserInfo, err error) {
 	force := NewForce(&creds)
-	userinfo, err = force.userInfo()
+	userinfo, err = force.UserInfo()
 	if err != nil {
 		return
 	}
