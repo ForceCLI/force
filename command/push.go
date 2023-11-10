@@ -29,6 +29,7 @@ func init() {
 	pushCmd.Flags().BoolP("suppressunexpected", "U", false, `suppress "An unexpected error occurred" messages`)
 	pushCmd.Flags().BoolP("quiet", "q", false, "only output failures")
 	pushCmd.Flags().CountP("verbose", "v", "give more verbose output")
+	pushCmd.Flags().BoolP("interactive", "I", false, "interactive mode")
 	pushCmd.Flags().String("reporttype", "text", "report type format (text or junit)")
 
 	// Ways to push
