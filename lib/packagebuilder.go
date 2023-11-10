@@ -98,6 +98,7 @@ var metapaths = []metapath{
 	{path: "lwc", name: "LightningComponentBundle", hasFolder: true, onlyFolder: true},
 	{path: "matchingRules", name: "MatchingRules"},
 	{path: "matchingRules", name: "MatchingRule"},
+	{path: "messageChannels", name: "LightningMessageChannel"},
 	{path: "namedCredentials", name: "NamedCredential"},
 	{path: "notificationTypeConfig", name: "NotificationTypeConfig"},
 	{path: "networks", name: "Network"},

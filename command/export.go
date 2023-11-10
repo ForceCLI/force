@@ -140,6 +140,7 @@ func runExport(root string, excludeMetadataNames []string, showWarnings bool) {
 		"Layout",
 		"Letterhead",
 		"LightningComponentBundle",
+		"LightningMessageChannel",
 		"ListView",
 		"LiveAgentSettings",
 		"LiveChatAgentConfig",
