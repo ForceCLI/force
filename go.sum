@@ -100,8 +100,8 @@ github.com/muesli/termenv v0.15.2 h1:GohcuySI0QmI3wN8Ok9PtKGkgkFIk7y6Vpb5PvrY+Wo
 github.com/muesli/termenv v0.15.2/go.mod h1:Epx+iuz8sNs7mNKhxzH4fWXGNpZwUaJKRS1noLXviQ8=
 github.com/obeattie/ohmyglob v0.0.0-20150811221449-290764208a0d h1:SIsYJszBZOjUGo91Z3x3LufvYRZ2CwB+F4EKK5b53iw=
 github.com/obeattie/ohmyglob v0.0.0-20150811221449-290764208a0d/go.mod h1:hFInPnl2+HgL1AruAAgDGZa0EQBpTLIMU0PObAVi1ow=
-github.com/octoberswimmer/go-tree-sitter-sfapex v0.0.0-20230223121415-39a3ac1557ab h1:DHoMop0lTLLzW8+1mQSzi6cHsvU2ju7yvH9Uv+v2g7k=
-github.com/octoberswimmer/go-tree-sitter-sfapex v0.0.0-20230223121415-39a3ac1557ab/go.mod h1:6mjt9s9l3rW3xp6caNtvKNmA7FDlhLbHKSIl7GAAQAA=
+github.com/octoberswimmer/go-tree-sitter-sfapex v0.0.0-20231116160255-e631b59d5292 h1:7r/rvB16EUeJZ/XUEtJzT67pKQIOT8Mdn7ymOqI2Xuc=
+github.com/octoberswimmer/go-tree-sitter-sfapex v0.0.0-20231116160255-e631b59d5292/go.mod h1:6mjt9s9l3rW3xp6caNtvKNmA7FDlhLbHKSIl7GAAQAA=
 github.com/olekukonko/tablewriter v0.0.5 h1:P2Ga83D34wi1o9J6Wh1mRuqd4mF/x/lgBS7N7AbDhec=
 github.com/olekukonko/tablewriter v0.0.5/go.mod h1:hPp6KlRPjbx+hW8ykQs1w3UBbZlj6HuIJcUGPhkA7kY=
 github.com/onsi/ginkgo v1.6.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=

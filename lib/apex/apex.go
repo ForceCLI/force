@@ -12,8 +12,7 @@ import (
 
 // Validate that the apex parses successfully
 func ValidateAnonymous(code []byte) error {
-	apex := wrap(string(code))
-	return Validate(apex)
+	return Validate(code)
 }
 
 func Validate(code []byte) error {
@@ -29,17 +28,6 @@ func Validate(code []byte) error {
 		return fmt.Errorf("Apex error: %w", err)
 	}
 	return fmt.Errorf("failed to parse apex: %s", apexError)
-}
-
-// Wrap anonymous apex in class and method because tree-sitter-sfapex doesn't
-// support anonymous apex yet
-func wrap(anon string) []byte {
-	wrapped := []byte(fmt.Sprintf(`public class Temp {
-		public void run() {
-		%s
-		}
-	}`, anon))
-	return wrapped
 }
 
 func getError(node *sitter.Node, apex []byte) (string, error) {

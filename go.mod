@@ -19,7 +19,7 @@ require (
 	github.com/hamba/avro/v2 v2.16.0
 	github.com/linkedin/goavro/v2 v2.12.0
 	github.com/obeattie/ohmyglob v0.0.0-20150811221449-290764208a0d
-	github.com/octoberswimmer/go-tree-sitter-sfapex v0.0.0-20230223121415-39a3ac1557ab
+	github.com/octoberswimmer/go-tree-sitter-sfapex v0.0.0-20231116160255-e631b59d5292
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/onsi/ginkgo v1.12.0
 	github.com/onsi/gomega v1.23.0
