@@ -3,7 +3,6 @@ package apex
 import (
 	"context"
 	"fmt"
-	"os"
 	"strings"
 
 	sfapex "github.com/octoberswimmer/go-tree-sitter-sfapex/apex"
@@ -55,37 +54,6 @@ func getError(node *sitter.Node, apex []byte) (string, error) {
 		return missing, nil
 	}
 	return "", fmt.Errorf("unknown error")
-}
-
-func printNodes(n *sitter.Node, code []byte) {
-	tree := sitter.NewTreeCursor(n)
-	defer tree.Close()
-
-	rootNode := tree.CurrentNode()
-Tree:
-	for {
-		switch tree.CurrentNode().Type() {
-		case "(", ")", "{", "}", ";", ".", ",", "+", "<", ">":
-		default:
-			fmt.Fprintf(os.Stderr, "TYPE: %s\nFIELD NAME: %s\nNODE: %s\nCONTENT: %s\n\n", tree.CurrentNode().Type(), tree.CurrentFieldName(), tree.CurrentNode().String(), tree.CurrentNode().Content([]byte(code)))
-		}
-		ok := tree.GoToFirstChild()
-		if !ok {
-			ok := tree.GoToNextSibling()
-			if !ok {
-			Sibling:
-				for {
-					tree.GoToParent()
-					if tree.CurrentNode() == rootNode {
-						break Tree
-					}
-					if tree.GoToNextSibling() {
-						break Sibling
-					}
-				}
-			}
-		}
-	}
 }
 
 // Find MISSING node by walking tree since querying for missing nodes isn't
