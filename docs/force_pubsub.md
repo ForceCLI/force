@@ -22,5 +22,6 @@ Subscribe to a pub/sub channel to stream Change Data Capture or custom Platform 
 ### SEE ALSO
 
 * [force](force.md)	 - force CLI
+* [force pubsub publish](force_pubsub_publish.md)	 - Publish event to a pub/sub channel
 * [force pubsub subscribe](force_pubsub_subscribe.md)	 - Subscribe to a pub/sub channel
 

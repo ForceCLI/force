@@ -80,6 +80,7 @@ func init() {
 
 	bulkQueryCmd.Flags().IntP("chunk", "p", 0, "PK chunking size (number of `records`)")
 	bulkQueryCmd.Flags().String("parent", "", "Parent `object` to use for PK chunking")
+	bulkQueryCmd.Flags().BoolP("query-all", "A", false, "query all records including deleted and archived")
 
 	// Start Bulk API Job
 	bulkCmd.AddCommand(bulkInsertCmd)
@@ -146,7 +147,12 @@ var bulkQueryCmd = &cobra.Command{
 		concurrencyMode, _ := cmd.Flags().GetString("concurrencymode")
 		pkChunkSize, _ := cmd.Flags().GetInt("chunk")
 		pkChunkParent, _ := cmd.Flags().GetString("parent")
-		jobInfo, batchId := startBulkQuery(objectType, query, format, concurrencyMode, pkChunkSize, pkChunkParent)
+		operation := "query"
+		if all, _ := cmd.Flags().GetBool("query-all"); all {
+			operation = "queryAll"
+		}
+
+		jobInfo, batchId := startBulkQueryOperation(objectType, query, format, concurrencyMode, pkChunkSize, pkChunkParent, operation)
 		wait, _ := cmd.Flags().GetBool("wait")
 		interactive, _ := cmd.Flags().GetBool("interactive")
 		if interactive {
@@ -329,6 +335,10 @@ func startBulkJob(jobType string, csvFilePath string, objectType string, externa
 }
 
 func startBulkQuery(objectType string, soql string, contenttype string, concurrencyMode string, pkChunkSize int, pkChunkParent string) (JobInfo, string) {
+	return startBulkQueryOperation(objectType, soql, contenttype, concurrencyMode, pkChunkSize, pkChunkParent, "query")
+}
+
+func startBulkQueryOperation(objectType string, soql string, contenttype string, concurrencyMode string, pkChunkSize int, pkChunkParent string, operation string) (JobInfo, string) {
 	headers := make(map[string]string)
 	var pkChunkOptions []string
 	if pkChunkSize != 0 {
@@ -340,7 +350,7 @@ func startBulkQuery(objectType string, soql string, contenttype string, concurre
 	if len(pkChunkOptions) > 0 {
 		headers["Sforce-Enable-PKChunking"] = strings.Join(pkChunkOptions, ";")
 	}
-	jobInfo, err := createBulkJob(objectType, "query", contenttype, "", concurrencyMode, headers)
+	jobInfo, err := createBulkJob(objectType, operation, contenttype, "", concurrencyMode, headers)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}

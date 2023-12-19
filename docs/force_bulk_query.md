@@ -13,7 +13,9 @@ force bulk query <object> <query> [flags]
   -m, --concurrencymode mode   Concurrency mode.  Valid options are Serial and Parallel. (default "Parallel")
   -f, --format format          file format (default "CSV")
   -h, --help                   help for query
+  -i, --interactive            interactive mode.  implies --wait
       --parent object          Parent object to use for PK chunking
+  -A, --query-all              query all records including deleted and archived
   -w, --wait                   Wait for job to complete
 ```
 

@@ -14,6 +14,7 @@ force bulk upsert -e <External_Id_Field__c> <object> <file> [flags]
   -e, --externalid string      The external Id field for upserting data
   -f, --format format          file format (default "CSV")
   -h, --help                   help for upsert
+  -i, --interactive            interactive mode.  implies --wait
   -w, --wait                   Wait for job to complete
 ```
 

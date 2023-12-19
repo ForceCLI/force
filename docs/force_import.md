@@ -27,6 +27,7 @@ force import [flags]
   -h, --help                 help for import
   -w, --ignorecoverage       suppress code coverage warnings
   -i, --ignorewarnings       ignore warnings
+  -I, --interactive          interactive mode
   -p, --purgeondelete        purge metadata from org on delete
   -q, --quiet                only output failures
   -f, --reporttype string    report type format (text or junit) (default "text")

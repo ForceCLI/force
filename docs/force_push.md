@@ -37,6 +37,7 @@ force push [flags]
   -h, --help                 help for push
   -w, --ignorecoverage       suppress code coverage warnings
   -i, --ignorewarnings       ignore warnings
+  -I, --interactive          interactive mode
   -n, --name strings         name of metadata object
   -p, --purgeondelete        purge metadata from org on delete
   -q, --quiet                only output failures
