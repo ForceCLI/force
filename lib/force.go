@@ -325,14 +325,14 @@ func ForceSoapLoginAtEndpoint(endpoint string, username string, password string)
 	var surl string
 	version := strings.Split(apiVersion, "v")[1]
 	if endpoint == "" {
-		ErrorAndExit("Unable to login with SOAP. Unknown endpoint type")
+		return creds, fmt.Errorf("Unable to login with SOAP. Unknown endpoint type")
 	}
 	surl = fmt.Sprintf("%s/services/Soap/u/%s", endpoint, version)
 
 	soap := NewSoap(surl, "", "")
 	response, err := soap.ExecuteLogin(username, password)
 	if err != nil {
-		ErrorAndExit(err.Error())
+		return creds, fmt.Errorf("Login failed: %w", err)
 	}
 	var result struct {
 		SessionId    string `xml:"Body>loginResponse>result>sessionId"`
@@ -341,7 +341,7 @@ func ForceSoapLoginAtEndpoint(endpoint string, username string, password string)
 	}
 	var fault SoapFault
 	if err = xml.Unmarshal(response, &fault); fault.Detail.ExceptionMessage != "" {
-		ErrorAndExit(fault.Detail.ExceptionCode + ": " + fault.Detail.ExceptionMessage)
+		return creds, fmt.Errorf("Login error: %s", fault.Detail.ExceptionCode+": "+fault.Detail.ExceptionMessage)
 	}
 	if err = xml.Unmarshal(response, &result); err != nil {
 		return
