@@ -99,6 +99,22 @@ var httpResponseUnmarshalerForJobContentType = map[JobContentType]internal.Unmar
 
 var InvalidBulkObject = errors.New("Object Does Not Support Bulk API")
 
+func (f *Force) CreateBulkJobWithContext(ctx context.Context, jobInfo JobInfo, requestOptions ...func(*http.Request)) (JobInfo, error) {
+	done := make(chan struct{})
+	var result JobInfo
+	var err error
+	go func() {
+		defer close(done)
+		result, err = f.CreateBulkJob(jobInfo, requestOptions...)
+	}()
+	select {
+	case <-ctx.Done():
+		return JobInfo{}, fmt.Errorf("CreateBulkJob canceled: %w", ctx.Err())
+	case <-done:
+		return result, err
+	}
+}
+
 func (f *Force) CreateBulkJob(jobInfo JobInfo, requestOptions ...func(*http.Request)) (JobInfo, error) {
 	xmlbody, err := internal.XmlMarshal(jobInfo)
 	if err != nil {
@@ -173,6 +189,22 @@ func (f *Force) httpGetBulk(url string) (*Response, error) {
 	return f.ExecuteRequest(req)
 }
 
+func (f *Force) BulkQueryWithContext(ctx context.Context, soql string, jobId string, contentType string, requestOptions ...func(*http.Request)) (BatchInfo, error) {
+	done := make(chan struct{})
+	var batchInfo BatchInfo
+	var err error
+	go func() {
+		defer close(done)
+		batchInfo, err = f.BulkQuery(soql, jobId, contentType, requestOptions...)
+	}()
+	select {
+	case <-ctx.Done():
+		return BatchInfo{}, fmt.Errorf("BulkQuery canceled: %w", ctx.Err())
+	case <-done:
+		return batchInfo, err
+	}
+}
+
 func (f *Force) BulkQuery(soql string, jobId string, contentType string, requestOptions ...func(*http.Request)) (BatchInfo, error) {
 	url := fmt.Sprintf("%s/services/async/%s/job/%s/batch", f.Credentials.InstanceUrl, apiVersionNumber, jobId)
 
@@ -212,6 +244,22 @@ func (f *Force) AddBatchToJob(content string, job JobInfo) (BatchInfo, error) {
 	return result, nil
 }
 
+func (f *Force) GetBatchInfoWithContext(ctx context.Context, jobId string, batchId string) (BatchInfo, error) {
+	done := make(chan struct{})
+	var batchInfo BatchInfo
+	var err error
+	go func() {
+		defer close(done)
+		batchInfo, err = f.GetBatchInfo(jobId, batchId)
+	}()
+	select {
+	case <-ctx.Done():
+		return BatchInfo{}, fmt.Errorf("GetBatchInfo canceled: %w", ctx.Err())
+	case <-done:
+		return batchInfo, err
+	}
+}
+
 func (f *Force) GetBatchInfo(jobId string, batchId string) (BatchInfo, error) {
 	url := fmt.Sprintf("%s/services/async/%s/job/%s/batch/%s", f.Credentials.InstanceUrl, apiVersionNumber, jobId, batchId)
 
@@ -231,6 +279,20 @@ func (f *Force) GetBatchInfo(jobId string, batchId string) (BatchInfo, error) {
 		return BatchInfo{}, err
 	}
 	return result, nil
+}
+
+func (f *Force) GetBatchesWithContext(ctx context.Context, jobId string) (result []BatchInfo, err error) {
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		result, err = f.GetBatches(jobId)
+	}()
+	select {
+	case <-ctx.Done():
+		return result, fmt.Errorf("GetBatches canceled: %w", ctx.Err())
+	case <-done:
+		return result, err
+	}
 }
 
 func (f *Force) GetBatches(jobId string) (result []BatchInfo, err error) {
@@ -256,6 +318,22 @@ func (f *Force) GetBatches(jobId string) (result []BatchInfo, err error) {
 	return batchInfoList.BatchInfos, nil
 }
 
+func (f *Force) GetJobInfoWithContext(ctx context.Context, jobId string) (JobInfo, error) {
+	done := make(chan struct{})
+	var jobInfo JobInfo
+	var err error
+	go func() {
+		defer close(done)
+		jobInfo, err = f.GetJobInfo(jobId)
+	}()
+	select {
+	case <-ctx.Done():
+		return JobInfo{}, fmt.Errorf("GetJobInfo canceled: %w", ctx.Err())
+	case <-done:
+		return jobInfo, err
+	}
+}
+
 func (f *Force) GetJobInfo(jobId string) (JobInfo, error) {
 	url := fmt.Sprintf("%s/services/async/%s/job/%s", f.Credentials.InstanceUrl, apiVersionNumber, jobId)
 	resp, err := f.httpGetBulk(url)
@@ -277,6 +355,22 @@ func (f *Force) RetrieveBulkQueryResultList(job JobInfo, batchId string) ([]byte
 	}
 	body, err := f.makeHttpRequestSync(NewRequest("GET").AbsoluteUrl(url).WithContent(ct))
 	return body, err
+}
+
+func (f *Force) RetrieveBulkQueryWithContext(ctx context.Context, jobId string, batchId string) ([]byte, error) {
+	done := make(chan struct{})
+	var result []byte
+	var err error
+	go func() {
+		defer close(done)
+		result, err = f.RetrieveBulkQuery(jobId, batchId)
+	}()
+	select {
+	case <-ctx.Done():
+		return result, fmt.Errorf("RetrieveBulkQuery canceled: %w", ctx.Err())
+	case <-done:
+		return result, err
+	}
 }
 
 func (f *Force) RetrieveBulkQuery(jobId string, batchId string) ([]byte, error) {
@@ -314,6 +408,21 @@ func (f *Force) RetrieveBulkJobQueryResults(job JobInfo, batchId string, resultI
 	}
 	body, err := f.makeHttpRequestSync(NewRequest("GET").AbsoluteUrl(url).WithContent(ct))
 	return body, err
+}
+
+func (f *Force) RetrieveBulkJobQueryResultsWithCallbackWithContext(ctx context.Context, job JobInfo, batchId string, resultId string, callback HttpCallback) error {
+	done := make(chan struct{})
+	var err error
+	go func() {
+		defer close(done)
+		err = f.RetrieveBulkJobQueryResultsWithCallback(job, batchId, resultId, callback)
+	}()
+	select {
+	case <-ctx.Done():
+		return fmt.Errorf("RetrieveBulkJobQueryResultsWithCallback canceled: %w", ctx.Err())
+	case <-done:
+		return err
+	}
 }
 
 func (f *Force) RetrieveBulkJobQueryResultsWithCallback(job JobInfo, batchId string, resultId string, callback HttpCallback) error {
