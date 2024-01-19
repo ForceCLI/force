@@ -46,6 +46,21 @@ type Response struct {
 	ContentType ContentType
 }
 
+// Inspect returns a map of internal fields of the request.
+// It should only be used for testing purposes, such as when matching a mock.
+func (r *Request) Inspect() map[string]interface{} {
+	return map[string]interface{}{
+		"method":           r.method,
+		"rootedUrl":        r.rootedUrl,
+		"absoluteUrl":      r.absoluteUrl,
+		"headers":          r.Headers,
+		"body":             r.body,
+		"readResponseBody": r.readResponseBody,
+		"callback":         r.callback,
+		"unauthed":         r.unauthed,
+	}
+}
+
 // RestUrl is used when the url specifies the "Apex REST" portion of the url.
 // For example, the url of "/MyApexRestClass" would use a full URL of
 // https://me.salesforce.com/services/data/41.0/MyApexRESTClass.
@@ -53,7 +68,7 @@ func (r *Request) RestUrl(url string) *Request {
 	return r.RootUrl(fullRestUrl(url))
 }
 
-// RestUrl is used when the url specifies the root-based relative URL of a resource.
+// RootUrl is used when the url specifies the root-based relative URL of a resource.
 // For example, the url of "/services/async/42.0/job" would use a full URL of
 // https://me.salesforce.com/services/async/42.0/job.
 func (r *Request) RootUrl(url string) *Request {
