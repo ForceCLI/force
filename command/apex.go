@@ -6,10 +6,14 @@ import (
 	"os"
 
 	. "github.com/ForceCLI/force/error"
+	"github.com/ForceCLI/force/lib/apex"
 	"github.com/spf13/cobra"
 )
 
+var skipValidation bool
+
 func init() {
+	apexCmd.Flags().BoolVar(&skipValidation, "skip-validation", false, "do not validate the apex before executing")
 	apexCmd.Flags().BoolP("test", "t", false, "run in test context")
 	RootCmd.AddCommand(apexCmd)
 }
@@ -40,6 +44,11 @@ var apexCmd = &cobra.Command{
 func runApexFromStdin(testContext bool) {
 	fmt.Println(">> Start typing Apex code; press CTRL-D(for Mac/Linux) / Ctrl-Z (for Windows) when finished")
 	code, err := ioutil.ReadAll(os.Stdin)
+	if !skipValidation {
+		if err = apex.ValidateAnonymous(code); err != nil {
+			ErrorAndExit(err.Error())
+		}
+	}
 	fmt.Println("\n\n>> Executing code...")
 	var output string
 	if testContext {
@@ -57,6 +66,11 @@ func runApexInFile(filename string, testContext bool) {
 	code, err := ioutil.ReadFile(filename)
 	if err != nil {
 		ErrorAndExit(err.Error())
+	}
+	if !skipValidation {
+		if err = apex.ValidateAnonymous(code); err != nil {
+			ErrorAndExit(err.Error())
+		}
 	}
 	var output string
 	if testContext {
