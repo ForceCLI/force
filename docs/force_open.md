@@ -33,6 +33,7 @@ force open [account] [flags]
 ```
   -a, --account username    account username to use
   -V, --apiversion string   API version to use
+      --config string       config directory to use (default: .force)
 ```
 
 ### SEE ALSO

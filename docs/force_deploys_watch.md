@@ -1,15 +1,16 @@
-## force bigobject list
+## force deploys watch
 
-List big objects
+Monitor metadata deploy
 
 ```
-force bigobject list [object]
+force deploys watch [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help   help for list
+  -d, --deploy-id string   Deploy Id to cancel
+  -h, --help               help for watch
 ```
 
 ### Options inherited from parent commands
@@ -22,5 +23,5 @@ force bigobject list [object]
 
 ### SEE ALSO
 
-* [force bigobject](force_bigobject.md)	 - Manage big objects
+* [force deploys](force_deploys.md)	 - Manage metadata deployments
 

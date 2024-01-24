@@ -1,15 +1,15 @@
-## force bigobject list
+## force bulk watch
 
-List big objects
+Show bulk job details
 
 ```
-force bigobject list [object]
+force bulk watch <jobId> [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help   help for list
+  -h, --help   help for watch
 ```
 
 ### Options inherited from parent commands
@@ -22,5 +22,5 @@ force bigobject list [object]
 
 ### SEE ALSO
 
-* [force bigobject](force_bigobject.md)	 - Manage big objects
+* [force bulk](force_bulk.md)	 - Load csv file or query data using Bulk API
 

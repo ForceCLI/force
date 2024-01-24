@@ -17,6 +17,7 @@ Subscribe to a pub/sub channel to stream Change Data Capture or custom Platform 
 ```
   -a, --account username    account username to use
   -V, --apiversion string   API version to use
+      --config string       config directory to use (default: .force)
 ```
 
 ### SEE ALSO

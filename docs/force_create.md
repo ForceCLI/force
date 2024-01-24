@@ -13,6 +13,7 @@ Creates a new, empty Apex Class, Trigger, Visualforce page, or Component.
 ```
   -a, --account username    account username to use
   -V, --apiversion string   API version to use
+      --config string       config directory to use (default: .force)
 ```
 
 ### SEE ALSO

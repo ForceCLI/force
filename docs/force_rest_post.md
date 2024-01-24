@@ -18,6 +18,7 @@ force rest post <url> [file] [flags]
   -A, --absolute            use URL as-is (do not prepend /services/data/vXX.0)
   -a, --account username    account username to use
   -V, --apiversion string   API version to use
+      --config string       config directory to use (default: .force)
 ```
 
 ### SEE ALSO

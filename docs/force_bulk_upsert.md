@@ -23,6 +23,7 @@ force bulk upsert -e <External_Id_Field__c> <object> <file> [flags]
 ```
   -a, --account username    account username to use
   -V, --apiversion string   API version to use
+      --config string       config directory to use (default: .force)
 ```
 
 ### SEE ALSO

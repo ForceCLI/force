@@ -1,15 +1,15 @@
-## force bigobject list
+## force bulk result
 
-List big objects
+Retrieve job results using Bulk API
 
 ```
-force bigobject list [object]
+force bulk result <jobId> <batchId> [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help   help for list
+  -h, --help   help for result
 ```
 
 ### Options inherited from parent commands
@@ -22,5 +22,5 @@ force bigobject list [object]
 
 ### SEE ALSO
 
-* [force bigobject](force_bigobject.md)	 - Manage big objects
+* [force bulk](force_bulk.md)	 - Load csv file or query data using Bulk API
 

@@ -7,12 +7,15 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/ForceCLI/config"
+	forceConfig "github.com/ForceCLI/force/config"
 	. "github.com/ForceCLI/force/error"
 	. "github.com/ForceCLI/force/lib"
 )
 
 var (
 	account     string
+	configName  string
 	_apiVersion string
 
 	force *Force
@@ -28,6 +31,7 @@ func init() {
 	}
 	RootCmd.SetArgs(args)
 	RootCmd.PersistentFlags().StringVarP(&account, "account", "a", "", "account `username` to use")
+	RootCmd.PersistentFlags().StringVar(&configName, "config", "", "config directory to use (default: .force)")
 	RootCmd.PersistentFlags().StringVarP(&_apiVersion, "apiversion", "V", "", "API version to use")
 }
 
@@ -35,6 +39,7 @@ var RootCmd = &cobra.Command{
 	Use:   "force",
 	Short: "force CLI",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		initializeConfig()
 		switch cmd.Use {
 		case "force", "login":
 		default:
@@ -46,6 +51,13 @@ var RootCmd = &cobra.Command{
 		os.Exit(1)
 	},
 	DisableFlagsInUseLine: true,
+}
+
+func initializeConfig() {
+	if configName != "" {
+		forceConfig.Config = config.NewConfig(strings.TrimPrefix(configName, "."))
+		fmt.Println("Setting config to", forceConfig.Config.Base)
+	}
 }
 
 func initializeSession() {
