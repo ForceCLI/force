@@ -53,7 +53,7 @@ func (f *Force) ForceLoginNewScratch(scratchOrgId string) (session ForceSession,
 		RefreshMethod: RefreshOauth,
 	}
 	session.ForceEndpoint = EndpointTest
-	session.ClientId = "SalesforceDevelopmentExperience"
+	session.ClientId = "PlatformCLI"
 	return
 }
 
@@ -63,8 +63,7 @@ func (s *ScratchOrg) getSession() (session ForceSession, err error) {
 	attrs := url.Values{}
 	attrs.Set("grant_type", "authorization_code")
 	attrs.Set("code", s.AuthCode)
-	attrs.Set("client_id", "SalesforceDevelopmentExperience")
-	attrs.Set("client_secret", "1384510088588713504")
+	attrs.Set("client_id", "PlatformCLI")
 	attrs.Set("redirect_uri", "http://localhost:1717/OauthRedirect")
 
 	postVars := attrs.Encode()
@@ -105,13 +104,20 @@ func (s *ScratchOrg) getSession() (session ForceSession, err error) {
 
 // Create a new Scratch Org from a Dev Hub Org
 func (f *Force) CreateScratchOrg() (id string, err error) {
+	return f.CreateScratchOrgWithUser("")
+}
+
+func (f *Force) CreateScratchOrgWithUser(username string) (id string, err error) {
 	params := make(map[string]string)
 	params["ConnectedAppCallbackUrl"] = "http://localhost:1717/OauthRedirect"
-	params["ConnectedAppConsumerKey"] = "SalesforceDevelopmentExperience"
+	params["ConnectedAppConsumerKey"] = "PlatformCLI"
 	params["Country"] = "US"
 	params["Edition"] = "Developer"
 	params["Features"] = "AuthorApex;API;AddCustomApps:30;AddCustomTabs:30;ForceComPlatform;Sites;CustomerSelfService"
 	params["OrgName"] = "Force CLI Scratch"
+	if username != "" {
+		params["Username"] = username
+	}
 	id, err, messages := f.CreateRecord("ScratchOrgInfo", params)
 	if err != nil {
 		if len(messages) == 1 && messages[0].ErrorCode == "NOT_FOUND" {
