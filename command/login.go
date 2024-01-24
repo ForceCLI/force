@@ -23,6 +23,8 @@ func init() {
 logged in system. non-production server to login to (values are 'pre',
 'test', or full instance url`)
 
+	scratchCmd.Flags().String("username", "", "username for scratch org user")
+
 	loginCmd.AddCommand(scratchCmd)
 	RootCmd.AddCommand(loginCmd)
 }
@@ -31,7 +33,8 @@ var scratchCmd = &cobra.Command{
 	Use:   "scratch",
 	Short: "Create scratch org and log in",
 	Run: func(cmd *cobra.Command, args []string) {
-		scratchLogin()
+		scratchUser, _ := cmd.Flags().GetString("username")
+		scratchLogin(scratchUser)
 	},
 }
 
@@ -74,8 +77,8 @@ to get a new session token automatically when needed.`,
 	},
 }
 
-func scratchLogin() {
-	_, err := ForceScratchLoginAndSave(os.Stderr)
+func scratchLogin(scratchUser string) {
+	_, err := ForceScratchCreateLoginAndSave(scratchUser, os.Stderr)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
