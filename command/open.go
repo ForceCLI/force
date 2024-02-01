@@ -3,6 +3,7 @@ package command
 import (
 	"fmt"
 	"net/url"
+	"os"
 
 	desktop "github.com/ForceCLI/force/desktop"
 	. "github.com/ForceCLI/force/error"
@@ -10,8 +11,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var debug bool
+
 func init() {
 	openCmd.Flags().StringP("start", "s", "", "relative URL to open")
+	openCmd.Flags().BoolVarP(&debug, "debug", "d", false, "show link")
 	RootCmd.AddCommand(openCmd)
 }
 
@@ -47,6 +51,9 @@ func runOpen(startUrl string) {
 	openUrl := fmt.Sprintf("%s/secur/frontdoor.jsp?sid=%s", force.Credentials.InstanceUrl, force.Credentials.AccessToken)
 	if startUrl != "" {
 		openUrl = fmt.Sprintf("%s&retURL=%s", openUrl, url.QueryEscape(startUrl))
+	}
+	if debug {
+		fmt.Fprintln(os.Stderr, openUrl)
 	}
 	err = desktop.Open(openUrl)
 	if err != nil {
