@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/ForceCLI/config v0.0.0-20230217143549-9149d42a3c99
-	github.com/ForceCLI/force-md v0.0.0-20230407203303-8aa35b67422c
+	github.com/ForceCLI/force-md v0.0.0-20240126214027-5b906037b66a
 	github.com/ForceCLI/inflect v0.0.0-20130829110746-cc00b5ad7a6a
 	github.com/ViViDboarder/gotifier v0.0.0-20140619195515-0f19f3d7c54c
 	github.com/antonmedv/expr v1.15.3
@@ -41,7 +41,7 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/hpcloud/tail v1.0.0 // indirect
-	github.com/imdario/mergo v0.3.15 // indirect
+	github.com/imdario/mergo v0.3.16 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kr/pretty v0.1.0 // indirect
@@ -60,7 +60,7 @@ require (
 	github.com/muesli/termenv v0.15.2 // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
-	github.com/sirupsen/logrus v1.9.0 // indirect
+	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	golang.org/x/net v0.17.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
