@@ -26,7 +26,7 @@ var exportCmd = &cobra.Command{
 	Short: "Export metadata to a local directory",
 	Example: `
   force export
-  force export org/schema
+  force export [directory]
   force export -x ApexClass -x CustomObject
 `,
 	Args: cobra.MaximumNArgs(1),

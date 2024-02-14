@@ -11,7 +11,7 @@ force export [dir] [flags]
 ```
 
   force export
-  force export org/schema
+  force export [directory]
   force export -x ApexClass -x CustomObject
 
 ```

@@ -24,6 +24,7 @@ force open [account] [flags]
 ### Options
 
 ```
+  -d, --debug          show link
   -h, --help           help for open
   -s, --start string   relative URL to open
 ```

@@ -9,7 +9,8 @@ force login scratch [flags]
 ### Options
 
 ```
-  -h, --help   help for scratch
+  -h, --help              help for scratch
+      --username string   username for scratch org user
 ```
 
 ### Options inherited from parent commands
