@@ -27,7 +27,7 @@ require (
 	github.com/spf13/cobra v1.7.0
 	golang.org/x/crypto v0.14.0
 	google.golang.org/grpc v1.39.0-dev
-	google.golang.org/protobuf v1.28.1
+	google.golang.org/protobuf v1.33.0
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
 )
 
