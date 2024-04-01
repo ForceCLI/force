@@ -8,6 +8,7 @@ import (
 	"os/user"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	. "github.com/ForceCLI/force/error"
 	. "github.com/ForceCLI/force/lib"
@@ -92,6 +93,14 @@ func sourceDir(cmd *cobra.Command) string {
 }
 
 func runImport(root string, options ForceDeployOptions, displayOptions *deployOutputOptions) {
+	if displayOptions.quiet {
+		previousLogger := Log
+		var l quietLogger
+		Log = l
+		defer func() {
+			Log = previousLogger
+		}()
+	}
 	files := make(ForceMetadataFiles)
 	if _, err := os.Stat(filepath.Join(root, "package.xml")); os.IsNotExist(err) {
 		ErrorAndExit(" \n" + filepath.Join(root, "package.xml") + "\ndoes not exist")
@@ -113,11 +122,27 @@ func runImport(root string, options ForceDeployOptions, displayOptions *deployOu
 		ErrorAndExit(err.Error())
 	}
 
-	err = deploy(force, files, &options, displayOptions)
-	if err == nil && displayOptions.reportFormat == "text" && !displayOptions.quiet {
-		fmt.Printf("Imported from %s\n", root)
+	var deployments sync.WaitGroup
+	status := deployStatus{aborted: false}
+
+	for _, f := range manager.getAllForce() {
+		if status.isAborted() {
+			break
+		}
+		current := f
+		deployments.Add(1)
+		go func() {
+			defer deployments.Done()
+			err := deployWith(current, &status, files, &options, displayOptions)
+			if err == nil && displayOptions.reportFormat == "text" && !displayOptions.quiet {
+				fmt.Printf("Imported from %s\n", root)
+			}
+			if err != nil && (!errors.Is(err, testFailureError) || displayOptions.errorOnTestFailure) && !status.isAborted() {
+				fmt.Fprintf(os.Stderr, "Aborting deploy due to %s\n", err.Error())
+				status.abort()
+			}
+		}()
 	}
-	if err != nil && (!errors.Is(err, testFailureError) || displayOptions.errorOnTestFailure) {
-		ErrorAndExit(err.Error())
-	}
+
+	deployments.Wait()
 }
