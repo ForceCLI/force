@@ -37,7 +37,7 @@ func runLogout() {
 		SetActiveLoginDefault()
 	}
 	if runtime.GOOS == "windows" {
-		cmd := exec.Command("title", account)
+		cmd := exec.Command("title", username)
 		cmd.Run()
 	} else {
 		title := fmt.Sprintf("\033];%s\007", "")
