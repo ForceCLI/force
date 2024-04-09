@@ -9,7 +9,8 @@ force record delete <object> <id>
 ### Options
 
 ```
-  -h, --help   help for delete
+  -h, --help      help for delete
+  -t, --tooling   delete using object record
 ```
 
 ### Options inherited from parent commands
