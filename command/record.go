@@ -10,6 +10,8 @@ import (
 )
 
 func init() {
+	recordDeleteCmd.Flags().BoolP("tooling", "t", false, "delete using object record")
+
 	recordCmd.AddCommand(recordGetCmd)
 	recordCmd.AddCommand(recordCreateCmd)
 	recordCmd.AddCommand(recordUpdateCmd)
@@ -69,7 +71,11 @@ var recordDeleteCmd = &cobra.Command{
 	Args:                  cobra.ExactArgs(2),
 	DisableFlagsInUseLine: true,
 	Run: func(cmd *cobra.Command, args []string) {
-		runRecordDelete(args[0], args[1])
+		if tooling, _ := cmd.Flags().GetBool("tooling"); tooling {
+			runToolingRecordDelete(args[0], args[1])
+		} else {
+			runRecordDelete(args[0], args[1])
+		}
 	},
 }
 
@@ -179,6 +185,14 @@ func runRecordUndelete(args []string) {
 
 func runRecordDelete(object, id string) {
 	err := force.DeleteRecord(object, id)
+	if err != nil {
+		ErrorAndExit("Failed to delete record: %s", err.Error())
+	}
+	fmt.Println("Record deleted")
+}
+
+func runToolingRecordDelete(object, id string) {
+	err := force.DeleteToolingRecord(object, id)
 	if err != nil {
 		ErrorAndExit("Failed to delete record: %s", err.Error())
 	}
