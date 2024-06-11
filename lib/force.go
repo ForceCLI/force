@@ -285,6 +285,12 @@ func NewForce(creds *ForceSession) (force *Force) {
 	force.Metadata = NewForceMetadata(force)
 	force.Partner = NewForcePartner(force)
 	force.retrier = DefaultRetrier()
+	if force.Credentials.UserInfo == nil {
+		force.Credentials.UserInfo = &UserInfo{}
+	}
+	if force.Credentials.SessionOptions == nil {
+		force.Credentials.SessionOptions = &SessionOptions{}
+	}
 	return
 }
 
