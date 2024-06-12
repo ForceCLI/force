@@ -60,27 +60,25 @@ func initializeConfig() {
 	}
 }
 
-func envSession() (*Force, error) {
+func envSession() *Force {
 	token := os.Getenv("SF_ACCESS_TOKEN")
 	instance := os.Getenv("SF_INSTANCE_URL")
 	if token == "" || instance == "" {
-		return nil, nil
+		return nil
 	}
 	creds := &ForceSession{
 		AccessToken: token,
 		InstanceUrl: instance,
 	}
 	f := NewForce(creds)
-	userInfo, err := f.UserInfo()
-	f.Credentials.UserInfo = &userInfo
-	return f, err
+	return f
 }
 
 func initializeSession() {
 	var err error
 	if account != "" {
 		force, err = GetForce(account)
-	} else if force, err = envSession(); force == nil {
+	} else if force = envSession(); force == nil {
 		force, err = ActiveForce()
 	}
 	if err != nil {

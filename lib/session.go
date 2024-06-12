@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	. "github.com/ForceCLI/force/error"
 	"io/ioutil"
 	"net/url"
+
+	. "github.com/ForceCLI/force/error"
 )
 
 var SessionRefreshError = errors.New("Failed to refresh session.  Please run `force login`.")
@@ -72,6 +73,9 @@ func (f *Force) RefreshSessionOrExit() {
 }
 
 func (f *Force) RefreshSession() error {
+	if f.Credentials.SessionOptions == nil {
+		return SessionRefreshUnavailable
+	}
 	if f.Credentials.SessionOptions.RefreshFunc != nil {
 		return f.Credentials.SessionOptions.RefreshFunc(f)
 	} else if f.Credentials.SessionOptions.RefreshMethod == RefreshOauth {
