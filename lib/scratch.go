@@ -33,7 +33,7 @@ func (f *Force) getScratchOrg(scratchOrgId string) (scratchOrg ScratchOrg, err e
 	}
 	scratchOrg = ScratchOrg{
 		UserName:    org["SignupUsername"].(string),
-		InstanceUrl: fmt.Sprintf("https://%s.salesforce.com", org["SignupInstance"].(string)),
+		InstanceUrl: org["LoginUrl"].(string),
 		AuthCode:    org["AuthCode"].(string),
 	}
 	return
