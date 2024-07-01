@@ -55,15 +55,15 @@ func (c *deployStatus) isAborted() bool {
 	return c.aborted
 }
 
-func deploy(force *Force, files ForceMetadataFiles, deployOptions *ForceDeployOptions, outputOptions *deployOutputOptions) error {
+func deploy(force *Force, files ForceMetadataFiles, deployOptions ForceDeployOptions, outputOptions *deployOutputOptions) error {
 	status := deployStatus{aborted: false}
 
 	return deployWith(force, &status, files, deployOptions, outputOptions)
 }
 
-func deployWith(force *Force, status *deployStatus, files ForceMetadataFiles, deployOptions *ForceDeployOptions, outputOptions *deployOutputOptions) error {
+func deployWith(force *Force, status *deployStatus, files ForceMetadataFiles, deployOptions ForceDeployOptions, outputOptions *deployOutputOptions) error {
 	startTime := time.Now()
-	deployId, err := force.Metadata.StartDeploy(files, *deployOptions)
+	deployId, err := force.Metadata.StartDeploy(files, deployOptions)
 	if err != nil {
 		return err
 	}

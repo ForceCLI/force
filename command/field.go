@@ -173,7 +173,7 @@ func updateFLSOnProfile(force *Force, objectName string, fieldName string) (err 
 	}
 	displayOptions := defaultDeployOutputOptions()
 	displayOptions.quiet = true
-	return deploy(force, pb.ForceMetadataFiles(), new(ForceDeployOptions), displayOptions)
+	return deploy(force, pb.ForceMetadataFiles(), ForceDeployOptions{}, displayOptions)
 }
 
 func getFLSUpdateXML(objectName string, fieldName string) string {
