@@ -690,7 +690,7 @@ func (f *Force) CancelableQueryAndSend(ctx context.Context, qs string, processor
 				case <-ctx.Done():
 					return false
 				default:
-					processor <- row.Raw
+					processor <- row.Fields
 				}
 			}
 			return true
@@ -719,7 +719,7 @@ func (f *Force) AbortableQueryAndSend(qs string, processor chan<- ForceRecord, a
 			case <-abort:
 				return false
 			default:
-				processor <- row.Raw
+				processor <- row.Fields
 			}
 		}
 		return true
