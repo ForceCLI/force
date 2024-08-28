@@ -11,7 +11,7 @@ Can be downloaded from the [Current Release Page](https://github.com/ForceCLI/fo
 
 ##### Compile from Source
 
-    $ go get -u github.com/ForceCLI/force
+    $ go install github.com/ForceCLI/force@latest
 
 ### Usage
 
