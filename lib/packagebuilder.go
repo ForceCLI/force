@@ -131,6 +131,7 @@ var metapaths = []metapath{
 	{path: "scontrols", name: "Scontrol"},
 	{path: "settings", name: "Settings"},
 	{path: "sharingRules", name: "SharingRules"},
+	{path: "sharingSets", name: "SharingSet"},
 	{path: "siteDotComSites", name: "SiteDotCom"},
 	{path: "sites", name: "CustomSite"},
 	{path: "standardValueSets", name: "StandardValueSet"},
