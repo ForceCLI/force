@@ -5,6 +5,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/ForceCLI/force/bubbles"
@@ -22,7 +23,8 @@ func init() {
 		defaultOutputFormat = "csv"
 	}
 	cancelDeployCmd.Flags().StringP("deploy-id", "d", "", "Deploy Id to cancel")
-	cancelDeployCmd.MarkFlagRequired("deploy-id")
+	cancelDeployCmd.Flags().BoolP("all", "A", false, "Cancel all pending and in-progress deploys")
+	cancelDeployCmd.MarkFlagsMutuallyExclusive("deploy-id", "all")
 
 	listDeploysCmd.Flags().StringP("format", "f", defaultOutputFormat, "output format: csv, json, json-pretty, console")
 
@@ -48,6 +50,7 @@ List and cancel metadata deployments.
 
 	Example: `
   force deploys list
+  force deploys cancel --all
   force deploys cancel -d 0Af000000000000000
 `,
 	DisableFlagsInUseLine: false,
@@ -156,13 +159,64 @@ var cancelDeployCmd = &cobra.Command{
 	Use:                   "cancel -d <deploy id>",
 	Short:                 "Cancel deploy",
 	DisableFlagsInUseLine: true,
-	Run: func(cmd *cobra.Command, args []string) {
-		deployId, _ := cmd.Flags().GetString("deploy-id")
-		_, err := force.Metadata.CancelDeploy(deployId)
-		if err != nil {
-			ErrorAndExit("Error canceling job: " + err.Error())
+	RunE: func(cmd *cobra.Command, args []string) error {
+		all, _ := cmd.Flags().GetBool("all")
+		if all {
+			err := cancelAll()
+			if err != nil {
+				ErrorAndExit("Error canceling jobs: " + err.Error())
+			}
+			return nil
 		}
+		deployId, _ := cmd.Flags().GetString("deploy-id")
+		if deployId != "" {
+			_, err := force.Metadata.CancelDeploy(deployId)
+			if err != nil {
+				ErrorAndExit("Error canceling job: " + err.Error())
+			}
+			return nil
+		}
+		return fmt.Errorf("--all or --deploy-id required")
 	},
+}
+
+func cancelAll() error {
+	query := `SELECT Id FROM DeployRequest WHERE Status IN ('Pending', 'InProgress')`
+	var queryOptions []func(*QueryOptions)
+	queryOptions = append(queryOptions, func(options *QueryOptions) {
+		options.IsTooling = true
+	})
+	result, err := force.Query(query, queryOptions...)
+	if err != nil {
+		return err
+	}
+	var wg sync.WaitGroup
+	for _, r := range result.Records {
+		wg.Add(1)
+		deployId := r["Id"].(string)
+		go func() {
+			defer wg.Done()
+			_, err := force.Metadata.CancelDeploy(deployId)
+			if err != nil && err != AlreadyCompletedError {
+				ErrorAndExit("Error cancelling deploy: " + err.Error())
+			}
+			for {
+				result, err := force.Metadata.CheckDeployStatus(deployId)
+				if err != nil {
+					ErrorAndExit("Error checking deploy status: " + err.Error())
+				}
+				if result.Done {
+					Log.Info(fmt.Sprintf("Deploy %s finished: %s", deployId, result.Status))
+					return
+				}
+				Log.Info(fmt.Sprintf("Waiting for deploy %s to finish: %s", deployId, result.Status))
+				time.Sleep(1 * time.Second)
+			}
+		}()
+	}
+	wg.Wait()
+
+	return nil
 }
 
 func displayErrors(deployId string) {
