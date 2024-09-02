@@ -29,6 +29,8 @@ type BigObject struct {
 	Fields           []BigObjectField
 }
 
+var AlreadyCompletedError = errors.New("Deployment already completed")
+
 var preserveZip bool
 
 func (bo *BigObject) ToXml() string {
@@ -750,6 +752,9 @@ func (fm *ForceMetadata) CancelDeploy(id string) (ForceCancelDeployResult, error
 	var cancelResult ForceCancelDeployResult
 	body, err := fm.soapExecute("cancelDeploy", fmt.Sprintf("<id>%s</id>", id))
 	if err != nil {
+		if err.Error() == "INVALID_ID_FIELD: Deployment already completed" {
+			err = AlreadyCompletedError
+		}
 		return cancelResult, err
 	}
 
