@@ -7,6 +7,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"html/template"
 	"io"
 	"io/ioutil"
 	"math/rand"
@@ -1501,21 +1502,55 @@ func startLocalHttpServer(ch chan ForceSession) (port int, err error) {
 	h := http.NewServeMux()
 	h.HandleFunc("/oauth/callback", func(w http.ResponseWriter, r *http.Request) {
 		query := r.URL.Query()
-		if r.Method == "POST" {
-			var creds ForceSession
-			creds.AccessToken = query.Get("access_token")
-			creds.RefreshToken = query.Get("refresh_token")
-			creds.InstanceUrl = query.Get("instance_url")
-			creds.IssuedAt = query.Get("issued_at")
-			creds.Scope = query.Get("scope")
-			ch <- creds
-			listener.Close()
-		} else {
-			io.WriteString(w, oauthCallbackHtml())
+		if query.Get("error") != "" {
+			oauthCallbackError(w, query.Get("error"), query.Get("error_description"))
+			return
 		}
+		if r.Method != "POST" {
+			io.WriteString(w, oauthCallbackHtml())
+			return
+		}
+		var creds ForceSession
+		creds.AccessToken = query.Get("access_token")
+		creds.RefreshToken = query.Get("refresh_token")
+		creds.InstanceUrl = query.Get("instance_url")
+		creds.IssuedAt = query.Get("issued_at")
+		creds.Scope = query.Get("scope")
+		ch <- creds
+		listener.Close()
 	})
 	go http.Serve(listener, h)
 	return
+}
+
+func oauthCallbackError(w io.Writer, code, description string) {
+	tmpl := `
+<!doctype html>
+<html>
+  <head>
+	  <title>Force CLI OAuth Callback</title>
+  </head>
+  <body>
+	  <h1>OAuth Error</h1>
+	  <p id="status">Status: {{.Code}}</p>
+	  <p>{{.Description}}</p>
+  </body>
+</html>`
+	t, err := template.New("error-page").Parse(tmpl)
+	if err != nil {
+		ErrorAndExit("Unable to parse template: " + err.Error())
+	}
+
+	err = t.Execute(w, struct {
+		Code        string
+		Description string
+	}{
+		Code:        code,
+		Description: description,
+	})
+	if err != nil {
+		ErrorAndExit("Unable to render template: " + err.Error())
+	}
 }
 
 func oauthCallbackHtml() string {
