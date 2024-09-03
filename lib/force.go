@@ -92,6 +92,7 @@ type ForceSession struct {
 	InstanceUrl    string `json:"instance_url"`
 	IssuedAt       string `json:"issued_at"`
 	Scope          string `json:"scope"`
+	Id             string `json:"id"`
 	ClientId       string
 	RefreshToken   string
 	ForceEndpoint  ForceEndpoint
