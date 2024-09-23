@@ -18,6 +18,7 @@ func init() {
 	loginCmd.Flags().StringP("api-version", "v", "", "API version to use")
 	loginCmd.Flags().String("connected-app-client-id", "", "Client Id (aka Consumer Key) to use instead of default")
 	loginCmd.Flags().StringP("key", "k", "", "JWT signing key filename")
+	loginCmd.Flags().String("connected-app-client-secret", "", "Client Secret (aka Consumer Secret) for Client Credentials flow")
 	loginCmd.Flags().BoolP("skip", "s", false, "skip login if already authenticated and only save token (useful with SSO)")
 	loginCmd.Flags().StringP("instance", "i", "", `Defaults to 'login' or last
 logged in system. non-production server to login to (values are 'pre',
@@ -53,6 +54,7 @@ to get a new session token automatically when needed.`,
     force login -i my-domain.my.salesforce.com -u username -p password
     force login -i my-domain.my.salesforce.com -s[kipLogin]
     force login --connected-app-client-id <my-consumer-key> -u user@example.com -key jwt.key
+    force login --connected-app-client-id <my-consumer-key> --connected-app-client-secret <my-consumer-secret>
     force login scratch
 `,
 	Args: cobra.MaximumNArgs(0),
@@ -64,7 +66,10 @@ to get a new session token automatically when needed.`,
 		selectApiVersion(cmd)
 		username, _ := cmd.Flags().GetString("user")
 		keyFile, _ := cmd.Flags().GetString("key")
+		clientSecret, _ := cmd.Flags().GetString("connected-app-client-secret")
 		switch {
+		case clientSecret != "":
+			clientCredentialsLogin(endpoint, ClientId, clientSecret)
 		case username == "":
 			skipLogin, _ := cmd.Flags().GetBool("skip")
 			oauthLogin(endpoint, skipLogin)
@@ -102,6 +107,13 @@ func jwtLogin(endpoint, username, keyfile string) {
 		ErrorAndExit(err.Error())
 	}
 	_, err = ForceLoginAtEndpointAndSaveJWT(endpoint, assertion, os.Stdout)
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
+}
+
+func clientCredentialsLogin(endpoint, clientId, clientSecret string) {
+	_, err := ForceLoginAtEndpointAndSaveClientCredentials(endpoint, clientId, clientSecret, os.Stdout)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
