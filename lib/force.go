@@ -34,6 +34,7 @@ var CustomEndpoint = ``
 var SessionExpiredError = errors.New("Session expired")
 var APILimitExceededError = errors.New("API limit exceeded")
 var APIDisabledForUser = errors.New("API disabled for user")
+var PasswordExpiredError = errors.New("Password is expired")
 var ClassNotFoundError = errors.New("class not found")
 var MetricsNotFoundError = errors.New("metrics not found")
 var DevHubOrgRequiredError = errors.New("Org must be a Dev Hub")
@@ -1287,6 +1288,8 @@ func (f *Force) _coerceHttpError(res *http.Response, body []byte) error {
 			return APILimitExceededError
 		} else if len(errors) > 0 && errors[0].ErrorCode == "API_CURRENTLY_DISABLED" {
 			return APIDisabledForUser
+		} else if len(errors) > 0 && errors[0].ErrorCode == "INVALID_OPERATION_WITH_EXPIRED_PASSWORD" {
+			return PasswordExpiredError
 		} else if len(errors) > 0 {
 			fallbackErr = errors
 		}
