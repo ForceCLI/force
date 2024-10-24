@@ -1093,6 +1093,13 @@ func (f *Force) DeleteRecord(sobject string, id string) (err error) {
 }
 
 func (f *Force) Whoami() (me ForceRecord, err error) {
+	if f.Credentials.UserInfo == nil {
+		userInfo, err := f.UserInfo()
+		if err != nil {
+			return nil, err
+		}
+		f.Credentials.UserInfo = &userInfo
+	}
 	me, err = f.GetRecord("User", f.Credentials.UserInfo.UserId)
 	return
 }
