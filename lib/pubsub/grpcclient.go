@@ -10,10 +10,10 @@ import (
 	"time"
 
 	. "github.com/ForceCLI/force/lib"
+	"github.com/hamba/avro/v2"
 	"github.com/pkg/errors"
 
 	"github.com/ForceCLI/force/lib/pubsub/proto"
-	"github.com/hamba/avro/v2"
 	"github.com/linkedin/goavro/v2"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -28,7 +28,7 @@ const (
 
 	GRPCEndpoint    = "api.pubsub.salesforce.com:7443"
 	GRPCDialTimeout = 5 * time.Second
-	GRPCCallTimeout = 5 * time.Second
+	GRPCCallTimeout = 30 * time.Second
 
 	Appetite int32 = 5
 )
@@ -41,6 +41,7 @@ type PubSubClient struct {
 	conn         *grpc.ClientConn
 	pubSubClient proto.PubSubClient
 
+	topicCache  map[string]*proto.TopicInfo
 	codecCache  map[string]*goavro.Codec
 	schemaCache map[string]map[string]any
 }
@@ -268,18 +269,35 @@ func (c *PubSubClient) fetchCodec(schemaId string) (*goavro.Codec, error) {
 	return codec, nil
 }
 
-// Wrapper function around the Publish RPC. This will add the OAuth credentials and produce a single hardcoded event to the specified topic.
-func (c *PubSubClient) Publish(channel string, message map[string]any) error {
+func (c *PubSubClient) fetchTopic(channel string) (*proto.TopicInfo, error) {
+	var topic *proto.TopicInfo
+	topic, ok := c.topicCache[channel]
+	if ok {
+		return topic, nil
+	}
+
+	Log.Info("Making GetTopic request for uncached topic...")
 	topic, err := c.GetTopic(channel)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	schema, err := c.GetSchema(topic.GetSchemaId())
+
+	c.topicCache[channel] = topic
+
+	return topic, nil
+}
+
+// Wrapper function around the Publish RPC. This will add the OAuth credentials and produce a single hardcoded event to the specified topic.
+func (c *PubSubClient) Publish(channel string, message map[string]any) error {
+	topic, err := c.fetchTopic(channel)
 	if err != nil {
 		return err
 	}
-	Log.Info("Creating codec from schema...")
-	codec, err := avro.Parse(schema.SchemaJson)
+	codec, err := c.fetchCodec(topic.GetSchemaId())
+	if err != nil {
+		return err
+	}
+	schema, err := avro.Parse(codec.Schema())
 	if err != nil {
 		return err
 	}
@@ -297,7 +315,7 @@ func (c *PubSubClient) Publish(channel string, message map[string]any) error {
 		message["CreatedDate"] = message["CreatedDate"].(time.Time).Unix()
 	}
 
-	payload, err := avro.Marshal(codec, message)
+	payload, err := avro.Marshal(schema, message)
 	if err != nil {
 		return err
 	}
@@ -308,7 +326,7 @@ func (c *PubSubClient) Publish(channel string, message map[string]any) error {
 		TopicName: channel,
 		Events: []*proto.ProducerEvent{
 			{
-				SchemaId: schema.GetSchemaId(),
+				SchemaId: topic.GetSchemaId(),
 				Payload:  payload,
 			},
 		},
@@ -381,6 +399,7 @@ func NewGRPCClient(f *Force) (*PubSubClient, error) {
 		pubSubClient: proto.NewPubSubClient(conn),
 		codecCache:   make(map[string]*goavro.Codec),
 		schemaCache:  make(map[string]map[string]any),
+		topicCache:   make(map[string]*proto.TopicInfo),
 	}, nil
 }
 

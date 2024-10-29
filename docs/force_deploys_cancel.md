@@ -9,6 +9,7 @@ force deploys cancel -d <deploy id>
 ### Options
 
 ```
+  -A, --all                Cancel all pending and in-progress deploys
   -d, --deploy-id string   Deploy Id to cancel
   -h, --help               help for cancel
 ```

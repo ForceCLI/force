@@ -13,6 +13,7 @@ List and cancel metadata deployments.
 ```
 
   force deploys list
+  force deploys cancel --all
   force deploys cancel -d 0Af000000000000000
 
 ```
