@@ -1,7 +1,9 @@
 package command
 
 import (
+	"bufio"
 	"fmt"
+	"os"
 
 	. "github.com/ForceCLI/force/error"
 	"github.com/ForceCLI/force/lib"
@@ -83,16 +85,42 @@ var publishCmd = &cobra.Command{
 			lib.Log = l
 		}
 		channel := args[0]
-		message, err := exprToMap(args[1])
-		if err != nil {
-			ErrorAndExit(err.Error())
-		}
-		err = pubsub.Publish(force, channel, message)
-		if err != nil {
-			ErrorAndExit(err.Error())
+		if len(args) == 2 {
+			message, err := exprToMap(args[1])
+			if err != nil {
+				ErrorAndExit(err.Error())
+			}
+			err = pubsub.Publish(force, channel, message)
+			if err != nil {
+				ErrorAndExit(err.Error())
+			}
+		} else {
+			messages := make(chan map[string]interface{})
+
+			go func() {
+				scanner := bufio.NewScanner(os.Stdin)
+				for scanner.Scan() {
+					line := scanner.Text()
+					message, err := exprToMap(line)
+					if err != nil {
+						ErrorAndExit(err.Error())
+					}
+					messages <- message
+				}
+				if err := scanner.Err(); err != nil {
+					ErrorAndExit("Error reading from stdin: " + err.Error())
+				}
+				close(messages)
+			}()
+
+			err := pubsub.PublishMessages(force, channel, messages)
+			if err != nil {
+				ErrorAndExit(err.Error())
+			}
+
 		}
 	},
-	Args: cobra.ExactArgs(2),
+	Args: cobra.RangeArgs(1, 2),
 }
 
 func exprToMap(e string) (map[string]any, error) {
