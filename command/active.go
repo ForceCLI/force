@@ -50,9 +50,9 @@ func printCurrentAccount(cmd *cobra.Command) {
 	if sessionId {
 		fmt.Println(creds.AccessToken)
 	} else if tojson {
-		fmt.Printf(fmt.Sprintf("{ \"login\": \"%s\", \"instanceUrl\": \"%s\", \"namespace\":\"%s\" }", creds.SessionName(), creds.InstanceUrl, creds.UserInfo.OrgNamespace))
+		fmt.Printf(fmt.Sprintf(`{ "login": "%s", "instanceUrl": "%s", "namespace": "%s", "orgId": "%s" }`, creds.SessionName(), creds.InstanceUrl, creds.UserInfo.OrgNamespace, creds.UserInfo.OrgId))
 	} else {
-		fmt.Println(fmt.Sprintf("%s - %s - ns:%s", creds.SessionName(), creds.InstanceUrl, creds.UserInfo.OrgNamespace))
+		fmt.Println(fmt.Sprintf("%s - %s - Org: %s - ns:%s", creds.SessionName(), creds.InstanceUrl, creds.UserInfo.OrgId, creds.UserInfo.OrgNamespace))
 	}
 }
 
