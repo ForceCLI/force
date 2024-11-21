@@ -76,20 +76,8 @@ func envSession() *Force {
 }
 
 func initializeSession() {
-<<<<<<< HEAD
-	var err error
-	if account != "" {
-		force, err = GetForce(account)
-	} else if force = envSession(); force == nil {
-		force, err = ActiveForce()
-	}
-	if err != nil {
-		ErrorAndExit(err.Error())
-	}
-=======
 	manager = newForceManager(accounts)
 
->>>>>>> 75cc0f4 (Multiple accounts for deployment)
 	if _apiVersion != "" {
 		err := SetApiVersion(_apiVersion)
 		if err != nil {
