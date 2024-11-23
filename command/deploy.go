@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	. "github.com/ForceCLI/force/error"
 	. "github.com/ForceCLI/force/lib"
 	"github.com/spf13/cobra"
 )
@@ -212,6 +213,10 @@ func getDeploymentOutputOptions(cmd *cobra.Command) *deployOutputOptions {
 
 	if interactive, err := cmd.Flags().GetBool("interactive"); err == nil {
 		outputOptions.interactive = interactive
+
+		if interactive && len(manager.connections) > 1 {
+			ErrorAndExit("interactive flag cannot be used with multiple accounts")
+		}
 	}
 
 	if ignoreCoverageWarnings, err := cmd.Flags().GetBool("ignorecoverage"); err == nil {
