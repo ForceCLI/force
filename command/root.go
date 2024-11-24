@@ -125,6 +125,10 @@ func newForceManager(accounts []string) forceManager {
 
 	if len(accounts) > 1 {
 		for _, a := range accounts {
+			if _, exists := fm.connections[a]; exists {
+				ErrorAndExit("Duplicate account: " + a)
+			}
+
 			var f *Force
 
 			f, err = GetForce(a)
