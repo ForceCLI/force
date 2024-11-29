@@ -2,7 +2,7 @@ package command
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"strings"
 
@@ -83,9 +83,9 @@ func runPostPatchPut(fn postPatchPutFn, cmd *cobra.Command, args []string) {
 	var err error
 	absolute, _ := cmd.Flags().GetBool("absolute")
 	if len(args) == 2 {
-		data, err = ioutil.ReadFile(args[1])
+		data, err = os.ReadFile(args[1])
 	} else {
-		data, err = ioutil.ReadAll(os.Stdin)
+		data, err = io.ReadAll(os.Stdin)
 	}
 	if err != nil {
 		ErrorAndExit(err.Error())
@@ -104,8 +104,7 @@ func runGet(url string, absolute bool) {
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
-	msg := strings.Replace(data, "null", "\"null\"", -1)
-	fmt.Println(msg)
+	fmt.Println(data)
 }
 
 func makePostPatchPut(action string) postPatchPutFn {
@@ -123,7 +122,6 @@ func makePostPatchPut(action string) postPatchPutFn {
 		if err != nil {
 			ErrorAndExit(err.Error())
 		}
-		data = strings.Replace(data, "null", "\"null\"", -1)
 		msg := fmt.Sprintf("%s %s\n%s", action, url, data)
 		fmt.Println(msg)
 	}
