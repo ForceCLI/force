@@ -132,6 +132,7 @@ func runPush(metadataTypes []string, metadataNames []string, resourcePaths []str
 func sourceDirFromPaths(resourcePaths []string) string {
 	p := ""
 	for _, path := range resourcePaths {
+		path = filepath.FromSlash(path)
 		parts := strings.Split(path, string(os.PathSeparator))
 		first := parts[0]
 		if p == "" {
