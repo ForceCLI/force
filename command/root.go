@@ -33,19 +33,24 @@ func init() {
 	RootCmd.PersistentFlags().StringVarP(&account, "account", "a", "", "account `username` to use")
 	RootCmd.PersistentFlags().StringVar(&configName, "config", "", "config directory to use (default: .force)")
 	RootCmd.PersistentFlags().StringVarP(&_apiVersion, "apiversion", "V", "", "API version to use")
+
+	RootCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
+		initializeConfig()
+		current := cmd
+		for current.Parent() != nil && current.Parent() != RootCmd {
+			current = current.Parent()
+		}
+		switch current.Name() {
+		case "force", "login", "completion":
+		default:
+			initializeSession()
+		}
+	}
 }
 
 var RootCmd = &cobra.Command{
 	Use:   "force",
 	Short: "force CLI",
-	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		initializeConfig()
-		switch cmd.Use {
-		case "force", "login":
-		default:
-			initializeSession()
-		}
-	},
 	Run: func(cmd *cobra.Command, args []string) {
 		cmd.Help()
 		os.Exit(1)
