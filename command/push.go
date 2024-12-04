@@ -174,7 +174,7 @@ func pushByPaths(resourcePaths []string, deployOptions *ForceDeployOptions, disp
 			ErrorAndExit("Could not add %s: %s", p, err.Error())
 		}
 	}
-	err = deploy(force, pb.ForceMetadataFiles(), deployOptions, displayOptions)
+	err = deploy(force, pb.ForceMetadataFiles(), *deployOptions, displayOptions)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
@@ -199,7 +199,7 @@ func pushByMetadataType(metadataType string, metadataNames []string, deployOptio
 		}
 	}
 
-	err = deploy(force, pb.ForceMetadataFiles(), deployOptions, displayOptions)
+	err = deploy(force, pb.ForceMetadataFiles(), *deployOptions, displayOptions)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
@@ -218,7 +218,7 @@ func pushMetadataTypes(metadataTypes []string, deployOptions *ForceDeployOptions
 		}
 	}
 
-	err = deploy(force, pb.ForceMetadataFiles(), deployOptions, displayOptions)
+	err = deploy(force, pb.ForceMetadataFiles(), *deployOptions, displayOptions)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
