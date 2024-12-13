@@ -118,6 +118,36 @@ func parseBody(body map[string]any, schema map[string]any) map[string]any {
 	}
 	parsedBody := make(map[string]any)
 	parsedBody["ChangeEventHeader"] = changeEventHeader
+	changeType, _ := changeEventHeader["changeType"].(string)
+	switch changeType {
+	case "DELETE":
+		// no field values are included with DELETE events
+		return parsedBody
+	case "CREATE", "UNDELETE":
+		// all field values are included with CREATE and UNDELETE events
+		schemaFieldNames, err := getSchemaFieldNames(schema)
+		if err != nil {
+			Log.Info(fmt.Sprintf("failed to get schema: %s", err.Error()))
+			return body
+		}
+		for _, f := range schemaFieldNames {
+			if f == "ChangeEventHeader" {
+				continue
+			}
+			if body[f] == nil {
+				parsedBody[f] = nil
+				break
+			}
+			values := body[f].(map[string]any)
+			for _, v := range values {
+				parsedBody[f] = v
+				break
+			}
+		}
+		return parsedBody
+	}
+
+	// Handle UPDATE events
 	for _, bf := range []string{"changedFields", "diffFields", "nulledFields"} {
 		bfs := changeEventHeader[bf].([]any)
 		var bitmaps []string
