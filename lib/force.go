@@ -701,6 +701,11 @@ func (f *Force) CancelableQueryAndSend(ctx context.Context, qs string, processor
 	}()
 	select {
 	case <-ctx.Done():
+		select {
+		case <-done:
+		case <-time.After(1 * time.Second):
+			// Wait briefly for goroutine to finish before returning and closing the processor channel
+		}
 		return fmt.Errorf("Query cancelled: %w", ctx.Err())
 	case <-done:
 	}
