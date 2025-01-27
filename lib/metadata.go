@@ -174,6 +174,7 @@ type ComponentDetails struct {
 }
 
 type ForceCheckDeploymentStatusResult struct {
+	UserName                 string
 	CheckOnly                bool             `xml:"checkOnly"`
 	CompletedDate            time.Time        `xml:"completedDate"`
 	CreatedDate              time.Time        `xml:"createdDate"`
@@ -745,7 +746,7 @@ func (results ForceCheckDeploymentStatusResult) String() string {
 		complete = fmt.Sprintf(" (%d/%d)", results.NumberTestsCompleted, results.NumberTestsTotal)
 	}
 
-	return fmt.Sprintf("Status: %s%s %s", results.Status, complete, results.StateDetail)
+	return fmt.Sprintf("Status (%s): %s%s %s", results.UserName, results.Status, complete, results.StateDetail)
 }
 
 func (fm *ForceMetadata) CancelDeploy(id string) (ForceCancelDeployResult, error) {
