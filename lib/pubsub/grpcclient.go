@@ -433,7 +433,6 @@ func getCerts() *x509.CertPool {
 // Helper function to display trailers on the console in a more readable format
 func logTrailer(trailer metadata.MD) {
 	if len(trailer) == 0 {
-		Log.Info("no trailers returned")
 		return
 	}
 

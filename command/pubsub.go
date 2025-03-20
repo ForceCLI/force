@@ -95,7 +95,7 @@ var publishCmd = &cobra.Command{
 				ErrorAndExit(err.Error())
 			}
 		} else {
-			messages := make(chan map[string]interface{})
+			messages := make(chan lib.ForceRecord)
 
 			go func() {
 				scanner := bufio.NewScanner(os.Stdin)
