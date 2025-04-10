@@ -6,10 +6,10 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
-	. "github.com/ForceCLI/force/error"
 	. "github.com/ForceCLI/force/lib"
 	"github.com/spf13/cobra"
 )
@@ -38,53 +38,41 @@ func defaultDeployOutputOptions() *deployOutputOptions {
 
 var testFailureError = errors.New("Apex tests failed")
 
-func monitorDeploy(deployId string) (ForceCheckDeploymentStatusResult, error) {
-	var result ForceCheckDeploymentStatusResult
-	var err error
-	retrying := false
-	for {
-		result, err = force.Metadata.CheckDeployStatus(deployId)
-		if err != nil {
-			if retrying {
-				return result, fmt.Errorf("Error getting deploy status: %w", err)
-			} else {
-				retrying = true
-				Log.Info(fmt.Sprintf("Received error checking deploy status: %s.  Will retry once before aborting.", err.Error()))
-			}
-		} else {
-			retrying = false
-		}
-		if result.Done {
-			break
-		}
-		if !retrying {
-			Log.Info(result)
-		}
-		time.Sleep(5000 * time.Millisecond)
-	}
-	return result, err
+type deployStatus struct {
+	mu      sync.Mutex
+	aborted bool
 }
 
-func deploy(force *Force, files ForceMetadataFiles, deployOptions *ForceDeployOptions, outputOptions *deployOutputOptions) error {
-	if outputOptions.quiet {
-		previousLogger := Log
-		var l quietLogger
-		Log = l
-		defer func() {
-			Log = previousLogger
-		}()
-	}
+func (c *deployStatus) abort() {
+	c.mu.Lock()
+	c.aborted = true
+	c.mu.Unlock()
+}
+
+func (c *deployStatus) isAborted() bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.aborted
+}
+
+func deploy(force *Force, files ForceMetadataFiles, deployOptions ForceDeployOptions, outputOptions *deployOutputOptions) error {
+	status := deployStatus{aborted: false}
+
+	return deployWith(force, &status, files, deployOptions, outputOptions)
+}
+
+func deployWith(force *Force, status *deployStatus, files ForceMetadataFiles, deployOptions ForceDeployOptions, outputOptions *deployOutputOptions) error {
 	startTime := time.Now()
-	deployId, err := force.Metadata.StartDeploy(files, *deployOptions)
+	deployId, err := force.Metadata.StartDeploy(files, deployOptions)
 	if err != nil {
-		ErrorAndExit(err.Error())
+		return err
 	}
 	stopDeployUponSignal(force, deployId)
 	if outputOptions.interactive {
 		watchDeploy(deployId)
 		return nil
 	}
-	result, err := monitorDeploy(deployId)
+	result, err := monitorDeploy(force, deployId, status)
 	if err != nil {
 		return err
 	}
@@ -154,6 +142,39 @@ func deploy(force *Force, files ForceMetadataFiles, deployOptions *ForceDeployOp
 		}
 	}
 	return nil
+}
+
+func monitorDeploy(force *Force, deployId string, status *deployStatus) (ForceCheckDeploymentStatusResult, error) {
+	var result ForceCheckDeploymentStatusResult
+	var err error
+	retrying := false
+	for {
+		if status.isAborted() {
+			fmt.Fprintf(os.Stderr, "Cancelling deploy %s\n", deployId)
+			force.Metadata.CancelDeploy(deployId)
+			return result, nil
+		}
+		result, err = force.Metadata.CheckDeployStatus(deployId)
+		if err != nil {
+			if retrying {
+				return result, fmt.Errorf("Error getting deploy status: %w", err)
+			} else {
+				retrying = true
+				Log.Info(fmt.Sprintf("Received error checking deploy status: %s.  Will retry once before aborting.", err.Error()))
+			}
+		} else {
+			retrying = false
+		}
+		result.UserName = force.GetCredentials().UserInfo.UserName
+		if result.Done {
+			break
+		}
+		if !retrying {
+			Log.Info(result)
+		}
+		time.Sleep(5000 * time.Millisecond)
+	}
+	return result, err
 }
 
 func stopDeployUponSignal(force *Force, deployId string) {
