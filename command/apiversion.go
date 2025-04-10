@@ -3,6 +3,7 @@ package command
 import (
 	"encoding/json"
 	"fmt"
+	"regexp"
 
 	. "github.com/ForceCLI/force/error"
 	. "github.com/ForceCLI/force/lib"
@@ -12,6 +13,8 @@ import (
 func init() {
 	apiVersionListCmd.Flags().BoolP("json", "j", false, "json output")
 	apiVersionCmd.AddCommand(apiVersionListCmd)
+
+	apiVersionCmd.Flags().BoolP("release", "r", false, "include release version")
 
 	RootCmd.AddCommand(apiVersionCmd)
 }
@@ -25,13 +28,22 @@ var apiVersionCmd = &cobra.Command{
   force apiversion list
 `,
 	Args:                  cobra.MaximumNArgs(1),
-	DisableFlagsInUseLine: true,
+	DisableFlagsInUseLine: false,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 1 {
 			setApiVersion(args[0])
-		} else {
-			fmt.Println(ApiVersion())
+			return
 		}
+		v := ApiVersion()
+		r, _ := cmd.Flags().GetBool("release")
+		if r {
+			releaseVersion, err := getReleaseVersion()
+			if err != nil {
+				ErrorAndExit(err.Error())
+			}
+			v = fmt.Sprintf("%s (%s)", v, releaseVersion)
+		}
+		fmt.Println(v)
 	},
 }
 
@@ -73,4 +85,18 @@ func listApiVersions(jsonOutput bool) {
 	for _, v := range versions {
 		fmt.Printf("%s (%s)\n", v["version"], v["label"])
 	}
+}
+
+func getReleaseVersion() (string, error) {
+	data, err := force.GetAbsolute("/releaseVersion.jsp")
+	if err != nil {
+		return "", fmt.Errorf("failed to get /releaseVersion.jsp: %w", err)
+	}
+
+	re := regexp.MustCompile(`(?m)^ReleaseName=([\d\.]+)$`)
+	matches := re.FindStringSubmatch(string(data))
+	if len(matches) < 2 {
+		return "", fmt.Errorf("release version not found")
+	}
+	return matches[1], nil
 }
