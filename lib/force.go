@@ -24,6 +24,9 @@ import (
 	"github.com/ForceCLI/force/lib/query"
 )
 
+// forceQuery is a package-level reference to query.Query, overridden in tests to simulate record pages.
+var forceQuery = query.Query
+
 var (
 	ClientId    = "3MVG9ytVT1SanXDnX_hOa9Ys5NxVp5C26JlyQjwr.xTJtUqoKonXY.M8CcjoEknMrV4YUvPvXLiMyzI.Aw23C"
 	RedirectUri = "http://localhost:3835/oauth/callback"
@@ -687,13 +690,12 @@ func (f *Force) CancelableQueryAndSend(ctx context.Context, qs string, processor
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		err = query.Query(func(records []query.Record) bool {
+		err = forceQuery(func(records []query.Record) bool {
 			for _, row := range records {
 				select {
 				case <-ctx.Done():
 					return false
-				default:
-					processor <- row.Fields
+				case processor <- row.Fields:
 				}
 			}
 			return true
@@ -721,13 +723,12 @@ func (f *Force) AbortableQueryAndSend(qs string, processor chan<- ForceRecord, a
 	}()
 
 	qopts := f.legacyQueryOptions(qs, options...)
-	err := query.Query(func(records []query.Record) bool {
+	err := forceQuery(func(records []query.Record) bool {
 		for _, row := range records {
 			select {
 			case <-abort:
 				return false
-			default:
-				processor <- row.Fields
+			case processor <- row.Fields:
 			}
 		}
 		return true
@@ -768,12 +769,16 @@ func (f *Force) Query(qs string, options ...func(*QueryOptions)) (ForceQueryResu
 }
 
 func (f *Force) QueryOptions() []query.Option {
+	instUrl := ""
+	if f.Credentials != nil {
+		instUrl = f.Credentials.InstanceUrl
+	}
 	return []query.Option{
 		query.HttpGet(func(url string) ([]byte, error) {
 			body, err := f.makeHttpRequestSync(NewRequest("GET").AbsoluteUrl(url))
 			return body, err
 		}),
-		query.InstanceUrl(f.Credentials.InstanceUrl),
+		query.InstanceUrl(instUrl),
 		query.ApiVersion(apiVersion),
 	}
 }
