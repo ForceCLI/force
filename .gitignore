@@ -1,10 +1,12 @@
 .DS_Store
 metadata/
+src/
+.sfdx/
 
 # Force CLI specific things
 force
 metadata
-test 
+test
 
 *.json
 
