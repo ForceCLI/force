@@ -41,6 +41,7 @@ var RootCmd = &cobra.Command{
 	Short: "force CLI",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		initializeConfig()
+		checkAccounts(cmd.Name())
 		switch cmd.Use {
 		case "force", "login":
 		default:
@@ -58,6 +59,14 @@ func initializeConfig() {
 	if configName != "" {
 		forceConfig.Config = config.NewConfig(strings.TrimPrefix(configName, "."))
 		fmt.Println("Setting config to", forceConfig.Config.Base)
+	}
+}
+
+func checkAccounts(command string) {
+	//currently only import allows many accounts so a catch all error handling is simpler
+
+	if len(accounts) > 1 && command != "import" {
+		ErrorAndExit(fmt.Sprintf("Multiple accounts are not supported for %s yet", command))
 	}
 }
 
