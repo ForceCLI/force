@@ -14,11 +14,12 @@ import (
 )
 
 var (
-	account     string
+	accounts    []string
 	configName  string
 	_apiVersion string
 
-	force *Force
+	manager forceManager
+	force   *Force
 )
 
 func init() {
@@ -30,7 +31,7 @@ func init() {
 		}
 	}
 	RootCmd.SetArgs(args)
-	RootCmd.PersistentFlags().StringVarP(&account, "account", "a", "", "account `username` to use")
+	RootCmd.PersistentFlags().StringArrayVarP(&accounts, "account", "a", []string{}, "account `username` to use")
 	RootCmd.PersistentFlags().StringVar(&configName, "config", "", "config directory to use (default: .force)")
 	RootCmd.PersistentFlags().StringVarP(&_apiVersion, "apiversion", "V", "", "API version to use")
 
@@ -80,21 +81,16 @@ func envSession() *Force {
 }
 
 func initializeSession() {
-	var err error
-	if account != "" {
-		force, err = GetForce(account)
-	} else if force = envSession(); force == nil {
-		force, err = ActiveForce()
-	}
-	if err != nil {
-		ErrorAndExit(err.Error())
-	}
+	manager = newForceManager(accounts)
+
 	if _apiVersion != "" {
 		err := SetApiVersion(_apiVersion)
 		if err != nil {
 			ErrorAndExit(err.Error())
 		}
 	}
+
+	force = manager.getCurrentForce()
 }
 
 func Execute() {
@@ -107,4 +103,64 @@ func Execute() {
 type quietLogger struct{}
 
 func (l quietLogger) Info(args ...interface{}) {
+}
+
+// provides support for commands that can be run concurrently for many accounts
+type forceManager struct {
+	connections    map[string]*Force
+	currentAccount string
+}
+
+func (manager forceManager) getCurrentForce() *Force {
+	return manager.connections[manager.currentAccount]
+}
+
+func (manager forceManager) getAllForce() []*Force {
+	fs := make([]*Force, 0, len(manager.connections))
+
+	for _, v := range manager.connections {
+		fs = append(fs, v)
+	}
+	return fs
+}
+
+func newForceManager(accounts []string) forceManager {
+	var err error
+	fm := forceManager{connections: make(map[string]*Force, 1)}
+
+	if len(accounts) > 1 {
+		for _, a := range accounts {
+			if _, exists := fm.connections[a]; exists {
+				ErrorAndExit("Duplicate account: " + a)
+			}
+
+			var f *Force
+
+			f, err = GetForce(a)
+			if err != nil {
+				ErrorAndExit(err.Error())
+			}
+
+			fm.connections[a] = f
+		}
+
+		fm.currentAccount = accounts[0]
+	} else {
+		var f *Force
+
+		if len(accounts) == 1 {
+			f, err = GetForce(accounts[0])
+		} else if f = envSession(); f == nil {
+			f, err = ActiveForce()
+		}
+
+		if err != nil {
+			ErrorAndExit(err.Error())
+		}
+
+		fm.currentAccount = f.GetCredentials().UserInfo.UserName
+		fm.connections[fm.currentAccount] = f
+	}
+
+	return fm
 }
