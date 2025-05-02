@@ -44,6 +44,7 @@ force push [flags]
       --reporttype string    report type format (text or junit) (default "text")
   -r, --rollbackonerror      roll back deployment on error
       --runalltests          run all tests (equivalent to --testlevel RunAllTestsInOrg)
+      --smart-flow-version   enable smart flow versioning (auto-select new version and prune inactive flows)
   -U, --suppressunexpected   suppress "An unexpected error occurred" messages
       --test strings         Test(s) to run
   -l, --testlevel string     test level (default "NoTestRun")

@@ -3,7 +3,7 @@
 Display/Set current API version
 
 ```
-force apiversion
+force apiversion [flags]
 ```
 
 ### Examples
@@ -19,7 +19,8 @@ force apiversion
 ### Options
 
 ```
-  -h, --help   help for apiversion
+  -h, --help      help for apiversion
+  -r, --release   include release version
 ```
 
 ### Options inherited from parent commands
