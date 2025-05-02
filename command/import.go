@@ -35,6 +35,7 @@ func init() {
 	importCmd.Flags().StringP("reporttype", "f", "text", "report type format (text or junit)")
 
 	importCmd.Flags().StringP("directory", "d", "src", "relative path to package.xml")
+	importCmd.Flags().Bool("smart-flow-version", false, "enable smart flow versioning (auto-select new version and prune inactive flows)")
 
 	importCmd.Flags().BoolP("erroronfailure", "E", true, "exit with an error code if any tests fail")
 
@@ -55,7 +56,8 @@ var importCmd = &cobra.Command{
 
 		displayOptions := getDeploymentOutputOptions(cmd)
 
-		runImport(srcDir, options, displayOptions)
+		smartFlowVersion, _ := cmd.Flags().GetBool("smart-flow-version")
+		runImport(srcDir, options, displayOptions, smartFlowVersion)
 	},
 	Args: cobra.MaximumNArgs(0),
 }
@@ -91,7 +93,8 @@ func sourceDir(cmd *cobra.Command) string {
 	return root
 }
 
-func runImport(root string, options ForceDeployOptions, displayOptions *deployOutputOptions) {
+func runImport(root string, options ForceDeployOptions, displayOptions *deployOutputOptions, smartFlowVersion bool) {
+	_ = smartFlowVersion
 	files := make(ForceMetadataFiles)
 	if _, err := os.Stat(filepath.Join(root, "package.xml")); os.IsNotExist(err) {
 		ErrorAndExit(" \n" + filepath.Join(root, "package.xml") + "\ndoes not exist")
@@ -113,6 +116,13 @@ func runImport(root string, options ForceDeployOptions, displayOptions *deployOu
 		ErrorAndExit(err.Error())
 	}
 
+	if smartFlowVersion {
+		var err2 error
+		files, err2 = processSmartFlowVersion(force, files)
+		if err2 != nil {
+			ErrorAndExit(err2.Error())
+		}
+	}
 	err = deploy(force, files, &options, displayOptions)
 	if err == nil && displayOptions.reportFormat == "text" && !displayOptions.quiet {
 		fmt.Printf("Imported from %s\n", root)

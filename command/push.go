@@ -37,6 +37,7 @@ func init() {
 	pushCmd.Flags().StringSliceP("type", "t", []string{}, "Metatdata type")
 	pushCmd.Flags().StringSliceP("name", "n", []string{}, "name of metadata object")
 	pushCmd.Flags().StringSlice("test", []string{}, "Test(s) to run")
+	pushCmd.Flags().Bool("smart-flow-version", false, "enable smart flow versioning (auto-select new version and prune inactive flows)")
 	RootCmd.AddCommand(pushCmd)
 }
 
@@ -70,7 +71,8 @@ File path can be specified as - to read from stdin; see examples
 		if !cmd.Flags().Changed("verbose") {
 			displayOptions.verbosity = 1
 		}
-		runPush(metadataTypes, metadataNames, resourcePaths, &deployOptions, displayOptions)
+		smartFlowVersion, _ := cmd.Flags().GetBool("smart-flow-version")
+		runPush(metadataTypes, metadataNames, resourcePaths, &deployOptions, displayOptions, smartFlowVersion)
 	},
 }
 
@@ -86,7 +88,10 @@ func replaceComponentWithBundle(inputPathToFile string) string {
 	return inputPathToFile
 }
 
-func runPush(metadataTypes []string, metadataNames []string, resourcePaths []string, deployOptions *ForceDeployOptions, displayOptions *deployOutputOptions) {
+func runPush(metadataTypes []string, metadataNames []string, resourcePaths []string, deployOptions *ForceDeployOptions, displayOptions *deployOutputOptions, smartFlowVersion bool) {
+	if smartFlowVersion {
+		// TODO: implement smart flow version logic
+	}
 	if len(resourcePaths) == 1 && resourcePaths[0] == "-" {
 		resourcePaths = make(metaName, 0)
 		scanner := bufio.NewScanner(os.Stdin)
@@ -121,11 +126,11 @@ func runPush(metadataTypes []string, metadataNames []string, resourcePaths []str
 		}
 		resourcePaths = resourcepathsToPush
 
-		pushByPaths(resourcePaths, deployOptions, displayOptions)
+		pushByPaths(resourcePaths, deployOptions, displayOptions, smartFlowVersion)
 	} else if len(metadataTypes) == 1 {
-		pushByMetadataType(metadataTypes[0], metadataNames, deployOptions, displayOptions)
+		pushByMetadataType(metadataTypes[0], metadataNames, deployOptions, displayOptions, smartFlowVersion)
 	} else {
-		pushMetadataTypes(metadataTypes, deployOptions, displayOptions)
+		pushMetadataTypes(metadataTypes, deployOptions, displayOptions, smartFlowVersion)
 	}
 }
 
@@ -151,7 +156,8 @@ func sourceDirFromPaths(resourcePaths []string) string {
 	return p
 }
 
-func pushByPaths(resourcePaths []string, deployOptions *ForceDeployOptions, displayOptions *deployOutputOptions) {
+// pushByPaths deploys components by explicit paths, with optional smart flow versioning
+func pushByPaths(resourcePaths []string, deployOptions *ForceDeployOptions, displayOptions *deployOutputOptions, smartFlowVersion bool) {
 	pb := NewPushBuilder()
 	sourceDir := sourceDirFromPaths(resourcePaths)
 	var err error
@@ -174,13 +180,23 @@ func pushByPaths(resourcePaths []string, deployOptions *ForceDeployOptions, disp
 			ErrorAndExit("Could not add %s: %s", p, err.Error())
 		}
 	}
-	err = deploy(force, pb.ForceMetadataFiles(), deployOptions, displayOptions)
+	// Build metadata files
+	files := pb.ForceMetadataFiles()
+	if smartFlowVersion {
+		files, err = processSmartFlowVersion(force, files)
+		if err != nil {
+			ErrorAndExit(err.Error())
+		}
+	}
+	// Deploy
+	err = deploy(force, files, deployOptions, displayOptions)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
 }
 
-func pushByMetadataType(metadataType string, metadataNames []string, deployOptions *ForceDeployOptions, displayOptions *deployOutputOptions) {
+// pushByMetadataType deploys components by metadata type, with optional smart flow versioning
+func pushByMetadataType(metadataType string, metadataNames []string, deployOptions *ForceDeployOptions, displayOptions *deployOutputOptions, smartFlowVersion bool) {
 	pb := NewPushBuilder()
 	sourceDir, err := config.GetSourceDir()
 	ExitIfNoSourceDir(err)
@@ -199,13 +215,20 @@ func pushByMetadataType(metadataType string, metadataNames []string, deployOptio
 		}
 	}
 
-	err = deploy(force, pb.ForceMetadataFiles(), deployOptions, displayOptions)
-	if err != nil {
+	files := pb.ForceMetadataFiles()
+	if smartFlowVersion {
+		files, err = processSmartFlowVersion(force, files)
+		if err != nil {
+			ErrorAndExit(err.Error())
+		}
+	}
+	if err = deploy(force, files, deployOptions, displayOptions); err != nil {
 		ErrorAndExit(err.Error())
 	}
 }
 
-func pushMetadataTypes(metadataTypes []string, deployOptions *ForceDeployOptions, displayOptions *deployOutputOptions) {
+// pushMetadataTypes deploys multiple metadata types, with optional smart flow versioning
+func pushMetadataTypes(metadataTypes []string, deployOptions *ForceDeployOptions, displayOptions *deployOutputOptions, smartFlowVersion bool) {
 	pb := NewPushBuilder()
 	sourceDir, err := config.GetSourceDir()
 	ExitIfNoSourceDir(err)
@@ -218,8 +241,14 @@ func pushMetadataTypes(metadataTypes []string, deployOptions *ForceDeployOptions
 		}
 	}
 
-	err = deploy(force, pb.ForceMetadataFiles(), deployOptions, displayOptions)
-	if err != nil {
+	files := pb.ForceMetadataFiles()
+	if smartFlowVersion {
+		files, err = processSmartFlowVersion(force, files)
+		if err != nil {
+			ErrorAndExit(err.Error())
+		}
+	}
+	if err = deploy(force, files, deployOptions, displayOptions); err != nil {
 		ErrorAndExit(err.Error())
 	}
 }
