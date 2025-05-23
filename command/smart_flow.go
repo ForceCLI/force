@@ -142,15 +142,58 @@ func processSmartFlowVersion(q flowQuerier, files ForceMetadataFiles) (ForceMeta
 			delete(files, oldMeta)
 		}
 	}
-	// If any inactive versions, generate destructiveChangesPost.xml
+	// If any inactive versions, generate or merge destructiveChangesPost.xml
 	if len(dest.Members) > 0 {
 		// sort members for consistency
 		sort.Strings(dest.Members)
-		pkg := DestructivePackage{
-			Xmlns:   "http://soap.sforce.com/2006/04/metadata",
-			Types:   []DestructiveType{dest},
-			Version: strings.TrimPrefix(ApiVersion(), "v"),
+
+		var pkg DestructivePackage
+
+		// Check if destructiveChangesPost.xml already exists
+		if existing, ok := files["destructiveChangesPost.xml"]; ok {
+			// Parse existing destructiveChangesPost.xml
+			if err := xml.Unmarshal(existing, &pkg); err != nil {
+				return files, fmt.Errorf("parse existing destructiveChangesPost.xml: %w", err)
+			}
+
+			// Find existing Flow type or create new one
+			flowTypeFound := false
+			for i, t := range pkg.Types {
+				if t.Name == "Flow" {
+					// Merge with existing Flow members, avoiding duplicates
+					memberSet := make(map[string]struct{})
+					for _, m := range t.Members {
+						memberSet[m] = struct{}{}
+					}
+					for _, m := range dest.Members {
+						memberSet[m] = struct{}{}
+					}
+
+					// Convert back to slice and sort
+					var mergedMembers []string
+					for m := range memberSet {
+						mergedMembers = append(mergedMembers, m)
+					}
+					sort.Strings(mergedMembers)
+					pkg.Types[i].Members = mergedMembers
+					flowTypeFound = true
+					break
+				}
+			}
+
+			// If no Flow type found, add it
+			if !flowTypeFound {
+				pkg.Types = append(pkg.Types, dest)
+			}
+		} else {
+			// Create new destructiveChangesPost.xml
+			pkg = DestructivePackage{
+				Xmlns:   "http://soap.sforce.com/2006/04/metadata",
+				Types:   []DestructiveType{dest},
+				Version: strings.TrimPrefix(ApiVersion(), "v"),
+			}
 		}
+
 		out, err := xml.MarshalIndent(pkg, "", "    ")
 		if err != nil {
 			return files, fmt.Errorf("marshal destructiveChangesPost: %w", err)

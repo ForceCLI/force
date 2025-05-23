@@ -172,3 +172,78 @@ func TestProcessSmartFlowVersion_InactiveAndActive(t *testing.T) {
 		t.Errorf("destructiveChangesPost missing MyFlow-2, got %s", string(dc))
 	}
 }
+
+// Test that existing destructiveChangesPost.xml is merged with flow deletions
+func TestProcessSmartFlowVersion_MergeExistingDestructive(t *testing.T) {
+	name := "MyFlow"
+	fq := &fakeQuerier{results: map[string]lib.ForceQueryResult{
+		name: {Records: []lib.ForceRecord{
+			{"VersionNumber": float64(2), "Status": "Inactive"},
+			{"VersionNumber": float64(3), "Status": "Active"},
+		}},
+	}}
+
+	// Existing destructiveChangesPost.xml with some other metadata
+	existingDC := []byte(`<?xml version="1.0" encoding="UTF-8"?>
+<Package xmlns="http://soap.sforce.com/2006/04/metadata">
+    <types>
+        <members>TestClass</members>
+        <name>ApexClass</name>
+    </types>
+    <version>61.0</version>
+</Package>`)
+
+	files := lib.ForceMetadataFiles{
+		"flows/MyFlow.flow":          []byte("<flow></flow>"),
+		"flows/MyFlow.flow-meta.xml": []byte("<fullName>MyFlow</fullName>"),
+		"destructiveChangesPost.xml": existingDC,
+	}
+
+	out, err := processSmartFlowVersion(fq, files)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Check that destructiveChangesPost.xml contains both ApexClass and Flow types
+	dc, ok := out["destructiveChangesPost.xml"]
+	if !ok {
+		t.Fatalf("missing destructiveChangesPost.xml")
+	}
+
+	var pkg struct {
+		Types []struct {
+			Members []string `xml:"members"`
+			Name    string   `xml:"name"`
+		} `xml:"types"`
+	}
+	if err := xml.Unmarshal(dc, &pkg); err != nil {
+		t.Fatalf("unmarshal dc xml: %v", err)
+	}
+
+	foundApexClass := false
+	foundFlow := false
+
+	for _, typ := range pkg.Types {
+		if typ.Name == "ApexClass" {
+			for _, m := range typ.Members {
+				if m == "TestClass" {
+					foundApexClass = true
+				}
+			}
+		}
+		if typ.Name == "Flow" {
+			for _, m := range typ.Members {
+				if m == "MyFlow-2" {
+					foundFlow = true
+				}
+			}
+		}
+	}
+
+	if !foundApexClass {
+		t.Errorf("existing ApexClass member missing from merged destructiveChangesPost.xml")
+	}
+	if !foundFlow {
+		t.Errorf("new Flow member missing from merged destructiveChangesPost.xml")
+	}
+}
