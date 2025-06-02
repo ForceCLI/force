@@ -1084,6 +1084,36 @@ func (f *Force) DescribeSObject(objecttype string) (result string, err error) {
 	return
 }
 
+// DescribeSObjectResponse represents the response from a describe SObject request with headers
+type DescribeSObjectResponse struct {
+	Body        string
+	ETag        string
+	NotModified bool
+}
+
+// DescribeSObjectWithETag fetches SObject describe information with ETag support for conditional requests
+func (f *Force) DescribeSObjectWithETag(objecttype string, ifNoneMatch string) (result *DescribeSObjectResponse, err error) {
+	url := fmt.Sprintf("%s/services/data/%s/sobjects/%s/describe", f.Credentials.InstanceUrl, apiVersion, objecttype)
+
+	req := NewRequest("GET").AbsoluteUrl(url).ReadResponseBody()
+	if ifNoneMatch != "" {
+		req = req.WithHeader("If-None-Match", ifNoneMatch)
+	}
+
+	response, err := f.ExecuteRequest(req)
+	if err != nil {
+		return nil, err
+	}
+
+	result = &DescribeSObjectResponse{
+		Body:        string(response.ReadResponseBody),
+		ETag:        response.HttpResponse.Header.Get("ETag"),
+		NotModified: response.HttpResponse.StatusCode == 304,
+	}
+
+	return result, nil
+}
+
 func (f *Force) UpdateRecord(sobject string, id string, attrs map[string]string) (err error) {
 	fields := strings.Split(id, ":")
 	var url string
@@ -1260,7 +1290,7 @@ func (f *Force) _makeHttpRequestWithoutRetry(input *httpRequestInput) (*http.Res
 	if err != nil {
 		return nil, err
 	}
-	if res.StatusCode/100 == 2 {
+	if res.StatusCode/100 == 2 || res.StatusCode == 304 {
 		return res, nil
 	}
 
