@@ -141,8 +141,21 @@ func ForceLoginAtEndpointAndSave(endpoint string, output *os.File) (username str
 	return ForceLoginAtEndpointWithPromptAndSave(endpoint, output, "login")
 }
 
+func ForceLoginAtEndpointAndSaveWithPort(endpoint string, output *os.File, port int) (username string, err error) {
+	return ForceLoginAtEndpointWithPromptAndSaveWithPort(endpoint, output, "login", port)
+}
+
 func ForceLoginAtEndpointWithPromptAndSave(endpoint string, output *os.File, prompt string) (username string, err error) {
 	creds, err := ForceLoginAtEndpointWithPrompt(endpoint, prompt)
+	if err != nil {
+		return
+	}
+	username, err = ForceSaveLogin(creds, output)
+	return
+}
+
+func ForceLoginAtEndpointWithPromptAndSaveWithPort(endpoint string, output *os.File, prompt string, port int) (username string, err error) {
+	creds, err := ForceLoginAtEndpointWithPromptAndPort(endpoint, prompt, port)
 	if err != nil {
 		return
 	}

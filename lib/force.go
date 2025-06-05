@@ -388,11 +388,15 @@ func ForceLogin(endpoint ForceEndpoint) (creds ForceSession, err error) {
 }
 
 func ForceLoginAtEndpointWithPrompt(endpoint string, prompt string) (creds ForceSession, err error) {
+	return ForceLoginAtEndpointWithPromptAndPort(endpoint, prompt, 3835)
+}
+
+func ForceLoginAtEndpointWithPromptAndPort(endpoint string, prompt string, targetPort int) (creds ForceSession, err error) {
 	ch := make(chan ForceSession)
-	port, err := startLocalHttpServer(ch)
+	port, err := startLocalHttpServerWithPort(ch, targetPort)
 	var url string
 
-	Redir := RedirectUri
+	Redir := fmt.Sprintf("http://localhost:%d/oauth/callback", port)
 
 	url = fmt.Sprintf("%s/services/oauth2/authorize?response_type=token&client_id=%s&redirect_uri=%s&state=%d&prompt=%s", endpoint, ClientId, Redir, port, prompt)
 
@@ -1544,7 +1548,11 @@ func (result *ForceQueryResult) Update(other ForceQueryResult, force *Force) {
 }
 
 func startLocalHttpServer(ch chan ForceSession) (port int, err error) {
-	listener, err := net.Listen("tcp", ":3835")
+	return startLocalHttpServerWithPort(ch, 3835)
+}
+
+func startLocalHttpServerWithPort(ch chan ForceSession, targetPort int) (port int, err error) {
+	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", targetPort))
 	if err != nil {
 		return
 	}
