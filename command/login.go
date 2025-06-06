@@ -23,6 +23,7 @@ func init() {
 	loginCmd.Flags().StringP("instance", "i", "", `Defaults to 'login' or last
 logged in system. non-production server to login to (values are 'pre',
 'test', or full instance url`)
+	loginCmd.Flags().IntP("port", "P", 3835, "port for local OAuth callback server")
 
 	scratchCmd.Flags().String("username", "", "username for scratch org user")
 
@@ -55,6 +56,7 @@ to get a new session token automatically when needed.`,
     force login -i my-domain.my.salesforce.com -s[kipLogin]
     force login --connected-app-client-id <my-consumer-key> -u user@example.com -key jwt.key
     force login --connected-app-client-id <my-consumer-key> --connected-app-client-secret <my-consumer-secret>
+    force login -P 8080
     force login scratch
 `,
 	Args: cobra.MaximumNArgs(0),
@@ -72,7 +74,8 @@ to get a new session token automatically when needed.`,
 			clientCredentialsLogin(endpoint, ClientId, clientSecret)
 		case username == "":
 			skipLogin, _ := cmd.Flags().GetBool("skip")
-			oauthLogin(endpoint, skipLogin)
+			port, _ := cmd.Flags().GetInt("port")
+			oauthLogin(endpoint, skipLogin, port)
 		case keyFile != "":
 			jwtLogin(endpoint, username, keyFile)
 		default:
@@ -89,12 +92,12 @@ func scratchLogin(scratchUser string) {
 	}
 }
 
-func oauthLogin(endpoint string, skipLogin bool) {
+func oauthLogin(endpoint string, skipLogin bool, port int) {
 	var err error
 	if skipLogin {
-		_, err = ForceLoginAtEndpointWithPromptAndSave(endpoint, os.Stdout, "consent")
+		_, err = ForceLoginAtEndpointWithPromptAndSaveWithPort(endpoint, os.Stdout, "consent", port)
 	} else {
-		_, err = ForceLoginAtEndpointAndSave(endpoint, os.Stdout)
+		_, err = ForceLoginAtEndpointAndSaveWithPort(endpoint, os.Stdout, port)
 	}
 	if err != nil {
 		ErrorAndExit(err.Error())
