@@ -10,8 +10,8 @@ import (
 var Config = config.NewConfig("force")
 
 var sourceDirs = []string{
-	"src",
 	"metadata",
+	"src",
 }
 
 // IsSourceDir returns a boolean indicating that dir is actually a Salesforce
