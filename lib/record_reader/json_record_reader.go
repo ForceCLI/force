@@ -17,11 +17,12 @@ const expectedJsonRecordSize = 2048
 //
 // Becuase of this, only Apex-flavor pretty JSON is supported. Like:
 //
-// [ {
-//      "x": 1
-// }, {
-//      "x: 2
-// } ]
+//	[ {
+//	     "x": 1
+//	}, {
+//
+//	     "x: 2
+//	} ]
 func NewJson(in io.Reader, opts *Options) RecordReader {
 	bareOpts := initOptions(opts)
 	return &jsonRecordReader{

@@ -1,0 +1,28 @@
+name: Go Format Check
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version-file: 'go.mod'
+    
+    - name: Check formatting
+      run: |
+        if [ -n "$(gofmt -l .)" ]; then
+          echo "The following files are not formatted correctly:"
+          gofmt -l .
+          echo ""
+          echo "Please run 'gofmt -w .' to format your code"
+          exit 1
+        fi
