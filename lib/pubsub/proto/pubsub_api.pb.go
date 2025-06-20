@@ -70,7 +70,6 @@ func (ErrorCode) EnumDescriptor() ([]byte, []int) {
 	return file_pubsub_api_proto_rawDescGZIP(), []int{0}
 }
 
-//
 // Supported subscription replay start values.
 // By default, the subscription will start at the tip of the stream if ReplayPreset is not specified.
 type ReplayPreset int32
@@ -125,7 +124,6 @@ func (ReplayPreset) EnumDescriptor() ([]byte, []int) {
 	return file_pubsub_api_proto_rawDescGZIP(), []int{1}
 }
 
-//
 // Contains information about a topic and uniquely identifies it. TopicInfo is returned by the GetTopic RPC method.
 type TopicInfo struct {
 	state         protoimpl.MessageState
@@ -221,7 +219,6 @@ func (x *TopicInfo) GetRpcId() string {
 	return ""
 }
 
-//
 // A request message for GetTopic. Note that the tenant/org is not directly referenced
 // in the request, but is implicitly identified by the authentication headers.
 type TopicRequest struct {
@@ -272,7 +269,6 @@ func (x *TopicRequest) GetTopicName() string {
 	return ""
 }
 
-//
 // Reserved for future use.
 // Header that contains information for distributed tracing, filtering, routing, etc.
 // For example, X-B3-* headers assigned by a publisher are stored with the event and
@@ -332,7 +328,6 @@ func (x *EventHeader) GetValue() []byte {
 	return nil
 }
 
-//
 // Represents an event that an event publishing app creates.
 type ProducerEvent struct {
 	state         protoimpl.MessageState
@@ -409,7 +404,6 @@ func (x *ProducerEvent) GetHeaders() []*EventHeader {
 	return nil
 }
 
-//
 // Represents an event that is consumed in a subscriber client.
 // In addition to the fields in ProducerEvent, ConsumerEvent has the replay_id field.
 type ConsumerEvent struct {
@@ -471,7 +465,6 @@ func (x *ConsumerEvent) GetReplayId() []byte {
 	return nil
 }
 
-//
 // Event publish result that the Publish RPC method returns. The result contains replay_id or a publish error.
 type PublishResult struct {
 	state         protoimpl.MessageState
@@ -597,7 +590,6 @@ func (x *Error) GetMsg() string {
 	return ""
 }
 
-//
 // Request for the Subscribe streaming RPC method. This request is used to:
 // 1. Establish the initial subscribe stream.
 // 2. Request more events from the subscription stream.
@@ -701,7 +693,6 @@ func (x *FetchRequest) GetAuthRefresh() string {
 	return ""
 }
 
-//
 // Response for the Subscribe streaming RPC method. This returns ConsumerEvent(s).
 // If there are no events to deliver, the server sends an empty batch fetch response with the latest replay ID. The
 // empty fetch response is sent within 270 seconds. An empty fetch response provides a periodic keepalive from the
@@ -782,7 +773,6 @@ func (x *FetchResponse) GetPendingNumRequested() int32 {
 	return 0
 }
 
-//
 // Request for the GetSchema RPC method. The schema request is based on the event schema ID.
 type SchemaRequest struct {
 	state         protoimpl.MessageState
@@ -832,7 +822,6 @@ func (x *SchemaRequest) GetSchemaId() string {
 	return ""
 }
 
-//
 // Response for the GetSchema RPC method. This returns the schema ID and schema of an event.
 type SchemaInfo struct {
 	state         protoimpl.MessageState
@@ -967,7 +956,6 @@ func (x *PublishRequest) GetAuthRefresh() string {
 	return ""
 }
 
-//
 // Response for the Publish and PublishStream RPC methods. This returns
 // a list of PublishResults for each event that the client attempted to
 // publish. PublishResult indicates if publish succeeded or not
