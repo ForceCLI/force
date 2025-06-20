@@ -257,7 +257,7 @@ type GeolocationField struct {
 	Required                 bool   `xml:"required"`
 	Scale                    int    `xml:"scale"`
 	Description              string `xml:"description"`
-	HelpText                 string `xml:"helpText"`
+	HelpText                 string `xml:"inlineHelpText"`
 }
 
 type AutoNumberFieldRequired struct {
@@ -270,7 +270,7 @@ type AutoNumberField struct {
 	StartingNumber int    `xml:"startingNumber"`
 	DisplayFormat  string `xml:"displayFormat"`
 	Description    string `xml:"description"`
-	HelpText       string `xml:"helpText"`
+	HelpText       string `xml:"inlineHelpText"`
 	ExternalId     bool   `xml:"externalId"`
 }
 
@@ -282,7 +282,7 @@ type FloatFieldRequired struct {
 type FloatField struct {
 	Label                string `xml:"label"`
 	Description          string `xml:"description"`
-	HelpText             string `xml:"helpText"`
+	HelpText             string `xml:"inlineHelpText"`
 	Unique               bool   `xml:"unique"`
 	ExternalId           bool   `xml:"externalId"`
 	DefaultValue         uint   `xml:"defaultValue"`
@@ -300,7 +300,7 @@ type NumberFieldRequired struct {
 type NumberField struct {
 	Label                string `xml:"label"`
 	Description          string `xml:"description"`
-	HelpText             string `xml:"helpText"`
+	HelpText             string `xml:"inlineHelpText"`
 	Unique               bool   `xml:"unique"`
 	ExternalId           bool   `xml:"externalId"`
 	DefaultValue         uint   `xml:"defaultValue"`
@@ -316,7 +316,7 @@ type DatetimeFieldRequired struct {
 type DatetimeField struct {
 	Label                string    `xml:"label"`
 	Description          string    `xml:"description"`
-	HelpText             string    `xml:"helpText"`
+	HelpText             string    `xml:"inlineHelpText"`
 	DefaultValue         time.Time `xml:"defaultValue"`
 	Required             bool      `xml:"required"`
 	Formula              string    `xml:"formula"`
@@ -344,7 +344,7 @@ type BoolFieldRequired struct {
 type BoolField struct {
 	Label                string `xml:"label"`
 	Description          string `xml:"description"`
-	HelpText             string `xml:"helpText"`
+	HelpText             string `xml:"inlineHelpText"`
 	DefaultValue         bool   `xml:"defaultValue"`
 	Formula              string `xml:"formula"`
 	FormulaTreatBlanksAs string `xml:"formulaTreatBlanksAs"`
@@ -411,7 +411,7 @@ type EncryptedField struct {
 	Required    bool   `xml:"required"`
 	Length      int    `xml:"length"`
 	Description string `xml:"description"`
-	HelpText    string `xml:"helpText"`
+	HelpText    string `xml:"inlineHelpText"`
 	MaskType    string `xml:"maskType"`
 	MaskChar    string `xml:"maskChar"`
 }
@@ -426,7 +426,7 @@ type StringField struct {
 	Required             bool   `xml:"required"`
 	Length               int    `xml:"length"`
 	Description          string `xml:"description"`
-	HelpText             string `xml:"helpText"`
+	HelpText             string `xml:"inlineHelpText"`
 	Unique               bool   `xml:"unique"`
 	CaseSensitive        bool   `xml:"caseSensitive"`
 	ExternalId           bool   `xml:"externalId"`
@@ -443,7 +443,7 @@ type PhoneField struct {
 	Name         string `xml:"fullName"`
 	Required     bool   `xml:"required"`
 	Description  string `xml:"description"`
-	HelpText     string `xml:"helpText"`
+	HelpText     string `xml:"inlineHelpText"`
 	DefaultValue string `xml:"defaultValue"`
 }
 
@@ -455,7 +455,7 @@ type UrlField struct {
 	Name                 string `xml:"fullName"`
 	Required             bool   `xml:"required"`
 	Description          string `xml:"description"`
-	HelpText             string `xml:"helpText"`
+	HelpText             string `xml:"inlineHelpText"`
 	DefaultValue         string `xml:"defaultValue"`
 	Formula              string `xml:"formula"`
 	FormulaTreatBlanksAs string `xml:"formulaTreatBlanksAs"`
@@ -476,7 +476,7 @@ type TextAreaField struct {
 	Name         string `xml:"fullName"`
 	Required     bool   `xml:"required"`
 	Description  string `xml:"description"`
-	HelpText     string `xml:"helpText"`
+	HelpText     string `xml:"inlineHelpText"`
 	DefaultValue string `xml:"defaultValue"`
 }
 
@@ -490,7 +490,7 @@ type LongTextAreaField struct {
 	Name         string `xml:"fullName"`
 	Required     bool   `xml:"required"`
 	Description  string `xml:"description"`
-	HelpText     string `xml:"helpText"`
+	HelpText     string `xml:"inlineHelpText"`
 	DefaultValue string `xml:"defaultValue"`
 	Length       int    `xml:"length"`
 	VisibleLines int    `xml:"visibleLines"`
@@ -506,7 +506,7 @@ type RichTextAreaField struct {
 	Name         string `xml:"fullName"`
 	Required     bool   `xml:"required"`
 	Description  string `xml:"description"`
-	HelpText     string `xml:"helpText"`
+	HelpText     string `xml:"inlineHelpText"`
 	Length       int    `xml:"length"`
 	VisibleLines int    `xml:"visibleLines"`
 }
