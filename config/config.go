@@ -34,39 +34,6 @@ func GetSourceDir() (dir string, err error) {
 	}
 
 	// Look down to our nearest subdirectories
-	// Special case: if both src and metadata exist, and metadata is a symlink to src,
-	// prefer metadata for consistency with the creation behavior
-	srcDir := filepath.Join(base, "src")
-	metadataDir := filepath.Join(base, "metadata")
-	
-	if IsSourceDir(srcDir) && IsSourceDir(metadataDir) {
-		// Check if metadata is a symlink to src
-		if stat, statErr := os.Lstat(metadataDir); statErr == nil && stat.Mode()&os.ModeSymlink != 0 {
-			if target, linkErr := os.Readlink(metadataDir); linkErr == nil {
-				// Resolve both paths to handle symlinks and path variations
-				var targetResolved, srcResolved string
-				var resolveErr error
-				
-				if filepath.IsAbs(target) {
-					targetResolved, resolveErr = filepath.EvalSymlinks(target)
-				} else {
-					targetResolved, resolveErr = filepath.EvalSymlinks(filepath.Join(filepath.Dir(metadataDir), target))
-				}
-				
-				if resolveErr == nil {
-					if srcResolved, resolveErr = filepath.EvalSymlinks(srcDir); resolveErr == nil {
-						if targetResolved == srcResolved {
-							// metadata is a symlink to src, use metadata for consistency
-							dir = metadataDir
-							return
-						}
-					}
-				}
-			}
-		}
-	}
-	
-	// Normal directory search
 	for _, src := range sourceDirs {
 		if len(src) > 0 {
 			dir = filepath.Join(base, src)
@@ -90,12 +57,8 @@ func GetSourceDir() (dir string, err error) {
 		}
 	}
 
-	// No source directory found, create a src directory and a symlinked "metadata"
-	// directory for backward compatibility and return that.
+	// No source directory found, create a src directory
 	dir = filepath.Join(base, "src")
 	err = os.Mkdir(dir, 0777)
-	symlink := filepath.Join(base, "metadata")
-	os.Symlink(dir, symlink)
-	dir = symlink
 	return
 }
