@@ -57,12 +57,8 @@ func GetSourceDir() (dir string, err error) {
 		}
 	}
 
-	// No source directory found, create a src directory and a symlinked "metadata"
-	// directory for backward compatibility and return that.
+	// No source directory found, create a src directory
 	dir = filepath.Join(base, "src")
 	err = os.Mkdir(dir, 0777)
-	symlink := filepath.Join(base, "metadata")
-	os.Symlink(dir, symlink)
-	dir = symlink
 	return
 }
