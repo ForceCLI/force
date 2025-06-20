@@ -901,9 +901,8 @@ func (fm *ForceMetadata) CreateCustomField(object, field, typ string, options ma
 	case "picklist":
 		soapField = "<type>Picklist</type>\n"
 		for key, value := range options {
-			fmt.Println("Options: ", options)
-			fmt.Println(fmt.Sprintf("Key %s", key))
 			if key == "picklist>picklistValues" {
+				fmt.Printf("Creating picklist with values: %s\n", value)
 				soapField += "<picklist>\n"
 				for _, k := range strings.Split(value, ",") {
 					soapField += fmt.Sprintf("<picklistValues>\n<fullName>%s</fullName>\n<default>false</default>\n</picklistValues>\n", strings.Trim(k, " "))
