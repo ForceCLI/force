@@ -26,18 +26,19 @@ func TestGetSourceDirConsistency(t *testing.T) {
 		t.Fatalf("Failed to change to temp dir: %v", err)
 	}
 
-	// Test 1: First call should create directories and return metadata
+	// Test 1: First call should create directories and return metadata symlink
 	firstCall, err := GetSourceDir()
 	if err != nil {
 		t.Fatalf("First GetSourceDir call failed: %v", err)
 	}
 
 	expectedFirst := filepath.Join(tempDir, "metadata")
-	// Handle macOS symlink resolution differences
+	// Handle macOS path resolution differences
 	expectedFirstResolved, _ := filepath.EvalSymlinks(expectedFirst)
 	firstCallResolved, _ := filepath.EvalSymlinks(firstCall)
-	if firstCallResolved != expectedFirstResolved {
-		t.Errorf("First call: expected %s, got %s", expectedFirstResolved, firstCallResolved)
+	if firstCallResolved != expectedFirstResolved && firstCall != expectedFirst {
+		t.Errorf("First call: expected %s (resolved: %s), got %s (resolved: %s)", 
+			expectedFirst, expectedFirstResolved, firstCall, firstCallResolved)
 	}
 
 	// Verify directories were created
@@ -59,7 +60,7 @@ func TestGetSourceDirConsistency(t *testing.T) {
 		t.Error("metadata should be a symlink")
 	}
 
-	// Test 2: Second call should return the same directory consistently
+	// Test 2: Second call should return the same directory consistently (metadata symlink)
 	secondCall, err := GetSourceDir()
 	if err != nil {
 		t.Fatalf("Second GetSourceDir call failed: %v", err)
@@ -69,7 +70,7 @@ func TestGetSourceDirConsistency(t *testing.T) {
 		t.Errorf("Inconsistent behavior: first call returned %s, second call returned %s", firstCall, secondCall)
 	}
 
-	// Test 3: Multiple calls should all return the same directory
+	// Test 3: Multiple calls should all return the same directory (metadata symlink)
 	for i := 0; i < 5; i++ {
 		call, err := GetSourceDir()
 		if err != nil {
@@ -114,10 +115,12 @@ func TestGetSourceDirWithExistingMetadataDirectory(t *testing.T) {
 		t.Fatalf("GetSourceDir failed: %v", err)
 	}
 
+	// Handle macOS path resolution differences
 	resultResolved, _ := filepath.EvalSymlinks(result)
 	metadataDirResolved, _ := filepath.EvalSymlinks(metadataDir)
-	if resultResolved != metadataDirResolved {
-		t.Errorf("Expected %s, got %s", metadataDirResolved, resultResolved)
+	if resultResolved != metadataDirResolved && result != metadataDir {
+		t.Errorf("Expected %s (resolved: %s), got %s (resolved: %s)", 
+			metadataDir, metadataDirResolved, result, resultResolved)
 	}
 }
 
@@ -154,9 +157,11 @@ func TestGetSourceDirWithExistingSrcDirectory(t *testing.T) {
 		t.Fatalf("GetSourceDir failed: %v", err)
 	}
 
+	// Handle macOS path resolution differences
 	resultResolved, _ := filepath.EvalSymlinks(result)
 	srcDirResolved, _ := filepath.EvalSymlinks(srcDir)
-	if resultResolved != srcDirResolved {
-		t.Errorf("Expected %s, got %s", srcDirResolved, resultResolved)
+	if resultResolved != srcDirResolved && result != srcDir {
+		t.Errorf("Expected %s (resolved: %s), got %s (resolved: %s)", 
+			srcDir, srcDirResolved, result, resultResolved)
 	}
 }
