@@ -25,6 +25,7 @@ force login [flags]
     force login -i my-domain.my.salesforce.com -s[kipLogin]
     force login --connected-app-client-id <my-consumer-key> -u user@example.com -key jwt.key
     force login --connected-app-client-id <my-consumer-key> --connected-app-client-secret <my-consumer-secret>
+    force login -P 8080
     force login scratch
 
 ```
@@ -41,6 +42,7 @@ force login [flags]
                                              'test', or full instance url
   -k, --key string                           JWT signing key filename
   -p, --password string                      password for SOAP login
+  -P, --port int                             port for local OAuth callback server (default 3835)
   -s, --skip                                 skip login if already authenticated and only save token (useful with SSO)
   -u, --user string                          username for SOAP login
 ```

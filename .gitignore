@@ -11,3 +11,6 @@ test
 *.xml
 *.exe
 *.sh
+
+# Claude Code specific
+CLAUDE.md
