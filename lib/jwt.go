@@ -9,7 +9,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
+	"github.com/golang-jwt/jwt/v4"
 )
 
 func JwtAssertion(endpoint ForceEndpoint, username string, keyfile string, clientId string) (signedToken string, err error) {
