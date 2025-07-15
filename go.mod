@@ -28,7 +28,7 @@ require (
 	github.com/rgalanakis/golangal v0.0.0-20210923203926-e36008487518
 	github.com/spf13/cobra v1.7.0
 	golang.org/x/crypto v0.40.0
-	google.golang.org/grpc v1.39.0-dev
+	google.golang.org/grpc v1.56.3
 	google.golang.org/protobuf v1.36.6
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
 )
@@ -40,7 +40,7 @@ require (
 	github.com/containerd/console v1.0.4-0.20230313162750-1ae8d489ac81 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
-	github.com/golang/protobuf v1.5.2 // indirect
+	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/hpcloud/tail v1.0.0 // indirect
 	github.com/imdario/mergo v0.3.16 // indirect
@@ -70,7 +70,7 @@ require (
 	golang.org/x/term v0.33.0 // indirect
 	golang.org/x/text v0.27.0 // indirect
 	golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543 // indirect
-	google.golang.org/genproto v0.0.0-20200526211855-cb27e3aa2013 // indirect
+	google.golang.org/genproto v0.0.0-20230410155749-daa745c078e1 // indirect
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 	gopkg.in/fsnotify.v1 v1.4.7 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
