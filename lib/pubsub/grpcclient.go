@@ -356,7 +356,7 @@ func (c *PubSubClient) Publish(channel string, message map[string]any) error {
 	}
 
 	if err := result[0].GetError(); err != nil {
-		return fmt.Errorf(result[0].GetError().GetMsg())
+		return errors.New(result[0].GetError().GetMsg())
 	}
 
 	return nil

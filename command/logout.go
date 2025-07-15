@@ -41,6 +41,6 @@ func runLogout() {
 		cmd.Run()
 	} else {
 		title := fmt.Sprintf("\033];%s\007", "")
-		fmt.Printf(title)
+		fmt.Print(title)
 	}
 }
