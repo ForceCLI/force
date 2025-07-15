@@ -402,10 +402,9 @@ func ForceLoginAtEndpointWithPromptAndPort(endpoint string, prompt string, targe
 
 	err = desktop.Open(url)
 	creds = <-ch
+	creds.SessionOptions = &SessionOptions{}
 	if creds.RefreshToken != "" {
-		creds.SessionOptions = &SessionOptions{
-			RefreshMethod: RefreshOauth,
-		}
+		creds.SessionOptions.RefreshMethod = RefreshOauth
 	}
 	creds.EndpointUrl = endpoint
 	creds.ClientId = ClientId
