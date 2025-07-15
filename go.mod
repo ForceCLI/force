@@ -1,6 +1,6 @@
 module github.com/ForceCLI/force
 
-go 1.20
+go 1.24
 
 require (
 	github.com/ForceCLI/config v0.0.0-20230217143549-9149d42a3c99

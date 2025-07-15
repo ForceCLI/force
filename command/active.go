@@ -50,7 +50,7 @@ func printCurrentAccount(cmd *cobra.Command) {
 	if sessionId {
 		fmt.Println(creds.AccessToken)
 	} else if tojson {
-		fmt.Printf(fmt.Sprintf(`{ "login": "%s", "instanceUrl": "%s", "namespace": "%s", "orgId": "%s" }`, creds.SessionName(), creds.InstanceUrl, creds.UserInfo.OrgNamespace, creds.UserInfo.OrgId))
+		fmt.Printf(`{ "login": "%s", "instanceUrl": "%s", "namespace": "%s", "orgId": "%s" }`, creds.SessionName(), creds.InstanceUrl, creds.UserInfo.OrgNamespace, creds.UserInfo.OrgId)
 	} else {
 		fmt.Println(fmt.Sprintf("%s - %s - Org: %s - ns:%s", creds.SessionName(), creds.InstanceUrl, creds.UserInfo.OrgId, creds.UserInfo.OrgNamespace))
 	}
@@ -65,7 +65,7 @@ func setAccount(account string, local bool) {
 			cmd.Run()
 		} else {
 			title := fmt.Sprintf("\033];%s\007", account)
-			fmt.Printf(title)
+			fmt.Print(title)
 		}
 		fmt.Printf("%s now active\n", account)
 		if local {

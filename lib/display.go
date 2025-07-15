@@ -628,7 +628,7 @@ func DisplayFieldDetails(fieldType string) {
   Sorry, that is not a valid field type.
 `
 	}
-	fmt.Printf(msg + "\n")
+	fmt.Println(msg)
 }
 
 func DisplayTextFieldDetails() (message string) {

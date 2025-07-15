@@ -65,7 +65,7 @@ func (ji JobInfo) JobContentType() (JobContentType, error) {
 	case "XML":
 		return JobContentTypeXml, nil
 	default:
-		return "", fmt.Errorf("Invalid content type for bulk API: " + ji.ContentType)
+		return "", fmt.Errorf("Invalid content type for bulk API: %s", ji.ContentType)
 	}
 }
 
