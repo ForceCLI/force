@@ -6,10 +6,9 @@ toolchain go1.24.4
 
 require (
 	github.com/ForceCLI/config v0.0.0-20230217143549-9149d42a3c99
-	github.com/ForceCLI/force-md v0.0.0-20240126214027-5b906037b66a
+	github.com/ForceCLI/force-md v0.30.0
 	github.com/ForceCLI/inflect v0.0.0-20130829110746-cc00b5ad7a6a
 	github.com/ViViDboarder/gotifier v0.0.0-20140619195515-0f19f3d7c54c
-	github.com/antonmedv/expr v1.15.3
 	github.com/bgentry/speakeasy v0.1.0
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869
 	github.com/boljen/go-bitmap v0.0.0-20151001105940-23cd2fb0ce7d
@@ -17,6 +16,7 @@ require (
 	github.com/charmbracelet/bubbletea v0.24.2
 	github.com/charmbracelet/lipgloss v0.9.1
 	github.com/devangel/config v0.0.0-20160113214547-0bb295da1e55
+	github.com/expr-lang/expr v1.17.5
 	github.com/golang-jwt/jwt/v5 v5.2.3
 	github.com/hamba/avro/v2 v2.16.0
 	github.com/linkedin/goavro/v2 v2.12.0
@@ -42,6 +42,7 @@ require (
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
+	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/hpcloud/tail v1.0.0 // indirect
 	github.com/imdario/mergo v0.3.16 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
@@ -60,10 +61,12 @@ require (
 	github.com/muesli/cancelreader v0.2.2 // indirect
 	github.com/muesli/reflow v0.3.0 // indirect
 	github.com/muesli/termenv v0.15.2 // indirect
+	github.com/nbio/xml v0.0.0-20240718025449-4db9e55cd3bf // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/stretchr/testify v1.8.4 // indirect
 	golang.org/x/net v0.41.0 // indirect
 	golang.org/x/sync v0.16.0 // indirect
 	golang.org/x/sys v0.34.0 // indirect
