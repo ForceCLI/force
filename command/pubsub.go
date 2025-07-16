@@ -9,7 +9,7 @@ import (
 	"github.com/ForceCLI/force/lib"
 	"github.com/ForceCLI/force/lib/pubsub"
 	"github.com/ForceCLI/force/lib/pubsub/proto"
-	"github.com/antonmedv/expr"
+	"github.com/expr-lang/expr"
 
 	"github.com/spf13/cobra"
 )
