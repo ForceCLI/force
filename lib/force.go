@@ -997,6 +997,28 @@ func (f *Force) RetrieveLog(logId string) (result string, err error) {
 	return
 }
 
+// ExecuteAnonymousTooling executes anonymous Apex code using the Tooling API
+func (f *Force) ExecuteAnonymousTooling(apex string) (result ExecuteAnonymousResult, err error) {
+	url := fmt.Sprintf("%s/services/data/%s/tooling/executeAnonymous/?anonymousBody=%s", f.Credentials.InstanceUrl, apiVersion, url.QueryEscape(apex))
+	body, err := f.makeHttpRequestSync(NewRequest("GET").AbsoluteUrl(url))
+	if err != nil {
+		return
+	}
+	err = json.Unmarshal(body, &result)
+	return
+}
+
+// ExecuteAnonymousResult represents the response from executeAnonymous Tooling API
+type ExecuteAnonymousResult struct {
+	Line                int    `json:"line"`
+	Column              int    `json:"column"`
+	Compiled            bool   `json:"compiled"`
+	Success             bool   `json:"success"`
+	CompileProblem      string `json:"compileProblem"`
+	ExceptionMessage    string `json:"exceptionMessage"`
+	ExceptionStackTrace string `json:"exceptionStackTrace"`
+}
+
 func (f *Force) QueryLogs() (results ForceQueryResult, err error) {
 	url := fmt.Sprintf("%s/services/data/%s/tooling/query/?q=Select+Id,+Application,+DurationMilliseconds,+Location,+LogLength,+LogUser.Name,+Operation,+Request,StartTime,+Status+From+ApexLog+Order+By+StartTime", f.Credentials.InstanceUrl, apiVersion)
 	body, err := f.makeHttpRequestSync(NewRequest("GET").AbsoluteUrl(url))
