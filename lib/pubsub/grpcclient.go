@@ -99,6 +99,41 @@ func (c *PubSubClient) GetSchema(schemaId string) (*proto.SchemaInfo, error) {
 	return resp, nil
 }
 
+// flattenAvroUnions recursively flattens Avro union types in the event payload.
+// Avro unions for nullable fields are represented as {"type": value} objects.
+// This function extracts the actual value from these union representations.
+func flattenAvroUnions(data interface{}) interface{} {
+	switch v := data.(type) {
+	case map[string]interface{}:
+		// Check if this is an Avro union with a single key
+		if len(v) == 1 {
+			for key, value := range v {
+				// Common Avro union type keys
+				if key == "string" || key == "int" || key == "long" || key == "float" ||
+					key == "double" || key == "boolean" || key == "bytes" || key == "null" {
+					return flattenAvroUnions(value)
+				}
+			}
+		}
+		// Otherwise, recursively process all map values
+		result := make(map[string]interface{})
+		for key, value := range v {
+			result[key] = flattenAvroUnions(value)
+		}
+		return result
+	case []interface{}:
+		// Recursively process array elements
+		result := make([]interface{}, len(v))
+		for i, value := range v {
+			result[i] = flattenAvroUnions(value)
+		}
+		return result
+	default:
+		// Return primitive values as-is
+		return v
+	}
+}
+
 // Wrapper function around the Subscribe RPC. This will add the OAuth credentials and create a separate streaming client that will be used to
 // fetch data from the topic. This method will continuously consume messages unless an error occurs; if an error does occur then this method will
 // return the last successfully consumed ReplayId as well as the error message. If no messages were successfully consumed then this method will return
@@ -184,6 +219,9 @@ func (c *PubSubClient) Subscribe(channel string, replayPreset proto.ReplayPreset
 				}
 				body = parseBody(body, schema)
 			}
+
+			// Flatten Avro union types to extract actual values
+			body = flattenAvroUnions(body).(map[string]interface{})
 
 			j, err := json.Marshal(body)
 			if err != nil {
