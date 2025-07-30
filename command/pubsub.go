@@ -38,7 +38,10 @@ var pubsubCmd = &cobra.Command{
 var subscribeCmd = &cobra.Command{
 	Use:   "subscribe [channel]",
 	Short: "Subscribe to a pub/sub channel",
-	Long:  "Subscribe to a pub/sub channel to stream Change Data Capture or custom Platform Events",
+	Long: `Subscribe to a pub/sub channel to stream Change Data Capture or custom Platform Events.
+
+Event payloads are automatically processed to extract values from Avro union types,
+converting nested structures like {"string": "value"} to just "value".`,
 	Example: `
 	force pubsub subscribe /data/ChangeEvents | jq .
 	force pubsub subscribe /data/AccountChangeEvent
