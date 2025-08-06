@@ -1121,8 +1121,19 @@ func (f *Force) DescribeSObjectWithETag(objecttype string, ifNoneMatch string) (
 	url := fmt.Sprintf("%s/services/data/%s/sobjects/%s/describe", f.Credentials.InstanceUrl, apiVersion, objecttype)
 
 	req := NewRequest("GET").AbsoluteUrl(url).ReadResponseBody()
+
+	// Handle synthetic ETags for WASM/CORS environments
 	if ifNoneMatch != "" {
-		req = req.WithHeader("If-None-Match", ifNoneMatch)
+		if strings.HasPrefix(ifNoneMatch, "W/\"ts:") {
+			// This is our synthetic timestamp-based ETag
+			// Extract the timestamp and use If-Modified-Since
+			timestamp := strings.TrimPrefix(ifNoneMatch, "W/\"ts:")
+			timestamp = strings.TrimSuffix(timestamp, "\"")
+			req = req.WithHeader("If-Modified-Since", timestamp)
+		} else {
+			// Regular ETag
+			req = req.WithHeader("If-None-Match", ifNoneMatch)
+		}
 	}
 
 	response, err := f.ExecuteRequest(req)
@@ -1130,9 +1141,20 @@ func (f *Force) DescribeSObjectWithETag(objecttype string, ifNoneMatch string) (
 		return nil, err
 	}
 
+	// Extract ETag from response
+	etag := response.HttpResponse.Header.Get("ETag")
+
+	// In WASM/CORS environments, ETag header may not be exposed
+	// Generate a synthetic ETag based on current timestamp
+	if etag == "" && response.HttpResponse.StatusCode == 200 {
+		// Use a weak ETag with timestamp to enable If-Modified-Since on next request
+		now := time.Now().UTC().Format(time.RFC1123)
+		etag = fmt.Sprintf(`W/"ts:%s"`, now)
+	}
+
 	result = &DescribeSObjectResponse{
 		Body:        string(response.ReadResponseBody),
-		ETag:        response.HttpResponse.Header.Get("ETag"),
+		ETag:        etag,
 		NotModified: response.HttpResponse.StatusCode == 304,
 	}
 
