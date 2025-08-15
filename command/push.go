@@ -182,6 +182,14 @@ func pushByPaths(resourcePaths []string, deployOptions *ForceDeployOptions, disp
 	}
 	// Build metadata files
 	files := pb.ForceMetadataFiles()
+
+	// Always handle destructive flows (expand non-versioned flows to specific versions)
+	files, err = handleDestructiveFlows(force, files)
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
+
+	// Apply smart flow versioning if enabled
 	if smartFlowVersion {
 		files, err = processSmartFlowVersion(force, files)
 		if err != nil {
@@ -216,6 +224,14 @@ func pushByMetadataType(metadataType string, metadataNames []string, deployOptio
 	}
 
 	files := pb.ForceMetadataFiles()
+
+	// Always handle destructive flows (expand non-versioned flows to specific versions)
+	files, err = handleDestructiveFlows(force, files)
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
+
+	// Apply smart flow versioning if enabled
 	if smartFlowVersion {
 		files, err = processSmartFlowVersion(force, files)
 		if err != nil {
@@ -242,6 +258,14 @@ func pushMetadataTypes(metadataTypes []string, deployOptions *ForceDeployOptions
 	}
 
 	files := pb.ForceMetadataFiles()
+
+	// Always handle destructive flows (expand non-versioned flows to specific versions)
+	files, err = handleDestructiveFlows(force, files)
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
+
+	// Apply smart flow versioning if enabled
 	if smartFlowVersion {
 		files, err = processSmartFlowVersion(force, files)
 		if err != nil {

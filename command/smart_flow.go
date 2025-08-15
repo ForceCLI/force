@@ -29,6 +29,282 @@ type flowQuerier interface {
 	Query(string, ...func(*QueryOptions)) (ForceQueryResult, error)
 }
 
+// hasNonVersionedFlowsInDestructive checks if any destructive changes files contain non-versioned flows
+func hasNonVersionedFlowsInDestructive(files ForceMetadataFiles) bool {
+	destructiveFiles := []string{
+		"destructiveChanges.xml",
+		"destructiveChangesPre.xml",
+		"destructiveChangesPost.xml",
+	}
+
+	for _, fileName := range destructiveFiles {
+		if fileContent, exists := files[fileName]; exists {
+			var pkg DestructivePackage
+			if err := xml.Unmarshal(fileContent, &pkg); err != nil {
+				continue
+			}
+
+			for _, metaType := range pkg.Types {
+				if metaType.Name == "Flow" {
+					for _, member := range metaType.Members {
+						// Check if this is an unversioned flow (no -N suffix)
+						if !regexp.MustCompile(`.+-\d+$`).MatchString(member) {
+							return true
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return false
+}
+
+// processDestructiveFlows handles flows in destructiveChanges files.
+// For flows without versions, it queries the org for existing versions,
+// adds them individually to the destructive changes, and adds a FlowDefinition with version 0.
+func processDestructiveFlows(q flowQuerier, files ForceMetadataFiles) (ForceMetadataFiles, error) {
+	destructiveFiles := []string{
+		"destructiveChanges.xml",
+		"destructiveChangesPre.xml",
+		"destructiveChangesPost.xml",
+	}
+
+	for _, fileName := range destructiveFiles {
+		if fileContent, exists := files[fileName]; exists {
+			modified, _, err := processDestructiveFile(q, fileContent, files)
+			if err != nil {
+				return files, fmt.Errorf("processing %s: %w", fileName, err)
+			}
+			if modified != nil {
+				files[fileName] = modified
+			}
+		}
+	}
+
+	return files, nil
+}
+
+// processDestructiveFile processes a single destructive changes file
+// Returns the modified content (or nil if not modified), whether non-versioned flows were found, and any error
+func processDestructiveFile(q flowQuerier, fileContent []byte, files ForceMetadataFiles) ([]byte, bool, error) {
+	var pkg DestructivePackage
+	if err := xml.Unmarshal(fileContent, &pkg); err != nil {
+		return nil, false, fmt.Errorf("parse destructive changes: %w", err)
+	}
+
+	modified := false
+	foundNonVersioned := false
+	flowDefinitionsToAdd := make(map[string]struct{})
+
+	// Track which versioned flows we've already added to avoid duplicates
+	addedVersions := make(map[string]struct{})
+
+	for typeIdx, metaType := range pkg.Types {
+		if metaType.Name == "Flow" {
+			var newMembers []string
+			var flowsToRemove []string
+
+			for _, member := range metaType.Members {
+				// Check if this is an unversioned flow (no -N suffix)
+				if !regexp.MustCompile(`.+-\d+$`).MatchString(member) {
+					foundNonVersioned = true
+					// Query for existing versions using LIKE for case-insensitive matching
+					// Since Salesforce doesn't allow flows with names differing only by case,
+					// this is safe and handles mismatched casing in destructiveChanges files
+					soql := fmt.Sprintf("SELECT Status, FlowDefinitionView.ApiName, VersionNumber FROM FlowVersionView WHERE FlowDefinitionView.ApiName LIKE '%s'", member)
+					qr, err := q.Query(soql)
+					if err != nil {
+						return nil, false, fmt.Errorf("query Flow versions for %s: %w", member, err)
+					}
+
+					if len(qr.Records) > 0 {
+						// First pass: Get the actual API name from the org (with correct casing)
+						var actualApiName string
+						for _, rec := range qr.Records {
+							if actualApiName == "" && rec["FlowDefinitionView.ApiName"] != nil {
+								actualApiName = rec["FlowDefinitionView.ApiName"].(string)
+								break
+							}
+						}
+
+						// If we got an actual API name, process the versions
+						if actualApiName != "" {
+							// Second pass: Process versions using the actual API name
+							hasActiveVersion := false
+							for _, rec := range qr.Records {
+								if rec["VersionNumber"] != nil {
+									vf := rec["VersionNumber"].(float64)
+									v := int(vf)
+
+									// Check if this version is active
+									if status, ok := rec["Status"].(string); ok && status == "Active" {
+										hasActiveVersion = true
+									}
+
+									// Use the actual API name from the org for versioned flows
+									versionedName := fmt.Sprintf("%s-%d", actualApiName, v)
+									// Only add if we haven't already added this specific version
+									if _, exists := addedVersions[versionedName]; !exists {
+										newMembers = append(newMembers, versionedName)
+										addedVersions[versionedName] = struct{}{}
+									}
+								}
+							}
+
+							// Only add FlowDefinition if there's at least one active version
+							// Always use the actual API name from org for FlowDefinition
+							if hasActiveVersion {
+								flowDefinitionsToAdd[actualApiName] = struct{}{}
+							}
+						}
+
+						// Remove the original member name from destructiveChanges
+						flowsToRemove = append(flowsToRemove, member)
+						modified = true
+					} else {
+						// No versions in org - remove from destructive changes
+						flowsToRemove = append(flowsToRemove, member)
+						modified = true
+					}
+				} else {
+					// Already versioned - keep as is (but check for duplicates)
+					if _, exists := addedVersions[member]; !exists {
+						newMembers = append(newMembers, member)
+						addedVersions[member] = struct{}{}
+					}
+				}
+			}
+
+			// Remove unversioned flows and replace with versioned ones
+			if modified {
+				// Keep only members not marked for removal
+				var finalMembers []string
+				for _, m := range metaType.Members {
+					remove := false
+					for _, toRemove := range flowsToRemove {
+						if m == toRemove {
+							remove = true
+							break
+						}
+					}
+					if !remove {
+						finalMembers = append(finalMembers, m)
+					}
+				}
+				// Add new versioned members
+				finalMembers = append(finalMembers, newMembers...)
+
+				// Sort for consistency
+				sort.Strings(finalMembers)
+				pkg.Types[typeIdx].Members = finalMembers
+			}
+		}
+	}
+
+	// Add FlowDefinition entries with version 0 to package.xml
+	if len(flowDefinitionsToAdd) > 0 {
+		addFlowDefinitionsToPackage(files, flowDefinitionsToAdd)
+	}
+
+	if modified {
+		out, err := xml.MarshalIndent(pkg, "", "    ")
+		if err != nil {
+			return nil, false, fmt.Errorf("marshal destructive changes: %w", err)
+		}
+		return append([]byte(xml.Header), out...), foundNonVersioned, nil
+	}
+
+	return nil, foundNonVersioned, nil
+}
+
+// addFlowDefinitionsToPackage adds FlowDefinition entries with version 0 to package.xml
+func addFlowDefinitionsToPackage(files ForceMetadataFiles, flowsToAdd map[string]struct{}) {
+	if pkgXml, ok := files["package.xml"]; ok {
+		type pkgType struct {
+			Members []string `xml:"members"`
+			Name    string   `xml:"name"`
+		}
+		type pkgStruct struct {
+			XMLName xml.Name  `xml:"Package"`
+			Xmlns   string    `xml:"xmlns,attr"`
+			Types   []pkgType `xml:"types"`
+			Version string    `xml:"version"`
+		}
+		var pkg pkgStruct
+		if err := xml.Unmarshal(pkgXml, &pkg); err == nil {
+			// Find or create FlowDefinition type
+			flowDefFound := false
+			for i, t := range pkg.Types {
+				if t.Name == "FlowDefinition" {
+					// Add new flows to existing FlowDefinition
+					for flow := range flowsToAdd {
+						// Check if not already present
+						found := false
+						for _, m := range t.Members {
+							if m == flow {
+								found = true
+								break
+							}
+						}
+						if !found {
+							pkg.Types[i].Members = append(pkg.Types[i].Members, flow)
+						}
+					}
+					flowDefFound = true
+					break
+				}
+			}
+
+			if !flowDefFound && len(flowsToAdd) > 0 {
+				// Create new FlowDefinition type
+				var members []string
+				for flow := range flowsToAdd {
+					members = append(members, flow)
+				}
+				sort.Strings(members)
+				pkg.Types = append(pkg.Types, pkgType{
+					Name:    "FlowDefinition",
+					Members: members,
+				})
+			}
+
+			// Marshal back
+			out, err := xml.MarshalIndent(pkg, "", "    ")
+			if err == nil {
+				files["package.xml"] = append([]byte(xml.Header), out...)
+			}
+		}
+	}
+
+	// Also create FlowDefinition files with version 0
+	for flow := range flowsToAdd {
+		flowDefContent := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
+<FlowDefinition xmlns="http://soap.sforce.com/2006/04/metadata">
+    <activeVersionNumber>0</activeVersionNumber>
+</FlowDefinition>`)
+		files[fmt.Sprintf("flowDefinitions/%s.flowDefinition-meta.xml", flow)] = []byte(flowDefContent)
+	}
+}
+
+// handleDestructiveFlows processes any non-versioned flows in destructive changes files,
+// expanding them to specific versions. This happens automatically, independent of --smart-flow-version flag.
+func handleDestructiveFlows(q flowQuerier, files ForceMetadataFiles) (ForceMetadataFiles, error) {
+	// Check if there are any non-versioned flows in destructive changes
+	if !hasNonVersionedFlowsInDestructive(files) {
+		return files, nil
+	}
+
+	fmt.Println("Info: Non-versioned flows detected in destructiveChanges files. Automatically expanding to specific versions.")
+
+	files, err := processDestructiveFlows(q, files)
+	if err != nil {
+		return files, fmt.Errorf("processing destructive flows: %w", err)
+	}
+
+	return files, nil
+}
+
 // processSmartFlowVersion auto-assigns version numbers to unversioned flows
 // and generates a destructiveChangesPost.xml to remove inactive versions.
 func processSmartFlowVersion(q flowQuerier, files ForceMetadataFiles) (ForceMetadataFiles, error) {
@@ -54,12 +330,19 @@ func processSmartFlowVersion(q flowQuerier, files ForceMetadataFiles) (ForceMeta
 	// Track new versioned names for package.xml update
 	newNames := map[string]string{}
 	for name := range unversioned {
-		// Query existing Flow versions via Tooling API
-		soql := fmt.Sprintf("SELECT Status, FlowDefinitionView.ApiName, VersionNumber FROM FlowVersionView WHERE FlowDefinitionView.ApiName = '%s'", name)
+		// Query existing Flow versions via Tooling API using LIKE for case-insensitive matching
+		soql := fmt.Sprintf("SELECT Status, FlowDefinitionView.ApiName, VersionNumber FROM FlowVersionView WHERE FlowDefinitionView.ApiName LIKE '%s'", name)
 		qr, err := q.Query(soql)
 		if err != nil {
 			return files, fmt.Errorf("query Flow versions for %s: %w", name, err)
 		}
+
+		// Get the actual API name from org if it exists
+		var actualApiName string
+		if len(qr.Records) > 0 && qr.Records[0]["FlowDefinitionView.ApiName"] != nil {
+			actualApiName = qr.Records[0]["FlowDefinitionView.ApiName"].(string)
+		}
+
 		existing := map[int]struct{}{}
 		statuses := map[int]string{}
 		for _, rec := range qr.Records {
@@ -83,9 +366,14 @@ func processSmartFlowVersion(q flowQuerier, files ForceMetadataFiles) (ForceMeta
 			newVer++
 		}
 		// Collect inactive versions for deletion
+		// Use the actual API name from org if available
+		nameForDeletion := name
+		if actualApiName != "" {
+			nameForDeletion = actualApiName
+		}
 		for v, s := range statuses {
 			if s != "Active" {
-				dest.Members = append(dest.Members, fmt.Sprintf("%s-%d", name, v))
+				dest.Members = append(dest.Members, fmt.Sprintf("%s-%d", nameForDeletion, v))
 			}
 		}
 		// Record new versioned name and rename local flow files
