@@ -116,6 +116,13 @@ func runImport(root string, options ForceDeployOptions, displayOptions *deployOu
 		ErrorAndExit(err.Error())
 	}
 
+	// Always handle destructive flows (expand non-versioned flows to specific versions)
+	files, err = handleDestructiveFlows(force, files)
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
+
+	// Apply smart flow versioning if enabled
 	if smartFlowVersion {
 		var err2 error
 		files, err2 = processSmartFlowVersion(force, files)
