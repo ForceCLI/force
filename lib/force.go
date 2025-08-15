@@ -1099,6 +1099,29 @@ func (f *Force) CreateToolingRecord(objecttype string, attrs map[string]string) 
 	return
 }
 
+func (f *Force) UpdateToolingRecord(objecttype string, id string, attrs map[string]string) (err error) {
+	url := fmt.Sprintf("%s/services/data/%s/tooling/sobjects/%s/%s", f.Credentials.InstanceUrl, apiVersion, objecttype, id)
+	_, err = f.httpPatch(url, attrs)
+	return
+}
+
+func (f *Force) CreateToolingRecordMultipart(objecttype string, body []byte, contentType string) (result ForceCreateRecordResult, err error) {
+	aurl := fmt.Sprintf("%s/services/data/%s/tooling/sobjects/%s", f.Credentials.InstanceUrl, apiVersion, objecttype)
+
+	req := NewRequest("POST").
+		AbsoluteUrl(aurl).
+		WithHeader("Content-Type", contentType).
+		WithBody(bytes.NewReader(body))
+
+	respBody, err := f.makeHttpRequestSync(req)
+	if err != nil {
+		return
+	}
+
+	err = json.Unmarshal(respBody, &result)
+	return
+}
+
 func (f *Force) DescribeSObject(objecttype string) (result string, err error) {
 	url := fmt.Sprintf("%s/services/data/%s/sobjects/%s/describe", f.Credentials.InstanceUrl, apiVersion, objecttype)
 	body, err := f.makeHttpRequestSync(NewRequest("GET").AbsoluteUrl(url))
