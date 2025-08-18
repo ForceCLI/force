@@ -123,9 +123,13 @@ func processDestructiveFile(q flowQuerier, fileContent []byte, files ForceMetada
 						// First pass: Get the actual API name from the org (with correct casing)
 						var actualApiName string
 						for _, rec := range qr.Records {
-							if actualApiName == "" && rec["FlowDefinitionView.ApiName"] != nil {
-								actualApiName = rec["FlowDefinitionView.ApiName"].(string)
-								break
+							if actualApiName == "" {
+								if flowDef, ok := rec["FlowDefinitionView"].(map[string]interface{}); ok {
+									if apiName, ok := flowDef["ApiName"].(string); ok {
+										actualApiName = apiName
+										break
+									}
+								}
 							}
 						}
 

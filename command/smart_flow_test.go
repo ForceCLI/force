@@ -271,9 +271,9 @@ func TestProcessDestructiveFlows_WithVersions(t *testing.T) {
 	flowName := "TestFlow"
 	fq := &fakeQuerier{results: map[string]lib.ForceQueryResult{
 		flowName: {Records: []lib.ForceRecord{
-			{"VersionNumber": float64(1), "Status": "Active", "FlowDefinitionView.ApiName": "TestFlow"},
-			{"VersionNumber": float64(2), "Status": "Inactive", "FlowDefinitionView.ApiName": "TestFlow"},
-			{"VersionNumber": float64(3), "Status": "Active", "FlowDefinitionView.ApiName": "TestFlow"},
+			{"VersionNumber": float64(1), "Status": "Active", "FlowDefinitionView": map[string]interface{}{"ApiName": "TestFlow"}},
+			{"VersionNumber": float64(2), "Status": "Inactive", "FlowDefinitionView": map[string]interface{}{"ApiName": "TestFlow"}},
+			{"VersionNumber": float64(3), "Status": "Active", "FlowDefinitionView": map[string]interface{}{"ApiName": "TestFlow"}},
 		}},
 	}}
 
@@ -423,7 +423,7 @@ func TestProcessDestructiveFlows_NoVersions(t *testing.T) {
 func TestProcessDestructiveFlows_MixedFlows(t *testing.T) {
 	fq := &fakeQuerier{results: map[string]lib.ForceQueryResult{
 		"FlowWithVersions": {Records: []lib.ForceRecord{
-			{"VersionNumber": float64(1), "Status": "Active", "FlowDefinitionView.ApiName": "FlowWithVersions"},
+			{"VersionNumber": float64(1), "Status": "Active", "FlowDefinitionView": map[string]interface{}{"ApiName": "FlowWithVersions"}},
 		}},
 		"FlowWithoutVersions": {Records: []lib.ForceRecord{}},
 	}}
@@ -496,8 +496,8 @@ func TestProcessDestructiveFlows_CaseMismatch(t *testing.T) {
 	// Org has flow with name "MyFlow" but destructive changes has "myflow"
 	fq := &fakeQuerier{results: map[string]lib.ForceQueryResult{
 		"myflow": {Records: []lib.ForceRecord{
-			{"VersionNumber": float64(1), "Status": "Active", "FlowDefinitionView.ApiName": "MyFlow"},
-			{"VersionNumber": float64(2), "Status": "Inactive", "FlowDefinitionView.ApiName": "MyFlow"},
+			{"VersionNumber": float64(1), "Status": "Active", "FlowDefinitionView": map[string]interface{}{"ApiName": "MyFlow"}},
+			{"VersionNumber": float64(2), "Status": "Inactive", "FlowDefinitionView": map[string]interface{}{"ApiName": "MyFlow"}},
 		}},
 	}}
 
@@ -568,12 +568,12 @@ func TestProcessDestructiveFlows_DuplicateCasing(t *testing.T) {
 	// Both queries return the same flow (with correct casing from org)
 	fq := &fakeQuerier{results: map[string]lib.ForceQueryResult{
 		"Member_Plan_After_Save": {Records: []lib.ForceRecord{
-			{"VersionNumber": float64(2), "Status": "Active", "FlowDefinitionView.ApiName": "Member_Plan_After_save"},
-			{"VersionNumber": float64(3), "Status": "Inactive", "FlowDefinitionView.ApiName": "Member_Plan_After_save"},
+			{"VersionNumber": float64(2), "Status": "Active", "FlowDefinitionView": map[string]interface{}{"ApiName": "Member_Plan_After_save"}},
+			{"VersionNumber": float64(3), "Status": "Inactive", "FlowDefinitionView": map[string]interface{}{"ApiName": "Member_Plan_After_save"}},
 		}},
 		"Member_Plan_After_save": {Records: []lib.ForceRecord{
-			{"VersionNumber": float64(2), "Status": "Active", "FlowDefinitionView.ApiName": "Member_Plan_After_save"},
-			{"VersionNumber": float64(3), "Status": "Inactive", "FlowDefinitionView.ApiName": "Member_Plan_After_save"},
+			{"VersionNumber": float64(2), "Status": "Active", "FlowDefinitionView": map[string]interface{}{"ApiName": "Member_Plan_After_save"}},
+			{"VersionNumber": float64(3), "Status": "Inactive", "FlowDefinitionView": map[string]interface{}{"ApiName": "Member_Plan_After_save"}},
 		}},
 	}}
 
@@ -653,12 +653,12 @@ func TestProcessDestructiveFlows_DuplicateCasing(t *testing.T) {
 func TestProcessDestructiveFlows_NoFlowDefinitionForInactiveOnly(t *testing.T) {
 	fq := &fakeQuerier{results: map[string]lib.ForceQueryResult{
 		"InactiveOnlyFlow": {Records: []lib.ForceRecord{
-			{"VersionNumber": float64(1), "Status": "Inactive", "FlowDefinitionView.ApiName": "InactiveOnlyFlow"},
-			{"VersionNumber": float64(2), "Status": "Obsolete", "FlowDefinitionView.ApiName": "InactiveOnlyFlow"},
+			{"VersionNumber": float64(1), "Status": "Inactive", "FlowDefinitionView": map[string]interface{}{"ApiName": "InactiveOnlyFlow"}},
+			{"VersionNumber": float64(2), "Status": "Obsolete", "FlowDefinitionView": map[string]interface{}{"ApiName": "InactiveOnlyFlow"}},
 		}},
 		"ActiveFlow": {Records: []lib.ForceRecord{
-			{"VersionNumber": float64(1), "Status": "Active", "FlowDefinitionView.ApiName": "ActiveFlow"},
-			{"VersionNumber": float64(2), "Status": "Inactive", "FlowDefinitionView.ApiName": "ActiveFlow"},
+			{"VersionNumber": float64(1), "Status": "Active", "FlowDefinitionView": map[string]interface{}{"ApiName": "ActiveFlow"}},
+			{"VersionNumber": float64(2), "Status": "Inactive", "FlowDefinitionView": map[string]interface{}{"ApiName": "ActiveFlow"}},
 		}},
 	}}
 
