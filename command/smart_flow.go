@@ -3,6 +3,7 @@ package command
 import (
 	"encoding/xml"
 	"fmt"
+	"os"
 	"regexp"
 	"sort"
 	"strings"
@@ -295,7 +296,7 @@ func handleDestructiveFlows(q flowQuerier, files ForceMetadataFiles) (ForceMetad
 		return files, nil
 	}
 
-	fmt.Println("Info: Non-versioned flows detected in destructiveChanges files. Automatically expanding to specific versions.")
+	fmt.Fprintln(os.Stderr, "Non-versioned flows detected in destructiveChanges files. Automatically expanding to specific versions.")
 
 	files, err := processDestructiveFlows(q, files)
 	if err != nil {
