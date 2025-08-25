@@ -1,11 +1,18 @@
-## force package
+## force package version list
 
-Manage installed packages
+List package versions
+
+```
+force package version list [flags]
+```
 
 ### Options
 
 ```
-  -h, --help   help for package
+  -h, --help                help for list
+  -i, --package-id string   Package ID (optional, filter by package)
+  -r, --released            Show only released versions
+  -v, --verbose             Show detailed information
 ```
 
 ### Options inherited from parent commands
@@ -18,7 +25,5 @@ Manage installed packages
 
 ### SEE ALSO
 
-* [force](force.md)	 - force CLI
-* [force package install](force_package_install.md)	 - Installed packages
 * [force package version](force_package_version.md)	 - Manage package versions
 

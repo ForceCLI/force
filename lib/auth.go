@@ -300,3 +300,12 @@ func SetActiveLogin(account string) (err error) {
 	err = Config.Save("current", "account", account)
 	return
 }
+
+func ForceLoginAtEndpointAndSaveDeviceFlow(endpoint string, output *os.File, prompt string) (username string, err error) {
+	creds, err := ForceLoginAtEndpointDeviceFlow(endpoint, prompt)
+	if err != nil {
+		return
+	}
+	username, err = ForceSaveLogin(creds, output)
+	return
+}

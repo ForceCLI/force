@@ -26,6 +26,7 @@ force login [flags]
     force login --connected-app-client-id <my-consumer-key> -u user@example.com -key jwt.key
     force login --connected-app-client-id <my-consumer-key> --connected-app-client-secret <my-consumer-secret>
     force login -P 8080
+    force login --device-flow
     force login scratch
 
 ```
@@ -36,6 +37,7 @@ force login [flags]
   -v, --api-version string                   API version to use
       --connected-app-client-id string       Client Id (aka Consumer Key) to use instead of default
       --connected-app-client-secret string   Client Secret (aka Consumer Secret) for Client Credentials flow
+      --device-flow                          use OAuth Device Flow (for headless environments)
   -h, --help                                 help for login
   -i, --instance string                      Defaults to 'login' or last
                                              logged in system. non-production server to login to (values are 'pre',

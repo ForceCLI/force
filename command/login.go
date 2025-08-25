@@ -24,6 +24,7 @@ func init() {
 logged in system. non-production server to login to (values are 'pre',
 'test', or full instance url`)
 	loginCmd.Flags().IntP("port", "P", 3835, "port for local OAuth callback server")
+	loginCmd.Flags().Bool("device-flow", false, "use OAuth Device Flow (for headless environments)")
 
 	scratchCmd.Flags().String("username", "", "username for scratch org user")
 
@@ -57,6 +58,7 @@ to get a new session token automatically when needed.`,
     force login --connected-app-client-id <my-consumer-key> -u user@example.com -key jwt.key
     force login --connected-app-client-id <my-consumer-key> --connected-app-client-secret <my-consumer-secret>
     force login -P 8080
+    force login --device-flow
     force login scratch
 `,
 	Args: cobra.MaximumNArgs(0),
@@ -73,9 +75,14 @@ to get a new session token automatically when needed.`,
 		case clientSecret != "":
 			clientCredentialsLogin(endpoint, ClientId, clientSecret)
 		case username == "":
+			deviceFlow, _ := cmd.Flags().GetBool("device-flow")
 			skipLogin, _ := cmd.Flags().GetBool("skip")
 			port, _ := cmd.Flags().GetInt("port")
-			oauthLogin(endpoint, skipLogin, port)
+			if deviceFlow {
+				oauthDeviceFlowLogin(endpoint, skipLogin, port)
+			} else {
+				oauthLogin(endpoint, skipLogin, port)
+			}
 		case keyFile != "":
 			jwtLogin(endpoint, username, keyFile)
 		default:
@@ -98,6 +105,18 @@ func oauthLogin(endpoint string, skipLogin bool, port int) {
 		_, err = ForceLoginAtEndpointWithPromptAndSaveWithPort(endpoint, os.Stdout, "consent", port)
 	} else {
 		_, err = ForceLoginAtEndpointAndSaveWithPort(endpoint, os.Stdout, port)
+	}
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
+}
+
+func oauthDeviceFlowLogin(endpoint string, skipLogin bool, port int) {
+	var err error
+	if skipLogin {
+		_, err = ForceLoginAtEndpointAndSaveDeviceFlow(endpoint, os.Stdout, "consent")
+	} else {
+		_, err = ForceLoginAtEndpointAndSaveDeviceFlow(endpoint, os.Stdout, "login")
 	}
 	if err != nil {
 		ErrorAndExit(err.Error())

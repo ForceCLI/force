@@ -4,7 +4,10 @@ Subscribe to a pub/sub channel
 
 ### Synopsis
 
-Subscribe to a pub/sub channel to stream Change Data Capture or custom Platform Events
+Subscribe to a pub/sub channel to stream Change Data Capture or custom Platform Events.
+
+Event payloads are automatically processed to extract values from Avro union types,
+converting nested structures like {"string": "value"} to just "value".
 
 ```
 force pubsub subscribe [channel] [flags]

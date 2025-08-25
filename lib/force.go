@@ -411,6 +411,151 @@ func ForceLoginAtEndpointWithPromptAndPort(endpoint string, prompt string, targe
 	return creds, err
 }
 
+func ForceLoginAtEndpointDeviceFlow(endpoint string, prompt string) (creds ForceSession, err error) {
+	// Step 1: Request device and user codes
+	deviceRequest := url.Values{}
+	deviceRequest.Set("response_type", "device_code")
+	deviceRequest.Set("client_id", ClientId)
+	deviceRequest.Set("scope", "full refresh_token")
+
+	tokenURL := tokenURL(endpoint)
+	req, err := httpRequest("POST", tokenURL, bytes.NewReader([]byte(deviceRequest.Encode())))
+	if err != nil {
+		return
+	}
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+
+	res, err := doRequest(req)
+	if err != nil {
+		return
+	}
+	defer res.Body.Close()
+
+	deviceResp, err := io.ReadAll(res.Body)
+	if err != nil {
+		return
+	}
+
+	if res.StatusCode != 200 {
+		var oauthError *OAuthError
+		err = json.Unmarshal(deviceResp, &oauthError)
+		if err != nil {
+			return
+		}
+		err = fmt.Errorf("device code request failed: %s", oauthError.ErrorDescription)
+		return
+	}
+
+	var deviceCode struct {
+		DeviceCode      string `json:"device_code"`
+		UserCode        string `json:"user_code"`
+		VerificationUri string `json:"verification_uri"`
+		ExpiresIn       int    `json:"expires_in"`
+		Interval        int    `json:"interval"`
+	}
+
+	err = json.Unmarshal(deviceResp, &deviceCode)
+	if err != nil {
+		return
+	}
+
+	// Set default values if not provided
+	if deviceCode.Interval == 0 {
+		deviceCode.Interval = 5 // Default to 5 seconds
+	}
+	if deviceCode.ExpiresIn == 0 {
+		deviceCode.ExpiresIn = 600 // Default to 10 minutes
+	}
+
+	// Display instructions to user
+	fmt.Printf("Go to %s and enter code: %s\n", deviceCode.VerificationUri, deviceCode.UserCode)
+	fmt.Printf("Waiting for authorization (expires in %d seconds)...\n", deviceCode.ExpiresIn)
+
+	// Step 2: Poll for access token
+	tokenRequest := url.Values{}
+	tokenRequest.Set("grant_type", "device")
+	tokenRequest.Set("client_id", ClientId)
+	tokenRequest.Set("code", deviceCode.DeviceCode)
+
+	// Poll every interval seconds until we get a token or timeout
+	pollInterval := time.Duration(deviceCode.Interval) * time.Second
+	timeout := time.Duration(deviceCode.ExpiresIn) * time.Second
+	startTime := time.Now()
+
+	for time.Since(startTime) < timeout {
+		pollReq, pollErr := httpRequest("POST", tokenURL, bytes.NewReader([]byte(tokenRequest.Encode())))
+		if pollErr != nil {
+			continue // Keep polling on temporary errors
+		}
+		pollReq.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+
+		pollRes, pollErr := doRequest(pollReq)
+		if pollErr != nil {
+			continue // Keep polling on temporary errors
+		}
+
+		tokenResp, pollErr := io.ReadAll(pollRes.Body)
+		pollRes.Body.Close()
+		if pollErr != nil {
+			continue
+		}
+
+		var tokenResponse map[string]interface{}
+		if json.Unmarshal(tokenResp, &tokenResponse) != nil {
+			continue
+		}
+
+		// Check for errors
+		if errorCode, exists := tokenResponse["error"]; exists {
+			switch errorCode {
+			case "authorization_pending":
+				time.Sleep(pollInterval)
+				continue // Keep polling
+			case "slow_down":
+				pollInterval += 5 * time.Second // Increase interval
+				time.Sleep(pollInterval)
+				continue
+			case "expired_token", "access_denied":
+				err = fmt.Errorf("authorization failed: %s", errorCode)
+				return
+			default:
+				err = fmt.Errorf("authorization error: %s", errorCode)
+				return
+			}
+		}
+
+		// Success - extract token information
+		if accessToken, exists := tokenResponse["access_token"]; exists {
+			creds.AccessToken = fmt.Sprintf("%v", accessToken)
+			if refreshToken, exists := tokenResponse["refresh_token"]; exists {
+				creds.RefreshToken = fmt.Sprintf("%v", refreshToken)
+			}
+			if instanceUrl, exists := tokenResponse["instance_url"]; exists {
+				creds.InstanceUrl = fmt.Sprintf("%v", instanceUrl)
+			}
+			if issuedAt, exists := tokenResponse["issued_at"]; exists {
+				creds.IssuedAt = fmt.Sprintf("%v", issuedAt)
+			}
+			if scope, exists := tokenResponse["scope"]; exists {
+				creds.Scope = fmt.Sprintf("%v", scope)
+			}
+
+			creds.SessionOptions = &SessionOptions{}
+			if creds.RefreshToken != "" {
+				creds.SessionOptions.RefreshMethod = RefreshOauth
+			}
+			creds.EndpointUrl = endpoint
+			creds.ClientId = ClientId
+
+			fmt.Println("Authorization successful!")
+			return creds, nil
+		}
+	}
+
+	err = fmt.Errorf("authorization timed out")
+	return
+}
+
 func ForceLoginAtEndpoint(endpoint string) (creds ForceSession, err error) {
 	return ForceLoginAtEndpointWithPrompt(endpoint, "login")
 }
