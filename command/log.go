@@ -92,7 +92,7 @@ type logEvent struct {
 		Type        string `json:"type"`
 	} `json:"event"`
 	Sobject struct {
-		Id string `json:"id"`
+		Id string `json:"Id"`
 	} `json:"sobject"`
 }
 
@@ -105,10 +105,26 @@ func tailLogs() {
 	// Disconnect from server and stop background loop.
 	defer client.Close()
 
+	// Track processed log IDs to avoid duplicates
+	processedLogs := make(map[string]bool)
+
 	for msg := range msgs {
 		var newLog logEvent
 		if err := json.Unmarshal(msg.Data, &newLog); err == nil {
+			// Skip if we've already processed this log ID
+			if processedLogs[newLog.Sobject.Id] {
+				continue
+			}
+			processedLogs[newLog.Sobject.Id] = true
 			getLog(newLog.Sobject.Id)
+
+			// Clean up old entries to prevent unbounded memory growth
+			// Keep last 100 log IDs
+			if len(processedLogs) > 100 {
+				// Clear and start fresh
+				processedLogs = make(map[string]bool)
+				processedLogs[newLog.Sobject.Id] = true
+			}
 		} else {
 			Log.Info(fmt.Sprintf("Received unexpected message on channel %s: %s\n", msg.Channel, string(msg.Data)))
 		}
