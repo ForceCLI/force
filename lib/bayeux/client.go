@@ -161,6 +161,9 @@ func (c *Client) ensureConnected() error {
 }
 
 func (c *Client) worker() error {
+	// Start the long-polling loop in a separate goroutine
+	go c.longPollLoop()
+
 	for {
 		select {
 		case msg := <-c.messages:
@@ -171,10 +174,33 @@ func (c *Client) worker() error {
 			}
 		case <-c.tomb.Dying():
 			return nil
-		case <-time.After(c.interval):
+		}
+	}
+}
+
+func (c *Client) longPollLoop() {
+	for {
+		select {
+		case <-c.tomb.Dying():
+			return
+		default:
 			_, err := c.connect()
 			if err != nil {
 				log.Printf("[WRN] Bayeux connect failed: %s", err)
+				// Wait before reconnecting on error
+				select {
+				case <-c.tomb.Dying():
+					return
+				case <-time.After(5 * time.Second):
+				}
+			}
+			// Small delay between successful connections
+			if c.interval > 0 {
+				select {
+				case <-c.tomb.Dying():
+					return
+				case <-time.After(c.interval):
+				}
 			}
 		}
 	}
@@ -194,6 +220,12 @@ func (c *Client) handshake() error {
 		return errors.New(rsp.Error)
 	}
 	c.clientId = rsp.ClientId
+	// Set default interval if advice is provided
+	if rsp.Advice != nil && rsp.Advice.Interval > 0 {
+		c.interval = time.Duration(rsp.Advice.Interval) * time.Millisecond
+	} else {
+		c.interval = 0 // Default to no delay between polls
+	}
 	return nil
 }
 
@@ -261,15 +293,16 @@ func (c *Client) send(req *request) (*metaMessage, error) {
 		return nil, err
 	}
 
-	// 1. Check advice: Update interval
-	// 2. Check advice: Reconnect "handshake" => reconnect
-	// 3. Handle messages to just-created subscriptions
-
 	for _, msg := range messages {
 		msg := msg
 		if req.Channel == msg.Channel {
 			reply = &msg
-		} else {
+			// Handle advice for interval updates
+			if msg.Advice != nil && msg.Advice.Interval > 0 {
+				c.interval = time.Duration(msg.Advice.Interval) * time.Millisecond
+			}
+		} else if msg.Channel != "" && msg.Data != nil {
+			// Only queue messages with actual data
 			c.messages <- &msg.Message
 		}
 	}
