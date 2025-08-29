@@ -416,7 +416,6 @@ func ForceLoginAtEndpointDeviceFlow(endpoint string, prompt string) (creds Force
 	deviceRequest := url.Values{}
 	deviceRequest.Set("response_type", "device_code")
 	deviceRequest.Set("client_id", ClientId)
-	deviceRequest.Set("scope", "full refresh_token")
 
 	tokenURL := tokenURL(endpoint)
 	req, err := httpRequest("POST", tokenURL, bytes.NewReader([]byte(deviceRequest.Encode())))
