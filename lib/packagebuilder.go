@@ -78,6 +78,7 @@ var metapaths = []metapath{
 	{path: "email", name: "EmailTemplate", hasFolder: true},
 	{path: "escalationRules", name: "EscalationRules"},
 	{path: "experiences", name: "ExperienceBundle"},
+	{path: "externalClientApps", name: "ExternalClientApplication"},
 	{path: "externalCredentials", name: "ExternalCredential"},
 	{path: "feedFilters", name: "CustomFeedFilter"},
 	{path: "flexipages", name: "FlexiPage"},
