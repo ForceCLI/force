@@ -8,6 +8,7 @@ import (
 	"io"
 	"mime/multipart"
 	"net/textproto"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -20,8 +21,21 @@ import (
 func init() {
 	packageInstallCmd.Flags().BoolP("activate", "A", false, "keep the isActive state of any Remote Site Settings (RSS) and Content Security Policies (CSP) in package")
 	packageInstallCmd.Flags().StringP("password", "p", "", "password for package")
+	packageInstallCmd.Flags().StringP("package-version-id", "i", "", "Package version ID (04t) to install via Tooling API")
 
-	packageVersionCreateCmd.Flags().StringP("package-id", "i", "", "Package ID (required)")
+	packageUninstallCmd.Flags().StringP("package-version-id", "i", "", "Subscriber Package Version ID (04t) to uninstall (required)")
+	packageUninstallCmd.MarkFlagRequired("package-version-id")
+
+	packageCreateCmd.Flags().StringP("name", "n", "", "Package name (required)")
+	packageCreateCmd.Flags().StringP("type", "t", "", "Package type: Managed or Unlocked (required)")
+	packageCreateCmd.Flags().StringP("namespace", "s", "", "Package namespace (required)")
+	packageCreateCmd.Flags().StringP("description", "d", "", "Package description (optional)")
+	packageCreateCmd.MarkFlagRequired("name")
+	packageCreateCmd.MarkFlagRequired("type")
+	packageCreateCmd.MarkFlagRequired("namespace")
+
+	packageVersionCreateCmd.Flags().StringP("package-id", "i", "", "Package ID (required if --namespace not provided)")
+	packageVersionCreateCmd.Flags().StringP("namespace", "", "", "Package namespace (alternative to --package-id)")
 	packageVersionCreateCmd.Flags().StringP("version-number", "n", "", "Version number (required, e.g., 1.0.0.0)")
 	packageVersionCreateCmd.Flags().StringP("version-name", "m", "", "Version name (required)")
 	packageVersionCreateCmd.Flags().StringP("version-description", "d", "", "Version description (required)")
@@ -29,7 +43,6 @@ func init() {
 	packageVersionCreateCmd.Flags().BoolP("skip-validation", "s", false, "Skip validation")
 	packageVersionCreateCmd.Flags().BoolP("async-validation", "y", false, "Async validation")
 	packageVersionCreateCmd.Flags().BoolP("code-coverage", "c", true, "Calculate code coverage")
-	packageVersionCreateCmd.MarkFlagRequired("package-id")
 	packageVersionCreateCmd.MarkFlagRequired("version-number")
 	packageVersionCreateCmd.MarkFlagRequired("version-name")
 	packageVersionCreateCmd.MarkFlagRequired("version-description")
@@ -41,10 +54,14 @@ func init() {
 	packageVersionListCmd.Flags().BoolP("released", "r", false, "Show only released versions")
 	packageVersionListCmd.Flags().BoolP("verbose", "v", false, "Show detailed information")
 
+	packageCmd.AddCommand(packageCreateCmd)
+	packageCmd.AddCommand(packageListCmd)
+	packageCmd.AddCommand(packageInstalledCmd)
 	packageVersionCmd.AddCommand(packageVersionCreateCmd)
 	packageVersionCmd.AddCommand(packageVersionReleaseCmd)
 	packageVersionCmd.AddCommand(packageVersionListCmd)
 	packageCmd.AddCommand(packageInstallCmd)
+	packageCmd.AddCommand(packageUninstallCmd)
 	packageCmd.AddCommand(packageVersionCmd)
 	RootCmd.AddCommand(packageCmd)
 }
@@ -59,20 +76,75 @@ var packageVersionCmd = &cobra.Command{
 	Short: "Manage package versions",
 }
 
+var packageCreateCmd = &cobra.Command{
+	Use:   "create",
+	Short: "Create a new 2GP package",
+	Args:  cobra.NoArgs,
+	Run: func(cmd *cobra.Command, args []string) {
+		name, _ := cmd.Flags().GetString("name")
+		packageType, _ := cmd.Flags().GetString("type")
+		namespace, _ := cmd.Flags().GetString("namespace")
+		description, _ := cmd.Flags().GetString("description")
+		runCreatePackage(name, packageType, namespace, description)
+	},
+}
+
+var packageListCmd = &cobra.Command{
+	Use:   "list",
+	Short: "List all packages in the org",
+	Args:  cobra.NoArgs,
+	Run: func(cmd *cobra.Command, args []string) {
+		runListPackages()
+	},
+}
+
+var packageInstalledCmd = &cobra.Command{
+	Use:   "installed",
+	Short: "List installed packages in the org",
+	Args:  cobra.NoArgs,
+	Run: func(cmd *cobra.Command, args []string) {
+		runListInstalledPackages()
+	},
+}
+
 var packageInstallCmd = &cobra.Command{
-	Use:   "install [flags] <namespace> <version>",
-	Short: "Installed packages",
-	Args:  cobra.RangeArgs(2, 3),
+	Use:   "install [flags] [<namespace> <version>]",
+	Short: "Install packages",
+	Args:  cobra.RangeArgs(0, 3),
 	Run: func(cmd *cobra.Command, args []string) {
 		activateRSS, _ := cmd.Flags().GetBool("activate")
 		password, _ := cmd.Flags().GetString("password")
-		packageNamespace := args[0]
-		version := args[1]
-		if len(args) > 2 {
-			fmt.Println("Warning: Deprecated use of [password] argument.  Use --password flag.")
-			password = args[2]
+		packageVersionId, _ := cmd.Flags().GetString("package-version-id")
+
+		if packageVersionId != "" {
+			// Install using package version ID (04t)
+			if len(args) > 0 {
+				ErrorAndExit("Cannot specify namespace/version when using --package-version-id")
+			}
+			runInstallPackageById(packageVersionId, password, activateRSS)
+		} else {
+			// Traditional installation using namespace and version
+			if len(args) < 2 {
+				ErrorAndExit("Must provide <namespace> and <version> arguments when not using --package-version-id")
+			}
+			packageNamespace := args[0]
+			version := args[1]
+			if len(args) > 2 {
+				fmt.Println("Warning: Deprecated use of [password] argument.  Use --password flag.")
+				password = args[2]
+			}
+			runInstallPackage(packageNamespace, version, password, activateRSS)
 		}
-		runInstallPackage(packageNamespace, version, password, activateRSS)
+	},
+}
+
+var packageUninstallCmd = &cobra.Command{
+	Use:   "uninstall",
+	Short: "Uninstall a 2GP package",
+	Args:  cobra.NoArgs,
+	Run: func(cmd *cobra.Command, args []string) {
+		packageVersionId, _ := cmd.Flags().GetString("package-version-id")
+		runUninstallPackage(packageVersionId)
 	},
 }
 
@@ -83,6 +155,7 @@ var packageVersionCreateCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		path := args[0]
 		packageId, _ := cmd.Flags().GetString("package-id")
+		namespace, _ := cmd.Flags().GetString("namespace")
 		versionNumber, _ := cmd.Flags().GetString("version-number")
 		versionName, _ := cmd.Flags().GetString("version-name")
 		versionDescription, _ := cmd.Flags().GetString("version-description")
@@ -91,7 +164,7 @@ var packageVersionCreateCmd = &cobra.Command{
 		asyncValidation, _ := cmd.Flags().GetBool("async-validation")
 		codeCoverage, _ := cmd.Flags().GetBool("code-coverage")
 
-		runCreatePackageVersion(path, packageId, versionNumber, versionName,
+		runCreatePackageVersion(path, packageId, namespace, versionNumber, versionName,
 			versionDescription, ancestorId, skipValidation, asyncValidation, codeCoverage)
 	},
 }
@@ -118,6 +191,151 @@ var packageVersionListCmd = &cobra.Command{
 	},
 }
 
+func runCreatePackage(name string, packageType string, namespace string, description string) {
+	if name == "" {
+		ErrorAndExit("Package name is required")
+	}
+	if packageType == "" {
+		ErrorAndExit("Package type is required")
+	}
+	if namespace == "" {
+		ErrorAndExit("Package namespace is required")
+	}
+	if packageType != "Managed" && packageType != "Unlocked" {
+		ErrorAndExit("Package type must be either 'Managed' or 'Unlocked'")
+	}
+
+	attrs := map[string]string{
+		"Name":             name,
+		"ContainerOptions": packageType,
+		"NamespacePrefix":  namespace,
+	}
+
+	if description != "" {
+		attrs["Description"] = description
+	}
+
+	result, err := force.CreateToolingRecord("Package2", attrs)
+	if err != nil {
+		ErrorAndExit("Failed to create package: " + err.Error())
+	}
+
+	fmt.Printf("Package created successfully: %s\n", result.Id)
+}
+
+func runListPackages() {
+	query := "SELECT Id, Name, NamespacePrefix FROM Package2 ORDER BY Name"
+
+	result, err := force.Query(query, func(options *lib.QueryOptions) {
+		options.IsTooling = true
+	})
+	if err != nil {
+		ErrorAndExit("Failed to query packages: " + err.Error())
+	}
+
+	if len(result.Records) == 0 {
+		fmt.Println("No packages found")
+		return
+	}
+
+	fmt.Printf("%-18s %-40s %-20s\n", "ID", "Name", "Namespace Prefix")
+	fmt.Println(strings.Repeat("-", 80))
+
+	for _, record := range result.Records {
+		id := ""
+		if recordId, ok := record["Id"].(string); ok {
+			id = recordId
+		}
+
+		name := ""
+		if recordName, ok := record["Name"].(string); ok {
+			name = recordName
+		}
+		if len(name) > 40 {
+			name = name[:37] + "..."
+		}
+
+		namespace := ""
+		if recordNamespace, ok := record["NamespacePrefix"]; ok && recordNamespace != nil {
+			namespace = recordNamespace.(string)
+		}
+
+		fmt.Printf("%-18s %-40s %-20s\n", id, name, namespace)
+	}
+}
+
+func runListInstalledPackages() {
+	// Query InstalledSubscriberPackage to get installed packages
+	query := "SELECT Id, SubscriberPackage.Name, SubscriberPackage.NamespacePrefix, " +
+		"SubscriberPackageVersion.Id, SubscriberPackageVersion.Name, " +
+		"SubscriberPackageVersion.MajorVersion, SubscriberPackageVersion.MinorVersion, " +
+		"SubscriberPackageVersion.PatchVersion, SubscriberPackageVersion.BuildNumber " +
+		"FROM InstalledSubscriberPackage " +
+		"ORDER BY SubscriberPackage.Name"
+
+	result, err := force.Query(query, func(options *lib.QueryOptions) {
+		options.IsTooling = true
+	})
+	if err != nil {
+		ErrorAndExit("Failed to query installed packages: " + err.Error())
+	}
+
+	if len(result.Records) == 0 {
+		fmt.Println("No installed packages found")
+		return
+	}
+
+	fmt.Printf("%-18s %-30s %-15s %-18s %-20s %-10s\n", "ID", "Package Name", "Namespace", "Version ID", "Version Name", "Version")
+	fmt.Println(strings.Repeat("-", 120))
+
+	for _, record := range result.Records {
+		id := ""
+		if recordId, ok := record["Id"].(string); ok {
+			id = recordId
+		}
+
+		packageName := ""
+		namespace := ""
+		if subscriberPackage, ok := record["SubscriberPackage"].(map[string]interface{}); ok {
+			if name, ok := subscriberPackage["Name"].(string); ok {
+				packageName = name
+				if len(packageName) > 30 {
+					packageName = packageName[:27] + "..."
+				}
+			}
+			if ns, ok := subscriberPackage["NamespacePrefix"]; ok && ns != nil {
+				namespace = ns.(string)
+			}
+		}
+
+		versionId := ""
+		versionName := ""
+		versionNumber := ""
+		if subscriberPackageVersion, ok := record["SubscriberPackageVersion"].(map[string]interface{}); ok {
+			if vId, ok := subscriberPackageVersion["Id"].(string); ok {
+				versionId = vId
+			}
+			if vName, ok := subscriberPackageVersion["Name"].(string); ok {
+				versionName = vName
+				if len(versionName) > 20 {
+					versionName = versionName[:17] + "..."
+				}
+			}
+			// Construct version number from individual components
+			major := subscriberPackageVersion["MajorVersion"]
+			minor := subscriberPackageVersion["MinorVersion"]
+			patch := subscriberPackageVersion["PatchVersion"]
+			build := subscriberPackageVersion["BuildNumber"]
+			if major != nil && minor != nil && patch != nil && build != nil {
+				versionNumber = fmt.Sprintf("%v.%v.%v.%v", major, minor, patch, build)
+			}
+		}
+
+		fmt.Printf("%-18s %-30s %-15s %-18s %-20s %-10s\n",
+			id, packageName, namespace, versionId, versionName, versionNumber)
+	}
+}
+
 func runInstallPackage(packageNamespace string, version string, password string, activateRSS bool) {
 	if err := force.Metadata.InstallPackageWithRSS(packageNamespace, version, password, activateRSS); err != nil {
 		ErrorAndExit(err.Error())
@@ -125,9 +343,251 @@ func runInstallPackage(packageNamespace string, version string, password string,
 	fmt.Println("Package installed")
 }
 
-func runCreatePackageVersion(path string, packageId string, versionNumber string,
+func runInstallPackageById(packageVersionId string, password string, activateRSS bool) {
+	// Validate that the ID starts with 04t (SubscriberPackageVersion prefix)
+	if !strings.HasPrefix(packageVersionId, "04t") {
+		ErrorAndExit("Invalid package version ID. Must be a Subscriber Package Version ID (04t)")
+	}
+
+	// Create the PackageInstallRequest using Tooling API
+	attrs := map[string]string{
+		"SubscriberPackageVersionKey": packageVersionId,
+		"EnableRss":                   fmt.Sprintf("%t", activateRSS),
+		"NameConflictResolution":      "Block",
+		"SecurityType":                "None",
+	}
+
+	if password != "" {
+		attrs["Password"] = password
+	}
+
+	fmt.Printf("Installing package version: %s\n", packageVersionId)
+
+	result, err := force.CreateToolingRecord("PackageInstallRequest", attrs)
+	if err != nil {
+		ErrorAndExit("Failed to create package install request: " + err.Error())
+	}
+
+	requestId := result.Id
+	if requestId == "" {
+		ErrorAndExit("Failed to get request ID from response")
+	}
+
+	fmt.Printf("Package install request submitted: %s\n", requestId)
+
+	// Poll for completion
+	pollPackageInstallStatus(requestId)
+}
+
+func pollPackageInstallStatus(requestId string) {
+	query := fmt.Sprintf("SELECT Id, Status, Errors, CreatedDate FROM PackageInstallRequest WHERE Id = '%s'", requestId)
+
+	for i := 0; i < 240; i++ { // Poll for up to 20 minutes (5 seconds * 240)
+		time.Sleep(5 * time.Second)
+
+		result, err := force.Query(query, func(options *lib.QueryOptions) {
+			options.IsTooling = true
+		})
+		if err != nil {
+			fmt.Printf("Error querying status: %s\n", err.Error())
+			continue
+		}
+
+		if len(result.Records) == 0 {
+			fmt.Println("No records found")
+			continue
+		}
+
+		record := result.Records[0]
+		status := record["Status"].(string)
+
+		fmt.Printf("Status: %s\n", status)
+
+		if status == "SUCCESS" {
+			fmt.Println("Package installed successfully")
+			return
+		} else if status == "ERROR" {
+			var errorMessages []string
+			if errors, ok := record["Errors"]; ok && errors != nil {
+				// Errors field is typically a JSON array within the response
+				if errorsMap, ok := errors.(map[string]interface{}); ok {
+					if errorArray, ok := errorsMap["errors"].([]interface{}); ok {
+						for _, err := range errorArray {
+							if errMap, ok := err.(map[string]interface{}); ok {
+								if message, ok := errMap["message"].(string); ok {
+									errorMessages = append(errorMessages, message)
+								}
+							}
+						}
+					}
+				} else if errorsArray, ok := errors.([]interface{}); ok {
+					for _, err := range errorsArray {
+						if errMap, ok := err.(map[string]interface{}); ok {
+							if message, ok := errMap["message"].(string); ok {
+								errorMessages = append(errorMessages, message)
+							}
+						}
+					}
+				}
+			}
+
+			if len(errorMessages) > 0 {
+				ErrorAndExit("Package installation failed with errors:\n" + strings.Join(errorMessages, "\n"))
+			} else {
+				ErrorAndExit("Package installation failed with status: ERROR")
+			}
+		} else if status == "IN_PROGRESS" {
+			// Continue polling
+		} else {
+			// Handle other statuses if any
+			fmt.Printf("Unexpected status: %s. Continuing to poll...\n", status)
+		}
+	}
+
+	ErrorAndExit("Package installation timed out after 20 minutes")
+}
+
+func runUninstallPackage(packageVersionId string) {
+	// Validate that the ID starts with 04t (SubscriberPackageVersion prefix)
+	if !strings.HasPrefix(packageVersionId, "04t") {
+		ErrorAndExit("Invalid package version ID. Must be a Subscriber Package Version ID (04t)")
+	}
+
+	// Query InstalledSubscriberPackage to find the installed package ID
+	query := fmt.Sprintf("SELECT Id, SubscriberPackage.Name, SubscriberPackageVersion.Name "+
+		"FROM InstalledSubscriberPackage "+
+		"WHERE SubscriberPackageVersionId = '%s'", packageVersionId)
+
+	result, err := force.Query(query, func(options *lib.QueryOptions) {
+		options.IsTooling = true
+	})
+	if err != nil {
+		ErrorAndExit("Failed to query installed package: " + err.Error())
+	}
+
+	if len(result.Records) == 0 {
+		ErrorAndExit(fmt.Sprintf("Package version %s is not installed in this org", packageVersionId))
+	}
+
+	record := result.Records[0]
+
+	packageName := ""
+	versionName := ""
+	if subscriberPackage, ok := record["SubscriberPackage"].(map[string]interface{}); ok {
+		if name, ok := subscriberPackage["Name"].(string); ok {
+			packageName = name
+		}
+	}
+	if subscriberPackageVersion, ok := record["SubscriberPackageVersion"].(map[string]interface{}); ok {
+		if name, ok := subscriberPackageVersion["Name"].(string); ok {
+			versionName = name
+		}
+	}
+
+	fmt.Printf("Uninstalling package: %s (%s)\n", packageName, versionName)
+	fmt.Printf("Package Version ID: %s\n", packageVersionId)
+
+	// Create the SubscriberPackageVersionUninstallRequest using Tooling API
+	attrs := map[string]string{
+		"SubscriberPackageVersionId": packageVersionId,
+	}
+
+	requestResult, err := force.CreateToolingRecord("SubscriberPackageVersionUninstallRequest", attrs)
+	if err != nil {
+		ErrorAndExit("Failed to create package uninstall request: " + err.Error())
+	}
+
+	requestId := requestResult.Id
+	if requestId == "" {
+		ErrorAndExit("Failed to get request ID from response")
+	}
+
+	fmt.Printf("Package uninstall request submitted: %s\n", requestId)
+
+	// Poll for completion
+	pollPackageUninstallStatus(requestId)
+}
+
+func pollPackageUninstallStatus(requestId string) {
+	query := fmt.Sprintf("SELECT Id, Status FROM SubscriberPackageVersionUninstallRequest WHERE Id = '%s'", requestId)
+
+	for i := 0; i < 240; i++ { // Poll for up to 20 minutes (5 seconds * 240)
+		time.Sleep(5 * time.Second)
+
+		result, err := force.Query(query, func(options *lib.QueryOptions) {
+			options.IsTooling = true
+		})
+		if err != nil {
+			fmt.Printf("Error querying status: %s\n", err.Error())
+			continue
+		}
+
+		if len(result.Records) == 0 {
+			fmt.Println("No records found")
+			continue
+		}
+
+		record := result.Records[0]
+		status := ""
+		if statusValue, ok := record["Status"].(string); ok {
+			status = statusValue
+		}
+
+		fmt.Printf("Status: %s\n", status)
+
+		if status == "Success" {
+			fmt.Println("Package uninstalled successfully")
+			return
+		} else if status == "Error" {
+			ErrorAndExit("Package uninstall failed with status: Error")
+		} else if status == "InProgress" {
+			// Continue polling
+		} else {
+			// Handle other statuses if any
+			fmt.Printf("Status: %s, continuing to poll...\n", status)
+		}
+	}
+
+	ErrorAndExit("Package uninstall timed out after 20 minutes")
+}
+
+func runCreatePackageVersion(path string, packageId string, namespace string, versionNumber string,
 	versionName string, versionDescription string, ancestorId string,
 	skipValidation bool, asyncValidation bool, codeCoverage bool) {
+
+	// Validate that either package-id or namespace is provided
+	if packageId == "" && namespace == "" {
+		ErrorAndExit("Either --package-id or --namespace must be provided")
+	}
+	if packageId != "" && namespace != "" {
+		ErrorAndExit("Cannot specify both --package-id and --namespace")
+	}
+
+	// If namespace is provided, query for the package ID
+	if namespace != "" {
+		query := fmt.Sprintf("SELECT Id, Name FROM Package2 WHERE NamespacePrefix = '%s'", namespace)
+		result, err := force.Query(query, func(options *lib.QueryOptions) {
+			options.IsTooling = true
+		})
+		if err != nil {
+			ErrorAndExit("Failed to query package by namespace: " + err.Error())
+		}
+		if len(result.Records) == 0 {
+			ErrorAndExit(fmt.Sprintf("No package found with namespace: %s", namespace))
+		}
+		if len(result.Records) > 1 {
+			ErrorAndExit(fmt.Sprintf("Multiple packages found with namespace: %s", namespace))
+		}
+
+		if id, ok := result.Records[0]["Id"].(string); ok {
+			packageId = id
+			if name, ok := result.Records[0]["Name"].(string); ok {
+				fmt.Printf("Found package '%s' with ID: %s\n", name, packageId)
+			}
+		} else {
+			ErrorAndExit("Failed to get package ID from query result")
+		}
+	}
 
 	// If ancestor-id is not provided, query for the last released version
 	if ancestorId == "" {
@@ -164,6 +624,15 @@ func runCreatePackageVersion(path string, packageId string, versionNumber string
 		ErrorAndExit("Failed to get absolute path: " + err.Error())
 	}
 
+	// Validate that the path is a directory
+	fileInfo, err := os.Stat(absPath)
+	if err != nil {
+		ErrorAndExit("Failed to access path: " + err.Error())
+	}
+	if !fileInfo.IsDir() {
+		ErrorAndExit("Path must be a directory, not a file: " + path)
+	}
+
 	pb := lib.NewPushBuilder()
 	pb.Root = absPath
 
@@ -176,7 +645,7 @@ func runCreatePackageVersion(path string, packageId string, versionNumber string
 	for _, file := range files {
 		err = pb.Add(file)
 		if err != nil {
-			// Skip files that can't be added (non-metadata files)
+			fmt.Printf("Warning: Could not add %s: %s\n", file, err.Error())
 			continue
 		}
 	}
@@ -353,6 +822,21 @@ func pollPackageVersionStatus(requestId string) string {
 				return versionId
 			}
 		} else if status == "Error" {
+			errorQuery := fmt.Sprintf("SELECT Message FROM Package2VersionCreateRequestError WHERE ParentRequest.Id = '%s'", requestId)
+			errorResult, err := force.Query(errorQuery, func(options *lib.QueryOptions) {
+				options.IsTooling = true
+			})
+			if err == nil && len(errorResult.Records) > 0 {
+				var errorMessages []string
+				for _, errorRecord := range errorResult.Records {
+					if message, ok := errorRecord["Message"].(string); ok {
+						errorMessages = append(errorMessages, message)
+					}
+				}
+				if len(errorMessages) > 0 {
+					ErrorAndExit("Package version creation failed with errors:\n" + strings.Join(errorMessages, "\n"))
+				}
+			}
 			ErrorAndExit("Package version creation failed with status: Error")
 		}
 	}

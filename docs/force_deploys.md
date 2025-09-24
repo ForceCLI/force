@@ -38,5 +38,6 @@ List and cancel metadata deployments.
 * [force deploys cancel](force_deploys_cancel.md)	 - Cancel deploy
 * [force deploys errors](force_deploys_errors.md)	 - List metadata deploy errors
 * [force deploys list](force_deploys_list.md)	 - List metadata deploys
+* [force deploys status](force_deploys_status.md)	 - Show deployment status
 * [force deploys watch](force_deploys_watch.md)	 - Monitor metadata deploy
 

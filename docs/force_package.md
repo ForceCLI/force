@@ -19,6 +19,10 @@ Manage installed packages
 ### SEE ALSO
 
 * [force](force.md)	 - force CLI
-* [force package install](force_package_install.md)	 - Installed packages
+* [force package create](force_package_create.md)	 - Create a new 2GP package
+* [force package install](force_package_install.md)	 - Install packages
+* [force package installed](force_package_installed.md)	 - List installed packages in the org
+* [force package list](force_package_list.md)	 - List all packages in the org
+* [force package uninstall](force_package_uninstall.md)	 - Uninstall a 2GP package
 * [force package version](force_package_version.md)	 - Manage package versions
 

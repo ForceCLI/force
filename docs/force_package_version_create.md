@@ -13,7 +13,8 @@ force package version create [path] [flags]
   -y, --async-validation             Async validation
   -c, --code-coverage                Calculate code coverage (default true)
   -h, --help                         help for create
-  -i, --package-id string            Package ID (required)
+      --namespace string             Package namespace (alternative to --package-id)
+  -i, --package-id string            Package ID (required if --namespace not provided)
   -s, --skip-validation              Skip validation
   -d, --version-description string   Version description (required)
   -m, --version-name string          Version name (required)

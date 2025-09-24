@@ -1,17 +1,18 @@
 ## force package install
 
-Installed packages
+Install packages
 
 ```
-force package install [flags] <namespace> <version>
+force package install [flags] [<namespace> <version>]
 ```
 
 ### Options
 
 ```
-  -A, --activate          keep the isActive state of any Remote Site Settings (RSS) and Content Security Policies (CSP) in package
-  -h, --help              help for install
-  -p, --password string   password for package
+  -A, --activate                    keep the isActive state of any Remote Site Settings (RSS) and Content Security Policies (CSP) in package
+  -h, --help                        help for install
+  -i, --package-version-id string   Package version ID (04t) to install via Tooling API
+  -p, --password string             password for package
 ```
 
 ### Options inherited from parent commands
