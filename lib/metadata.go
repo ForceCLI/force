@@ -112,13 +112,14 @@ type ComponentFailure struct {
 }
 
 type ComponentSuccess struct {
-	Changed  bool   `xml:"changed"`
-	Created  bool   `xml:"created"`
-	Deleted  bool   `xml:"deleted"`
-	FileName string `xml:"fileName"`
-	FullName string `xml:"fullName"`
-	Id       string `xml:"id"`
-	Success  bool   `xml:"success"`
+	Changed       bool   `xml:"changed"`
+	ComponentType string `xml:"componentType"`
+	Created       bool   `xml:"created"`
+	Deleted       bool   `xml:"deleted"`
+	FileName      string `xml:"fileName"`
+	FullName      string `xml:"fullName"`
+	Id            string `xml:"id"`
+	Success       bool   `xml:"success"`
 }
 
 type TestFailure struct {
