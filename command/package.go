@@ -37,15 +37,13 @@ func init() {
 	packageVersionCreateCmd.Flags().StringP("package-id", "i", "", "Package ID (required if --namespace not provided)")
 	packageVersionCreateCmd.Flags().StringP("namespace", "", "", "Package namespace (alternative to --package-id)")
 	packageVersionCreateCmd.Flags().StringP("version-number", "n", "", "Version number (required, e.g., 1.0.0.0)")
-	packageVersionCreateCmd.Flags().StringP("version-name", "m", "", "Version name (required)")
-	packageVersionCreateCmd.Flags().StringP("version-description", "d", "", "Version description (required)")
+	packageVersionCreateCmd.Flags().StringP("version-name", "m", "", "Version name (optional, defaults to version-number)")
+	packageVersionCreateCmd.Flags().StringP("version-description", "d", "", "Version description (optional, defaults to version-number)")
 	packageVersionCreateCmd.Flags().StringP("ancestor-id", "", "", "Ancestor version ID (optional)")
 	packageVersionCreateCmd.Flags().BoolP("skip-validation", "s", false, "Skip validation")
 	packageVersionCreateCmd.Flags().BoolP("async-validation", "y", false, "Async validation")
 	packageVersionCreateCmd.Flags().BoolP("code-coverage", "c", true, "Calculate code coverage")
 	packageVersionCreateCmd.MarkFlagRequired("version-number")
-	packageVersionCreateCmd.MarkFlagRequired("version-name")
-	packageVersionCreateCmd.MarkFlagRequired("version-description")
 
 	packageVersionReleaseCmd.Flags().StringP("version-id", "v", "", "Package Version ID (required)")
 	packageVersionReleaseCmd.MarkFlagRequired("version-id")
@@ -554,6 +552,14 @@ func pollPackageUninstallStatus(requestId string) {
 func runCreatePackageVersion(path string, packageId string, namespace string, versionNumber string,
 	versionName string, versionDescription string, ancestorId string,
 	skipValidation bool, asyncValidation bool, codeCoverage bool) {
+
+	// Use version-number as default for version-name and version-description if not provided
+	if versionName == "" {
+		versionName = versionNumber
+	}
+	if versionDescription == "" {
+		versionDescription = versionNumber
+	}
 
 	// Validate that either package-id or namespace is provided
 	if packageId == "" && namespace == "" {
