@@ -8,7 +8,7 @@ func Test_package_version_create_command_requires_flags(t *testing.T) {
 	cmd := packageVersionCreateCmd
 
 	// Test that required flags are marked as required (package-id is no longer required since namespace is an alternative)
-	requiredFlags := []string{"version-number", "version-name", "version-description"}
+	requiredFlags := []string{"version-number"}
 
 	for _, flagName := range requiredFlags {
 		flag := cmd.Flags().Lookup(flagName)
@@ -49,7 +49,7 @@ func Test_package_version_create_command_has_optional_flags(t *testing.T) {
 	cmd := packageVersionCreateCmd
 
 	// Test that optional flags exist
-	optionalFlags := []string{"ancestor-id", "skip-validation", "async-validation", "code-coverage"}
+	optionalFlags := []string{"version-name", "version-description", "ancestor-id", "skip-validation", "async-validation", "code-coverage"}
 
 	for _, flagName := range optionalFlags {
 		flag := cmd.Flags().Lookup(flagName)
