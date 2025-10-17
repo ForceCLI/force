@@ -40,6 +40,7 @@ func init() {
 	packageVersionCreateCmd.Flags().StringP("version-name", "m", "", "Version name (optional, defaults to version-number)")
 	packageVersionCreateCmd.Flags().StringP("version-description", "d", "", "Version description (optional, defaults to version-number)")
 	packageVersionCreateCmd.Flags().StringP("ancestor-id", "", "", "Ancestor version ID (optional)")
+	packageVersionCreateCmd.Flags().StringP("tag", "", "", "Tag to set on the Package2VersionCreateRequest")
 	packageVersionCreateCmd.Flags().BoolP("skip-validation", "s", false, "Skip validation")
 	packageVersionCreateCmd.Flags().BoolP("async-validation", "y", false, "Async validation")
 	packageVersionCreateCmd.Flags().BoolP("code-coverage", "c", true, "Calculate code coverage")
@@ -158,12 +159,13 @@ var packageVersionCreateCmd = &cobra.Command{
 		versionName, _ := cmd.Flags().GetString("version-name")
 		versionDescription, _ := cmd.Flags().GetString("version-description")
 		ancestorId, _ := cmd.Flags().GetString("ancestor-id")
+		tag, _ := cmd.Flags().GetString("tag")
 		skipValidation, _ := cmd.Flags().GetBool("skip-validation")
 		asyncValidation, _ := cmd.Flags().GetBool("async-validation")
 		codeCoverage, _ := cmd.Flags().GetBool("code-coverage")
 
 		runCreatePackageVersion(path, packageId, namespace, versionNumber, versionName,
-			versionDescription, ancestorId, skipValidation, asyncValidation, codeCoverage)
+			versionDescription, ancestorId, tag, skipValidation, asyncValidation, codeCoverage)
 	},
 }
 
@@ -550,7 +552,7 @@ func pollPackageUninstallStatus(requestId string) {
 }
 
 func runCreatePackageVersion(path string, packageId string, namespace string, versionNumber string,
-	versionName string, versionDescription string, ancestorId string,
+	versionName string, versionDescription string, ancestorId string, tag string,
 	skipValidation bool, asyncValidation bool, codeCoverage bool) {
 
 	// Use version-number as default for version-name and version-description if not provided
@@ -759,6 +761,9 @@ func runCreatePackageVersion(path string, packageId string, namespace string, ve
 		"CalculateCodeCoverage": codeCoverage,
 		"SkipValidation":        skipValidation,
 		"AsyncValidation":       asyncValidation,
+	}
+	if tag != "" {
+		request["Tag"] = tag
 	}
 	requestJson, _ := json.Marshal(request)
 
