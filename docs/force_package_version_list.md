@@ -11,6 +11,7 @@ force package version list [flags]
 ```
   -h, --help                help for list
   -i, --package-id string   Package ID (optional, filter by package)
+      --namespace string    Package namespace (alternative to --package-id)
   -r, --released            Show only released versions
   -v, --verbose             Show detailed information
 ```
