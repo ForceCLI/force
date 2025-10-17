@@ -12,6 +12,7 @@ force package version list [flags]
   -h, --help                help for list
       --namespace string    Package namespace (alternative to --package-id)
   -i, --package-id string   Package ID (optional, filter by package)
+      --namespace string    Package namespace (alternative to --package-id)
   -r, --released            Show only released versions
   -v, --verbose             Show detailed information
 ```
@@ -27,4 +28,3 @@ force package version list [flags]
 ### SEE ALSO
 
 * [force package version](force_package_version.md)	 - Manage package versions
-
