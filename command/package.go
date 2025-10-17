@@ -50,8 +50,10 @@ func init() {
 	packageVersionReleaseCmd.MarkFlagRequired("version-id")
 
 	packageVersionListCmd.Flags().StringP("package-id", "i", "", "Package ID (optional, filter by package)")
+	packageVersionListCmd.Flags().StringP("namespace", "", "", "Package namespace (alternative to --package-id)")
 	packageVersionListCmd.Flags().BoolP("released", "r", false, "Show only released versions")
 	packageVersionListCmd.Flags().BoolP("verbose", "v", false, "Show detailed information")
+	packageVersionListCmd.MarkFlagsMutuallyExclusive("package-id", "namespace")
 
 	packageCmd.AddCommand(packageCreateCmd)
 	packageCmd.AddCommand(packageListCmd)
@@ -185,9 +187,11 @@ var packageVersionListCmd = &cobra.Command{
 	Args:  cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		packageId, _ := cmd.Flags().GetString("package-id")
+		namespace, _ := cmd.Flags().GetString("namespace")
 		releasedOnly, _ := cmd.Flags().GetBool("released")
 		verbose, _ := cmd.Flags().GetBool("verbose")
-		runListPackageVersions(packageId, releasedOnly, verbose)
+
+		runListPackageVersions(packageId, namespace, releasedOnly, verbose)
 	},
 }
 
@@ -870,7 +874,32 @@ func runReleasePackageVersion(versionId string) {
 	fmt.Printf("Package version released successfully: %s\n", versionId)
 }
 
-func runListPackageVersions(packageId string, releasedOnly bool, verbose bool) {
+func runListPackageVersions(packageId string, namespace string, releasedOnly bool, verbose bool) {
+	if namespace != "" {
+		query := fmt.Sprintf("SELECT Id, Name FROM Package2 WHERE NamespacePrefix = '%s'", namespace)
+		result, err := force.Query(query, func(options *lib.QueryOptions) {
+			options.IsTooling = true
+		})
+		if err != nil {
+			ErrorAndExit("Failed to query package by namespace: " + err.Error())
+		}
+		if len(result.Records) == 0 {
+			ErrorAndExit(fmt.Sprintf("No package found with namespace: %s", namespace))
+		}
+		if len(result.Records) > 1 {
+			ErrorAndExit(fmt.Sprintf("Multiple packages found with namespace: %s", namespace))
+		}
+
+		if id, ok := result.Records[0]["Id"].(string); ok {
+			packageId = id
+			if name, ok := result.Records[0]["Name"].(string); ok {
+				fmt.Printf("Found package '%s' with ID: %s\n", name, packageId)
+			}
+		} else {
+			ErrorAndExit("Failed to get package ID from query result")
+		}
+	}
+
 	// Build the SOQL query
 	query := "SELECT Id, MajorVersion, MinorVersion, PatchVersion, BuildNumber, Name, Description, IsReleased, CreatedDate, Package2Id, Package2.Name, SubscriberPackageVersionId, AncestorId"
 	query += " FROM Package2Version"

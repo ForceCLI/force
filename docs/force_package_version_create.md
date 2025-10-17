@@ -15,10 +15,10 @@ force package version create [path] [flags]
   -h, --help                         help for create
       --namespace string             Package namespace (alternative to --package-id)
   -i, --package-id string            Package ID (required if --namespace not provided)
-      --tag string                   Tag to set on the Package2VersionCreateRequest
   -s, --skip-validation              Skip validation
-  -d, --version-description string   Version description (required)
-  -m, --version-name string          Version name (required)
+      --tag string                   Tag to set on the Package2VersionCreateRequest
+  -d, --version-description string   Version description (optional, defaults to version-number)
+  -m, --version-name string          Version name (optional, defaults to version-number)
   -n, --version-number string        Version number (required, e.g., 1.0.0.0)
 ```
 
