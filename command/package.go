@@ -10,6 +10,7 @@ import (
 	"net/textproto"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -49,6 +50,9 @@ func init() {
 	packageVersionReleaseCmd.Flags().StringP("version-id", "v", "", "Package Version ID (required)")
 	packageVersionReleaseCmd.MarkFlagRequired("version-id")
 
+	packageVersionGetCmd.Flags().StringP("version-id", "v", "", "Package Version ID (required)")
+	packageVersionGetCmd.MarkFlagRequired("version-id")
+
 	packageVersionListCmd.Flags().StringP("package-id", "i", "", "Package ID (optional, filter by package)")
 	packageVersionListCmd.Flags().StringP("namespace", "", "", "Package namespace (alternative to --package-id)")
 	packageVersionListCmd.Flags().BoolP("released", "r", false, "Show only released versions")
@@ -60,6 +64,7 @@ func init() {
 	packageCmd.AddCommand(packageInstalledCmd)
 	packageVersionCmd.AddCommand(packageVersionCreateCmd)
 	packageVersionCmd.AddCommand(packageVersionReleaseCmd)
+	packageVersionCmd.AddCommand(packageVersionGetCmd)
 	packageVersionCmd.AddCommand(packageVersionListCmd)
 	packageCmd.AddCommand(packageInstallCmd)
 	packageCmd.AddCommand(packageUninstallCmd)
@@ -181,6 +186,16 @@ var packageVersionReleaseCmd = &cobra.Command{
 	},
 }
 
+var packageVersionGetCmd = &cobra.Command{
+	Use:   "get",
+	Short: "Show package version details",
+	Args:  cobra.NoArgs,
+	Run: func(cmd *cobra.Command, args []string) {
+		versionId, _ := cmd.Flags().GetString("version-id")
+		runGetPackageVersion(versionId)
+	},
+}
+
 var packageVersionListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List package versions",
@@ -190,7 +205,6 @@ var packageVersionListCmd = &cobra.Command{
 		namespace, _ := cmd.Flags().GetString("namespace")
 		releasedOnly, _ := cmd.Flags().GetBool("released")
 		verbose, _ := cmd.Flags().GetBool("verbose")
-
 		runListPackageVersions(packageId, namespace, releasedOnly, verbose)
 	},
 }
@@ -872,6 +886,104 @@ func runReleasePackageVersion(versionId string) {
 	}
 
 	fmt.Printf("Package version released successfully: %s\n", versionId)
+}
+
+func runGetPackageVersion(versionId string) {
+	if versionId == "" {
+		ErrorAndExit("Package version ID is required")
+	}
+
+	query := fmt.Sprintf("SELECT Id, Name, Description, Tag, MajorVersion, MinorVersion, PatchVersion, BuildNumber, Package2Id, Package2.Name, Package2.NamespacePrefix, SubscriberPackageVersionId, AncestorId, IsReleased, CreatedDate, LastModifiedDate FROM Package2Version WHERE Id = '%s'", versionId)
+
+	result, err := force.Query(query, func(options *lib.QueryOptions) {
+		options.IsTooling = true
+	})
+	if err != nil {
+		ErrorAndExit("Failed to query package version: " + err.Error())
+	}
+	if len(result.Records) == 0 {
+		ErrorAndExit(fmt.Sprintf("No package version found with ID: %s", versionId))
+	}
+
+	record := result.Records[0]
+
+	fmt.Printf("Package Version Details:\n")
+	fmt.Printf("  ID: %s\n", getStringValue(record, "Id"))
+	fmt.Printf("  Name: %s\n", getStringValue(record, "Name"))
+	fmt.Printf("  Description: %s\n", getStringValue(record, "Description"))
+	fmt.Printf("  Tag: %s\n", getStringValue(record, "Tag"))
+	major := getIntValue(record, "MajorVersion")
+	minor := getIntValue(record, "MinorVersion")
+	patch := getIntValue(record, "PatchVersion")
+	build := getIntValue(record, "BuildNumber")
+
+	fmt.Printf("  Version Number: %d.%d.%d.%d\n", major, minor, patch, build)
+	fmt.Printf("  Major Version: %d\n", major)
+	fmt.Printf("  Minor Version: %d\n", minor)
+	fmt.Printf("  Patch Version: %d\n", patch)
+	fmt.Printf("  Build Number: %d\n", build)
+
+	if pkg, ok := record["Package2"].(map[string]interface{}); ok && pkg != nil {
+		fmt.Printf("  Package2 ID: %s\n", getStringValue(record, "Package2Id"))
+		fmt.Printf("  Package2 Name: %s\n", getStringValue(pkg, "Name"))
+		fmt.Printf("  Package2 Namespace: %s\n", getStringValue(pkg, "NamespacePrefix"))
+	} else {
+		fmt.Printf("  Package2 ID: %s\n", getStringValue(record, "Package2Id"))
+	}
+
+	fmt.Printf("  Subscriber Package Version ID: %s\n", getStringValue(record, "SubscriberPackageVersionId"))
+	fmt.Printf("  Ancestor ID: %s\n", getStringValue(record, "AncestorId"))
+	fmt.Printf("  Is Released: %t\n", getBoolValue(record, "IsReleased"))
+	fmt.Printf("  Created Date: %s\n", getStringValue(record, "CreatedDate"))
+	fmt.Printf("  Last Modified Date: %s\n", getStringValue(record, "LastModifiedDate"))
+}
+
+func getStringValue(record map[string]interface{}, key string) string {
+	if value, ok := record[key]; ok && value != nil {
+		switch v := value.(type) {
+		case string:
+			return v
+		case fmt.Stringer:
+			return v.String()
+		default:
+			return fmt.Sprintf("%v", v)
+		}
+	}
+	return ""
+}
+
+func getIntValue(record map[string]interface{}, key string) int {
+	if value, ok := record[key]; ok && value != nil {
+		switch v := value.(type) {
+		case float64:
+			return int(v)
+		case int:
+			return v
+		case int32:
+			return int(v)
+		case int64:
+			return int(v)
+		case string:
+			if parsed, err := strconv.Atoi(v); err == nil {
+				return parsed
+			}
+		}
+	}
+	return 0
+}
+
+func getBoolValue(record map[string]interface{}, key string) bool {
+	if value, ok := record[key]; ok && value != nil {
+		if b, ok := value.(bool); ok {
+			return b
+		}
+		if s, ok := value.(string); ok {
+			if parsed, err := strconv.ParseBool(s); err == nil {
+				return parsed
+			}
+		}
+	}
+	return false
 }
 
 func runListPackageVersions(packageId string, namespace string, releasedOnly bool, verbose bool) {
