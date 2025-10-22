@@ -1543,7 +1543,7 @@ func (f *Force) _coerceHttpError(res *http.Response, body []byte) error {
 	} else {
 		var errors ForceErrors
 		if err := internal.JsonUnmarshal(body, &errors); err != nil && !sessionExpired {
-			return fmt.Errorf("unhandled error: %d %s", res.StatusCode, string(body))
+			return fmt.Errorf("unhandled error: %d %s", res.StatusCode, summarizeErrorBody(body))
 		}
 		if len(errors) > 0 && errors[0].ErrorCode == "REQUEST_LIMIT_EXCEEDED" {
 			return APILimitExceededError
@@ -1560,9 +1560,35 @@ func (f *Force) _coerceHttpError(res *http.Response, body []byte) error {
 		return SessionExpiredError
 	}
 	if fallbackErr == nil {
-		fallbackErr = fmt.Errorf("unhandled error: %d %s", res.StatusCode, string(body))
+		fallbackErr = fmt.Errorf("unhandled error: %d %s", res.StatusCode, summarizeErrorBody(body))
 	}
 	return fallbackErr
+}
+
+func summarizeErrorBody(body []byte) string {
+	trimmed := strings.TrimSpace(string(body))
+	if trimmed == "" {
+		return ""
+	}
+
+	lower := strings.ToLower(trimmed)
+	if strings.HasPrefix(lower, "<!doctype") || strings.HasPrefix(lower, "<html") {
+		return fmt.Sprintf("html response (%d bytes)", len(trimmed))
+	}
+
+	if len(trimmed) > 200 {
+		trimmed = trimmed[:200]
+	}
+
+	fields := strings.Fields(trimmed)
+	if len(fields) == 0 {
+		return ""
+	}
+	result := strings.Join(fields, " ")
+	if len(result) > 200 {
+		result = result[:200]
+	}
+	return result
 }
 
 func (f *Force) httpPostPatchWithRetry(url string, rbody string, contenttype ContentType, method HttpMethod, requestOptions ...func(*http.Request)) ([]byte, error) {

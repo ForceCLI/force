@@ -70,6 +70,8 @@ $ source <(force completion bash)
       -a, --account username   account username to use
       -h, --help               help for force
 
+    When a stored force session is not available, `--account` automatically falls back to matching SFDX usernames or aliases and reuses that authentication.
+
     Use "force [command] --help" for more information about a command.
 
 ### login

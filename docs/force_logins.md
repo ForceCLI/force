@@ -19,6 +19,7 @@ force logins [flags]
 ```
   -h, --help             help for logins
   -o, --org-id string    filter by org id
+      --sfdx             include SFDX logins
   -i, --user-id string   filter by user id
 ```
 

@@ -5,7 +5,6 @@ go 1.24
 toolchain go1.24.4
 
 require (
-	github.com/ForceCLI/config v0.0.0-20230217143549-9149d42a3c99
 	github.com/ForceCLI/force-md v0.30.0
 	github.com/ForceCLI/inflect v0.0.0-20130829110746-cc00b5ad7a6a
 	github.com/ViViDboarder/gotifier v0.0.0-20140619195515-0f19f3d7c54c
@@ -15,7 +14,6 @@ require (
 	github.com/charmbracelet/bubbles v0.16.1
 	github.com/charmbracelet/bubbletea v0.24.2
 	github.com/charmbracelet/lipgloss v0.9.1
-	github.com/devangel/config v0.0.0-20160113214547-0bb295da1e55
 	github.com/expr-lang/expr v1.17.5
 	github.com/golang-jwt/jwt/v5 v5.2.3
 	github.com/hamba/avro/v2 v2.16.0
@@ -53,7 +51,6 @@ require (
 	github.com/mattn/go-isatty v0.0.18 // indirect
 	github.com/mattn/go-localereader v0.0.1 // indirect
 	github.com/mattn/go-runewidth v0.0.15 // indirect
-	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect

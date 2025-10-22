@@ -3,11 +3,11 @@ package command
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/spf13/cobra"
 
-	"github.com/ForceCLI/config"
 	forceConfig "github.com/ForceCLI/force/config"
 	. "github.com/ForceCLI/force/error"
 	. "github.com/ForceCLI/force/lib"
@@ -41,7 +41,7 @@ func init() {
 			current = current.Parent()
 		}
 		switch current.Name() {
-		case "force", "login", "completion":
+		case "force", "login", "completion", "usedxauth", "logins":
 		default:
 			initializeSession()
 		}
@@ -60,8 +60,44 @@ var RootCmd = &cobra.Command{
 
 func initializeConfig() {
 	if configName != "" {
-		forceConfig.Config = config.NewConfig(strings.TrimPrefix(configName, "."))
-		fmt.Println("Setting config to", forceConfig.Config.Base)
+		customConfig := strings.TrimSpace(configName)
+		if customConfig == "" {
+			return
+		}
+
+		isPath := strings.ContainsAny(customConfig, string(os.PathSeparator))
+		if !isPath && strings.ContainsAny(customConfig, "/\\") {
+			isPath = true
+		}
+		if strings.HasPrefix(customConfig, "~") {
+			isPath = true
+		}
+		if strings.HasPrefix(customConfig, ".") {
+			if customConfig == "." || customConfig == ".." {
+				isPath = true
+			} else if len(customConfig) > 1 {
+				next := customConfig[1]
+				if next == '/' || next == '\\' {
+					isPath = true
+				}
+			}
+		}
+		if !isPath {
+			if vol := filepath.VolumeName(customConfig); vol != "" && len(customConfig) > len(vol) {
+				isPath = true
+			}
+		}
+
+		var err error
+		if isPath {
+			err = forceConfig.UseConfigDirectory(customConfig)
+		} else {
+			forceConfig.UseConfigBase(customConfig)
+		}
+		if err != nil {
+			ErrorAndExit(err.Error())
+		}
+		fmt.Println("Setting config to", forceConfig.Config.GlobalRoot())
 	}
 }
 
