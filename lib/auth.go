@@ -21,8 +21,17 @@ func (f *Force) UserInfo() (userinfo UserInfo, err error) {
 	return
 }
 
-func getUserInfo(creds ForceSession) (userinfo UserInfo, err error) {
-	force := NewForce(&creds)
+var getUserInfoFn func(*ForceSession) (UserInfo, error)
+
+func init() {
+	getUserInfoFn = fetchUserInfo
+}
+
+func fetchUserInfo(creds *ForceSession) (userinfo UserInfo, err error) {
+	if creds == nil {
+		return userinfo, fmt.Errorf("nil force session")
+	}
+	force := NewForce(creds)
 	userinfo, err = force.UserInfo()
 	if err != nil {
 		return
@@ -55,15 +64,24 @@ func (f *Force) getOrgNamespace() (namespace string, err error) {
 
 // Save the credentials as the active session with the UserInfo and with the
 // default current API version.
-func ForceSaveLogin(creds ForceSession, output *os.File) (sessionName string, err error) {
-	userinfo, err := getUserInfo(creds)
+func ForceSaveLogin(creds ForceSession, output *os.File) (string, error) {
+	return forceSaveLogin(creds, output, true)
+}
+
+func forceSaveLogin(creds ForceSession, output *os.File, log bool) (sessionName string, err error) {
+	userinfo, err := getUserInfoFn(&creds)
 	if err != nil {
 		return
 	}
 	creds.UserInfo = &userinfo
+	if creds.SessionOptions == nil {
+		creds.SessionOptions = &SessionOptions{}
+	}
 	creds.SessionOptions.ApiVersion = ApiVersionNumber()
 
-	Log.Info(fmt.Sprintf("Logged in as '%s' (API %s)\n", creds.UserInfo.UserName, ApiVersionNumber()))
+	if log {
+		Log.Info(fmt.Sprintf("Logged in as '%s' (API %s)\n", creds.UserInfo.UserName, ApiVersionNumber()))
+	}
 
 	if err = SaveLogin(creds); err != nil {
 		return
@@ -166,7 +184,7 @@ func ForceLoginAtEndpointWithPromptAndSaveWithPort(endpoint string, output *os.F
 // UpdateCredentials calls CopyCredentialAuthFields and persists the new credentials in config.
 func (f *Force) UpdateCredentials(creds ForceSession) {
 	f.CopyCredentialAuthFields(&creds)
-	ForceSaveLogin(*f.Credentials, os.Stderr)
+	forceSaveLogin(*f.Credentials, os.Stderr, false)
 }
 
 // CopyCredentialAuthFields copies auth fields from creds into the receiver's Credentials.
@@ -215,7 +233,7 @@ func upgradeCredentials(creds *ForceSession) (err error) {
 			return
 		}
 		var userinfo UserInfo
-		userinfo, err = getUserInfo(*creds)
+		userinfo, err = getUserInfoFn(creds)
 		if err != nil {
 			return
 		}
@@ -241,6 +259,22 @@ func upgradeCredentials(creds *ForceSession) (err error) {
 func GetAccountCredentials(accountName string) (creds ForceSession, err error) {
 	data, err := Config.Load("accounts", accountName)
 	if err != nil {
+		var sfdxAuth SFDXAuth
+		if sfdxAuth, err = GetSFDXAuth(accountName); err == nil {
+			if sfdxAuth.Alias == "" && accountName != "" && !strings.EqualFold(accountName, sfdxAuth.Username) {
+				sfdxAuth.Alias = accountName
+			}
+			creds = SFDXAuthToForceSession(sfdxAuth)
+			aliasHint := firstNonEmpty(sfdxAuth.Alias, accountName)
+			if err = CompleteSFDXSession(&creds, aliasHint); err != nil {
+				return creds, err
+			}
+			if creds.SessionOptions != nil && creds.SessionOptions.ApiVersion != "" && creds.SessionOptions.ApiVersion != ApiVersionNumber() {
+				_ = SetApiVersion(creds.SessionOptions.ApiVersion)
+			}
+			err = nil
+			return
+		}
 		err = fmt.Errorf("Could not find account, %s.  Please log in first.", accountName)
 		return
 	}

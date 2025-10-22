@@ -15,6 +15,7 @@ import (
 func init() {
 	loginsCmd.Flags().StringP("org-id", "o", "", "filter by org id")
 	loginsCmd.Flags().StringP("user-id", "i", "", "filter by user id")
+	loginsCmd.Flags().Bool("sfdx", false, "include SFDX logins")
 	RootCmd.AddCommand(loginsCmd)
 }
 
@@ -27,7 +28,8 @@ var loginsCmd = &cobra.Command{
   force logins
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		runLogins(filters(cmd))
+		showSFDX, _ := cmd.Flags().GetBool("sfdx")
+		runLogins(filters(cmd), showSFDX)
 	},
 }
 
@@ -61,10 +63,19 @@ func filters(cmd *cobra.Command) []accountFilter {
 	return filters
 }
 
-func runLogins(filters []accountFilter) {
+func runLogins(filters []accountFilter, includeSFDX bool) {
 	active, _ := ActiveLogin()
 	accounts, _ := Config.List("accounts")
-	if len(accounts) == 0 {
+	var sfdxAuths []SFDXAuth
+	var err error
+	if includeSFDX {
+		sfdxAuths, err = ListSFDXAuths()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to load SFDX logins: %v\n", err)
+			includeSFDX = false
+		}
+	}
+	if len(accounts) == 0 && (!includeSFDX || len(sfdxAuths) == 0) {
 		fmt.Println("no logins")
 		return
 	}
@@ -93,6 +104,40 @@ ACCOUNTS:
 				account = fmt.Sprintf("%s \x1b[31;1m\x1b[0m", account)
 			}
 			fmt.Fprintln(w, fmt.Sprintf("%s%s", account, banner))
+		}
+	}
+	if includeSFDX && len(sfdxAuths) > 0 {
+		if len(accounts) > 0 {
+			fmt.Fprintln(w)
+		}
+		for _, auth := range sfdxAuths {
+			session := SFDXAuthToForceSession(auth)
+			include := true
+			for _, f := range filters {
+				if !f(session) {
+					include = false
+					break
+				}
+			}
+			if !include {
+				continue
+			}
+			name := auth.Alias
+			if strings.TrimSpace(name) == "" {
+				name = auth.Username
+			}
+			if strings.TrimSpace(name) == "" {
+				name = auth.Id
+			}
+			name = fmt.Sprintf("%s [sfdx]", name)
+			instance := session.InstanceUrl
+			if strings.TrimSpace(instance) == "" {
+				instance = session.EndpointUrl
+			}
+			if strings.TrimSpace(instance) == "" {
+				instance = auth.LoginUrl
+			}
+			fmt.Fprintf(w, "%s\t%s\n", name, instance)
 		}
 	}
 	fmt.Fprintln(w)
