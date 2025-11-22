@@ -19,12 +19,14 @@ const (
 	PersonAccounts ScratchFeature = iota
 	ContactsToMultipleAccounts
 	FinancialServicesUser
+	StateAndCountryPicklist
 )
 
 var ScratchFeatureIds = map[ScratchFeature][]string{
 	PersonAccounts:             {"PersonAccounts"},
 	ContactsToMultipleAccounts: {"ContactsToMultipleAccounts"},
 	FinancialServicesUser:      {"FinancialServicesUser"},
+	StateAndCountryPicklist:    {"StateAndCountryPicklist"},
 }
 
 type ScratchProduct enumflag.Flag
@@ -67,11 +69,11 @@ logged in system. non-production server to login to (values are 'pre',
 	scratchCmd.Flags().Var(
 		enumflag.NewSlice(&selectedFeatures, "feature", ScratchFeatureIds, enumflag.EnumCaseInsensitive),
 		"feature",
-		"feature to enable (can be specified multiple times); valid values: ContactsToMultipleAccounts, FinancialServicesUser, PersonAccounts")
+		"feature to enable (can be specified multiple times); see command help for available features")
 	scratchCmd.Flags().Var(
 		enumflag.NewSlice(&selectedProducts, "product", ScratchProductIds, enumflag.EnumCaseInsensitive),
 		"product",
-		"product shortcut for features (can be specified multiple times); valid values: fsc")
+		"product shortcut for features (can be specified multiple times); see command help for available products")
 	scratchCmd.Flags().StringToString("quantity", map[string]string{}, "override default quantity for features (e.g., FinancialServicesUser=5); default quantity is 10")
 
 	loginCmd.AddCommand(scratchCmd)
@@ -81,6 +83,21 @@ logged in system. non-production server to login to (values are 'pre',
 var scratchCmd = &cobra.Command{
 	Use:   "scratch",
 	Short: "Create scratch org and log in",
+	Long: `Create scratch org and log in
+
+Available Features:
+  ContactsToMultipleAccounts - Allows a single Contact to be associated with multiple Accounts
+  FinancialServicesUser      - Enables Financial Services Cloud user licenses (requires quantity, default: 10)
+  PersonAccounts             - Enables Person Accounts (B2C account model)
+  StateAndCountryPicklist    - Enables State and Country Picklists for standard address fields
+
+Available Products:
+  fsc - Financial Services Cloud (enables PersonAccounts, ContactsToMultipleAccounts, FinancialServicesUser)
+
+Examples:
+  force login scratch --product fsc
+  force login scratch --feature PersonAccounts --feature StateAndCountryPicklist
+  force login scratch --product fsc --quantity FinancialServicesUser=20`,
 	Run: func(cmd *cobra.Command, args []string) {
 		scratchUser, _ := cmd.Flags().GetString("username")
 		quantities, _ := cmd.Flags().GetStringToString("quantity")

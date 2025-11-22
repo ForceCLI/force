@@ -111,3 +111,33 @@ func TestExpandProductsToFeatures_FSCProductWithCustomQuantity(t *testing.T) {
 		t.Error("Expected FinancialServicesUser with custom quantity in result")
 	}
 }
+
+func TestExpandProductsToFeatures_StateAndCountryPicklist(t *testing.T) {
+	result := expandProductsToFeatures([]ScratchProduct{}, []ScratchFeature{StateAndCountryPicklist}, map[string]string{})
+	if len(result) != 1 {
+		t.Errorf("Expected 1 feature, got %d", len(result))
+	}
+	if result[0] != "StateAndCountryPicklist" {
+		t.Errorf("Expected StateAndCountryPicklist, got %s", result[0])
+	}
+}
+
+func TestExpandProductsToFeatures_MixedFeaturesIncludingStateAndCountry(t *testing.T) {
+	result := expandProductsToFeatures([]ScratchProduct{}, []ScratchFeature{PersonAccounts, StateAndCountryPicklist, ContactsToMultipleAccounts}, map[string]string{})
+	if len(result) != 3 {
+		t.Errorf("Expected 3 features, got %d", len(result))
+	}
+	featureMap := make(map[string]bool)
+	for _, f := range result {
+		featureMap[f] = true
+	}
+	if !featureMap["PersonAccounts"] {
+		t.Error("Expected PersonAccounts in result")
+	}
+	if !featureMap["StateAndCountryPicklist"] {
+		t.Error("Expected StateAndCountryPicklist in result")
+	}
+	if !featureMap["ContactsToMultipleAccounts"] {
+		t.Error("Expected ContactsToMultipleAccounts in result")
+	}
+}
