@@ -39,9 +39,34 @@ var ScratchProductIds = map[ScratchProduct][]string{
 	FSC: {"fsc"},
 }
 
+type ScratchEdition enumflag.Flag
+
+const (
+	Developer ScratchEdition = iota
+	Enterprise
+	Group
+	Professional
+	PartnerDeveloper
+	PartnerEnterprise
+	PartnerGroup
+	PartnerProfessional
+)
+
+var ScratchEditionIds = map[ScratchEdition][]string{
+	Developer:           {"Developer"},
+	Enterprise:          {"Enterprise"},
+	Group:               {"Group"},
+	Professional:        {"Professional"},
+	PartnerDeveloper:    {"PartnerDeveloper"},
+	PartnerEnterprise:   {"PartnerEnterprise"},
+	PartnerGroup:        {"PartnerGroup"},
+	PartnerProfessional: {"PartnerProfessional"},
+}
+
 var (
 	selectedFeatures  []ScratchFeature
 	selectedProducts  []ScratchProduct
+	selectedEdition   ScratchEdition
 	featureQuantities map[string]string
 )
 
@@ -75,6 +100,10 @@ logged in system. non-production server to login to (values are 'pre',
 		"product",
 		"product shortcut for features (can be specified multiple times); see command help for available products")
 	scratchCmd.Flags().StringToString("quantity", map[string]string{}, "override default quantity for features (e.g., FinancialServicesUser=5); default quantity is 10")
+	scratchCmd.Flags().Var(
+		enumflag.New(&selectedEdition, "edition", ScratchEditionIds, enumflag.EnumCaseInsensitive),
+		"edition",
+		"scratch org edition; see command help for available editions")
 
 	loginCmd.AddCommand(scratchCmd)
 	RootCmd.AddCommand(loginCmd)
@@ -94,15 +123,27 @@ Available Features:
 Available Products:
   fsc - Financial Services Cloud (enables PersonAccounts, ContactsToMultipleAccounts, FinancialServicesUser)
 
+Available Editions:
+  Developer           - Developer Edition (default)
+  Enterprise          - Enterprise Edition
+  Group               - Group Edition
+  Professional        - Professional Edition
+  PartnerDeveloper    - Partner Developer Edition
+  PartnerEnterprise   - Partner Enterprise Edition
+  PartnerGroup        - Partner Group Edition
+  PartnerProfessional - Partner Professional Edition
+
 Examples:
   force login scratch --product fsc
   force login scratch --feature PersonAccounts --feature StateAndCountryPicklist
-  force login scratch --product fsc --quantity FinancialServicesUser=20`,
+  force login scratch --product fsc --quantity FinancialServicesUser=20
+  force login scratch --edition Enterprise --product fsc`,
 	Run: func(cmd *cobra.Command, args []string) {
 		scratchUser, _ := cmd.Flags().GetString("username")
 		quantities, _ := cmd.Flags().GetStringToString("quantity")
 		allFeatures := expandProductsToFeatures(selectedProducts, selectedFeatures, quantities)
-		scratchLogin(scratchUser, allFeatures)
+		edition := ScratchEditionIds[selectedEdition][0]
+		scratchLogin(scratchUser, allFeatures, edition)
 	},
 }
 
@@ -192,8 +233,8 @@ func expandProductsToFeatures(products []ScratchProduct, features []ScratchFeatu
 	return uniqueFeatures
 }
 
-func scratchLogin(scratchUser string, features []string) {
-	_, err := ForceScratchCreateLoginAndSave(scratchUser, features, os.Stderr)
+func scratchLogin(scratchUser string, features []string, edition string) {
+	_, err := ForceScratchCreateLoginAndSave(scratchUser, features, edition, os.Stderr)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}

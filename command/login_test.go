@@ -141,3 +141,31 @@ func TestExpandProductsToFeatures_MixedFeaturesIncludingStateAndCountry(t *testi
 		t.Error("Expected ContactsToMultipleAccounts in result")
 	}
 }
+
+func TestScratchEditionIds_AllEditionsDefined(t *testing.T) {
+	expectedEditions := map[string]bool{
+		"Developer":           true,
+		"Enterprise":          true,
+		"Group":               true,
+		"Professional":        true,
+		"PartnerDeveloper":    true,
+		"PartnerEnterprise":   true,
+		"PartnerGroup":        true,
+		"PartnerProfessional": true,
+	}
+
+	if len(ScratchEditionIds) != len(expectedEditions) {
+		t.Errorf("Expected %d editions, got %d", len(expectedEditions), len(ScratchEditionIds))
+	}
+
+	for _, ids := range ScratchEditionIds {
+		if len(ids) != 1 {
+			t.Errorf("Expected 1 ID per edition, got %d", len(ids))
+			continue
+		}
+		editionName := ids[0]
+		if !expectedEditions[editionName] {
+			t.Errorf("Unexpected edition: %s", editionName)
+		}
+	}
+}

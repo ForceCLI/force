@@ -112,11 +112,20 @@ func (f *Force) CreateScratchOrgWithUser(username string) (id string, err error)
 }
 
 func (f *Force) CreateScratchOrgWithUserAndFeatures(username string, features []string) (id string, err error) {
+	return f.CreateScratchOrgWithUserFeaturesAndEdition(username, features, "")
+}
+
+func (f *Force) CreateScratchOrgWithUserFeaturesAndEdition(username string, features []string, edition string) (id string, err error) {
 	params := make(map[string]string)
 	params["ConnectedAppCallbackUrl"] = "http://localhost:1717/OauthRedirect"
 	params["ConnectedAppConsumerKey"] = "PlatformCLI"
 	params["Country"] = "US"
-	params["Edition"] = "Developer"
+
+	if edition != "" {
+		params["Edition"] = edition
+	} else {
+		params["Edition"] = "Developer"
+	}
 
 	baseFeatures := "AuthorApex;API;AddCustomApps:30;AddCustomTabs:30;ForceComPlatform;Sites;CustomerSelfService"
 	if len(features) > 0 {
