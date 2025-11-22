@@ -108,12 +108,23 @@ func (f *Force) CreateScratchOrg() (id string, err error) {
 }
 
 func (f *Force) CreateScratchOrgWithUser(username string) (id string, err error) {
+	return f.CreateScratchOrgWithUserAndFeatures(username, []string{})
+}
+
+func (f *Force) CreateScratchOrgWithUserAndFeatures(username string, features []string) (id string, err error) {
 	params := make(map[string]string)
 	params["ConnectedAppCallbackUrl"] = "http://localhost:1717/OauthRedirect"
 	params["ConnectedAppConsumerKey"] = "PlatformCLI"
 	params["Country"] = "US"
 	params["Edition"] = "Developer"
-	params["Features"] = "AuthorApex;API;AddCustomApps:30;AddCustomTabs:30;ForceComPlatform;Sites;CustomerSelfService"
+
+	baseFeatures := "AuthorApex;API;AddCustomApps:30;AddCustomTabs:30;ForceComPlatform;Sites;CustomerSelfService"
+	if len(features) > 0 {
+		for _, feature := range features {
+			baseFeatures += ";" + feature
+		}
+	}
+	params["Features"] = baseFeatures
 	params["OrgName"] = "Force CLI Scratch"
 	if username != "" {
 		params["Username"] = username

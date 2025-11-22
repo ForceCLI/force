@@ -7,10 +7,47 @@ import (
 
 	"github.com/bgentry/speakeasy"
 	"github.com/spf13/cobra"
+	"github.com/thediveo/enumflag/v2"
 
 	. "github.com/ForceCLI/force/error"
 	. "github.com/ForceCLI/force/lib"
 )
+
+type ScratchFeature enumflag.Flag
+
+const (
+	PersonAccounts ScratchFeature = iota
+	ContactsToMultipleAccounts
+	FinancialServicesUser
+)
+
+var ScratchFeatureIds = map[ScratchFeature][]string{
+	PersonAccounts:             {"PersonAccounts"},
+	ContactsToMultipleAccounts: {"ContactsToMultipleAccounts"},
+	FinancialServicesUser:      {"FinancialServicesUser"},
+}
+
+type ScratchProduct enumflag.Flag
+
+const (
+	FSC ScratchProduct = iota
+)
+
+var ScratchProductIds = map[ScratchProduct][]string{
+	FSC: {"fsc"},
+}
+
+var (
+	selectedFeatures  []ScratchFeature
+	selectedProducts  []ScratchProduct
+	featureQuantities map[string]string
+)
+
+var featuresRequiringQuantity = map[string]bool{
+	"FinancialServicesUser": true,
+}
+
+const defaultFeatureQuantity = "10"
 
 func init() {
 	loginCmd.Flags().StringP("user", "u", "", "username for SOAP login")
@@ -27,6 +64,15 @@ logged in system. non-production server to login to (values are 'pre',
 	loginCmd.Flags().Bool("device-flow", false, "use OAuth Device Flow (for headless environments)")
 
 	scratchCmd.Flags().String("username", "", "username for scratch org user")
+	scratchCmd.Flags().Var(
+		enumflag.NewSlice(&selectedFeatures, "feature", ScratchFeatureIds, enumflag.EnumCaseInsensitive),
+		"feature",
+		"feature to enable (can be specified multiple times); valid values: ContactsToMultipleAccounts, FinancialServicesUser, PersonAccounts")
+	scratchCmd.Flags().Var(
+		enumflag.NewSlice(&selectedProducts, "product", ScratchProductIds, enumflag.EnumCaseInsensitive),
+		"product",
+		"product shortcut for features (can be specified multiple times); valid values: fsc")
+	scratchCmd.Flags().StringToString("quantity", map[string]string{}, "override default quantity for features (e.g., FinancialServicesUser=5); default quantity is 10")
 
 	loginCmd.AddCommand(scratchCmd)
 	RootCmd.AddCommand(loginCmd)
@@ -37,7 +83,9 @@ var scratchCmd = &cobra.Command{
 	Short: "Create scratch org and log in",
 	Run: func(cmd *cobra.Command, args []string) {
 		scratchUser, _ := cmd.Flags().GetString("username")
-		scratchLogin(scratchUser)
+		quantities, _ := cmd.Flags().GetStringToString("quantity")
+		allFeatures := expandProductsToFeatures(selectedProducts, selectedFeatures, quantities)
+		scratchLogin(scratchUser, allFeatures)
 	},
 }
 
@@ -92,8 +140,43 @@ to get a new session token automatically when needed.`,
 	},
 }
 
-func scratchLogin(scratchUser string) {
-	_, err := ForceScratchCreateLoginAndSave(scratchUser, os.Stderr)
+func expandProductsToFeatures(products []ScratchProduct, features []ScratchFeature, quantities map[string]string) []string {
+	productFeatures := map[ScratchProduct][]ScratchFeature{
+		FSC: {PersonAccounts, ContactsToMultipleAccounts, FinancialServicesUser},
+	}
+
+	featureSet := make(map[ScratchFeature]bool)
+
+	for _, product := range products {
+		if pf, ok := productFeatures[product]; ok {
+			for _, f := range pf {
+				featureSet[f] = true
+			}
+		}
+	}
+
+	for _, feature := range features {
+		featureSet[feature] = true
+	}
+
+	uniqueFeatures := make([]string, 0, len(featureSet))
+	for feature := range featureSet {
+		featureName := ScratchFeatureIds[feature][0]
+		if featuresRequiringQuantity[featureName] {
+			quantity := defaultFeatureQuantity
+			if q, ok := quantities[featureName]; ok {
+				quantity = q
+			}
+			featureName = featureName + ":" + quantity
+		}
+		uniqueFeatures = append(uniqueFeatures, featureName)
+	}
+
+	return uniqueFeatures
+}
+
+func scratchLogin(scratchUser string, features []string) {
+	_, err := ForceScratchCreateLoginAndSave(scratchUser, features, os.Stderr)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}

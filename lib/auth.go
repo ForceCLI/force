@@ -127,17 +127,17 @@ func ForceLoginAtEndpointAndSaveSoap(endpoint string, user_name string, password
 
 // Create a new scratch org, login, and make it active
 func ForceScratchLoginAndSave(output *os.File) (username string, err error) {
-	return ForceScratchCreateLoginAndSave("", output)
+	return ForceScratchCreateLoginAndSave("", []string{}, output)
 }
 
-func ForceScratchCreateLoginAndSave(scratchUser string, output *os.File) (username string, err error) {
+func ForceScratchCreateLoginAndSave(scratchUser string, features []string, output *os.File) (username string, err error) {
 	force, err := ActiveForce()
 	if err != nil {
 		err = errors.New("You must be logged into a Dev Hub org to authenticate as a scratch org user.")
 		return
 	}
 	fmt.Fprintln(os.Stderr, "Creating new Scratch Org...")
-	scratchOrgId, err := force.CreateScratchOrgWithUser(scratchUser)
+	scratchOrgId, err := force.CreateScratchOrgWithUserAndFeatures(scratchUser, features)
 	if err != nil {
 		return
 	}
