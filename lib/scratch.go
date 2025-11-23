@@ -102,6 +102,59 @@ func (s *ScratchOrg) getSession() (session ForceSession, err error) {
 	return session, nil
 }
 
+// DeploySettings deploys settings metadata to a scratch org
+func (f *Force) DeploySettings(settings []string) error {
+	files := make(ForceMetadataFiles)
+
+	// Create package.xml at root of zip
+	packageXml := `<?xml version="1.0" encoding="UTF-8"?>
+<Package xmlns="http://soap.sforce.com/2006/04/metadata">
+    <types>
+        <members>*</members>
+        <name>Settings</name>
+    </types>
+    <version>64.0</version>
+</Package>`
+	files["unpackaged/package.xml"] = []byte(packageXml)
+
+	// Create settings file for each requested setting
+	for _, setting := range settings {
+		switch setting {
+		case "enableEnhancedNotes":
+			enhancedNotesSettings := `<?xml version="1.0" encoding="UTF-8"?>
+<EnhancedNotesSettings xmlns="http://soap.sforce.com/2006/04/metadata">
+    <enableEnhancedNotes>true</enableEnhancedNotes>
+    <enableTasksOnEnhancedNotes>true</enableTasksOnEnhancedNotes>
+</EnhancedNotesSettings>`
+			files["unpackaged/settings/EnhancedNotes.settings"] = []byte(enhancedNotesSettings)
+		}
+	}
+
+	// Deploy the metadata
+	options := ForceDeployOptions{}
+	result, err := f.Metadata.Deploy(files, options)
+	if err != nil {
+		return err
+	}
+
+	// Check if deployment succeeded
+	if !result.Success {
+		errorMsg := fmt.Sprintf("Settings deployment failed with status: %s", result.Status)
+		if result.ErrorMessage != "" {
+			errorMsg += fmt.Sprintf(": %s", result.ErrorMessage)
+		}
+		if len(result.Details.ComponentFailures) > 0 {
+			errorMsg += "\nComponent failures:"
+			for _, failure := range result.Details.ComponentFailures {
+				errorMsg += fmt.Sprintf("\n  - %s: %s", failure.FileName, failure.Problem)
+			}
+		}
+		return errors.New(errorMsg)
+	}
+
+	return nil
+}
+
 // Create a new Scratch Org from a Dev Hub Org
 func (f *Force) CreateScratchOrg() (id string, err error) {
 	return f.CreateScratchOrgWithUser("")
@@ -116,6 +169,10 @@ func (f *Force) CreateScratchOrgWithUserAndFeatures(username string, features []
 }
 
 func (f *Force) CreateScratchOrgWithUserFeaturesAndEdition(username string, features []string, edition string) (id string, err error) {
+	return f.CreateScratchOrgWithUserFeaturesEditionAndSettings(username, features, edition, []string{})
+}
+
+func (f *Force) CreateScratchOrgWithUserFeaturesEditionAndSettings(username string, features []string, edition string, settings []string) (id string, err error) {
 	params := make(map[string]string)
 	params["ConnectedAppCallbackUrl"] = "http://localhost:1717/OauthRedirect"
 	params["ConnectedAppConsumerKey"] = "PlatformCLI"
@@ -134,6 +191,9 @@ func (f *Force) CreateScratchOrgWithUserFeaturesAndEdition(username string, feat
 		}
 	}
 	params["Features"] = baseFeatures
+
+	// Note: settings parameter is kept for later deployment after org creation
+
 	params["OrgName"] = "Force CLI Scratch"
 	if username != "" {
 		params["Username"] = username

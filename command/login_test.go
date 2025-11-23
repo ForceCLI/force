@@ -169,3 +169,41 @@ func TestScratchEditionIds_AllEditionsDefined(t *testing.T) {
 		}
 	}
 }
+
+func TestConvertSettingsToStrings_NoSettings(t *testing.T) {
+	result := convertSettingsToStrings([]ScratchSetting{})
+	if len(result) != 0 {
+		t.Errorf("Expected empty slice, got %v", result)
+	}
+}
+
+func TestConvertSettingsToStrings_SingleSetting(t *testing.T) {
+	result := convertSettingsToStrings([]ScratchSetting{EnableEnhancedNotes})
+	if len(result) != 1 {
+		t.Errorf("Expected 1 setting, got %d", len(result))
+	}
+	if result[0] != "enableEnhancedNotes" {
+		t.Errorf("Expected enableEnhancedNotes, got %s", result[0])
+	}
+}
+
+func TestScratchSettingIds_AllSettingsDefined(t *testing.T) {
+	expectedSettings := map[string]bool{
+		"enableEnhancedNotes": true,
+	}
+
+	if len(ScratchSettingIds) != len(expectedSettings) {
+		t.Errorf("Expected %d settings, got %d", len(expectedSettings), len(ScratchSettingIds))
+	}
+
+	for _, ids := range ScratchSettingIds {
+		if len(ids) != 1 {
+			t.Errorf("Expected 1 ID per setting, got %d", len(ids))
+			continue
+		}
+		settingName := ids[0]
+		if !expectedSettings[settingName] {
+			t.Errorf("Unexpected setting: %s", settingName)
+		}
+	}
+}

@@ -63,10 +63,21 @@ var ScratchEditionIds = map[ScratchEdition][]string{
 	PartnerProfessional: {"PartnerProfessional"},
 }
 
+type ScratchSetting enumflag.Flag
+
+const (
+	EnableEnhancedNotes ScratchSetting = iota
+)
+
+var ScratchSettingIds = map[ScratchSetting][]string{
+	EnableEnhancedNotes: {"enableEnhancedNotes"},
+}
+
 var (
 	selectedFeatures  []ScratchFeature
 	selectedProducts  []ScratchProduct
 	selectedEdition   ScratchEdition
+	selectedSettings  []ScratchSetting
 	featureQuantities map[string]string
 )
 
@@ -104,6 +115,10 @@ logged in system. non-production server to login to (values are 'pre',
 		enumflag.New(&selectedEdition, "edition", ScratchEditionIds, enumflag.EnumCaseInsensitive),
 		"edition",
 		"scratch org edition; see command help for available editions")
+	scratchCmd.Flags().Var(
+		enumflag.NewSlice(&selectedSettings, "setting", ScratchSettingIds, enumflag.EnumCaseInsensitive),
+		"setting",
+		"setting to enable (can be specified multiple times); see command help for available settings")
 
 	loginCmd.AddCommand(scratchCmd)
 	RootCmd.AddCommand(loginCmd)
@@ -133,17 +148,22 @@ Available Editions:
   PartnerGroup        - Partner Group Edition
   PartnerProfessional - Partner Professional Edition
 
+Available Settings (deployed after org creation):
+  enableEnhancedNotes - Enable Enhanced Notes
+
 Examples:
   force login scratch --product fsc
   force login scratch --feature PersonAccounts --feature StateAndCountryPicklist
   force login scratch --product fsc --quantity FinancialServicesUser=20
-  force login scratch --edition Enterprise --product fsc`,
+  force login scratch --edition Enterprise --product fsc
+  force login scratch --setting enableEnhancedNotes`,
 	Run: func(cmd *cobra.Command, args []string) {
 		scratchUser, _ := cmd.Flags().GetString("username")
 		quantities, _ := cmd.Flags().GetStringToString("quantity")
 		allFeatures := expandProductsToFeatures(selectedProducts, selectedFeatures, quantities)
 		edition := ScratchEditionIds[selectedEdition][0]
-		scratchLogin(scratchUser, allFeatures, edition)
+		settings := convertSettingsToStrings(selectedSettings)
+		scratchLogin(scratchUser, allFeatures, edition, settings)
 	},
 }
 
@@ -233,8 +253,16 @@ func expandProductsToFeatures(products []ScratchProduct, features []ScratchFeatu
 	return uniqueFeatures
 }
 
-func scratchLogin(scratchUser string, features []string, edition string) {
-	_, err := ForceScratchCreateLoginAndSave(scratchUser, features, edition, os.Stderr)
+func convertSettingsToStrings(settings []ScratchSetting) []string {
+	result := make([]string, 0, len(settings))
+	for _, setting := range settings {
+		result = append(result, ScratchSettingIds[setting][0])
+	}
+	return result
+}
+
+func scratchLogin(scratchUser string, features []string, edition string, settings []string) {
+	_, err := ForceScratchCreateLoginAndSave(scratchUser, features, edition, settings, os.Stderr)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
