@@ -187,9 +187,20 @@ func TestConvertSettingsToStrings_SingleSetting(t *testing.T) {
 	}
 }
 
+func TestConvertSettingsToStrings_EnableQuote(t *testing.T) {
+	result := convertSettingsToStrings([]ScratchSetting{EnableQuote})
+	if len(result) != 1 {
+		t.Errorf("Expected 1 setting, got %d", len(result))
+	}
+	if result[0] != "enableQuote" {
+		t.Errorf("Expected enableQuote, got %s", result[0])
+	}
+}
+
 func TestScratchSettingIds_AllSettingsDefined(t *testing.T) {
 	expectedSettings := map[string]bool{
 		"enableEnhancedNotes": true,
+		"enableQuote":         true,
 	}
 
 	if len(ScratchSettingIds) != len(expectedSettings) {

@@ -127,6 +127,12 @@ func (f *Force) DeploySettings(settings []string) error {
     <enableTasksOnEnhancedNotes>true</enableTasksOnEnhancedNotes>
 </EnhancedNotesSettings>`
 			files["unpackaged/settings/EnhancedNotes.settings"] = []byte(enhancedNotesSettings)
+		case "enableQuote":
+			quoteSettings := `<?xml version="1.0" encoding="UTF-8"?>
+<QuoteSettings xmlns="http://soap.sforce.com/2006/04/metadata">
+    <enableQuote>true</enableQuote>
+</QuoteSettings>`
+			files["unpackaged/settings/Quote.settings"] = []byte(quoteSettings)
 		}
 	}
 

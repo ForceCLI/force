@@ -67,10 +67,12 @@ type ScratchSetting enumflag.Flag
 
 const (
 	EnableEnhancedNotes ScratchSetting = iota
+	EnableQuote
 )
 
 var ScratchSettingIds = map[ScratchSetting][]string{
 	EnableEnhancedNotes: {"enableEnhancedNotes"},
+	EnableQuote:         {"enableQuote"},
 }
 
 var (
@@ -150,13 +152,15 @@ Available Editions:
 
 Available Settings (deployed after org creation):
   enableEnhancedNotes - Enable Enhanced Notes
+  enableQuote         - Enable Quotes
 
 Examples:
   force login scratch --product fsc
   force login scratch --feature PersonAccounts --feature StateAndCountryPicklist
   force login scratch --product fsc --quantity FinancialServicesUser=20
   force login scratch --edition Enterprise --product fsc
-  force login scratch --setting enableEnhancedNotes`,
+  force login scratch --setting enableEnhancedNotes
+  force login scratch --setting enableQuote`,
 	Run: func(cmd *cobra.Command, args []string) {
 		scratchUser, _ := cmd.Flags().GetString("username")
 		quantities, _ := cmd.Flags().GetStringToString("quantity")
