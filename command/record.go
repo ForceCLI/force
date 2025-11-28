@@ -15,6 +15,7 @@ func init() {
 	recordCmd.AddCommand(recordGetCmd)
 	recordCmd.AddCommand(recordCreateCmd)
 	recordCmd.AddCommand(recordUpdateCmd)
+	recordCmd.AddCommand(recordUpsertCmd)
 	recordCmd.AddCommand(recordDeleteCmd)
 	recordCmd.AddCommand(recordMergeCmd)
 	recordCmd.AddCommand(recordUndeleteCmd)
@@ -62,6 +63,33 @@ var recordUpdateCmd = &cobra.Command{
 		id := args[1]
 		fields := args[2:]
 		runRecordUpdate(object, id, fields)
+	},
+}
+
+var recordUpsertCmd = &cobra.Command{
+	Use:   "upsert <object> <extid>:<value> [<field>:<value>...]",
+	Short: "Upsert record using external ID",
+	Long: `
+Upsert (insert or update) a record using an external ID field.
+
+If a record with the given external ID value exists, it will be updated.
+Otherwise, a new record will be created.
+
+Usage:
+
+  force record upsert <object> <extid>:<value> [<field>:<value>...]
+`,
+	Example: `
+  force record upsert Account External_Id__c:ABC123 Name:"Acme Corp" Industry:Technology
+  force record upsert Contact Email:john@example.com FirstName:John LastName:Doe
+`,
+	Args:                  cobra.MinimumNArgs(2),
+	DisableFlagsInUseLine: true,
+	Run: func(cmd *cobra.Command, args []string) {
+		object := args[0]
+		extIdPair := args[1]
+		fields := args[2:]
+		runRecordUpsert(object, extIdPair, fields)
 	},
 }
 
@@ -115,6 +143,7 @@ Usage:
   force record create <object> [<fields>]
   force record update <object> <id> [<fields>]
   force record update <object> <extid>:<value> [<fields>]
+  force record upsert <object> <extid>:<value> [<fields>]
   force record delete <object> <id>
   force record merge <object> <masterId> <duplicateId>
   force record undelete <id>
@@ -125,6 +154,7 @@ Usage:
   force record create User Name:"David Dollar" Phone:0000000000
   force record update User 00Ei0000000000 State:GA
   force record update User username:user@name.org State:GA
+  force record upsert Account External_Id__c:ABC123 Name:"Acme Corp"
   force record delete User 00Ei0000000000
   force record merge Contact 0033c00002YDNNWAA5 0033c00002YDPqkAAH
   force record undelete 0033c00002YDNNWAA5
@@ -156,6 +186,26 @@ func runRecordUpdate(object string, id string, fields []string) {
 		ErrorAndExit("Failed to update record: %s", err.Error())
 	}
 	fmt.Println("Record updated")
+}
+
+func runRecordUpsert(object string, extIdPair string, fields []string) {
+	split := strings.SplitN(extIdPair, ":", 2)
+	if len(split) != 2 {
+		ErrorAndExit("Invalid external ID format. Use <extid>:<value>")
+	}
+	extIdField := split[0]
+	extIdValue := split[1]
+
+	attrs := parseArgumentAttrs(fields)
+	result, err := force.UpsertRecord(object, extIdField, extIdValue, attrs)
+	if err != nil {
+		ErrorAndExit("Failed to upsert record: %s", err.Error())
+	}
+	if result.Created {
+		fmt.Printf("Record created: %s\n", result.Id)
+	} else {
+		fmt.Println("Record updated")
+	}
 }
 
 func runRecordMerge(object, masterId, duplicateId string) {
