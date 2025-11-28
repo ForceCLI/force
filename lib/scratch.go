@@ -133,6 +133,12 @@ func (f *Force) DeploySettings(settings []string) error {
     <enableQuote>true</enableQuote>
 </QuoteSettings>`
 			files["unpackaged/settings/Quote.settings"] = []byte(quoteSettings)
+		case "networksEnabled":
+			communitiesSettings := `<?xml version="1.0" encoding="UTF-8"?>
+<CommunitiesSettings xmlns="http://soap.sforce.com/2006/04/metadata">
+    <enableNetworksEnabled>true</enableNetworksEnabled>
+</CommunitiesSettings>`
+			files["unpackaged/settings/Communities.settings"] = []byte(communitiesSettings)
 		}
 	}
 

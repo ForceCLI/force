@@ -142,6 +142,80 @@ func TestExpandProductsToFeatures_MixedFeaturesIncludingStateAndCountry(t *testi
 	}
 }
 
+func TestExpandProductsToFeatures_Communities(t *testing.T) {
+	result := expandProductsToFeatures([]ScratchProduct{}, []ScratchFeature{Communities}, map[string]string{})
+	if len(result) != 1 {
+		t.Errorf("Expected 1 feature, got %d", len(result))
+	}
+	if result[0] != "Communities" {
+		t.Errorf("Expected Communities, got %s", result[0])
+	}
+}
+
+func TestExpandProductsToFeatures_CommunitiesProduct(t *testing.T) {
+	result := expandProductsToFeatures([]ScratchProduct{CommunitiesProduct}, []ScratchFeature{}, map[string]string{})
+	if len(result) != 1 {
+		t.Errorf("Expected 1 feature from communities product, got %d", len(result))
+	}
+	if result[0] != "Communities" {
+		t.Errorf("Expected Communities, got %s", result[0])
+	}
+}
+
+func TestExpandProductsToSettings_NoProductsOrSettings(t *testing.T) {
+	result := expandProductsToSettings([]ScratchProduct{}, []ScratchSetting{})
+	if len(result) != 0 {
+		t.Errorf("Expected empty slice, got %v", result)
+	}
+}
+
+func TestExpandProductsToSettings_SingleSetting(t *testing.T) {
+	result := expandProductsToSettings([]ScratchProduct{}, []ScratchSetting{EnableEnhancedNotes})
+	if len(result) != 1 {
+		t.Errorf("Expected 1 setting, got %d", len(result))
+	}
+	if result[0] != "enableEnhancedNotes" {
+		t.Errorf("Expected enableEnhancedNotes, got %s", result[0])
+	}
+}
+
+func TestExpandProductsToSettings_CommunitiesProduct(t *testing.T) {
+	result := expandProductsToSettings([]ScratchProduct{CommunitiesProduct}, []ScratchSetting{})
+	if len(result) != 1 {
+		t.Errorf("Expected 1 setting from communities product, got %d", len(result))
+	}
+	if result[0] != "networksEnabled" {
+		t.Errorf("Expected networksEnabled, got %s", result[0])
+	}
+}
+
+func TestExpandProductsToSettings_CommunitiesProductWithAdditionalSetting(t *testing.T) {
+	result := expandProductsToSettings([]ScratchProduct{CommunitiesProduct}, []ScratchSetting{EnableEnhancedNotes})
+	if len(result) != 2 {
+		t.Errorf("Expected 2 settings, got %d", len(result))
+	}
+	settingMap := make(map[string]bool)
+	for _, s := range result {
+		settingMap[s] = true
+	}
+	if !settingMap["networksEnabled"] {
+		t.Error("Expected networksEnabled in result")
+	}
+	if !settingMap["enableEnhancedNotes"] {
+		t.Error("Expected enableEnhancedNotes in result")
+	}
+}
+
+func TestExpandProductsToSettings_Deduplication(t *testing.T) {
+	result := expandProductsToSettings([]ScratchProduct{CommunitiesProduct}, []ScratchSetting{NetworksEnabled})
+	if len(result) != 1 {
+		t.Errorf("Expected 1 unique setting (communities includes networksEnabled), got %d", len(result))
+	}
+	if result[0] != "networksEnabled" {
+		t.Errorf("Expected networksEnabled, got %s", result[0])
+	}
+}
+
 func TestScratchEditionIds_AllEditionsDefined(t *testing.T) {
 	expectedEditions := map[string]bool{
 		"Developer":           true,
@@ -197,10 +271,21 @@ func TestConvertSettingsToStrings_EnableQuote(t *testing.T) {
 	}
 }
 
+func TestConvertSettingsToStrings_NetworksEnabled(t *testing.T) {
+	result := convertSettingsToStrings([]ScratchSetting{NetworksEnabled})
+	if len(result) != 1 {
+		t.Errorf("Expected 1 setting, got %d", len(result))
+	}
+	if result[0] != "networksEnabled" {
+		t.Errorf("Expected networksEnabled, got %s", result[0])
+	}
+}
+
 func TestScratchSettingIds_AllSettingsDefined(t *testing.T) {
 	expectedSettings := map[string]bool{
 		"enableEnhancedNotes": true,
 		"enableQuote":         true,
+		"networksEnabled":     true,
 	}
 
 	if len(ScratchSettingIds) != len(expectedSettings) {
