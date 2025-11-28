@@ -1,6 +1,6 @@
 module github.com/ForceCLI/force
 
-go 1.24
+go 1.24.0
 
 toolchain go1.24.4
 
@@ -26,7 +26,7 @@ require (
 	github.com/rgalanakis/golangal v0.0.0-20210923203926-e36008487518
 	github.com/spf13/cobra v1.8.1
 	github.com/thediveo/enumflag/v2 v2.0.7
-	golang.org/x/crypto v0.40.0
+	golang.org/x/crypto v0.45.0
 	google.golang.org/grpc v1.56.3
 	google.golang.org/protobuf v1.36.6
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
@@ -66,11 +66,11 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/testify v1.8.4 // indirect
 	golang.org/x/exp v0.0.0-20250103183323-7d7fa50e5329 // indirect
-	golang.org/x/net v0.41.0 // indirect
-	golang.org/x/sync v0.16.0 // indirect
-	golang.org/x/sys v0.34.0 // indirect
-	golang.org/x/term v0.33.0 // indirect
-	golang.org/x/text v0.27.0 // indirect
+	golang.org/x/net v0.47.0 // indirect
+	golang.org/x/sync v0.18.0 // indirect
+	golang.org/x/sys v0.38.0 // indirect
+	golang.org/x/term v0.37.0 // indirect
+	golang.org/x/text v0.31.0 // indirect
 	google.golang.org/genproto v0.0.0-20230410155749-daa745c078e1 // indirect
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 	gopkg.in/fsnotify.v1 v1.4.7 // indirect
