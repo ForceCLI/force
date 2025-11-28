@@ -127,17 +127,17 @@ func ForceLoginAtEndpointAndSaveSoap(endpoint string, user_name string, password
 
 // Create a new scratch org, login, and make it active
 func ForceScratchLoginAndSave(output *os.File) (username string, err error) {
-	return ForceScratchCreateLoginAndSave("", output)
+	return ForceScratchCreateLoginAndSave("", []string{}, "", []string{}, output)
 }
 
-func ForceScratchCreateLoginAndSave(scratchUser string, output *os.File) (username string, err error) {
+func ForceScratchCreateLoginAndSave(scratchUser string, features []string, edition string, settings []string, output *os.File) (username string, err error) {
 	force, err := ActiveForce()
 	if err != nil {
 		err = errors.New("You must be logged into a Dev Hub org to authenticate as a scratch org user.")
 		return
 	}
 	fmt.Fprintln(os.Stderr, "Creating new Scratch Org...")
-	scratchOrgId, err := force.CreateScratchOrgWithUser(scratchUser)
+	scratchOrgId, err := force.CreateScratchOrgWithUserFeaturesEditionAndSettings(scratchUser, features, edition, settings)
 	if err != nil {
 		return
 	}
@@ -146,6 +146,20 @@ func ForceScratchCreateLoginAndSave(scratchUser string, output *os.File) (userna
 		return
 	}
 	username, err = ForceSaveLogin(session, output)
+	if err != nil {
+		return
+	}
+
+	// Deploy settings after org creation and login
+	if len(settings) > 0 {
+		fmt.Fprintln(os.Stderr, "Deploying settings...")
+		scratchForce := NewForce(&session)
+		err = scratchForce.DeploySettings(settings)
+		if err != nil {
+			return username, fmt.Errorf("Settings deployment failed: %w", err)
+		}
+	}
+
 	return
 }
 

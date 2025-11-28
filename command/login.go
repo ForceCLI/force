@@ -7,10 +7,93 @@ import (
 
 	"github.com/bgentry/speakeasy"
 	"github.com/spf13/cobra"
+	"github.com/thediveo/enumflag/v2"
 
 	. "github.com/ForceCLI/force/error"
 	. "github.com/ForceCLI/force/lib"
 )
+
+type ScratchFeature enumflag.Flag
+
+const (
+	PersonAccounts ScratchFeature = iota
+	ContactsToMultipleAccounts
+	FinancialServicesUser
+	StateAndCountryPicklist
+	Communities
+)
+
+var ScratchFeatureIds = map[ScratchFeature][]string{
+	PersonAccounts:             {"PersonAccounts"},
+	ContactsToMultipleAccounts: {"ContactsToMultipleAccounts"},
+	FinancialServicesUser:      {"FinancialServicesUser"},
+	StateAndCountryPicklist:    {"StateAndCountryPicklist"},
+	Communities:                {"Communities"},
+}
+
+type ScratchProduct enumflag.Flag
+
+const (
+	FSC ScratchProduct = iota
+	CommunitiesProduct
+)
+
+var ScratchProductIds = map[ScratchProduct][]string{
+	FSC:                {"fsc"},
+	CommunitiesProduct: {"communities"},
+}
+
+type ScratchEdition enumflag.Flag
+
+const (
+	Developer ScratchEdition = iota
+	Enterprise
+	Group
+	Professional
+	PartnerDeveloper
+	PartnerEnterprise
+	PartnerGroup
+	PartnerProfessional
+)
+
+var ScratchEditionIds = map[ScratchEdition][]string{
+	Developer:           {"Developer"},
+	Enterprise:          {"Enterprise"},
+	Group:               {"Group"},
+	Professional:        {"Professional"},
+	PartnerDeveloper:    {"PartnerDeveloper"},
+	PartnerEnterprise:   {"PartnerEnterprise"},
+	PartnerGroup:        {"PartnerGroup"},
+	PartnerProfessional: {"PartnerProfessional"},
+}
+
+type ScratchSetting enumflag.Flag
+
+const (
+	EnableEnhancedNotes ScratchSetting = iota
+	EnableQuote
+	NetworksEnabled
+)
+
+var ScratchSettingIds = map[ScratchSetting][]string{
+	EnableEnhancedNotes: {"enableEnhancedNotes"},
+	EnableQuote:         {"enableQuote"},
+	NetworksEnabled:     {"networksEnabled"},
+}
+
+var (
+	selectedFeatures  []ScratchFeature
+	selectedProducts  []ScratchProduct
+	selectedEdition   ScratchEdition
+	selectedSettings  []ScratchSetting
+	featureQuantities map[string]string
+)
+
+var featuresRequiringQuantity = map[string]bool{
+	"FinancialServicesUser": true,
+}
+
+const defaultFeatureQuantity = "10"
 
 func init() {
 	loginCmd.Flags().StringP("user", "u", "", "username for SOAP login")
@@ -27,6 +110,23 @@ logged in system. non-production server to login to (values are 'pre',
 	loginCmd.Flags().Bool("device-flow", false, "use OAuth Device Flow (for headless environments)")
 
 	scratchCmd.Flags().String("username", "", "username for scratch org user")
+	scratchCmd.Flags().Var(
+		enumflag.NewSlice(&selectedFeatures, "feature", ScratchFeatureIds, enumflag.EnumCaseInsensitive),
+		"feature",
+		"feature to enable (can be specified multiple times); see command help for available features")
+	scratchCmd.Flags().Var(
+		enumflag.NewSlice(&selectedProducts, "product", ScratchProductIds, enumflag.EnumCaseInsensitive),
+		"product",
+		"product shortcut for features (can be specified multiple times); see command help for available products")
+	scratchCmd.Flags().StringToString("quantity", map[string]string{}, "override default quantity for features (e.g., FinancialServicesUser=5); default quantity is 10")
+	scratchCmd.Flags().Var(
+		enumflag.New(&selectedEdition, "edition", ScratchEditionIds, enumflag.EnumCaseInsensitive),
+		"edition",
+		"scratch org edition; see command help for available editions")
+	scratchCmd.Flags().Var(
+		enumflag.NewSlice(&selectedSettings, "setting", ScratchSettingIds, enumflag.EnumCaseInsensitive),
+		"setting",
+		"setting to enable (can be specified multiple times); see command help for available settings")
 
 	loginCmd.AddCommand(scratchCmd)
 	RootCmd.AddCommand(loginCmd)
@@ -35,9 +135,49 @@ logged in system. non-production server to login to (values are 'pre',
 var scratchCmd = &cobra.Command{
 	Use:   "scratch",
 	Short: "Create scratch org and log in",
+	Long: `Create scratch org and log in
+
+Available Features:
+  Communities                - Enables Experience Cloud (Communities)
+  ContactsToMultipleAccounts - Allows a single Contact to be associated with multiple Accounts
+  FinancialServicesUser      - Enables Financial Services Cloud user licenses (requires quantity, default: 10)
+  PersonAccounts             - Enables Person Accounts (B2C account model)
+  StateAndCountryPicklist    - Enables State and Country Picklists for standard address fields
+
+Available Products:
+  communities - Experience Cloud (enables Communities feature and networksEnabled setting)
+  fsc         - Financial Services Cloud (enables PersonAccounts, ContactsToMultipleAccounts, FinancialServicesUser)
+
+Available Editions:
+  Developer           - Developer Edition (default)
+  Enterprise          - Enterprise Edition
+  Group               - Group Edition
+  Professional        - Professional Edition
+  PartnerDeveloper    - Partner Developer Edition
+  PartnerEnterprise   - Partner Enterprise Edition
+  PartnerGroup        - Partner Group Edition
+  PartnerProfessional - Partner Professional Edition
+
+Available Settings (deployed after org creation):
+  enableEnhancedNotes - Enable Enhanced Notes
+  enableQuote         - Enable Quotes
+  networksEnabled     - Enable Experience Cloud (Communities)
+
+Examples:
+  force login scratch --product fsc
+  force login scratch --feature PersonAccounts --feature StateAndCountryPicklist
+  force login scratch --product fsc --quantity FinancialServicesUser=20
+  force login scratch --edition Enterprise --product fsc
+  force login scratch --setting enableEnhancedNotes
+  force login scratch --setting enableQuote
+  force login scratch --product communities`,
 	Run: func(cmd *cobra.Command, args []string) {
 		scratchUser, _ := cmd.Flags().GetString("username")
-		scratchLogin(scratchUser)
+		quantities, _ := cmd.Flags().GetStringToString("quantity")
+		allFeatures := expandProductsToFeatures(selectedProducts, selectedFeatures, quantities)
+		edition := ScratchEditionIds[selectedEdition][0]
+		allSettings := expandProductsToSettings(selectedProducts, selectedSettings)
+		scratchLogin(scratchUser, allFeatures, edition, allSettings)
 	},
 }
 
@@ -92,8 +232,79 @@ to get a new session token automatically when needed.`,
 	},
 }
 
-func scratchLogin(scratchUser string) {
-	_, err := ForceScratchCreateLoginAndSave(scratchUser, os.Stderr)
+func expandProductsToFeatures(products []ScratchProduct, features []ScratchFeature, quantities map[string]string) []string {
+	productFeatures := map[ScratchProduct][]ScratchFeature{
+		FSC:                {PersonAccounts, ContactsToMultipleAccounts, FinancialServicesUser},
+		CommunitiesProduct: {Communities},
+	}
+
+	featureSet := make(map[ScratchFeature]bool)
+
+	for _, product := range products {
+		if pf, ok := productFeatures[product]; ok {
+			for _, f := range pf {
+				featureSet[f] = true
+			}
+		}
+	}
+
+	for _, feature := range features {
+		featureSet[feature] = true
+	}
+
+	uniqueFeatures := make([]string, 0, len(featureSet))
+	for feature := range featureSet {
+		featureName := ScratchFeatureIds[feature][0]
+		if featuresRequiringQuantity[featureName] {
+			quantity := defaultFeatureQuantity
+			if q, ok := quantities[featureName]; ok {
+				quantity = q
+			}
+			featureName = featureName + ":" + quantity
+		}
+		uniqueFeatures = append(uniqueFeatures, featureName)
+	}
+
+	return uniqueFeatures
+}
+
+func convertSettingsToStrings(settings []ScratchSetting) []string {
+	result := make([]string, 0, len(settings))
+	for _, setting := range settings {
+		result = append(result, ScratchSettingIds[setting][0])
+	}
+	return result
+}
+
+func expandProductsToSettings(products []ScratchProduct, settings []ScratchSetting) []string {
+	productSettings := map[ScratchProduct][]ScratchSetting{
+		CommunitiesProduct: {NetworksEnabled},
+	}
+
+	settingSet := make(map[ScratchSetting]bool)
+
+	for _, product := range products {
+		if ps, ok := productSettings[product]; ok {
+			for _, s := range ps {
+				settingSet[s] = true
+			}
+		}
+	}
+
+	for _, setting := range settings {
+		settingSet[setting] = true
+	}
+
+	uniqueSettings := make([]string, 0, len(settingSet))
+	for setting := range settingSet {
+		uniqueSettings = append(uniqueSettings, ScratchSettingIds[setting][0])
+	}
+
+	return uniqueSettings
+}
+
+func scratchLogin(scratchUser string, features []string, edition string, settings []string) {
+	_, err := ForceScratchCreateLoginAndSave(scratchUser, features, edition, settings, os.Stderr)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
