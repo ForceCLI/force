@@ -2,6 +2,9 @@ package lib
 
 import (
 	"context"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -89,5 +92,272 @@ func TestAbortableQueryAndSend_Abort(t *testing.T) {
 	}
 	if recs[0]["v"] != 1 {
 		t.Fatalf("expected first record v=1, got %v", recs[0]["v"])
+	}
+}
+
+func TestUpsertRecord_Create(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "PATCH" {
+			t.Errorf("Expected PATCH request, got %s", r.Method)
+		}
+
+		expectedPath := "/services/data/" + ApiVersion() + "/sobjects/Account/External_Id__c/ABC123"
+		if r.URL.Path != expectedPath {
+			t.Errorf("Expected path %s, got %s", expectedPath, r.URL.Path)
+		}
+
+		if r.Header.Get("Content-Type") != "application/json" {
+			t.Errorf("Expected Content-Type application/json, got %s", r.Header.Get("Content-Type"))
+		}
+
+		w.WriteHeader(http.StatusCreated)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"id":      "001xx000003DGbYAAW",
+			"success": true,
+			"created": true,
+		})
+	}))
+	defer server.Close()
+
+	force := &Force{
+		Credentials: &ForceSession{
+			InstanceUrl: server.URL,
+			AccessToken: "test-token",
+		},
+	}
+
+	result, err := force.UpsertRecord("Account", "External_Id__c", "ABC123", map[string]string{
+		"Name": "Test Account",
+	})
+
+	if err != nil {
+		t.Fatalf("UpsertRecord returned error: %v", err)
+	}
+
+	if !result.Created {
+		t.Error("Expected Created to be true for new record")
+	}
+
+	if !result.Success {
+		t.Error("Expected Success to be true")
+	}
+
+	if result.Id != "001xx000003DGbYAAW" {
+		t.Errorf("Expected Id 001xx000003DGbYAAW, got %s", result.Id)
+	}
+}
+
+func TestUpsertRecord_Update(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "PATCH" {
+			t.Errorf("Expected PATCH request, got %s", r.Method)
+		}
+
+		expectedPath := "/services/data/" + ApiVersion() + "/sobjects/Contact/Email/test@example.com"
+		if r.URL.Path != expectedPath {
+			t.Errorf("Expected path %s, got %s", expectedPath, r.URL.Path)
+		}
+
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer server.Close()
+
+	force := &Force{
+		Credentials: &ForceSession{
+			InstanceUrl: server.URL,
+			AccessToken: "test-token",
+		},
+	}
+
+	result, err := force.UpsertRecord("Contact", "Email", "test@example.com", map[string]string{
+		"FirstName": "John",
+		"LastName":  "Doe",
+	})
+
+	if err != nil {
+		t.Fatalf("UpsertRecord returned error: %v", err)
+	}
+
+	if result.Created {
+		t.Error("Expected Created to be false for updated record")
+	}
+
+	if !result.Success {
+		t.Error("Expected Success to be true")
+	}
+}
+
+func TestUpsertRecord_Error(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode([]map[string]interface{}{
+			{
+				"message":   "Required fields are missing: [Name]",
+				"errorCode": "REQUIRED_FIELD_MISSING",
+			},
+		})
+	}))
+	defer server.Close()
+
+	force := &Force{
+		Credentials: &ForceSession{
+			InstanceUrl: server.URL,
+			AccessToken: "test-token",
+		},
+	}
+
+	_, err := force.UpsertRecord("Account", "External_Id__c", "ABC123", map[string]string{})
+
+	if err == nil {
+		t.Fatal("Expected error for bad request, got nil")
+	}
+
+	expectedMsg := "Required fields are missing: [Name]"
+	if err.Error() != expectedMsg {
+		t.Errorf("Expected error message %q, got %q", expectedMsg, err.Error())
+	}
+}
+
+func TestCreateRecord(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "POST" {
+			t.Errorf("Expected POST request, got %s", r.Method)
+		}
+
+		expectedPath := "/services/data/" + ApiVersion() + "/sobjects/Account"
+		if r.URL.Path != expectedPath {
+			t.Errorf("Expected path %s, got %s", expectedPath, r.URL.Path)
+		}
+
+		w.WriteHeader(http.StatusCreated)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"id":      "001xx000003DGbZAAW",
+			"success": true,
+		})
+	}))
+	defer server.Close()
+
+	force := &Force{
+		Credentials: &ForceSession{
+			InstanceUrl: server.URL,
+			AccessToken: "test-token",
+		},
+	}
+
+	id, err, _ := force.CreateRecord("Account", map[string]string{
+		"Name": "New Account",
+	})
+
+	if err != nil {
+		t.Fatalf("CreateRecord returned error: %v", err)
+	}
+
+	if id != "001xx000003DGbZAAW" {
+		t.Errorf("Expected Id 001xx000003DGbZAAW, got %s", id)
+	}
+}
+
+func TestUpdateRecord(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "PATCH" {
+			t.Errorf("Expected PATCH request, got %s", r.Method)
+		}
+
+		expectedPath := "/services/data/" + ApiVersion() + "/sobjects/Account/001xx000003DGbYAAW"
+		if r.URL.Path != expectedPath {
+			t.Errorf("Expected path %s, got %s", expectedPath, r.URL.Path)
+		}
+
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer server.Close()
+
+	force := &Force{
+		Credentials: &ForceSession{
+			InstanceUrl: server.URL,
+			AccessToken: "test-token",
+		},
+	}
+
+	err := force.UpdateRecord("Account", "001xx000003DGbYAAW", map[string]string{
+		"Name": "Updated Account",
+	})
+
+	if err != nil {
+		t.Fatalf("UpdateRecord returned error: %v", err)
+	}
+}
+
+func TestDeleteRecord(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "DELETE" {
+			t.Errorf("Expected DELETE request, got %s", r.Method)
+		}
+
+		expectedPath := "/services/data/" + ApiVersion() + "/sobjects/Account/001xx000003DGbYAAW"
+		if r.URL.Path != expectedPath {
+			t.Errorf("Expected path %s, got %s", expectedPath, r.URL.Path)
+		}
+
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer server.Close()
+
+	force := &Force{
+		Credentials: &ForceSession{
+			InstanceUrl: server.URL,
+			AccessToken: "test-token",
+		},
+	}
+
+	err := force.DeleteRecord("Account", "001xx000003DGbYAAW")
+
+	if err != nil {
+		t.Fatalf("DeleteRecord returned error: %v", err)
+	}
+}
+
+func TestGetRecord(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "GET" {
+			t.Errorf("Expected GET request, got %s", r.Method)
+		}
+
+		expectedPath := "/services/data/" + ApiVersion() + "/sobjects/Account/001xx000003DGbYAAW"
+		if r.URL.Path != expectedPath {
+			t.Errorf("Expected path %s, got %s", expectedPath, r.URL.Path)
+		}
+
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"Id":   "001xx000003DGbYAAW",
+			"Name": "Test Account",
+			"attributes": map[string]interface{}{
+				"type": "Account",
+				"url":  "/services/data/v62.0/sobjects/Account/001xx000003DGbYAAW",
+			},
+		})
+	}))
+	defer server.Close()
+
+	force := &Force{
+		Credentials: &ForceSession{
+			InstanceUrl: server.URL,
+			AccessToken: "test-token",
+		},
+	}
+
+	record, err := force.GetRecord("Account", "001xx000003DGbYAAW")
+
+	if err != nil {
+		t.Fatalf("GetRecord returned error: %v", err)
+	}
+
+	if record["Id"] != "001xx000003DGbYAAW" {
+		t.Errorf("Expected Id 001xx000003DGbYAAW, got %v", record["Id"])
+	}
+
+	if record["Name"] != "Test Account" {
+		t.Errorf("Expected Name 'Test Account', got %v", record["Name"])
 	}
 }

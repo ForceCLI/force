@@ -166,6 +166,12 @@ type ForceCreateRecordResult struct {
 	Success bool
 }
 
+type ForceUpsertResult struct {
+	Id      string
+	Created bool
+	Success bool
+}
+
 type ForceLimits map[string]ForceLimit
 
 type ForceLimit struct {
@@ -1337,6 +1343,25 @@ func (f *Force) UpdateRecord(sobject string, id string, attrs map[string]string)
 		url = fmt.Sprintf("%s/services/data/%s/sobjects/%s/%s/%s", f.Credentials.InstanceUrl, apiVersion, sobject, fields[0], fields[1])
 	}
 	_, err = f.httpPatch(url, attrs)
+	return
+}
+
+func (f *Force) UpsertRecord(sobject string, externalIdField string, externalIdValue string, attrs map[string]string) (result ForceUpsertResult, err error) {
+	url := fmt.Sprintf("%s/services/data/%s/sobjects/%s/%s/%s", f.Credentials.InstanceUrl, apiVersion, sobject, externalIdField, externalIdValue)
+	body, err := f.httpPatch(url, attrs)
+	if err != nil {
+		return
+	}
+	// If body is empty, it was an update (HTTP 204)
+	if len(body) == 0 {
+		result.Created = false
+		result.Success = true
+		return
+	}
+	// Otherwise it was a create (HTTP 201) with the new Id
+	json.Unmarshal(body, &result)
+	result.Created = true
+	result.Success = true
 	return
 }
 
