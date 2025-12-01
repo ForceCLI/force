@@ -21,6 +21,8 @@ const (
 	FinancialServicesUser
 	StateAndCountryPicklist
 	Communities
+	HealthCloudAddOn
+	HealthCloudUser
 )
 
 var ScratchFeatureIds = map[ScratchFeature][]string{
@@ -29,6 +31,8 @@ var ScratchFeatureIds = map[ScratchFeature][]string{
 	FinancialServicesUser:      {"FinancialServicesUser"},
 	StateAndCountryPicklist:    {"StateAndCountryPicklist"},
 	Communities:                {"Communities"},
+	HealthCloudAddOn:           {"HealthCloudAddOn"},
+	HealthCloudUser:            {"HealthCloudUser"},
 }
 
 type ScratchProduct enumflag.Flag
@@ -36,11 +40,13 @@ type ScratchProduct enumflag.Flag
 const (
 	FSC ScratchProduct = iota
 	CommunitiesProduct
+	HealthCloudProduct
 )
 
 var ScratchProductIds = map[ScratchProduct][]string{
 	FSC:                {"fsc"},
 	CommunitiesProduct: {"communities"},
+	HealthCloudProduct: {"healthcloud"},
 }
 
 type ScratchEdition enumflag.Flag
@@ -141,12 +147,15 @@ Available Features:
   Communities                - Enables Experience Cloud (Communities)
   ContactsToMultipleAccounts - Allows a single Contact to be associated with multiple Accounts
   FinancialServicesUser      - Enables Financial Services Cloud user licenses (requires quantity, default: 10)
+  HealthCloudAddOn           - Enables Health Cloud add-on
+  HealthCloudUser            - Enables Health Cloud user licenses
   PersonAccounts             - Enables Person Accounts (B2C account model)
   StateAndCountryPicklist    - Enables State and Country Picklists for standard address fields
 
 Available Products:
   communities - Experience Cloud (enables Communities feature and networksEnabled setting)
   fsc         - Financial Services Cloud (enables PersonAccounts, ContactsToMultipleAccounts, FinancialServicesUser)
+  healthcloud - Health Cloud (enables HealthCloudAddOn, HealthCloudUser)
 
 Available Editions:
   Developer           - Developer Edition (default)
@@ -170,7 +179,8 @@ Examples:
   force login scratch --edition Enterprise --product fsc
   force login scratch --setting enableEnhancedNotes
   force login scratch --setting enableQuote
-  force login scratch --product communities`,
+  force login scratch --product communities
+  force login scratch --product healthcloud`,
 	Run: func(cmd *cobra.Command, args []string) {
 		scratchUser, _ := cmd.Flags().GetString("username")
 		quantities, _ := cmd.Flags().GetStringToString("quantity")
@@ -236,6 +246,7 @@ func expandProductsToFeatures(products []ScratchProduct, features []ScratchFeatu
 	productFeatures := map[ScratchProduct][]ScratchFeature{
 		FSC:                {PersonAccounts, ContactsToMultipleAccounts, FinancialServicesUser},
 		CommunitiesProduct: {Communities},
+		HealthCloudProduct: {HealthCloudAddOn, HealthCloudUser},
 	}
 
 	featureSet := make(map[ScratchFeature]bool)
