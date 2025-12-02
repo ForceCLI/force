@@ -81,12 +81,14 @@ const (
 	EnableEnhancedNotes ScratchSetting = iota
 	EnableQuote
 	NetworksEnabled
+	EnableApexApprovalLockUnlock
 )
 
 var ScratchSettingIds = map[ScratchSetting][]string{
-	EnableEnhancedNotes: {"enableEnhancedNotes"},
-	EnableQuote:         {"enableQuote"},
-	NetworksEnabled:     {"networksEnabled"},
+	EnableEnhancedNotes:          {"enableEnhancedNotes"},
+	EnableQuote:                  {"enableQuote"},
+	NetworksEnabled:              {"networksEnabled"},
+	EnableApexApprovalLockUnlock: {"enableApexApprovalLockUnlock"},
 }
 
 var (
@@ -174,6 +176,7 @@ Available Settings (deployed after org creation):
   enableEnhancedNotes - Enable Enhanced Notes
   enableQuote         - Enable Quotes
   networksEnabled     - Enable Experience Cloud (Communities)
+  enableApexApprovalLockUnlock - Allow Apex to lock/unlock approval processes
 
 Examples:
   force login scratch --product fsc

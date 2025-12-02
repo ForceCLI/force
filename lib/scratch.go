@@ -104,6 +104,34 @@ func (s *ScratchOrg) getSession() (session ForceSession, err error) {
 
 // DeploySettings deploys settings metadata to a scratch org
 func (f *Force) DeploySettings(settings []string) error {
+	files := buildSettingsMetadata(settings)
+
+	// Deploy the metadata
+	options := ForceDeployOptions{}
+	result, err := f.Metadata.Deploy(files, options)
+	if err != nil {
+		return fmt.Errorf("settings deployment failed: %w", err)
+	}
+
+	// Check if deployment succeeded
+	if !result.Success {
+		errorMsg := fmt.Sprintf("Settings deployment failed with status: %s", result.Status)
+		if result.ErrorMessage != "" {
+			errorMsg += fmt.Sprintf(": %s", result.ErrorMessage)
+		}
+		if len(result.Details.ComponentFailures) > 0 {
+			errorMsg += "\nComponent failures:"
+			for _, failure := range result.Details.ComponentFailures {
+				errorMsg += fmt.Sprintf("\n  - %s: %s", failure.FileName, failure.Problem)
+			}
+		}
+		return errors.New(errorMsg)
+	}
+
+	return nil
+}
+
+func buildSettingsMetadata(settings []string) ForceMetadataFiles {
 	files := make(ForceMetadataFiles)
 
 	// Create package.xml at root of zip
@@ -118,6 +146,8 @@ func (f *Force) DeploySettings(settings []string) error {
 	files["unpackaged/package.xml"] = []byte(packageXml)
 
 	// Create settings file for each requested setting
+	apexSettings := false
+
 	for _, setting := range settings {
 		switch setting {
 		case "enableEnhancedNotes":
@@ -139,32 +169,21 @@ func (f *Force) DeploySettings(settings []string) error {
     <enableNetworksEnabled>true</enableNetworksEnabled>
 </CommunitiesSettings>`
 			files["unpackaged/settings/Communities.settings"] = []byte(communitiesSettings)
+		case "enableApexApprovalLockUnlock":
+			apexSettings = true
 		}
 	}
 
-	// Deploy the metadata
-	options := ForceDeployOptions{}
-	result, err := f.Metadata.Deploy(files, options)
-	if err != nil {
-		return err
+	if apexSettings {
+		var apexBuffer bytes.Buffer
+		apexBuffer.WriteString(`<?xml version="1.0" encoding="UTF-8"?>
+<ApexSettings xmlns="http://soap.sforce.com/2006/04/metadata">
+    <enableApexApprovalLockUnlock>true</enableApexApprovalLockUnlock>
+</ApexSettings>`)
+		files["unpackaged/settings/Apex.settings"] = apexBuffer.Bytes()
 	}
 
-	// Check if deployment succeeded
-	if !result.Success {
-		errorMsg := fmt.Sprintf("Settings deployment failed with status: %s", result.Status)
-		if result.ErrorMessage != "" {
-			errorMsg += fmt.Sprintf(": %s", result.ErrorMessage)
-		}
-		if len(result.Details.ComponentFailures) > 0 {
-			errorMsg += "\nComponent failures:"
-			for _, failure := range result.Details.ComponentFailures {
-				errorMsg += fmt.Sprintf("\n  - %s: %s", failure.FileName, failure.Problem)
-			}
-		}
-		return errors.New(errorMsg)
-	}
-
-	return nil
+	return files
 }
 
 // Create a new Scratch Org from a Dev Hub Org

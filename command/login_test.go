@@ -162,6 +162,33 @@ func TestExpandProductsToFeatures_CommunitiesProduct(t *testing.T) {
 	}
 }
 
+func TestExpandProductsToFeatures_HealthCloudProduct(t *testing.T) {
+	result := expandProductsToFeatures([]ScratchProduct{HealthCloudProduct}, []ScratchFeature{}, map[string]string{})
+	if len(result) != 2 {
+		t.Errorf("Expected 2 features from health cloud product, got %d", len(result))
+	}
+	featureMap := make(map[string]bool)
+	for _, f := range result {
+		featureMap[f] = true
+	}
+	if !featureMap["HealthCloudAddOn"] {
+		t.Error("Expected HealthCloudAddOn in health cloud product")
+	}
+	if !featureMap["HealthCloudUser"] {
+		t.Error("Expected HealthCloudUser in health cloud product")
+	}
+}
+
+func TestExpandProductsToFeatures_ApexUserModeWithPermset(t *testing.T) {
+	result := expandProductsToFeatures([]ScratchProduct{}, []ScratchFeature{ApexUserModeWithPermset}, map[string]string{})
+	if len(result) != 1 {
+		t.Fatalf("Expected 1 feature, got %d", len(result))
+	}
+	if result[0] != "ApexUserModeWithPermset" {
+		t.Errorf("Expected ApexUserModeWithPermset, got %s", result[0])
+	}
+}
+
 func TestExpandProductsToSettings_NoProductsOrSettings(t *testing.T) {
 	result := expandProductsToSettings([]ScratchProduct{}, []ScratchSetting{})
 	if len(result) != 0 {
@@ -281,11 +308,22 @@ func TestConvertSettingsToStrings_NetworksEnabled(t *testing.T) {
 	}
 }
 
+func TestConvertSettingsToStrings_EnableApexApprovalLockUnlock(t *testing.T) {
+	result := convertSettingsToStrings([]ScratchSetting{EnableApexApprovalLockUnlock})
+	if len(result) != 1 {
+		t.Errorf("Expected 1 setting, got %d", len(result))
+	}
+	if result[0] != "enableApexApprovalLockUnlock" {
+		t.Errorf("Expected enableApexApprovalLockUnlock, got %s", result[0])
+	}
+}
+
 func TestScratchSettingIds_AllSettingsDefined(t *testing.T) {
 	expectedSettings := map[string]bool{
-		"enableEnhancedNotes": true,
-		"enableQuote":         true,
-		"networksEnabled":     true,
+		"enableEnhancedNotes":          true,
+		"enableQuote":                  true,
+		"networksEnabled":              true,
+		"enableApexApprovalLockUnlock": true,
 	}
 
 	if len(ScratchSettingIds) != len(expectedSettings) {
