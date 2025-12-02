@@ -23,6 +23,7 @@ const (
 	Communities
 	HealthCloudAddOn
 	HealthCloudUser
+	ApexUserModeWithPermset
 )
 
 var ScratchFeatureIds = map[ScratchFeature][]string{
@@ -33,6 +34,7 @@ var ScratchFeatureIds = map[ScratchFeature][]string{
 	Communities:                {"Communities"},
 	HealthCloudAddOn:           {"HealthCloudAddOn"},
 	HealthCloudUser:            {"HealthCloudUser"},
+	ApexUserModeWithPermset:    {"ApexUserModeWithPermset"},
 }
 
 type ScratchProduct enumflag.Flag
@@ -149,6 +151,7 @@ Available Features:
   FinancialServicesUser      - Enables Financial Services Cloud user licenses (requires quantity, default: 10)
   HealthCloudAddOn           - Enables Health Cloud add-on
   HealthCloudUser            - Enables Health Cloud user licenses
+  ApexUserModeWithPermset    - Enables Apex code to run in user mode with a permission set session
   PersonAccounts             - Enables Person Accounts (B2C account model)
   StateAndCountryPicklist    - Enables State and Country Picklists for standard address fields
 
