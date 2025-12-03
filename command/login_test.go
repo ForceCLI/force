@@ -318,12 +318,23 @@ func TestConvertSettingsToStrings_EnableApexApprovalLockUnlock(t *testing.T) {
 	}
 }
 
+func TestConvertSettingsToStrings_PermsetsInFieldCreation(t *testing.T) {
+	result := convertSettingsToStrings([]ScratchSetting{PermsetsInFieldCreation})
+	if len(result) != 1 {
+		t.Errorf("Expected 1 setting, got %d", len(result))
+	}
+	if result[0] != "permsetsInFieldCreation" {
+		t.Errorf("Expected permsetsInFieldCreation, got %s", result[0])
+	}
+}
+
 func TestScratchSettingIds_AllSettingsDefined(t *testing.T) {
 	expectedSettings := map[string]bool{
 		"enableEnhancedNotes":          true,
 		"enableQuote":                  true,
 		"networksEnabled":              true,
 		"enableApexApprovalLockUnlock": true,
+		"permsetsInFieldCreation":      true,
 	}
 
 	if len(ScratchSettingIds) != len(expectedSettings) {

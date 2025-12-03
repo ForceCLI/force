@@ -147,6 +147,7 @@ func buildSettingsMetadata(settings []string) ForceMetadataFiles {
 
 	// Create settings file for each requested setting
 	apexSettings := false
+	userManagementSettings := false
 
 	for _, setting := range settings {
 		switch setting {
@@ -171,6 +172,8 @@ func buildSettingsMetadata(settings []string) ForceMetadataFiles {
 			files["unpackaged/settings/Communities.settings"] = []byte(communitiesSettings)
 		case "enableApexApprovalLockUnlock":
 			apexSettings = true
+		case "permsetsInFieldCreation":
+			userManagementSettings = true
 		}
 	}
 
@@ -181,6 +184,15 @@ func buildSettingsMetadata(settings []string) ForceMetadataFiles {
     <enableApexApprovalLockUnlock>true</enableApexApprovalLockUnlock>
 </ApexSettings>`)
 		files["unpackaged/settings/Apex.settings"] = apexBuffer.Bytes()
+	}
+
+	if userManagementSettings {
+		var userMgmtBuffer bytes.Buffer
+		userMgmtBuffer.WriteString(`<?xml version="1.0" encoding="UTF-8"?>
+<UserManagementSettings xmlns="http://soap.sforce.com/2006/04/metadata">
+    <permsetsInFieldCreation>true</permsetsInFieldCreation>
+</UserManagementSettings>`)
+		files["unpackaged/settings/UserManagement.settings"] = userMgmtBuffer.Bytes()
 	}
 
 	return files

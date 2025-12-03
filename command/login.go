@@ -82,6 +82,7 @@ const (
 	EnableQuote
 	NetworksEnabled
 	EnableApexApprovalLockUnlock
+	PermsetsInFieldCreation
 )
 
 var ScratchSettingIds = map[ScratchSetting][]string{
@@ -89,6 +90,7 @@ var ScratchSettingIds = map[ScratchSetting][]string{
 	EnableQuote:                  {"enableQuote"},
 	NetworksEnabled:              {"networksEnabled"},
 	EnableApexApprovalLockUnlock: {"enableApexApprovalLockUnlock"},
+	PermsetsInFieldCreation:      {"permsetsInFieldCreation"},
 }
 
 var (
@@ -177,6 +179,7 @@ Available Settings (deployed after org creation):
   enableQuote         - Enable Quotes
   networksEnabled     - Enable Experience Cloud (Communities)
   enableApexApprovalLockUnlock - Allow Apex to lock/unlock approval processes
+  permsetsInFieldCreation - Allow assigning permission sets during field creation
 
 Examples:
   force login scratch --product fsc
