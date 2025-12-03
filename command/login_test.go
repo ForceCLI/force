@@ -189,6 +189,16 @@ func TestExpandProductsToFeatures_ApexUserModeWithPermset(t *testing.T) {
 	}
 }
 
+func TestExpandProductsToFeatures_EventLogFile(t *testing.T) {
+	result := expandProductsToFeatures([]ScratchProduct{}, []ScratchFeature{EventLogFile}, map[string]string{})
+	if len(result) != 1 {
+		t.Fatalf("Expected 1 feature, got %d", len(result))
+	}
+	if result[0] != "EventLogFile" {
+		t.Errorf("Expected EventLogFile, got %s", result[0])
+	}
+}
+
 func TestExpandProductsToSettings_NoProductsOrSettings(t *testing.T) {
 	result := expandProductsToSettings([]ScratchProduct{}, []ScratchSetting{})
 	if len(result) != 0 {

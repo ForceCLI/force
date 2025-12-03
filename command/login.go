@@ -24,6 +24,7 @@ const (
 	HealthCloudAddOn
 	HealthCloudUser
 	ApexUserModeWithPermset
+	EventLogFile
 )
 
 var ScratchFeatureIds = map[ScratchFeature][]string{
@@ -35,6 +36,7 @@ var ScratchFeatureIds = map[ScratchFeature][]string{
 	HealthCloudAddOn:           {"HealthCloudAddOn"},
 	HealthCloudUser:            {"HealthCloudUser"},
 	ApexUserModeWithPermset:    {"ApexUserModeWithPermset"},
+	EventLogFile:               {"EventLogFile"},
 }
 
 type ScratchProduct enumflag.Flag
@@ -156,6 +158,7 @@ Available Features:
   HealthCloudAddOn           - Enables Health Cloud add-on
   HealthCloudUser            - Enables Health Cloud user licenses
   ApexUserModeWithPermset    - Enables Apex code to run in user mode with a permission set session
+  EventLogFile               - Enables Event Log File
   PersonAccounts             - Enables Person Accounts (B2C account model)
   StateAndCountryPicklist    - Enables State and Country Picklists for standard address fields
 
