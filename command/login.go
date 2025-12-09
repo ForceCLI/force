@@ -133,6 +133,7 @@ logged in system. non-production server to login to (values are 'pre',
 		"product",
 		"product shortcut for features (can be specified multiple times); see command help for available products")
 	scratchCmd.Flags().StringToString("quantity", map[string]string{}, "override default quantity for features (e.g., FinancialServicesUser=5); default quantity is 10")
+	scratchCmd.Flags().String("namespace", "", "namespace for the scratch org")
 	scratchCmd.Flags().Var(
 		enumflag.New(&selectedEdition, "edition", ScratchEditionIds, enumflag.EnumCaseInsensitive),
 		"edition",
@@ -188,6 +189,7 @@ Examples:
   force login scratch --product fsc
   force login scratch --feature PersonAccounts --feature StateAndCountryPicklist
   force login scratch --product fsc --quantity FinancialServicesUser=20
+  force login scratch --namespace myns
   force login scratch --edition Enterprise --product fsc
   force login scratch --setting enableEnhancedNotes
   force login scratch --setting enableQuote
@@ -195,11 +197,12 @@ Examples:
   force login scratch --product healthcloud`,
 	Run: func(cmd *cobra.Command, args []string) {
 		scratchUser, _ := cmd.Flags().GetString("username")
+		scratchNamespace, _ := cmd.Flags().GetString("namespace")
 		quantities, _ := cmd.Flags().GetStringToString("quantity")
 		allFeatures := expandProductsToFeatures(selectedProducts, selectedFeatures, quantities)
 		edition := ScratchEditionIds[selectedEdition][0]
 		allSettings := expandProductsToSettings(selectedProducts, selectedSettings)
-		scratchLogin(scratchUser, allFeatures, edition, allSettings)
+		scratchLogin(scratchUser, allFeatures, edition, allSettings, scratchNamespace)
 	},
 }
 
@@ -326,8 +329,8 @@ func expandProductsToSettings(products []ScratchProduct, settings []ScratchSetti
 	return uniqueSettings
 }
 
-func scratchLogin(scratchUser string, features []string, edition string, settings []string) {
-	_, err := ForceScratchCreateLoginAndSave(scratchUser, features, edition, settings, os.Stderr)
+func scratchLogin(scratchUser string, features []string, edition string, settings []string, namespace string) {
+	_, err := ForceScratchCreateLoginAndSaveWithNamespace(scratchUser, features, edition, settings, namespace, os.Stderr)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}

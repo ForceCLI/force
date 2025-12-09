@@ -14,6 +14,7 @@ Usage:
   force record create <object> [<fields>]
   force record update <object> <id> [<fields>]
   force record update <object> <extid>:<value> [<fields>]
+  force record upsert <object> <extid>:<value> [<fields>]
   force record delete <object> <id>
   force record merge <object> <masterId> <duplicateId>
   force record undelete <id>
@@ -28,6 +29,7 @@ Usage:
   force record create User Name:"David Dollar" Phone:0000000000
   force record update User 00Ei0000000000 State:GA
   force record update User username:user@name.org State:GA
+  force record upsert Account External_Id__c:ABC123 Name:"Acme Corp"
   force record delete User 00Ei0000000000
   force record merge Contact 0033c00002YDNNWAA5 0033c00002YDPqkAAH
   force record undelete 0033c00002YDNNWAA5
@@ -57,4 +59,5 @@ Usage:
 * [force record merge](force_record_merge.md)	 - Merge records
 * [force record undelete](force_record_undelete.md)	 - Undelete records
 * [force record update](force_record_update.md)	 - Update record
+* [force record upsert](force_record_upsert.md)	 - Upsert record using external ID
 
