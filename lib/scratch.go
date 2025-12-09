@@ -216,6 +216,10 @@ func (f *Force) CreateScratchOrgWithUserFeaturesAndEdition(username string, feat
 }
 
 func (f *Force) CreateScratchOrgWithUserFeaturesEditionAndSettings(username string, features []string, edition string, settings []string) (id string, err error) {
+	return f.CreateScratchOrgWithUserFeaturesEditionSettingsAndNamespace(username, features, edition, settings, "")
+}
+
+func (f *Force) CreateScratchOrgWithUserFeaturesEditionSettingsAndNamespace(username string, features []string, edition string, settings []string, namespace string) (id string, err error) {
 	params := make(map[string]string)
 	params["ConnectedAppCallbackUrl"] = "http://localhost:1717/OauthRedirect"
 	params["ConnectedAppConsumerKey"] = "PlatformCLI"
@@ -238,6 +242,9 @@ func (f *Force) CreateScratchOrgWithUserFeaturesEditionAndSettings(username stri
 	// Note: settings parameter is kept for later deployment after org creation
 
 	params["OrgName"] = "Force CLI Scratch"
+	if namespace != "" {
+		params["Namespace"] = namespace
+	}
 	if username != "" {
 		params["Username"] = username
 	}

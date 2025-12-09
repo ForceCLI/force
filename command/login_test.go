@@ -362,3 +362,10 @@ func TestScratchSettingIds_AllSettingsDefined(t *testing.T) {
 		}
 	}
 }
+
+func TestScratchCommandHasNamespaceFlag(t *testing.T) {
+	flag := scratchCmd.Flags().Lookup("namespace")
+	if flag == nil {
+		t.Fatal("Flag namespace not found")
+	}
+}

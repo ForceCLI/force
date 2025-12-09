@@ -40,8 +40,18 @@ func init() {
 		for current.Parent() != nil && current.Parent() != RootCmd {
 			current = current.Parent()
 		}
+		isLoginScratch := current.Name() == "login" && cmd.Name() == "scratch"
+		if isLoginScratch && account != "" {
+			if err := SetActiveLogin(account); err != nil {
+				ErrorAndExit(err.Error())
+			}
+		}
 		switch current.Name() {
-		case "force", "login", "completion", "usedxauth", "logins":
+		case "force", "completion", "usedxauth", "logins":
+		case "login":
+			if isLoginScratch {
+				initializeSession()
+			}
 		default:
 			initializeSession()
 		}

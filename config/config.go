@@ -235,17 +235,25 @@ func GetSourceDir() (dir string, err error) {
 		}
 	}
 
-	// Check the current directory and then start looking up at our parents.
-	// When dir's parent is identical, it means we're at the root.  If we blow
-	// past the actual root, we should drop to the next section of code
-	for dir != filepath.Dir(dir) {
-		dir = filepath.Dir(dir)
-		for _, src := range sourceDirs {
-			adir := filepath.Join(dir, src)
-			if IsSourceDir(adir) {
-				dir = adir
-				return
+	// Check if we're inside an existing source directory by looking at parents.
+	// Only do this if the current path contains a source directory component,
+	// otherwise we might find unrelated directories (e.g., /tmp/src).
+	for _, src := range sourceDirs {
+		if strings.Contains(base, string(filepath.Separator)+src+string(filepath.Separator)) ||
+			strings.HasSuffix(base, string(filepath.Separator)+src) {
+			// We appear to be inside a source tree, walk up to find it
+			dir = base
+			for dir != filepath.Dir(dir) {
+				dir = filepath.Dir(dir)
+				for _, s := range sourceDirs {
+					adir := filepath.Join(dir, s)
+					if IsSourceDir(adir) {
+						dir = adir
+						return
+					}
+				}
 			}
+			break
 		}
 	}
 
