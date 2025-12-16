@@ -14,7 +14,7 @@ require (
 	github.com/charmbracelet/bubbles v0.16.1
 	github.com/charmbracelet/bubbletea v0.24.2
 	github.com/charmbracelet/lipgloss v0.9.1
-	github.com/expr-lang/expr v1.17.5
+	github.com/expr-lang/expr v1.17.7
 	github.com/golang-jwt/jwt/v5 v5.2.3
 	github.com/hamba/avro/v2 v2.16.0
 	github.com/linkedin/goavro/v2 v2.12.0
