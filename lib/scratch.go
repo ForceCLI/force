@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/url"
 	"os"
+	"time"
 )
 
 type ScratchOrg struct {
@@ -26,17 +27,73 @@ func (s *ScratchOrg) tokenURL() string {
 }
 
 func (f *Force) getScratchOrg(scratchOrgId string) (scratchOrg ScratchOrg, err error) {
-	org, err := f.GetRecord("ScratchOrgInfo", scratchOrgId)
+	org, err := f.waitForScratchOrgReady(scratchOrgId)
 	if err != nil {
-		err = errors.New("Unable to query scratch orgs.  You must be logged into a Dev Hub org.")
+		return
+	}
+	username, ok := org["SignupUsername"].(string)
+	if !ok || username == "" {
+		err = errors.New("Scratch org is not ready: SignupUsername is not available")
+		return
+	}
+	loginUrl, ok := org["LoginUrl"].(string)
+	if !ok || loginUrl == "" {
+		err = errors.New("Scratch org is not ready: LoginUrl is not available")
+		return
+	}
+	authCode, ok := org["AuthCode"].(string)
+	if !ok || authCode == "" {
+		err = errors.New("Scratch org is not ready: AuthCode is not available")
 		return
 	}
 	scratchOrg = ScratchOrg{
-		UserName:    org["SignupUsername"].(string),
-		InstanceUrl: org["LoginUrl"].(string),
-		AuthCode:    org["AuthCode"].(string),
+		UserName:    username,
+		InstanceUrl: loginUrl,
+		AuthCode:    authCode,
 	}
 	return
+}
+
+var scratchOrgPollInterval = 5 * time.Second
+var scratchOrgMaxWait = 10 * time.Minute
+
+func (f *Force) waitForScratchOrgReady(scratchOrgId string) (org ForceRecord, err error) {
+	start := time.Now()
+	for {
+		org, err = f.GetRecord("ScratchOrgInfo", scratchOrgId)
+		if err != nil {
+			err = errors.New("Unable to query scratch orgs.  You must be logged into a Dev Hub org.")
+			return
+		}
+
+		status, _ := org["Status"].(string)
+		switch status {
+		case "Active":
+			return org, nil
+		case "Error":
+			errorCode, _ := org["ErrorCode"].(string)
+			if errorCode != "" {
+				err = fmt.Errorf("Scratch org creation failed: %s", errorCode)
+			} else {
+				err = errors.New("Scratch org creation failed")
+			}
+			return
+		case "New":
+			if time.Since(start) > scratchOrgMaxWait {
+				err = errors.New("Timed out waiting for scratch org to become ready")
+				return
+			}
+			fmt.Fprintf(os.Stderr, "Waiting for scratch org to be ready (status: %s)...\n", status)
+			time.Sleep(scratchOrgPollInterval)
+		default:
+			if time.Since(start) > scratchOrgMaxWait {
+				err = fmt.Errorf("Timed out waiting for scratch org (status: %s)", status)
+				return
+			}
+			fmt.Fprintf(os.Stderr, "Waiting for scratch org to be ready (status: %s)...\n", status)
+			time.Sleep(scratchOrgPollInterval)
+		}
+	}
 }
 
 // Log into a Scratch Org

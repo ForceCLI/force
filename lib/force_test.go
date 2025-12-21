@@ -361,3 +361,170 @@ func TestGetRecord(t *testing.T) {
 		t.Errorf("Expected Name 'Test Account', got %v", record["Name"])
 	}
 }
+
+func TestCreateRecord_handles_empty_error_response(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("Internal Server Error"))
+	}))
+	defer server.Close()
+
+	force := &Force{
+		Credentials: &ForceSession{
+			InstanceUrl: server.URL,
+			AccessToken: "test-token",
+		},
+	}
+
+	_, err, _ := force.CreateRecord("Account", map[string]string{
+		"Name": "Test Account",
+	})
+
+	if err == nil {
+		t.Fatal("Expected error for server error response, got nil")
+	}
+
+	if err.Error() != "request failed with status 500: Internal Server Error" {
+		t.Errorf("Expected error message with status and body, got %q", err.Error())
+	}
+}
+
+func TestUpdateRecord_handles_empty_error_response(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadGateway)
+		w.Write([]byte("Bad Gateway"))
+	}))
+	defer server.Close()
+
+	force := &Force{
+		Credentials: &ForceSession{
+			InstanceUrl: server.URL,
+			AccessToken: "test-token",
+		},
+	}
+
+	err := force.UpdateRecord("Account", "001xx000003DGbYAAW", map[string]string{
+		"Name": "Updated Account",
+	})
+
+	if err == nil {
+		t.Fatal("Expected error for server error response, got nil")
+	}
+
+	if err.Error() != "request failed with status 502: Bad Gateway" {
+		t.Errorf("Expected error message with status and body, got %q", err.Error())
+	}
+}
+
+func TestDeleteRecord_handles_empty_error_response(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusServiceUnavailable)
+		w.Write([]byte("Service Unavailable"))
+	}))
+	defer server.Close()
+
+	force := &Force{
+		Credentials: &ForceSession{
+			InstanceUrl: server.URL,
+			AccessToken: "test-token",
+		},
+	}
+
+	err := force.DeleteRecord("Account", "001xx000003DGbYAAW")
+
+	if err == nil {
+		t.Fatal("Expected error for server error response, got nil")
+	}
+
+	if err.Error() != "request failed with status 503: Service Unavailable" {
+		t.Errorf("Expected error message with status and body, got %q", err.Error())
+	}
+}
+
+func TestCreateRecord_returns_ScratchOrgExpiredError_on_420(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(420)
+		w.Write([]byte("<html>Scratch org expired</html>"))
+	}))
+	defer server.Close()
+
+	force := &Force{
+		Credentials: &ForceSession{
+			InstanceUrl: server.URL,
+			AccessToken: "test-token",
+		},
+	}
+
+	_, err, _ := force.CreateRecord("Account", map[string]string{
+		"Name": "Test Account",
+	})
+
+	if err != ScratchOrgExpiredError {
+		t.Errorf("Expected ScratchOrgExpiredError, got %v", err)
+	}
+}
+
+func TestUpdateRecord_returns_ScratchOrgExpiredError_on_420(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(420)
+		w.Write([]byte("<html>Scratch org expired</html>"))
+	}))
+	defer server.Close()
+
+	force := &Force{
+		Credentials: &ForceSession{
+			InstanceUrl: server.URL,
+			AccessToken: "test-token",
+		},
+	}
+
+	err := force.UpdateRecord("Account", "001xx000003DGbYAAW", map[string]string{
+		"Name": "Updated Account",
+	})
+
+	if err != ScratchOrgExpiredError {
+		t.Errorf("Expected ScratchOrgExpiredError, got %v", err)
+	}
+}
+
+func TestDeleteRecord_returns_ScratchOrgExpiredError_on_420(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(420)
+		w.Write([]byte("<html>Scratch org expired</html>"))
+	}))
+	defer server.Close()
+
+	force := &Force{
+		Credentials: &ForceSession{
+			InstanceUrl: server.URL,
+			AccessToken: "test-token",
+		},
+	}
+
+	err := force.DeleteRecord("Account", "001xx000003DGbYAAW")
+
+	if err != ScratchOrgExpiredError {
+		t.Errorf("Expected ScratchOrgExpiredError, got %v", err)
+	}
+}
+
+func TestGetRecord_returns_ScratchOrgExpiredError_on_420(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(420)
+		w.Write([]byte("<html>Scratch org expired</html>"))
+	}))
+	defer server.Close()
+
+	force := &Force{
+		Credentials: &ForceSession{
+			InstanceUrl: server.URL,
+			AccessToken: "test-token",
+		},
+	}
+
+	_, err := force.GetRecord("Account", "001xx000003DGbYAAW")
+
+	if err != ScratchOrgExpiredError {
+		t.Errorf("Expected ScratchOrgExpiredError, got %v", err)
+	}
+}

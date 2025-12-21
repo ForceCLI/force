@@ -41,6 +41,7 @@ var PasswordExpiredError = errors.New("Password is expired")
 var ClassNotFoundError = errors.New("class not found")
 var MetricsNotFoundError = errors.New("metrics not found")
 var DevHubOrgRequiredError = errors.New("Org must be a Dev Hub")
+var ScratchOrgExpiredError = errors.New("Scratch org has expired")
 
 const (
 	EndpointProduction = iota
@@ -1553,6 +1554,9 @@ func (f *Force) _makeHttpRequestWithoutRetry(input *httpRequestInput) (*http.Res
 // Then if it's a 401/403, treat the session expired (discard the fallback error);
 // Finally, return the fallback error.
 func (f *Force) _coerceHttpError(res *http.Response, body []byte) error {
+	if res.StatusCode == 420 {
+		return ScratchOrgExpiredError
+	}
 	var fallbackErr error
 	sessionExpired := res.StatusCode == 401 || res.StatusCode == 403
 	if strings.HasPrefix(res.Header.Get("Content-Type"), string(ContentTypeXml)) {
@@ -1664,6 +1668,9 @@ func (f *Force) httpPostPatch(url string, rbody string, contenttype ContentType,
 	if res.StatusCode == 401 {
 		return nil, SessionExpiredError
 	}
+	if res.StatusCode == 420 {
+		return nil, ScratchOrgExpiredError
+	}
 
 	return res, err
 }
@@ -1714,11 +1721,19 @@ func (f *Force) httpPostAttributes(url string, attrs map[string]string) (body []
 		err = SessionExpiredError
 		return
 	}
+	if res.StatusCode == 420 {
+		err = ScratchOrgExpiredError
+		return
+	}
 	body, err = ioutil.ReadAll(res.Body)
 	if res.StatusCode/100 != 2 {
 		var messages []ForceError
 		json.Unmarshal(body, &messages)
-		err = errors.New(messages[0].Message)
+		if len(messages) > 0 {
+			err = errors.New(messages[0].Message)
+		} else {
+			err = fmt.Errorf("request failed with status %d: %s", res.StatusCode, string(body))
+		}
 		emessages = messages
 		return
 	}
@@ -1754,11 +1769,19 @@ func (f *Force) httpPatchAttributes(url string, attrs map[string]string) (body [
 		err = SessionExpiredError
 		return
 	}
+	if res.StatusCode == 420 {
+		err = ScratchOrgExpiredError
+		return
+	}
 	body, err = ioutil.ReadAll(res.Body)
 	if res.StatusCode/100 != 2 {
 		var messages []ForceError
 		json.Unmarshal(body, &messages)
-		err = errors.New(messages[0].Message)
+		if len(messages) > 0 {
+			err = errors.New(messages[0].Message)
+		} else {
+			err = fmt.Errorf("request failed with status %d: %s", res.StatusCode, string(body))
+		}
 		return
 	}
 	return
@@ -1791,11 +1814,19 @@ func (f *Force) httpDeleteUrl(url string) (body []byte, err error) {
 		err = SessionExpiredError
 		return
 	}
+	if res.StatusCode == 420 {
+		err = ScratchOrgExpiredError
+		return
+	}
 	body, err = ioutil.ReadAll(res.Body)
 	if res.StatusCode/100 != 2 {
 		var messages []ForceError
 		json.Unmarshal(body, &messages)
-		err = errors.New(messages[0].Message)
+		if len(messages) > 0 {
+			err = errors.New(messages[0].Message)
+		} else {
+			err = fmt.Errorf("request failed with status %d: %s", res.StatusCode, string(body))
+		}
 		return
 	}
 	return
