@@ -135,13 +135,17 @@ func ForceScratchCreateLoginAndSave(scratchUser string, features []string, editi
 }
 
 func ForceScratchCreateLoginAndSaveWithNamespace(scratchUser string, features []string, edition string, settings []string, namespace string, output *os.File) (username string, err error) {
+	return ForceScratchCreateLoginAndSaveWithRelease(scratchUser, features, edition, settings, namespace, "", output)
+}
+
+func ForceScratchCreateLoginAndSaveWithRelease(scratchUser string, features []string, edition string, settings []string, namespace string, release string, output *os.File) (username string, err error) {
 	force, err := ActiveForce()
 	if err != nil {
 		err = errors.New("You must be logged into a Dev Hub org to authenticate as a scratch org user.")
 		return
 	}
 	fmt.Fprintln(os.Stderr, "Creating new Scratch Org...")
-	scratchOrgId, err := force.CreateScratchOrgWithUserFeaturesEditionSettingsAndNamespace(scratchUser, features, edition, settings, namespace)
+	scratchOrgId, err := force.CreateScratchOrgWithRelease(scratchUser, features, edition, settings, namespace, release)
 	if err != nil {
 		return
 	}

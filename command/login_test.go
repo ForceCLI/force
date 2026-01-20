@@ -369,3 +369,51 @@ func TestScratchCommandHasNamespaceFlag(t *testing.T) {
 		t.Fatal("Flag namespace not found")
 	}
 }
+
+func TestScratchCommandHasReleaseFlag(t *testing.T) {
+	flag := scratchCmd.Flags().Lookup("release")
+	if flag == nil {
+		t.Fatal("Flag release not found")
+	}
+}
+
+func TestScratchReleaseIds_AllReleasesDefined(t *testing.T) {
+	expectedReleases := map[string]bool{
+		"":         true,
+		"preview":  true,
+		"previous": true,
+	}
+
+	if len(ScratchReleaseIds) != len(expectedReleases) {
+		t.Errorf("Expected %d releases, got %d", len(expectedReleases), len(ScratchReleaseIds))
+	}
+
+	for _, ids := range ScratchReleaseIds {
+		if len(ids) != 1 {
+			t.Errorf("Expected 1 ID per release, got %d", len(ids))
+			continue
+		}
+		releaseName := ids[0]
+		if !expectedReleases[releaseName] {
+			t.Errorf("Unexpected release: %s", releaseName)
+		}
+	}
+}
+
+func TestScratchReleaseIds_Preview(t *testing.T) {
+	if ScratchReleaseIds[ReleasePreview][0] != "preview" {
+		t.Errorf("Expected 'preview' for ReleasePreview, got %s", ScratchReleaseIds[ReleasePreview][0])
+	}
+}
+
+func TestScratchReleaseIds_Previous(t *testing.T) {
+	if ScratchReleaseIds[ReleasePrevious][0] != "previous" {
+		t.Errorf("Expected 'previous' for ReleasePrevious, got %s", ScratchReleaseIds[ReleasePrevious][0])
+	}
+}
+
+func TestScratchReleaseIds_Default(t *testing.T) {
+	if ScratchReleaseIds[ReleaseDefault][0] != "" {
+		t.Errorf("Expected empty string for ReleaseDefault, got %s", ScratchReleaseIds[ReleaseDefault][0])
+	}
+}

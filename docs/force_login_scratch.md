@@ -39,6 +39,10 @@ Available Settings (deployed after org creation):
   enableApexApprovalLockUnlock - Allow Apex to lock/unlock approval processes
   permsetsInFieldCreation - Allow assigning permission sets during field creation
 
+Available Releases:
+  preview  - Create scratch org on the next (preview) release
+  previous - Create scratch org on the previous release
+
 Examples:
   force login scratch --product fsc
   force login scratch --feature PersonAccounts --feature StateAndCountryPicklist
@@ -49,6 +53,8 @@ Examples:
   force login scratch --setting enableQuote
   force login scratch --product communities
   force login scratch --product healthcloud
+  force login scratch --release preview
+  force login scratch --release previous
 
 ```
 force login scratch [flags]
@@ -63,6 +69,7 @@ force login scratch [flags]
       --namespace string          namespace for the scratch org
       --product product           product shortcut for features (can be specified multiple times); see command help for available products (default [])
       --quantity stringToString   override default quantity for features (e.g., FinancialServicesUser=5); default quantity is 10 (default [])
+      --release release           Salesforce release for scratch org: preview (next release) or previous
       --setting setting           setting to enable (can be specified multiple times); see command help for available settings (default [])
       --username string           username for scratch org user
 ```
