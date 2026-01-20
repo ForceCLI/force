@@ -277,6 +277,10 @@ func (f *Force) CreateScratchOrgWithUserFeaturesEditionAndSettings(username stri
 }
 
 func (f *Force) CreateScratchOrgWithUserFeaturesEditionSettingsAndNamespace(username string, features []string, edition string, settings []string, namespace string) (id string, err error) {
+	return f.CreateScratchOrgWithRelease(username, features, edition, settings, namespace, "")
+}
+
+func (f *Force) CreateScratchOrgWithRelease(username string, features []string, edition string, settings []string, namespace string, release string) (id string, err error) {
 	params := make(map[string]string)
 	params["ConnectedAppCallbackUrl"] = "http://localhost:1717/OauthRedirect"
 	params["ConnectedAppConsumerKey"] = "PlatformCLI"
@@ -304,6 +308,9 @@ func (f *Force) CreateScratchOrgWithUserFeaturesEditionSettingsAndNamespace(user
 	}
 	if username != "" {
 		params["Username"] = username
+	}
+	if release != "" {
+		params["Release"] = release
 	}
 	id, err, messages := f.CreateRecord("ScratchOrgInfo", params)
 	if err != nil {

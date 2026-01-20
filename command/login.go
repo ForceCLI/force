@@ -95,11 +95,26 @@ var ScratchSettingIds = map[ScratchSetting][]string{
 	PermsetsInFieldCreation:      {"permsetsInFieldCreation"},
 }
 
+type ScratchRelease enumflag.Flag
+
+const (
+	ReleaseDefault ScratchRelease = iota
+	ReleasePreview
+	ReleasePrevious
+)
+
+var ScratchReleaseIds = map[ScratchRelease][]string{
+	ReleaseDefault:  {""},
+	ReleasePreview:  {"preview"},
+	ReleasePrevious: {"previous"},
+}
+
 var (
 	selectedFeatures  []ScratchFeature
 	selectedProducts  []ScratchProduct
 	selectedEdition   ScratchEdition
 	selectedSettings  []ScratchSetting
+	selectedRelease   ScratchRelease
 	featureQuantities map[string]string
 )
 
@@ -142,6 +157,10 @@ logged in system. non-production server to login to (values are 'pre',
 		enumflag.NewSlice(&selectedSettings, "setting", ScratchSettingIds, enumflag.EnumCaseInsensitive),
 		"setting",
 		"setting to enable (can be specified multiple times); see command help for available settings")
+	scratchCmd.Flags().Var(
+		enumflag.New(&selectedRelease, "release", ScratchReleaseIds, enumflag.EnumCaseInsensitive),
+		"release",
+		"Salesforce release for scratch org: preview (next release) or previous")
 
 	loginCmd.AddCommand(scratchCmd)
 	RootCmd.AddCommand(loginCmd)
@@ -185,6 +204,10 @@ Available Settings (deployed after org creation):
   enableApexApprovalLockUnlock - Allow Apex to lock/unlock approval processes
   permsetsInFieldCreation - Allow assigning permission sets during field creation
 
+Available Releases:
+  preview  - Create scratch org on the next (preview) release
+  previous - Create scratch org on the previous release
+
 Examples:
   force login scratch --product fsc
   force login scratch --feature PersonAccounts --feature StateAndCountryPicklist
@@ -194,7 +217,9 @@ Examples:
   force login scratch --setting enableEnhancedNotes
   force login scratch --setting enableQuote
   force login scratch --product communities
-  force login scratch --product healthcloud`,
+  force login scratch --product healthcloud
+  force login scratch --release preview
+  force login scratch --release previous`,
 	Run: func(cmd *cobra.Command, args []string) {
 		scratchUser, _ := cmd.Flags().GetString("username")
 		scratchNamespace, _ := cmd.Flags().GetString("namespace")
@@ -202,7 +227,8 @@ Examples:
 		allFeatures := expandProductsToFeatures(selectedProducts, selectedFeatures, quantities)
 		edition := ScratchEditionIds[selectedEdition][0]
 		allSettings := expandProductsToSettings(selectedProducts, selectedSettings)
-		scratchLogin(scratchUser, allFeatures, edition, allSettings, scratchNamespace)
+		release := ScratchReleaseIds[selectedRelease][0]
+		scratchLogin(scratchUser, allFeatures, edition, allSettings, scratchNamespace, release)
 	},
 }
 
@@ -329,8 +355,8 @@ func expandProductsToSettings(products []ScratchProduct, settings []ScratchSetti
 	return uniqueSettings
 }
 
-func scratchLogin(scratchUser string, features []string, edition string, settings []string, namespace string) {
-	_, err := ForceScratchCreateLoginAndSaveWithNamespace(scratchUser, features, edition, settings, namespace, os.Stderr)
+func scratchLogin(scratchUser string, features []string, edition string, settings []string, namespace string, release string) {
+	_, err := ForceScratchCreateLoginAndSaveWithRelease(scratchUser, features, edition, settings, namespace, release, os.Stderr)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
