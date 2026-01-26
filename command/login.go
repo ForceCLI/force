@@ -161,6 +161,7 @@ logged in system. non-production server to login to (values are 'pre',
 		enumflag.New(&selectedRelease, "release", ScratchReleaseIds, enumflag.EnumCaseInsensitive),
 		"release",
 		"Salesforce release for scratch org: preview (next release) or previous")
+	scratchCmd.Flags().Int("duration", 7, "number of days before the scratch org expires (1-30)")
 
 	loginCmd.AddCommand(scratchCmd)
 	RootCmd.AddCommand(loginCmd)
@@ -219,7 +220,8 @@ Examples:
   force login scratch --product communities
   force login scratch --product healthcloud
   force login scratch --release preview
-  force login scratch --release previous`,
+  force login scratch --release previous
+  force login scratch --duration 14`,
 	Run: func(cmd *cobra.Command, args []string) {
 		scratchUser, _ := cmd.Flags().GetString("username")
 		scratchNamespace, _ := cmd.Flags().GetString("namespace")
@@ -228,7 +230,8 @@ Examples:
 		edition := ScratchEditionIds[selectedEdition][0]
 		allSettings := expandProductsToSettings(selectedProducts, selectedSettings)
 		release := ScratchReleaseIds[selectedRelease][0]
-		scratchLogin(scratchUser, allFeatures, edition, allSettings, scratchNamespace, release)
+		duration, _ := cmd.Flags().GetInt("duration")
+		scratchLogin(scratchUser, allFeatures, edition, allSettings, scratchNamespace, release, duration)
 	},
 }
 
@@ -355,8 +358,8 @@ func expandProductsToSettings(products []ScratchProduct, settings []ScratchSetti
 	return uniqueSettings
 }
 
-func scratchLogin(scratchUser string, features []string, edition string, settings []string, namespace string, release string) {
-	_, err := ForceScratchCreateLoginAndSaveWithRelease(scratchUser, features, edition, settings, namespace, release, os.Stderr)
+func scratchLogin(scratchUser string, features []string, edition string, settings []string, namespace string, release string, duration int) {
+	_, err := ForceScratchCreateLoginAndSaveWithDuration(scratchUser, features, edition, settings, namespace, release, duration, os.Stderr)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}

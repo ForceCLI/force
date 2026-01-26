@@ -244,3 +244,69 @@ func TestWaitForScratchOrgReady_times_out(t *testing.T) {
 		t.Errorf("Expected timeout error, got: %v", err)
 	}
 }
+
+func TestCreateScratchOrgWithDuration_sets_DurationDays(t *testing.T) {
+	var receivedBody map[string]interface{}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "POST" && strings.Contains(r.URL.Path, "ScratchOrgInfo") {
+			json.NewDecoder(r.Body).Decode(&receivedBody)
+			w.WriteHeader(http.StatusCreated)
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"id":      "2SRp0000000MFpOAM",
+				"success": true,
+			})
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer server.Close()
+
+	force := &Force{
+		Credentials: &ForceSession{
+			InstanceUrl: server.URL,
+			AccessToken: "test-token",
+		},
+	}
+
+	_, err := force.CreateScratchOrgWithDuration("", []string{}, "", []string{}, "", "", 14)
+
+	if err != nil {
+		t.Fatalf("Expected no error, got: %v", err)
+	}
+	if receivedBody["DurationDays"] != "14" {
+		t.Errorf("Expected DurationDays to be '14', got: %v", receivedBody["DurationDays"])
+	}
+}
+
+func TestCreateScratchOrgWithRelease_uses_default_duration_of_7(t *testing.T) {
+	var receivedBody map[string]interface{}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "POST" && strings.Contains(r.URL.Path, "ScratchOrgInfo") {
+			json.NewDecoder(r.Body).Decode(&receivedBody)
+			w.WriteHeader(http.StatusCreated)
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"id":      "2SRp0000000MFpOAM",
+				"success": true,
+			})
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer server.Close()
+
+	force := &Force{
+		Credentials: &ForceSession{
+			InstanceUrl: server.URL,
+			AccessToken: "test-token",
+		},
+	}
+
+	_, err := force.CreateScratchOrgWithRelease("", []string{}, "", []string{}, "", "")
+
+	if err != nil {
+		t.Fatalf("Expected no error, got: %v", err)
+	}
+	if receivedBody["DurationDays"] != "7" {
+		t.Errorf("Expected DurationDays to be '7', got: %v", receivedBody["DurationDays"])
+	}
+}
