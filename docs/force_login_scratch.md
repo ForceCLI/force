@@ -55,6 +55,7 @@ Examples:
   force login scratch --product healthcloud
   force login scratch --release preview
   force login scratch --release previous
+  force login scratch --duration 14
 
 ```
 force login scratch [flags]
@@ -63,6 +64,7 @@ force login scratch [flags]
 ### Options
 
 ```
+      --duration int              number of days before the scratch org expires (1-30) (default 7)
       --edition edition           scratch org edition; see command help for available editions (default Developer)
       --feature feature           feature to enable (can be specified multiple times); see command help for available features (default [])
   -h, --help                      help for scratch

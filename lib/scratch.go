@@ -281,10 +281,15 @@ func (f *Force) CreateScratchOrgWithUserFeaturesEditionSettingsAndNamespace(user
 }
 
 func (f *Force) CreateScratchOrgWithRelease(username string, features []string, edition string, settings []string, namespace string, release string) (id string, err error) {
+	return f.CreateScratchOrgWithDuration(username, features, edition, settings, namespace, release, 7)
+}
+
+func (f *Force) CreateScratchOrgWithDuration(username string, features []string, edition string, settings []string, namespace string, release string, duration int) (id string, err error) {
 	params := make(map[string]string)
 	params["ConnectedAppCallbackUrl"] = "http://localhost:1717/OauthRedirect"
 	params["ConnectedAppConsumerKey"] = "PlatformCLI"
 	params["Country"] = "US"
+	params["DurationDays"] = fmt.Sprintf("%d", duration)
 
 	if edition != "" {
 		params["Edition"] = edition
