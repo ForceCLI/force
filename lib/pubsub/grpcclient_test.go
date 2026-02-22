@@ -157,6 +157,22 @@ func TestFlattenAvroUnions(t *testing.T) {
 	}
 }
 
+func TestGRPCEndpoint_can_be_overridden(t *testing.T) {
+	originalEndpoint := GRPCEndpoint
+	defer func() { GRPCEndpoint = originalEndpoint }()
+
+	if GRPCEndpoint != DefaultGRPCEndpoint {
+		t.Errorf("GRPCEndpoint should default to %s, got %s", DefaultGRPCEndpoint, GRPCEndpoint)
+	}
+
+	customEndpoint := "custom.endpoint.example.com:7443"
+	GRPCEndpoint = customEndpoint
+
+	if GRPCEndpoint != customEndpoint {
+		t.Errorf("GRPCEndpoint should be %s, got %s", customEndpoint, GRPCEndpoint)
+	}
+}
+
 func TestFlattenAvroUnions_EdgeCases(t *testing.T) {
 	t.Run("handles_nil_input", func(t *testing.T) {
 		result := flattenAvroUnions(nil)

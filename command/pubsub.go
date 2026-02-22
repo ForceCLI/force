@@ -15,6 +15,8 @@ import (
 )
 
 func init() {
+	pubsubCmd.PersistentFlags().String("endpoint", "", "pub/sub API endpoint (default: https://api.pubsub.salesforce.com:7443)")
+
 	subscribeCmd.Flags().StringP("replayid", "r", "", "replay id to start after")
 	subscribeCmd.Flags().BoolP("earliest", "e", false, "start at earliest events (default is latest)")
 	subscribeCmd.Flags().BoolP("changes", "c", false, "show only changed fields (for Change Data Capture events)")
@@ -33,6 +35,14 @@ var pubsubCmd = &cobra.Command{
 	Short:                 "Subscribe to a pub/sub channel",
 	Long:                  "Subscribe to a pub/sub channel to stream Change Data Capture or custom Platform Events",
 	DisableFlagsInUseLine: true,
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		// Inherit parent's PersistentPreRun behavior
+		RootCmd.PersistentPreRun(cmd, args)
+		endpoint, _ := cmd.Flags().GetString("endpoint")
+		if endpoint != "" {
+			pubsub.GRPCEndpoint = endpoint
+		}
+	},
 }
 
 var subscribeCmd = &cobra.Command{

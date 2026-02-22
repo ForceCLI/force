@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	. "github.com/ForceCLI/force/lib"
@@ -26,12 +27,14 @@ const (
 	instanceHeader = "instanceurl"
 	tenantHeader   = "tenantid"
 
-	GRPCEndpoint    = "api.pubsub.salesforce.com:7443"
-	GRPCDialTimeout = 5 * time.Second
-	GRPCCallTimeout = 30 * time.Second
+	DefaultGRPCEndpoint = "api.pubsub.salesforce.com:7443"
+	GRPCDialTimeout     = 5 * time.Second
+	GRPCCallTimeout     = 30 * time.Second
 
 	Appetite int32 = 5
 )
+
+var GRPCEndpoint = DefaultGRPCEndpoint
 
 var InvalidReplayIdError = errors.New("Invalid Replay Id")
 
@@ -415,7 +418,17 @@ func NewGRPCClient(f *Force) (*PubSubClient, error) {
 		grpc.WithBlock(),
 	}
 
-	if GRPCEndpoint == "localhost:7011" {
+	endpoint := GRPCEndpoint
+	insecureMode := false
+
+	if strings.HasPrefix(endpoint, "http://") {
+		endpoint = strings.TrimPrefix(endpoint, "http://")
+		insecureMode = true
+	} else if strings.HasPrefix(endpoint, "https://") {
+		endpoint = strings.TrimPrefix(endpoint, "https://")
+	}
+
+	if insecureMode {
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	} else {
 		certs := getCerts()
@@ -426,7 +439,7 @@ func NewGRPCClient(f *Force) (*PubSubClient, error) {
 	ctx, cancelFn := context.WithTimeout(context.Background(), GRPCDialTimeout)
 	defer cancelFn()
 
-	conn, err := grpc.DialContext(ctx, GRPCEndpoint, dialOpts...)
+	conn, err := grpc.DialContext(ctx, endpoint, dialOpts...)
 	if err != nil {
 		return nil, err
 	}
