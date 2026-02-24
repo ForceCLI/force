@@ -9,6 +9,8 @@ import (
 
 	. "github.com/ForceCLI/force/lib"
 	"github.com/pkg/errors"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"github.com/ForceCLI/force/lib/pubsub/proto"
 )
@@ -72,6 +74,9 @@ func Subscribe(f *Force, channel string, replayId string, replayPreset proto.Rep
 		}
 		if err == InvalidReplayIdError {
 			return errors.Wrap(err, fmt.Sprintf("could not subscribe starting at replay id: %s", base64.StdEncoding.EncodeToString(curReplayId)))
+		}
+		if s, ok := status.FromError(err); ok && s.Code() == codes.Unavailable {
+			return errors.Wrap(err, "server unavailable")
 		}
 		if err != nil {
 			Log.Info(fmt.Sprintf("error occurred while subscribing to topic: %v", err))

@@ -147,7 +147,7 @@ func (c *PubSubClient) Subscribe(channel string, replayPreset proto.ReplayPreset
 
 	subscribeClient, err := c.pubSubClient.Subscribe(ctx)
 	if err != nil {
-		if isAuthError(subscribeClient.Trailer().Get("error-code")) {
+		if subscribeClient != nil && isAuthError(subscribeClient.Trailer().Get("error-code")) {
 			return replayId, SessionExpiredError
 		}
 		return replayId, err
