@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"reflect"
 	"testing"
+
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func TestFlattenAvroUnions(t *testing.T) {
@@ -213,4 +216,129 @@ func TestFlattenAvroUnions_EdgeCases(t *testing.T) {
 			t.Errorf("Failed to handle deeply nested unions")
 		}
 	})
+}
+
+func TestIsAuthError(t *testing.T) {
+	tests := []struct {
+		name     string
+		values   []string
+		expected bool
+	}{
+		{
+			name:     "returns_true_for_auth_error_code",
+			values:   []string{"sfdc.platform.eventbus.grpc.service.auth.error"},
+			expected: true,
+		},
+		{
+			name:     "returns_true_when_auth_error_in_list",
+			values:   []string{"other.error", "sfdc.platform.eventbus.grpc.service.auth.error", "another.error"},
+			expected: true,
+		},
+		{
+			name:     "returns_false_for_empty_list",
+			values:   []string{},
+			expected: false,
+		},
+		{
+			name:     "returns_false_for_nil_list",
+			values:   nil,
+			expected: false,
+		},
+		{
+			name:     "returns_false_for_other_errors",
+			values:   []string{"some.other.error", "another.error"},
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := isAuthError(tt.values)
+			if result != tt.expected {
+				t.Errorf("isAuthError(%v) = %v, expected %v", tt.values, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestIsInvalidReplayIdError(t *testing.T) {
+	tests := []struct {
+		name     string
+		values   []string
+		expected bool
+	}{
+		{
+			name:     "returns_true_for_replay_id_error_code",
+			values:   []string{"sfdc.platform.eventbus.grpc.subscription.fetch.replayid.corrupted"},
+			expected: true,
+		},
+		{
+			name:     "returns_false_for_empty_list",
+			values:   []string{},
+			expected: false,
+		},
+		{
+			name:     "returns_false_for_nil_list",
+			values:   nil,
+			expected: false,
+		},
+		{
+			name:     "returns_false_for_other_errors",
+			values:   []string{"some.other.error"},
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := isInvalidReplayIdError(tt.values)
+			if result != tt.expected {
+				t.Errorf("isInvalidReplayIdError(%v) = %v, expected %v", tt.values, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestGRPCUnavailableErrorDetection(t *testing.T) {
+	tests := []struct {
+		name        string
+		err         error
+		isUnavail   bool
+		description string
+	}{
+		{
+			name:        "detects_unavailable_error",
+			err:         status.Error(codes.Unavailable, "connection refused"),
+			isUnavail:   true,
+			description: "gRPC Unavailable error should be detected",
+		},
+		{
+			name:        "does_not_match_other_grpc_errors",
+			err:         status.Error(codes.Internal, "internal error"),
+			isUnavail:   false,
+			description: "Other gRPC errors should not match Unavailable",
+		},
+		{
+			name:        "does_not_match_cancelled_error",
+			err:         status.Error(codes.Canceled, "context canceled"),
+			isUnavail:   false,
+			description: "Canceled error should not match Unavailable",
+		},
+		{
+			name:        "handles_nil_error",
+			err:         nil,
+			isUnavail:   false,
+			description: "nil error should not match Unavailable",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s, ok := status.FromError(tt.err)
+			isUnavailable := ok && s.Code() == codes.Unavailable
+			if isUnavailable != tt.isUnavail {
+				t.Errorf("%s: got %v, expected %v", tt.description, isUnavailable, tt.isUnavail)
+			}
+		})
+	}
 }
