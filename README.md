@@ -82,8 +82,8 @@ When you login using the CLI a record of the login is saved. Eventually your tok
       force login -i=login                  # log in to production or developer org
       force login -i=test                   # log in to sandbox org
       force login -i=pre                    # log in to prerelease org
-      force login -u=un [-p=pw]             # log in using SOAP. Password is optional
-      force login -i=test -u=un -p=pw       # log in using SOAP to sandbox org. Password is optional
+      force login -u=un [-p=pw]             # log in using OAuth Username-Password flow
+      force login -i=test -u=un -p=pw       # log in to sandbox org using OAuth Username-Password flow
       force login -i=<instance> -u=un -p=pw # internal only
 
 ### logout
