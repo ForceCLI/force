@@ -4,13 +4,13 @@ import (
 	"strconv"
 
 	. "github.com/ForceCLI/force/config"
-	"github.com/ViViDboarder/gotifier"
+	"github.com/gen2brain/beeep"
 )
 
 func Notify(method string, message string) {
 	shouldNotify := GetShouldNotify()
 	if shouldNotify {
-		gotifier.Notification{Title: "Force Cli", Subtitle: method, Message: message}.Push()
+		_ = beeep.Notify("Force Cli: "+method, message, "")
 	}
 }
 
