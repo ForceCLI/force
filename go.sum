@@ -1,5 +1,5 @@
-github.com/ForceCLI/force-md v0.30.0 h1:nMaLV1cyZGSPrFU36pXDTdgFx/rLQJhqgUd1qoEhwTc=
-github.com/ForceCLI/force-md v0.30.0/go.mod h1:ZwDrAanWfMpoERs/Gpk6sn6xOW28yAvFML83bFkF4GQ=
+github.com/ForceCLI/force-md v0.35.0 h1:SFeHnhc6R5Eh+Dy+Z4wSxxEzOLdWRbYcAPYIBWv1Qco=
+github.com/ForceCLI/force-md v0.35.0/go.mod h1:AeoBS5LJn8wWmzOwDZhRUHH7vK88BZCA8fFD3k1czRI=
 github.com/ForceCLI/inflect v0.0.0-20130829110746-cc00b5ad7a6a h1:mMd54YgLoeupNpbph3KdwvF58O0lZ72RQaJ2cFPOFDE=
 github.com/ForceCLI/inflect v0.0.0-20130829110746-cc00b5ad7a6a/go.mod h1:DGKmCfb9oo5BivGO+szHk2ZvlqPDTlW4AYVpRBIVbms=
 github.com/ViViDboarder/gotifier v0.0.0-20140619195515-0f19f3d7c54c h1:qLWjxZGLdzxp0Gc4Sf6f4w15D+wNKZ28HhkV9y5cAhw=

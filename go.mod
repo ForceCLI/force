@@ -3,7 +3,7 @@ module github.com/ForceCLI/force
 go 1.25.0
 
 require (
-	github.com/ForceCLI/force-md v0.30.0
+	github.com/ForceCLI/force-md v0.35.0
 	github.com/ForceCLI/inflect v0.0.0-20130829110746-cc00b5ad7a6a
 	github.com/ViViDboarder/gotifier v0.0.0-20140619195515-0f19f3d7c54c
 	github.com/bgentry/speakeasy v0.1.0
@@ -61,7 +61,6 @@ require (
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/stretchr/testify v1.8.4 // indirect
 	golang.org/x/exp v0.0.0-20250103183323-7d7fa50e5329 // indirect
 	golang.org/x/net v0.50.0 // indirect
 	golang.org/x/sync v0.19.0 // indirect
