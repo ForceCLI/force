@@ -173,7 +173,7 @@ Export allows you to fetch all codes from your org to local machine. This comman
 
 
 ### notify
-Includes notification library, [gotifier](https://github.com/ViViDboarder/gotifier), that will display notifications for using either Using [terminal-notifier](https://github.com/julienXX/terminal-notifier) on OSX or [notify-send](http://manpages.ubuntu.com/manpages/saucy/man1/notify-send.1.html) on Ubuntu. Currently, only the `push` and `test` methods are displaying notifications.
+Includes notification library, [beeep](https://github.com/gen2brain/beeep), that displays desktop notifications across platforms. Currently, only the `push` and `test` methods are displaying notifications.
 
 
 ### limits
