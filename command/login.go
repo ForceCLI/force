@@ -25,6 +25,12 @@ const (
 	HealthCloudUser
 	ApexUserModeWithPermset
 	EventLogFile
+	AnalyticsAdminPerms
+	WavePlatform
+	InsightsPlatform
+	EinsteinAnalyticsPlus
+	EinsteinBuilderFree
+	DevelopmentWave
 )
 
 var ScratchFeatureIds = map[ScratchFeature][]string{
@@ -37,6 +43,12 @@ var ScratchFeatureIds = map[ScratchFeature][]string{
 	HealthCloudUser:            {"HealthCloudUser"},
 	ApexUserModeWithPermset:    {"ApexUserModeWithPermset"},
 	EventLogFile:               {"EventLogFile"},
+	AnalyticsAdminPerms:        {"AnalyticsAdminPerms"},
+	WavePlatform:               {"WavePlatform"},
+	InsightsPlatform:           {"InsightsPlatform"},
+	EinsteinAnalyticsPlus:      {"EinsteinAnalyticsPlus"},
+	EinsteinBuilderFree:        {"EinsteinBuilderFree"},
+	DevelopmentWave:            {"DevelopmentWave"},
 }
 
 type ScratchProduct enumflag.Flag
@@ -45,12 +57,14 @@ const (
 	FSC ScratchProduct = iota
 	CommunitiesProduct
 	HealthCloudProduct
+	CRMAnalyticsProduct
 )
 
 var ScratchProductIds = map[ScratchProduct][]string{
-	FSC:                {"fsc"},
-	CommunitiesProduct: {"communities"},
-	HealthCloudProduct: {"healthcloud"},
+	FSC:                 {"fsc"},
+	CommunitiesProduct:  {"communities"},
+	HealthCloudProduct:  {"healthcloud"},
+	CRMAnalyticsProduct: {"crmanalytics"},
 }
 
 type ScratchEdition enumflag.Flag
@@ -173,20 +187,27 @@ var scratchCmd = &cobra.Command{
 	Long: `Create scratch org and log in
 
 Available Features:
-  Communities                - Enables Experience Cloud (Communities)
-  ContactsToMultipleAccounts - Allows a single Contact to be associated with multiple Accounts
-  FinancialServicesUser      - Enables Financial Services Cloud user licenses (requires quantity, default: 10)
-  HealthCloudAddOn           - Enables Health Cloud add-on
-  HealthCloudUser            - Enables Health Cloud user licenses
-  ApexUserModeWithPermset    - Enables Apex code to run in user mode with a permission set session
-  EventLogFile               - Enables Event Log File
-  PersonAccounts             - Enables Person Accounts (B2C account model)
-  StateAndCountryPicklist    - Enables State and Country Picklists for standard address fields
+  AnalyticsAdminPerms            - Enables CRM Analytics admin permissions
+  Communities                    - Enables Experience Cloud (Communities)
+  ContactsToMultipleAccounts     - Allows a single Contact to be associated with multiple Accounts
+  DevelopmentWave                - Enables CRM Analytics development features
+  EinsteinAnalyticsPlus          - Enables Einstein Analytics Plus
+  EinsteinBuilderFree            - Enables Einstein Builder Free
+  EventLogFile                   - Enables Event Log File
+  FinancialServicesUser          - Enables Financial Services Cloud user licenses (requires quantity, default: 10)
+  HealthCloudAddOn               - Enables Health Cloud add-on
+  HealthCloudUser                - Enables Health Cloud user licenses
+  ApexUserModeWithPermset        - Enables Apex code to run in user mode with a permission set session
+  InsightsPlatform               - Enables Insights Platform
+  PersonAccounts                 - Enables Person Accounts (B2C account model)
+  StateAndCountryPicklist        - Enables State and Country Picklists for standard address fields
+  WavePlatform                   - Enables Wave Platform (CRM Analytics)
 
 Available Products:
-  communities - Experience Cloud (enables Communities feature and networksEnabled setting)
-  fsc         - Financial Services Cloud (enables PersonAccounts, ContactsToMultipleAccounts, FinancialServicesUser)
-  healthcloud - Health Cloud (enables HealthCloudAddOn, HealthCloudUser)
+  communities  - Experience Cloud (enables Communities feature and networksEnabled setting)
+  crmanalytics - CRM Analytics (enables AnalyticsAdminPerms, WavePlatform, InsightsPlatform, EinsteinAnalyticsPlus, EinsteinBuilderFree, DevelopmentWave)
+  fsc          - Financial Services Cloud (enables PersonAccounts, ContactsToMultipleAccounts, FinancialServicesUser)
+  healthcloud  - Health Cloud (enables HealthCloudAddOn, HealthCloudUser)
 
 Available Editions:
   Developer           - Developer Edition (default)
@@ -218,6 +239,7 @@ Examples:
   force login scratch --setting enableEnhancedNotes
   force login scratch --setting enableQuote
   force login scratch --product communities
+  force login scratch --product crmanalytics
   force login scratch --product healthcloud
   force login scratch --release preview
   force login scratch --release previous
@@ -288,9 +310,10 @@ to get a new session token automatically when needed.`,
 
 func expandProductsToFeatures(products []ScratchProduct, features []ScratchFeature, quantities map[string]string) []string {
 	productFeatures := map[ScratchProduct][]ScratchFeature{
-		FSC:                {PersonAccounts, ContactsToMultipleAccounts, FinancialServicesUser},
-		CommunitiesProduct: {Communities},
-		HealthCloudProduct: {HealthCloudAddOn, HealthCloudUser},
+		FSC:                 {PersonAccounts, ContactsToMultipleAccounts, FinancialServicesUser},
+		CommunitiesProduct:  {Communities},
+		HealthCloudProduct:  {HealthCloudAddOn, HealthCloudUser},
+		CRMAnalyticsProduct: {AnalyticsAdminPerms, WavePlatform, InsightsPlatform, EinsteinAnalyticsPlus, EinsteinBuilderFree, DevelopmentWave},
 	}
 
 	featureSet := make(map[ScratchFeature]bool)
