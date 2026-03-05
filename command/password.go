@@ -95,7 +95,10 @@ func runPasswordChange(username, pass string) {
 	newPass["NewPassword"] = pass
 	_, err, emessages := force.ChangePassword(id, newPass)
 	if err != nil {
-		ErrorAndExit(err.Error(), emessages[0].ErrorCode)
+		if len(emessages) > 0 {
+			ErrorAndExit(err.Error(), emessages[0].ErrorCode)
+		}
+		ErrorAndExit(err.Error())
 	} else {
 		fmt.Println("\nPassword changed\n ")
 	}
