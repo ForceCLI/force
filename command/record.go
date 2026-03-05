@@ -174,7 +174,10 @@ func runRecordCreate(object string, fields []string) {
 	attrs := parseArgumentAttrs(fields)
 	id, err, emessages := force.CreateRecord(object, attrs)
 	if err != nil {
-		ErrorAndExit("Failed to create record: %s (%s)", err.Error(), emessages[0].ErrorCode)
+		if len(emessages) > 0 {
+			ErrorAndExit("Failed to create record: %s (%s)", err.Error(), emessages[0].ErrorCode)
+		}
+		ErrorAndExit("Failed to create record: %s", err.Error())
 	}
 	fmt.Printf("Record created: %s\n", id)
 }
