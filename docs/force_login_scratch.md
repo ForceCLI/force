@@ -38,6 +38,7 @@ Available Settings (deployed after org creation):
   networksEnabled     - Enable Experience Cloud (Communities)
   enableApexApprovalLockUnlock - Allow Apex to lock/unlock approval processes
   permsetsInFieldCreation - Allow assigning permission sets during field creation
+  enableLightningPreviewPref - Enable Lightning Experience preview pref
 
 Available Releases:
   preview  - Create scratch org on the next (preview) release

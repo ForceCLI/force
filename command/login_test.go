@@ -338,6 +338,16 @@ func TestConvertSettingsToStrings_PermsetsInFieldCreation(t *testing.T) {
 	}
 }
 
+func TestConvertSettingsToStrings_EnableLightningPreviewPref(t *testing.T) {
+	result := convertSettingsToStrings([]ScratchSetting{EnableLightningPreviewPref})
+	if len(result) != 1 {
+		t.Errorf("Expected 1 setting, got %d", len(result))
+	}
+	if result[0] != "enableLightningPreviewPref" {
+		t.Errorf("Expected enableLightningPreviewPref, got %s", result[0])
+	}
+}
+
 func TestScratchSettingIds_AllSettingsDefined(t *testing.T) {
 	expectedSettings := map[string]bool{
 		"enableEnhancedNotes":          true,
@@ -345,6 +355,7 @@ func TestScratchSettingIds_AllSettingsDefined(t *testing.T) {
 		"networksEnabled":              true,
 		"enableApexApprovalLockUnlock": true,
 		"permsetsInFieldCreation":      true,
+		"enableLightningPreviewPref":   true,
 	}
 
 	if len(ScratchSettingIds) != len(expectedSettings) {
