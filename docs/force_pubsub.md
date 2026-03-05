@@ -9,7 +9,8 @@ Subscribe to a pub/sub channel to stream Change Data Capture or custom Platform 
 ### Options
 
 ```
-  -h, --help   help for pubsub
+      --endpoint string   pub/sub API endpoint (default: https://api.pubsub.salesforce.com:7443)
+  -h, --help              help for pubsub
 ```
 
 ### Options inherited from parent commands

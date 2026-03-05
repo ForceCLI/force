@@ -7,20 +7,27 @@ Create scratch org and log in
 Create scratch org and log in
 
 Available Features:
-  Communities                - Enables Experience Cloud (Communities)
-  ContactsToMultipleAccounts - Allows a single Contact to be associated with multiple Accounts
-  FinancialServicesUser      - Enables Financial Services Cloud user licenses (requires quantity, default: 10)
-  HealthCloudAddOn           - Enables Health Cloud add-on
-  HealthCloudUser            - Enables Health Cloud user licenses
-  ApexUserModeWithPermset    - Enables Apex code to run in user mode with a permission set session
-  EventLogFile               - Enables Event Log File
-  PersonAccounts             - Enables Person Accounts (B2C account model)
-  StateAndCountryPicklist    - Enables State and Country Picklists for standard address fields
+  AnalyticsAdminPerms            - Enables CRM Analytics admin permissions
+  Communities                    - Enables Experience Cloud (Communities)
+  ContactsToMultipleAccounts     - Allows a single Contact to be associated with multiple Accounts
+  DevelopmentWave                - Enables CRM Analytics development features
+  EinsteinAnalyticsPlus          - Enables Einstein Analytics Plus
+  EinsteinBuilderFree            - Enables Einstein Builder Free
+  EventLogFile                   - Enables Event Log File
+  FinancialServicesUser          - Enables Financial Services Cloud user licenses (requires quantity, default: 10)
+  HealthCloudAddOn               - Enables Health Cloud add-on
+  HealthCloudUser                - Enables Health Cloud user licenses
+  ApexUserModeWithPermset        - Enables Apex code to run in user mode with a permission set session
+  InsightsPlatform               - Enables Insights Platform
+  PersonAccounts                 - Enables Person Accounts (B2C account model)
+  StateAndCountryPicklist        - Enables State and Country Picklists for standard address fields
+  WavePlatform                   - Enables Wave Platform (CRM Analytics)
 
 Available Products:
-  communities - Experience Cloud (enables Communities feature and networksEnabled setting)
-  fsc         - Financial Services Cloud (enables PersonAccounts, ContactsToMultipleAccounts, FinancialServicesUser)
-  healthcloud - Health Cloud (enables HealthCloudAddOn, HealthCloudUser)
+  communities  - Experience Cloud (enables Communities feature and networksEnabled setting)
+  crmanalytics - CRM Analytics (enables AnalyticsAdminPerms, WavePlatform, InsightsPlatform, EinsteinAnalyticsPlus, EinsteinBuilderFree, DevelopmentWave)
+  fsc          - Financial Services Cloud (enables PersonAccounts, ContactsToMultipleAccounts, FinancialServicesUser)
+  healthcloud  - Health Cloud (enables HealthCloudAddOn, HealthCloudUser)
 
 Available Editions:
   Developer           - Developer Edition (default)
@@ -38,6 +45,7 @@ Available Settings (deployed after org creation):
   networksEnabled     - Enable Experience Cloud (Communities)
   enableApexApprovalLockUnlock - Allow Apex to lock/unlock approval processes
   permsetsInFieldCreation - Allow assigning permission sets during field creation
+  enableLightningPreviewPref - Enable Lightning Experience preview pref
 
 Available Releases:
   preview  - Create scratch org on the next (preview) release
@@ -52,6 +60,7 @@ Examples:
   force login scratch --setting enableEnhancedNotes
   force login scratch --setting enableQuote
   force login scratch --product communities
+  force login scratch --product crmanalytics
   force login scratch --product healthcloud
   force login scratch --release preview
   force login scratch --release previous

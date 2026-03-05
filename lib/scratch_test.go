@@ -49,6 +49,26 @@ func TestBuildSettingsMetadata_ExcludesUserManagementSettingsWhenUnused(t *testi
 	}
 }
 
+func TestBuildSettingsMetadata_AddsLightningExperienceSettings(t *testing.T) {
+	files := buildSettingsMetadata([]string{"enableLightningPreviewPref"})
+
+	content, ok := files["unpackaged/settings/LightningExperience.settings"]
+	if !ok {
+		t.Fatalf("LightningExperience.settings not generated")
+	}
+	if !strings.Contains(string(content), "<enableLightningPreviewPref>true</enableLightningPreviewPref>") {
+		t.Errorf("LightningExperience.settings missing enableLightningPreviewPref preference:\n%s", content)
+	}
+}
+
+func TestBuildSettingsMetadata_ExcludesLightningExperienceSettingsWhenUnused(t *testing.T) {
+	files := buildSettingsMetadata([]string{"enableEnhancedNotes"})
+
+	if _, ok := files["unpackaged/settings/LightningExperience.settings"]; ok {
+		t.Fatalf("LightningExperience.settings should not be generated when not requested")
+	}
+}
+
 func TestGetScratchOrg_returns_error_when_SignupUsername_is_nil(t *testing.T) {
 	f := &Force{}
 	f.Credentials = &ForceSession{}

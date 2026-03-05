@@ -42,6 +42,7 @@ force pubsub subscribe [channel] [flags]
   -a, --account username    account username to use
   -V, --apiversion string   API version to use
       --config string       config directory to use (default: .force)
+      --endpoint string     pub/sub API endpoint (default: https://api.pubsub.salesforce.com:7443)
 ```
 
 ### SEE ALSO

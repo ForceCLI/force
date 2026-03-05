@@ -205,6 +205,7 @@ func buildSettingsMetadata(settings []string) ForceMetadataFiles {
 	// Create settings file for each requested setting
 	apexSettings := false
 	userManagementSettings := false
+	lightningExperienceSettings := false
 
 	for _, setting := range settings {
 		switch setting {
@@ -231,6 +232,8 @@ func buildSettingsMetadata(settings []string) ForceMetadataFiles {
 			apexSettings = true
 		case "permsetsInFieldCreation":
 			userManagementSettings = true
+		case "enableLightningPreviewPref":
+			lightningExperienceSettings = true
 		}
 	}
 
@@ -250,6 +253,15 @@ func buildSettingsMetadata(settings []string) ForceMetadataFiles {
     <permsetsInFieldCreation>true</permsetsInFieldCreation>
 </UserManagementSettings>`)
 		files["unpackaged/settings/UserManagement.settings"] = userMgmtBuffer.Bytes()
+	}
+
+	if lightningExperienceSettings {
+		var lexBuffer bytes.Buffer
+		lexBuffer.WriteString(`<?xml version="1.0" encoding="UTF-8"?>
+<LightningExperienceSettings xmlns="http://soap.sforce.com/2006/04/metadata">
+    <enableLightningPreviewPref>true</enableLightningPreviewPref>
+</LightningExperienceSettings>`)
+		files["unpackaged/settings/LightningExperience.settings"] = lexBuffer.Bytes()
 	}
 
 	return files

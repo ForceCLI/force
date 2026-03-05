@@ -99,6 +99,7 @@ const (
 	NetworksEnabled
 	EnableApexApprovalLockUnlock
 	PermsetsInFieldCreation
+	EnableLightningPreviewPref
 )
 
 var ScratchSettingIds = map[ScratchSetting][]string{
@@ -107,6 +108,7 @@ var ScratchSettingIds = map[ScratchSetting][]string{
 	NetworksEnabled:              {"networksEnabled"},
 	EnableApexApprovalLockUnlock: {"enableApexApprovalLockUnlock"},
 	PermsetsInFieldCreation:      {"permsetsInFieldCreation"},
+	EnableLightningPreviewPref:   {"enableLightningPreviewPref"},
 }
 
 type ScratchRelease enumflag.Flag
@@ -225,6 +227,7 @@ Available Settings (deployed after org creation):
   networksEnabled     - Enable Experience Cloud (Communities)
   enableApexApprovalLockUnlock - Allow Apex to lock/unlock approval processes
   permsetsInFieldCreation - Allow assigning permission sets during field creation
+  enableLightningPreviewPref - Enable Lightning Experience preview pref
 
 Available Releases:
   preview  - Create scratch org on the next (preview) release
