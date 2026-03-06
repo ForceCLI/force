@@ -41,6 +41,7 @@ func init() {
 	packageVersionCreateCmd.Flags().StringP("version-name", "m", "", "Version name (optional, defaults to version-number)")
 	packageVersionCreateCmd.Flags().StringP("version-description", "d", "", "Version description (optional, defaults to version-number)")
 	packageVersionCreateCmd.Flags().StringP("ancestor-id", "", "", "Ancestor version ID (optional)")
+	packageVersionCreateCmd.Flags().StringArrayP("dependency", "", []string{}, "Subscriber Package Version ID (04t) dependency (can be specified multiple times)")
 	packageVersionCreateCmd.Flags().StringP("tag", "", "", "Tag to set on the Package2VersionCreateRequest")
 	packageVersionCreateCmd.Flags().BoolP("skip-validation", "s", false, "Skip validation")
 	packageVersionCreateCmd.Flags().BoolP("async-validation", "y", false, "Async validation")
@@ -166,13 +167,14 @@ var packageVersionCreateCmd = &cobra.Command{
 		versionName, _ := cmd.Flags().GetString("version-name")
 		versionDescription, _ := cmd.Flags().GetString("version-description")
 		ancestorId, _ := cmd.Flags().GetString("ancestor-id")
+		dependencies, _ := cmd.Flags().GetStringArray("dependency")
 		tag, _ := cmd.Flags().GetString("tag")
 		skipValidation, _ := cmd.Flags().GetBool("skip-validation")
 		asyncValidation, _ := cmd.Flags().GetBool("async-validation")
 		codeCoverage, _ := cmd.Flags().GetBool("code-coverage")
 
 		runCreatePackageVersion(path, packageId, namespace, versionNumber, versionName,
-			versionDescription, ancestorId, tag, skipValidation, asyncValidation, codeCoverage)
+			versionDescription, ancestorId, dependencies, tag, skipValidation, asyncValidation, codeCoverage)
 	},
 }
 
@@ -570,7 +572,7 @@ func pollPackageUninstallStatus(requestId string) {
 }
 
 func runCreatePackageVersion(path string, packageId string, namespace string, versionNumber string,
-	versionName string, versionDescription string, ancestorId string, tag string,
+	versionName string, versionDescription string, ancestorId string, dependencies []string, tag string,
 	skipValidation bool, asyncValidation bool, codeCoverage bool) {
 
 	// Use version-number as default for version-name and version-description if not provided
@@ -629,15 +631,14 @@ func runCreatePackageVersion(path string, packageId string, namespace string, ve
 		}
 	}
 
-	// Create package2-descriptor.json
-	descriptor := map[string]interface{}{
-		"versionName":        versionName,
-		"versionNumber":      versionNumber,
-		"path":               "salesforce",
-		"versionDescription": versionDescription,
-		"id":                 packageId,
-		"ancestorId":         ancestorId,
+	for _, dependency := range dependencies {
+		if !strings.HasPrefix(dependency, "04t") {
+			ErrorAndExit(fmt.Sprintf("Invalid dependency ID: %s. Must be a Subscriber Package Version ID (04t)", dependency))
+		}
 	}
+
+	// Create package2-descriptor.json
+	descriptor := buildPackageVersionDescriptor(versionName, versionNumber, versionDescription, packageId, ancestorId, dependencies)
 
 	descriptorJson, err := json.Marshal(descriptor)
 	if err != nil {
@@ -820,6 +821,29 @@ func runCreatePackageVersion(path string, packageId string, namespace string, ve
 	if packageVersionId != "" {
 		fmt.Printf("Package version created successfully: %s\n", packageVersionId)
 	}
+}
+
+func buildPackageVersionDescriptor(versionName string, versionNumber string, versionDescription string, packageId string, ancestorId string, dependencies []string) map[string]interface{} {
+	descriptor := map[string]interface{}{
+		"versionName":        versionName,
+		"versionNumber":      versionNumber,
+		"path":               "salesforce",
+		"versionDescription": versionDescription,
+		"id":                 packageId,
+		"ancestorId":         ancestorId,
+	}
+
+	if len(dependencies) > 0 {
+		descriptorDependencies := make([]map[string]string, 0, len(dependencies))
+		for _, dependency := range dependencies {
+			descriptorDependencies = append(descriptorDependencies, map[string]string{
+				"subscriberPackageVersionId": dependency,
+			})
+		}
+		descriptor["dependencies"] = descriptorDependencies
+	}
+
+	return descriptor
 }
 
 func pollPackageVersionStatus(requestId string) string {
