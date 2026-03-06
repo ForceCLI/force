@@ -1,6 +1,7 @@
 package command
 
 import (
+	"reflect"
 	"testing"
 )
 
@@ -49,13 +50,57 @@ func Test_package_version_create_command_has_optional_flags(t *testing.T) {
 	cmd := packageVersionCreateCmd
 
 	// Test that optional flags exist
-	optionalFlags := []string{"version-name", "version-description", "ancestor-id", "skip-validation", "async-validation", "code-coverage"}
+	optionalFlags := []string{"version-name", "version-description", "ancestor-id", "dependency", "skip-validation", "async-validation", "code-coverage"}
 
 	for _, flagName := range optionalFlags {
 		flag := cmd.Flags().Lookup(flagName)
 		if flag == nil {
 			t.Errorf("Flag %s not found", flagName)
 		}
+	}
+}
+
+func Test_package_version_create_command_dependency_flag_is_repeatable(t *testing.T) {
+	cmd := packageVersionCreateCmd
+
+	flag := cmd.Flags().Lookup("dependency")
+	if flag == nil {
+		t.Fatal("Flag dependency not found")
+	}
+
+	if flag.Value.Type() != "stringArray" {
+		t.Errorf("Expected dependency flag type stringArray, got %s", flag.Value.Type())
+	}
+}
+
+func Test_buildPackageVersionDescriptor_includes_dependencies_when_provided(t *testing.T) {
+	dependencies := []string{"04tKA000000D34QYAS", "04tKA000000D34RYAS"}
+	descriptor := buildPackageVersionDescriptor("1.0.0.1", "1.0.0.1", "1.0.0.1", "0Ho000000000001", "05i000000000001", dependencies)
+
+	rawDependencies, ok := descriptor["dependencies"]
+	if !ok {
+		t.Fatal("Expected dependencies to be present in descriptor")
+	}
+
+	gotDependencies, ok := rawDependencies.([]map[string]string)
+	if !ok {
+		t.Fatalf("Expected dependencies to be []map[string]string, got %T", rawDependencies)
+	}
+
+	wantDependencies := []map[string]string{
+		{"subscriberPackageVersionId": "04tKA000000D34QYAS"},
+		{"subscriberPackageVersionId": "04tKA000000D34RYAS"},
+	}
+	if !reflect.DeepEqual(gotDependencies, wantDependencies) {
+		t.Errorf("Unexpected dependencies. got=%v want=%v", gotDependencies, wantDependencies)
+	}
+}
+
+func Test_buildPackageVersionDescriptor_omits_dependencies_when_empty(t *testing.T) {
+	descriptor := buildPackageVersionDescriptor("1.0.0.1", "1.0.0.1", "1.0.0.1", "0Ho000000000001", "05i000000000001", []string{})
+
+	if _, ok := descriptor["dependencies"]; ok {
+		t.Error("Did not expect dependencies to be present in descriptor")
 	}
 }
 
