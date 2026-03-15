@@ -69,6 +69,29 @@ func TestBuildSettingsMetadata_ExcludesLightningExperienceSettingsWhenUnused(t *
 	}
 }
 
+func TestBuildSettingsMetadata_AddsCommerceSettings(t *testing.T) {
+	files := buildSettingsMetadata([]string{"commerceEnabled"})
+
+	content, ok := files["unpackaged/settings/Commerce.settings"]
+	if !ok {
+		t.Fatalf("Commerce.settings not generated")
+	}
+	if !strings.Contains(string(content), "<commerceEnabled>true</commerceEnabled>") {
+		t.Errorf("Commerce.settings missing commerceEnabled preference:\n%s", content)
+	}
+	if !strings.Contains(string(content), "<CommerceSettings ") {
+		t.Errorf("Commerce.settings missing CommerceSettings metadata type:\n%s", content)
+	}
+}
+
+func TestBuildSettingsMetadata_ExcludesCommerceSettingsWhenUnused(t *testing.T) {
+	files := buildSettingsMetadata([]string{"enableEnhancedNotes"})
+
+	if _, ok := files["unpackaged/settings/Commerce.settings"]; ok {
+		t.Fatalf("Commerce.settings should not be generated when not requested")
+	}
+}
+
 func TestGetScratchOrg_returns_error_when_SignupUsername_is_nil(t *testing.T) {
 	f := &Force{}
 	f.Credentials = &ForceSession{}

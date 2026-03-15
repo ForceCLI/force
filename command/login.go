@@ -17,6 +17,7 @@ type ScratchFeature enumflag.Flag
 
 const (
 	PersonAccounts ScratchFeature = iota
+	B2BCommerce
 	ContactsToMultipleAccounts
 	FinancialServicesUser
 	StateAndCountryPicklist
@@ -35,6 +36,7 @@ const (
 
 var ScratchFeatureIds = map[ScratchFeature][]string{
 	PersonAccounts:             {"PersonAccounts"},
+	B2BCommerce:                {"B2BCommerce"},
 	ContactsToMultipleAccounts: {"ContactsToMultipleAccounts"},
 	FinancialServicesUser:      {"FinancialServicesUser"},
 	StateAndCountryPicklist:    {"StateAndCountryPicklist"},
@@ -58,6 +60,7 @@ const (
 	CommunitiesProduct
 	HealthCloudProduct
 	CRMAnalyticsProduct
+	B2BCommerceProduct
 )
 
 var ScratchProductIds = map[ScratchProduct][]string{
@@ -65,6 +68,7 @@ var ScratchProductIds = map[ScratchProduct][]string{
 	CommunitiesProduct:  {"communities"},
 	HealthCloudProduct:  {"healthcloud"},
 	CRMAnalyticsProduct: {"crmanalytics"},
+	B2BCommerceProduct:  {"b2bcommerce"},
 }
 
 type ScratchEdition enumflag.Flag
@@ -97,6 +101,7 @@ const (
 	EnableEnhancedNotes ScratchSetting = iota
 	EnableQuote
 	NetworksEnabled
+	CommerceEnabled
 	EnableApexApprovalLockUnlock
 	PermsetsInFieldCreation
 	EnableLightningPreviewPref
@@ -106,6 +111,7 @@ var ScratchSettingIds = map[ScratchSetting][]string{
 	EnableEnhancedNotes:          {"enableEnhancedNotes"},
 	EnableQuote:                  {"enableQuote"},
 	NetworksEnabled:              {"networksEnabled"},
+	CommerceEnabled:              {"commerceEnabled"},
 	EnableApexApprovalLockUnlock: {"enableApexApprovalLockUnlock"},
 	PermsetsInFieldCreation:      {"permsetsInFieldCreation"},
 	EnableLightningPreviewPref:   {"enableLightningPreviewPref"},
@@ -190,6 +196,7 @@ var scratchCmd = &cobra.Command{
 
 Available Features:
   AnalyticsAdminPerms            - Enables CRM Analytics admin permissions
+  B2BCommerce                    - Enables B2B Commerce
   Communities                    - Enables Experience Cloud (Communities)
   ContactsToMultipleAccounts     - Allows a single Contact to be associated with multiple Accounts
   DevelopmentWave                - Enables CRM Analytics development features
@@ -206,6 +213,7 @@ Available Features:
   WavePlatform                   - Enables Wave Platform (CRM Analytics)
 
 Available Products:
+  b2bcommerce - B2B Commerce (enables B2BCommerce feature and commerceEnabled setting)
   communities  - Experience Cloud (enables Communities feature and networksEnabled setting)
   crmanalytics - CRM Analytics (enables AnalyticsAdminPerms, WavePlatform, InsightsPlatform, EinsteinAnalyticsPlus, EinsteinBuilderFree, DevelopmentWave)
   fsc          - Financial Services Cloud (enables PersonAccounts, ContactsToMultipleAccounts, FinancialServicesUser)
@@ -225,6 +233,7 @@ Available Settings (deployed after org creation):
   enableEnhancedNotes - Enable Enhanced Notes
   enableQuote         - Enable Quotes
   networksEnabled     - Enable Experience Cloud (Communities)
+  commerceEnabled     - Enable Commerce
   enableApexApprovalLockUnlock - Allow Apex to lock/unlock approval processes
   permsetsInFieldCreation - Allow assigning permission sets during field creation
   enableLightningPreviewPref - Enable Lightning Experience preview pref
@@ -241,6 +250,7 @@ Examples:
   force login scratch --edition Enterprise --product fsc
   force login scratch --setting enableEnhancedNotes
   force login scratch --setting enableQuote
+  force login scratch --product b2bcommerce
   force login scratch --product communities
   force login scratch --product crmanalytics
   force login scratch --product healthcloud
@@ -317,6 +327,7 @@ func expandProductsToFeatures(products []ScratchProduct, features []ScratchFeatu
 		CommunitiesProduct:  {Communities},
 		HealthCloudProduct:  {HealthCloudAddOn, HealthCloudUser},
 		CRMAnalyticsProduct: {AnalyticsAdminPerms, WavePlatform, InsightsPlatform, EinsteinAnalyticsPlus, EinsteinBuilderFree, DevelopmentWave},
+		B2BCommerceProduct:  {B2BCommerce},
 	}
 
 	featureSet := make(map[ScratchFeature]bool)
@@ -360,6 +371,7 @@ func convertSettingsToStrings(settings []ScratchSetting) []string {
 func expandProductsToSettings(products []ScratchProduct, settings []ScratchSetting) []string {
 	productSettings := map[ScratchProduct][]ScratchSetting{
 		CommunitiesProduct: {NetworksEnabled},
+		B2BCommerceProduct: {CommerceEnabled},
 	}
 
 	settingSet := make(map[ScratchSetting]bool)

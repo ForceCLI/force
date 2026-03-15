@@ -206,6 +206,7 @@ func buildSettingsMetadata(settings []string) ForceMetadataFiles {
 	apexSettings := false
 	userManagementSettings := false
 	lightningExperienceSettings := false
+	commerceSettings := false
 
 	for _, setting := range settings {
 		switch setting {
@@ -228,6 +229,8 @@ func buildSettingsMetadata(settings []string) ForceMetadataFiles {
     <enableNetworksEnabled>true</enableNetworksEnabled>
 </CommunitiesSettings>`
 			files["unpackaged/settings/Communities.settings"] = []byte(communitiesSettings)
+		case "commerceEnabled":
+			commerceSettings = true
 		case "enableApexApprovalLockUnlock":
 			apexSettings = true
 		case "permsetsInFieldCreation":
@@ -262,6 +265,15 @@ func buildSettingsMetadata(settings []string) ForceMetadataFiles {
     <enableLightningPreviewPref>true</enableLightningPreviewPref>
 </LightningExperienceSettings>`)
 		files["unpackaged/settings/LightningExperience.settings"] = lexBuffer.Bytes()
+	}
+
+	if commerceSettings {
+		var commerceBuffer bytes.Buffer
+		commerceBuffer.WriteString(`<?xml version="1.0" encoding="UTF-8"?>
+<CommerceSettings xmlns="http://soap.sforce.com/2006/04/metadata">
+    <commerceEnabled>true</commerceEnabled>
+</CommerceSettings>`)
+		files["unpackaged/settings/Commerce.settings"] = commerceBuffer.Bytes()
 	}
 
 	return files
