@@ -22,6 +22,16 @@ func TestExpandProductsToFeatures_SingleFeature(t *testing.T) {
 	}
 }
 
+func TestExpandProductsToFeatures_B2BCommerce(t *testing.T) {
+	result := expandProductsToFeatures([]ScratchProduct{}, []ScratchFeature{B2BCommerce}, map[string]string{})
+	if len(result) != 1 {
+		t.Fatalf("Expected 1 feature, got %d", len(result))
+	}
+	if result[0] != "B2BCommerce" {
+		t.Errorf("Expected B2BCommerce, got %s", result[0])
+	}
+}
+
 func TestExpandProductsToFeatures_MultipleFeatures(t *testing.T) {
 	result := expandProductsToFeatures([]ScratchProduct{}, []ScratchFeature{PersonAccounts, ContactsToMultipleAccounts}, map[string]string{})
 	if len(result) != 2 {
@@ -162,6 +172,16 @@ func TestExpandProductsToFeatures_CommunitiesProduct(t *testing.T) {
 	}
 }
 
+func TestExpandProductsToFeatures_B2BCommerceProduct(t *testing.T) {
+	result := expandProductsToFeatures([]ScratchProduct{B2BCommerceProduct}, []ScratchFeature{}, map[string]string{})
+	if len(result) != 1 {
+		t.Errorf("Expected 1 feature from b2bcommerce product, got %d", len(result))
+	}
+	if result[0] != "B2BCommerce" {
+		t.Errorf("Expected B2BCommerce, got %s", result[0])
+	}
+}
+
 func TestExpandProductsToFeatures_HealthCloudProduct(t *testing.T) {
 	result := expandProductsToFeatures([]ScratchProduct{HealthCloudProduct}, []ScratchFeature{}, map[string]string{})
 	if len(result) != 2 {
@@ -226,6 +246,16 @@ func TestExpandProductsToSettings_CommunitiesProduct(t *testing.T) {
 	}
 }
 
+func TestExpandProductsToSettings_B2BCommerceProduct(t *testing.T) {
+	result := expandProductsToSettings([]ScratchProduct{B2BCommerceProduct}, []ScratchSetting{})
+	if len(result) != 1 {
+		t.Errorf("Expected 1 setting from b2bcommerce product, got %d", len(result))
+	}
+	if result[0] != "commerceEnabled" {
+		t.Errorf("Expected commerceEnabled, got %s", result[0])
+	}
+}
+
 func TestExpandProductsToSettings_CommunitiesProductWithAdditionalSetting(t *testing.T) {
 	result := expandProductsToSettings([]ScratchProduct{CommunitiesProduct}, []ScratchSetting{EnableEnhancedNotes})
 	if len(result) != 2 {
@@ -281,6 +311,42 @@ func TestScratchEditionIds_AllEditionsDefined(t *testing.T) {
 	}
 }
 
+func TestScratchFeatureIds_AllFeaturesDefined(t *testing.T) {
+	expectedFeatures := map[string]bool{
+		"AnalyticsAdminPerms":        true,
+		"B2BCommerce":                true,
+		"Communities":                true,
+		"ContactsToMultipleAccounts": true,
+		"DevelopmentWave":            true,
+		"EinsteinAnalyticsPlus":      true,
+		"EinsteinBuilderFree":        true,
+		"EventLogFile":               true,
+		"FinancialServicesUser":      true,
+		"HealthCloudAddOn":           true,
+		"HealthCloudUser":            true,
+		"ApexUserModeWithPermset":    true,
+		"InsightsPlatform":           true,
+		"PersonAccounts":             true,
+		"StateAndCountryPicklist":    true,
+		"WavePlatform":               true,
+	}
+
+	if len(ScratchFeatureIds) != len(expectedFeatures) {
+		t.Errorf("Expected %d features, got %d", len(expectedFeatures), len(ScratchFeatureIds))
+	}
+
+	for _, ids := range ScratchFeatureIds {
+		if len(ids) != 1 {
+			t.Errorf("Expected 1 ID per feature, got %d", len(ids))
+			continue
+		}
+		featureName := ids[0]
+		if !expectedFeatures[featureName] {
+			t.Errorf("Unexpected feature: %s", featureName)
+		}
+	}
+}
+
 func TestConvertSettingsToStrings_NoSettings(t *testing.T) {
 	result := convertSettingsToStrings([]ScratchSetting{})
 	if len(result) != 0 {
@@ -315,6 +381,16 @@ func TestConvertSettingsToStrings_NetworksEnabled(t *testing.T) {
 	}
 	if result[0] != "networksEnabled" {
 		t.Errorf("Expected networksEnabled, got %s", result[0])
+	}
+}
+
+func TestConvertSettingsToStrings_CommerceEnabled(t *testing.T) {
+	result := convertSettingsToStrings([]ScratchSetting{CommerceEnabled})
+	if len(result) != 1 {
+		t.Errorf("Expected 1 setting, got %d", len(result))
+	}
+	if result[0] != "commerceEnabled" {
+		t.Errorf("Expected commerceEnabled, got %s", result[0])
 	}
 }
 
@@ -353,6 +429,7 @@ func TestScratchSettingIds_AllSettingsDefined(t *testing.T) {
 		"enableEnhancedNotes":          true,
 		"enableQuote":                  true,
 		"networksEnabled":              true,
+		"commerceEnabled":              true,
 		"enableApexApprovalLockUnlock": true,
 		"permsetsInFieldCreation":      true,
 		"enableLightningPreviewPref":   true,

@@ -8,6 +8,7 @@ Create scratch org and log in
 
 Available Features:
   AnalyticsAdminPerms            - Enables CRM Analytics admin permissions
+  B2BCommerce                    - Enables B2B Commerce
   Communities                    - Enables Experience Cloud (Communities)
   ContactsToMultipleAccounts     - Allows a single Contact to be associated with multiple Accounts
   DevelopmentWave                - Enables CRM Analytics development features
@@ -24,6 +25,7 @@ Available Features:
   WavePlatform                   - Enables Wave Platform (CRM Analytics)
 
 Available Products:
+  b2bcommerce - B2B Commerce (enables B2BCommerce feature and commerceEnabled setting)
   communities  - Experience Cloud (enables Communities feature and networksEnabled setting)
   crmanalytics - CRM Analytics (enables AnalyticsAdminPerms, WavePlatform, InsightsPlatform, EinsteinAnalyticsPlus, EinsteinBuilderFree, DevelopmentWave)
   fsc          - Financial Services Cloud (enables PersonAccounts, ContactsToMultipleAccounts, FinancialServicesUser)
@@ -43,6 +45,7 @@ Available Settings (deployed after org creation):
   enableEnhancedNotes - Enable Enhanced Notes
   enableQuote         - Enable Quotes
   networksEnabled     - Enable Experience Cloud (Communities)
+  commerceEnabled     - Enable Commerce
   enableApexApprovalLockUnlock - Allow Apex to lock/unlock approval processes
   permsetsInFieldCreation - Allow assigning permission sets during field creation
   enableLightningPreviewPref - Enable Lightning Experience preview pref
@@ -59,6 +62,7 @@ Examples:
   force login scratch --edition Enterprise --product fsc
   force login scratch --setting enableEnhancedNotes
   force login scratch --setting enableQuote
+  force login scratch --product b2bcommerce
   force login scratch --product communities
   force login scratch --product crmanalytics
   force login scratch --product healthcloud
@@ -96,4 +100,3 @@ force login scratch [flags]
 ### SEE ALSO
 
 * [force login](force_login.md)	 - Log into Salesforce and store a session token
-
