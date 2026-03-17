@@ -13,6 +13,7 @@ force package version create [path] [flags]
   -y, --async-validation             Async validation
   -c, --code-coverage                Calculate code coverage (default true)
   -h, --help                         help for create
+      --no-ancestor                  Explicitly set ancestorId to an empty string
       --namespace string             Package namespace (alternative to --package-id)
   -i, --package-id string            Package ID (required if --namespace not provided)
   -s, --skip-validation              Skip validation
@@ -33,4 +34,3 @@ force package version create [path] [flags]
 ### SEE ALSO
 
 * [force package version](force_package_version.md)	 - Manage package versions
-

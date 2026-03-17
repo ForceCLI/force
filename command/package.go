@@ -41,12 +41,14 @@ func init() {
 	packageVersionCreateCmd.Flags().StringP("version-name", "m", "", "Version name (optional, defaults to version-number)")
 	packageVersionCreateCmd.Flags().StringP("version-description", "d", "", "Version description (optional, defaults to version-number)")
 	packageVersionCreateCmd.Flags().StringP("ancestor-id", "", "", "Ancestor version ID (optional)")
+	packageVersionCreateCmd.Flags().BoolP("no-ancestor", "", false, "Explicitly set ancestorId to an empty string")
 	packageVersionCreateCmd.Flags().StringArrayP("dependency", "", []string{}, "Subscriber Package Version ID (04t) dependency (can be specified multiple times)")
 	packageVersionCreateCmd.Flags().StringP("tag", "", "", "Tag to set on the Package2VersionCreateRequest")
 	packageVersionCreateCmd.Flags().BoolP("skip-validation", "s", false, "Skip validation")
 	packageVersionCreateCmd.Flags().BoolP("async-validation", "y", false, "Async validation")
 	packageVersionCreateCmd.Flags().BoolP("code-coverage", "c", true, "Calculate code coverage")
 	packageVersionCreateCmd.MarkFlagRequired("version-number")
+	packageVersionCreateCmd.MarkFlagsMutuallyExclusive("ancestor-id", "no-ancestor")
 
 	packageVersionReleaseCmd.Flags().StringP("version-id", "v", "", "Package Version ID (required)")
 	packageVersionReleaseCmd.MarkFlagRequired("version-id")
@@ -167,6 +169,7 @@ var packageVersionCreateCmd = &cobra.Command{
 		versionName, _ := cmd.Flags().GetString("version-name")
 		versionDescription, _ := cmd.Flags().GetString("version-description")
 		ancestorId, _ := cmd.Flags().GetString("ancestor-id")
+		noAncestor, _ := cmd.Flags().GetBool("no-ancestor")
 		dependencies, _ := cmd.Flags().GetStringArray("dependency")
 		tag, _ := cmd.Flags().GetString("tag")
 		skipValidation, _ := cmd.Flags().GetBool("skip-validation")
@@ -174,7 +177,7 @@ var packageVersionCreateCmd = &cobra.Command{
 		codeCoverage, _ := cmd.Flags().GetBool("code-coverage")
 
 		runCreatePackageVersion(path, packageId, namespace, versionNumber, versionName,
-			versionDescription, ancestorId, dependencies, tag, skipValidation, asyncValidation, codeCoverage)
+			versionDescription, ancestorId, noAncestor, dependencies, tag, skipValidation, asyncValidation, codeCoverage)
 	},
 }
 
@@ -572,7 +575,7 @@ func pollPackageUninstallStatus(requestId string) {
 }
 
 func runCreatePackageVersion(path string, packageId string, namespace string, versionNumber string,
-	versionName string, versionDescription string, ancestorId string, dependencies []string, tag string,
+	versionName string, versionDescription string, ancestorId string, noAncestor bool, dependencies []string, tag string,
 	skipValidation bool, asyncValidation bool, codeCoverage bool) {
 
 	// Use version-number as default for version-name and version-description if not provided
@@ -617,8 +620,12 @@ func runCreatePackageVersion(path string, packageId string, namespace string, ve
 		}
 	}
 
-	// If ancestor-id is not provided, query for the last released version
-	if ancestorId == "" {
+	if noAncestor {
+		ancestorId = ""
+	}
+
+	// If ancestor-id is not provided and --no-ancestor is not set, query for the last released version
+	if ancestorId == "" && !noAncestor {
 		query := fmt.Sprintf("SELECT Id FROM Package2Version WHERE Package2Id = '%s' AND IsReleased = true AND PatchVersion = 0 ORDER BY MajorVersion DESC, MinorVersion DESC, PatchVersion DESC, BuildNumber DESC LIMIT 1", packageId)
 		result, err := force.Query(query, func(options *lib.QueryOptions) {
 			options.IsTooling = true
@@ -849,7 +856,7 @@ func buildPackageVersionDescriptor(versionName string, versionNumber string, ver
 func pollPackageVersionStatus(requestId string) string {
 	query := fmt.Sprintf("SELECT Id, Status, Package2VersionId FROM Package2VersionCreateRequest WHERE Id = '%s'", requestId)
 
-	for i := 0; i < 120; i++ { // Poll for up to 10 minutes
+	for i := 0; i < 360; i++ { // Poll for up to 30 minutes (5 seconds * 360)
 		time.Sleep(5 * time.Second)
 
 		result, err := force.Query(query, func(options *lib.QueryOptions) {
@@ -894,7 +901,7 @@ func pollPackageVersionStatus(requestId string) string {
 		}
 	}
 
-	ErrorAndExit("Package version creation timed out")
+	ErrorAndExit("Package version creation timed out after 30 minutes")
 	return ""
 }
 

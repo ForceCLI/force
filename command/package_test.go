@@ -50,12 +50,33 @@ func Test_package_version_create_command_has_optional_flags(t *testing.T) {
 	cmd := packageVersionCreateCmd
 
 	// Test that optional flags exist
-	optionalFlags := []string{"version-name", "version-description", "ancestor-id", "dependency", "skip-validation", "async-validation", "code-coverage"}
+	optionalFlags := []string{"version-name", "version-description", "ancestor-id", "no-ancestor", "dependency", "skip-validation", "async-validation", "code-coverage"}
 
 	for _, flagName := range optionalFlags {
 		flag := cmd.Flags().Lookup(flagName)
 		if flag == nil {
 			t.Errorf("Flag %s not found", flagName)
+		}
+	}
+}
+
+func Test_package_version_create_command_marks_ancestor_flags_mutually_exclusive(t *testing.T) {
+	cmd := packageVersionCreateCmd
+
+	for _, flagName := range []string{"ancestor-id", "no-ancestor"} {
+		flag := cmd.Flags().Lookup(flagName)
+		if flag == nil {
+			t.Fatalf("Flag %s not found", flagName)
+		}
+
+		annotations := flag.Annotations
+		if annotations == nil {
+			t.Fatalf("Flag %s is missing annotations", flagName)
+		}
+
+		values, ok := annotations["cobra_annotation_mutually_exclusive"]
+		if !ok || len(values) == 0 {
+			t.Fatalf("Flag %s is not marked mutually exclusive", flagName)
 		}
 	}
 }
