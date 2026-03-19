@@ -33,6 +33,7 @@ $ source <(force completion bash)
       apiversion   Display/Set current API version
       bigobject    Manage big objects
       bulk         Load csv file or query data using Bulk API
+      bulk2        Load csv file or query data using Bulk API 2.0
       completion   Generate the autocompletion script for the specified shell
       create       Creates a new, empty Apex Class, Trigger, Visualforce page, or Component.
       datapipe     Manage DataPipes
@@ -175,6 +176,51 @@ Export allows you to fetch all codes from your org to local machine. This comman
 ### notify
 Includes notification library, [beeep](https://github.com/gen2brain/beeep), that displays desktop notifications across platforms. Currently, only the `push` and `test` methods are displaying notifications.
 
+
+### bulk2
+Bulk API 2.0 provides a REST-based interface for data loading and querying with automatic batch management. Unlike Bulk API 1.0, it handles batch splitting automatically and uses CSV format.
+
+    # Insert records
+    force bulk2 insert Account accounts.csv --wait
+
+    # Update records
+    force bulk2 update Account updates.csv --wait
+
+    # Upsert records using external ID
+    force bulk2 upsert -e External_Id__c Account data.csv --wait
+
+    # Delete records
+    force bulk2 delete Account deletes.csv --wait
+
+    # Hard delete records
+    force bulk2 hardDelete Account harddeletes.csv --wait
+
+    # Query records
+    force bulk2 query "SELECT Id, Name FROM Account" --wait
+
+    # Query including deleted and archived records
+    force bulk2 query "SELECT Id, Name FROM Account" --query-all --wait
+
+    # Check job status
+    force bulk2 job <jobId>
+
+    # List all ingest jobs
+    force bulk2 jobs
+
+    # List all query jobs
+    force bulk2 jobs --query
+
+    # Get job results
+    force bulk2 results <jobId>
+
+    # Get only failed results
+    force bulk2 results <jobId> --failed
+
+    # Abort a job
+    force bulk2 abort <jobId>
+
+    # Delete a job
+    force bulk2 delete-job <jobId>
 
 ### limits
 Limits will display limits information for your organization.
