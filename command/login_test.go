@@ -313,22 +313,25 @@ func TestScratchEditionIds_AllEditionsDefined(t *testing.T) {
 
 func TestScratchFeatureIds_AllFeaturesDefined(t *testing.T) {
 	expectedFeatures := map[string]bool{
-		"AnalyticsAdminPerms":        true,
-		"B2BCommerce":                true,
-		"Communities":                true,
-		"ContactsToMultipleAccounts": true,
-		"DevelopmentWave":            true,
-		"EinsteinAnalyticsPlus":      true,
-		"EinsteinBuilderFree":        true,
-		"EventLogFile":               true,
-		"FinancialServicesUser":      true,
-		"HealthCloudAddOn":           true,
-		"HealthCloudUser":            true,
-		"ApexUserModeWithPermset":    true,
-		"InsightsPlatform":           true,
-		"PersonAccounts":             true,
-		"StateAndCountryPicklist":    true,
-		"WavePlatform":               true,
+		"AnalyticsAdminPerms":               true,
+		"ApexUserModeWithPermset":           true,
+		"B2BCommerce":                       true,
+		"Communities":                       true,
+		"ContactsToMultipleAccounts":        true,
+		"DevelopmentWave":                   true,
+		"EinsteinAnalyticsPlus":             true,
+		"EinsteinBuilderFree":               true,
+		"EventLogFile":                      true,
+		"FinancialServicesUser":             true,
+		"HealthCloudAddOn":                  true,
+		"HealthCloudUser":                   true,
+		"InsightsPlatform":                  true,
+		"PersonAccounts":                    true,
+		"ScvMultipartyAndConsult":           true,
+		"ServiceCloud":                      true,
+		"ServiceCloudVoicePartnerTelephony": true,
+		"StateAndCountryPicklist":           true,
+		"WavePlatform":                      true,
 	}
 
 	if len(ScratchFeatureIds) != len(expectedFeatures) {
@@ -503,5 +506,55 @@ func TestScratchReleaseIds_Previous(t *testing.T) {
 func TestScratchReleaseIds_Default(t *testing.T) {
 	if ScratchReleaseIds[ReleaseDefault][0] != "" {
 		t.Errorf("Expected empty string for ReleaseDefault, got %s", ScratchReleaseIds[ReleaseDefault][0])
+	}
+}
+
+func TestExpandProductsToFeatures_ServiceCloud(t *testing.T) {
+	result := expandProductsToFeatures([]ScratchProduct{}, []ScratchFeature{ServiceCloud}, map[string]string{})
+	if len(result) != 1 {
+		t.Fatalf("Expected 1 feature, got %d", len(result))
+	}
+	if result[0] != "ServiceCloud" {
+		t.Errorf("Expected ServiceCloud, got %s", result[0])
+	}
+}
+
+func TestExpandProductsToFeatures_ScvMultipartyAndConsult_DefaultQuantity(t *testing.T) {
+	result := expandProductsToFeatures([]ScratchProduct{}, []ScratchFeature{ScvMultipartyAndConsult}, map[string]string{})
+	if len(result) != 1 {
+		t.Fatalf("Expected 1 feature, got %d", len(result))
+	}
+	if result[0] != "ScvMultipartyAndConsult:10" {
+		t.Errorf("Expected ScvMultipartyAndConsult:10, got %s", result[0])
+	}
+}
+
+func TestExpandProductsToFeatures_ScvMultipartyAndConsult_CustomQuantity(t *testing.T) {
+	result := expandProductsToFeatures([]ScratchProduct{}, []ScratchFeature{ScvMultipartyAndConsult}, map[string]string{"ScvMultipartyAndConsult": "5"})
+	if len(result) != 1 {
+		t.Fatalf("Expected 1 feature, got %d", len(result))
+	}
+	if result[0] != "ScvMultipartyAndConsult:5" {
+		t.Errorf("Expected ScvMultipartyAndConsult:5, got %s", result[0])
+	}
+}
+
+func TestExpandProductsToFeatures_ServiceCloudVoicePartnerTelephony_DefaultQuantity(t *testing.T) {
+	result := expandProductsToFeatures([]ScratchProduct{}, []ScratchFeature{ServiceCloudVoicePartnerTelephony}, map[string]string{})
+	if len(result) != 1 {
+		t.Fatalf("Expected 1 feature, got %d", len(result))
+	}
+	if result[0] != "ServiceCloudVoicePartnerTelephony:10" {
+		t.Errorf("Expected ServiceCloudVoicePartnerTelephony:10, got %s", result[0])
+	}
+}
+
+func TestExpandProductsToFeatures_ServiceCloudVoicePartnerTelephony_CustomQuantity(t *testing.T) {
+	result := expandProductsToFeatures([]ScratchProduct{}, []ScratchFeature{ServiceCloudVoicePartnerTelephony}, map[string]string{"ServiceCloudVoicePartnerTelephony": "25"})
+	if len(result) != 1 {
+		t.Fatalf("Expected 1 feature, got %d", len(result))
+	}
+	if result[0] != "ServiceCloudVoicePartnerTelephony:25" {
+		t.Errorf("Expected ServiceCloudVoicePartnerTelephony:25, got %s", result[0])
 	}
 }
