@@ -12,9 +12,10 @@ force package version create [path] [flags]
       --ancestor-id string           Ancestor version ID (optional)
   -y, --async-validation             Async validation
   -c, --code-coverage                Calculate code coverage (default true)
+      --dependency stringArray       Subscriber Package Version ID (04t) dependency (can be specified multiple times)
   -h, --help                         help for create
-      --no-ancestor                  Explicitly set ancestorId to an empty string
       --namespace string             Package namespace (alternative to --package-id)
+      --no-ancestor                  Explicitly set ancestorId to an empty string
   -i, --package-id string            Package ID (required if --namespace not provided)
   -s, --skip-validation              Skip validation
       --tag string                   Tag to set on the Package2VersionCreateRequest
@@ -34,3 +35,4 @@ force package version create [path] [flags]
 ### SEE ALSO
 
 * [force package version](force_package_version.md)	 - Manage package versions
+

@@ -22,6 +22,7 @@ force
 * [force apiversion](force_apiversion.md)	 - Display/Set current API version
 * [force bigobject](force_bigobject.md)	 - Manage big objects
 * [force bulk](force_bulk.md)	 - Load csv file or query data using Bulk API
+* [force bulk2](force_bulk2.md)	 - Use Bulk API 2.0 for data loading and querying
 * [force create](force_create.md)	 - Creates a new, empty Apex Class, Trigger, Visualforce page, or Component.
 * [force datapipe](force_datapipe.md)	 - Manage DataPipes
 * [force deploys](force_deploys.md)	 - Manage metadata deployments

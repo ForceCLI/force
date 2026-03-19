@@ -32,25 +32,31 @@ const (
 	EinsteinAnalyticsPlus
 	EinsteinBuilderFree
 	DevelopmentWave
+	ServiceCloud
+	ScvMultipartyAndConsult
+	ServiceCloudVoicePartnerTelephony
 )
 
 var ScratchFeatureIds = map[ScratchFeature][]string{
-	PersonAccounts:             {"PersonAccounts"},
-	B2BCommerce:                {"B2BCommerce"},
-	ContactsToMultipleAccounts: {"ContactsToMultipleAccounts"},
-	FinancialServicesUser:      {"FinancialServicesUser"},
-	StateAndCountryPicklist:    {"StateAndCountryPicklist"},
-	Communities:                {"Communities"},
-	HealthCloudAddOn:           {"HealthCloudAddOn"},
-	HealthCloudUser:            {"HealthCloudUser"},
-	ApexUserModeWithPermset:    {"ApexUserModeWithPermset"},
-	EventLogFile:               {"EventLogFile"},
-	AnalyticsAdminPerms:        {"AnalyticsAdminPerms"},
-	WavePlatform:               {"WavePlatform"},
-	InsightsPlatform:           {"InsightsPlatform"},
-	EinsteinAnalyticsPlus:      {"EinsteinAnalyticsPlus"},
-	EinsteinBuilderFree:        {"EinsteinBuilderFree"},
-	DevelopmentWave:            {"DevelopmentWave"},
+	PersonAccounts:                    {"PersonAccounts"},
+	B2BCommerce:                       {"B2BCommerce"},
+	ContactsToMultipleAccounts:        {"ContactsToMultipleAccounts"},
+	FinancialServicesUser:             {"FinancialServicesUser"},
+	StateAndCountryPicklist:           {"StateAndCountryPicklist"},
+	Communities:                       {"Communities"},
+	HealthCloudAddOn:                  {"HealthCloudAddOn"},
+	HealthCloudUser:                   {"HealthCloudUser"},
+	ApexUserModeWithPermset:           {"ApexUserModeWithPermset"},
+	EventLogFile:                      {"EventLogFile"},
+	AnalyticsAdminPerms:               {"AnalyticsAdminPerms"},
+	WavePlatform:                      {"WavePlatform"},
+	InsightsPlatform:                  {"InsightsPlatform"},
+	EinsteinAnalyticsPlus:             {"EinsteinAnalyticsPlus"},
+	EinsteinBuilderFree:               {"EinsteinBuilderFree"},
+	DevelopmentWave:                   {"DevelopmentWave"},
+	ServiceCloud:                      {"ServiceCloud"},
+	ScvMultipartyAndConsult:           {"ScvMultipartyAndConsult"},
+	ServiceCloudVoicePartnerTelephony: {"ServiceCloudVoicePartnerTelephony"},
 }
 
 type ScratchProduct enumflag.Flag
@@ -141,7 +147,9 @@ var (
 )
 
 var featuresRequiringQuantity = map[string]bool{
-	"FinancialServicesUser": true,
+	"FinancialServicesUser":             true,
+	"ScvMultipartyAndConsult":           true,
+	"ServiceCloudVoicePartnerTelephony": true,
 }
 
 const defaultFeatureQuantity = "10"
@@ -195,22 +203,25 @@ var scratchCmd = &cobra.Command{
 	Long: `Create scratch org and log in
 
 Available Features:
-  AnalyticsAdminPerms            - Enables CRM Analytics admin permissions
-  B2BCommerce                    - Enables B2B Commerce
-  Communities                    - Enables Experience Cloud (Communities)
-  ContactsToMultipleAccounts     - Allows a single Contact to be associated with multiple Accounts
-  DevelopmentWave                - Enables CRM Analytics development features
-  EinsteinAnalyticsPlus          - Enables Einstein Analytics Plus
-  EinsteinBuilderFree            - Enables Einstein Builder Free
-  EventLogFile                   - Enables Event Log File
-  FinancialServicesUser          - Enables Financial Services Cloud user licenses (requires quantity, default: 10)
-  HealthCloudAddOn               - Enables Health Cloud add-on
-  HealthCloudUser                - Enables Health Cloud user licenses
-  ApexUserModeWithPermset        - Enables Apex code to run in user mode with a permission set session
-  InsightsPlatform               - Enables Insights Platform
-  PersonAccounts                 - Enables Person Accounts (B2C account model)
-  StateAndCountryPicklist        - Enables State and Country Picklists for standard address fields
-  WavePlatform                   - Enables Wave Platform (CRM Analytics)
+  AnalyticsAdminPerms                 - Enables CRM Analytics admin permissions
+  ApexUserModeWithPermset             - Enables Apex code to run in user mode with a permission set session
+  B2BCommerce                         - Enables B2B Commerce
+  Communities                         - Enables Experience Cloud (Communities)
+  ContactsToMultipleAccounts          - Allows a single Contact to be associated with multiple Accounts
+  DevelopmentWave                     - Enables CRM Analytics development features
+  EinsteinAnalyticsPlus               - Enables Einstein Analytics Plus
+  EinsteinBuilderFree                 - Enables Einstein Builder Free
+  EventLogFile                        - Enables Event Log File
+  FinancialServicesUser               - Enables Financial Services Cloud user licenses (requires quantity, default: 10)
+  HealthCloudAddOn                    - Enables Health Cloud add-on
+  HealthCloudUser                     - Enables Health Cloud user licenses
+  InsightsPlatform                    - Enables Insights Platform
+  PersonAccounts                      - Enables Person Accounts (B2C account model)
+  ScvMultipartyAndConsult             - Enables Service Cloud Voice multiparty and consult (requires quantity, default: 10)
+  ServiceCloud                        - Enables Service Cloud
+  ServiceCloudVoicePartnerTelephony   - Enables Service Cloud Voice Partner Telephony (requires quantity 1-50, default: 10)
+  StateAndCountryPicklist             - Enables State and Country Picklists for standard address fields
+  WavePlatform                        - Enables Wave Platform (CRM Analytics)
 
 Available Products:
   b2bcommerce - B2B Commerce (enables B2BCommerce feature and commerceEnabled setting)
