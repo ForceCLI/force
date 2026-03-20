@@ -20,6 +20,7 @@ Available Features:
   HealthCloudAddOn                    - Enables Health Cloud add-on
   HealthCloudUser                     - Enables Health Cloud user licenses
   InsightsPlatform                    - Enables Insights Platform
+  OrderManagement                     - Enables Salesforce Order Management
   PersonAccounts                      - Enables Person Accounts (B2C account model)
   ScvMultipartyAndConsult             - Enables Service Cloud Voice multiparty and consult (requires quantity, default: 10)
   ServiceCloud                        - Enables Service Cloud
@@ -28,7 +29,7 @@ Available Features:
   WavePlatform                        - Enables Wave Platform (CRM Analytics)
 
 Available Products:
-  b2bcommerce - B2B Commerce (enables B2BCommerce feature and commerceEnabled setting)
+  b2bcommerce  - B2B Commerce (enables B2BCommerce, OrderManagement features and commerceEnabled, enableOrders, enableEnhancedCommerceOrders settings)
   communities  - Experience Cloud (enables Communities feature and networksEnabled setting)
   crmanalytics - CRM Analytics (enables AnalyticsAdminPerms, WavePlatform, InsightsPlatform, EinsteinAnalyticsPlus, EinsteinBuilderFree, DevelopmentWave)
   fsc          - Financial Services Cloud (enables PersonAccounts, ContactsToMultipleAccounts, FinancialServicesUser)
@@ -52,6 +53,8 @@ Available Settings (deployed after org creation):
   enableApexApprovalLockUnlock - Allow Apex to lock/unlock approval processes
   permsetsInFieldCreation - Allow assigning permission sets during field creation
   enableLightningPreviewPref - Enable Lightning Experience preview pref
+  enableOrders - Enable Orders
+  enableEnhancedCommerceOrders - Enable Enhanced Commerce Orders
 
 Available Releases:
   preview  - Create scratch org on the next (preview) release
