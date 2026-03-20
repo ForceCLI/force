@@ -207,6 +207,7 @@ func buildSettingsMetadata(settings []string) ForceMetadataFiles {
 	userManagementSettings := false
 	lightningExperienceSettings := false
 	commerceSettings := false
+	orderSettings := false
 
 	for _, setting := range settings {
 		switch setting {
@@ -231,6 +232,8 @@ func buildSettingsMetadata(settings []string) ForceMetadataFiles {
 			files["unpackaged/settings/Communities.settings"] = []byte(communitiesSettings)
 		case "commerceEnabled":
 			commerceSettings = true
+		case "enableOrders", "enableEnhancedCommerceOrders":
+			orderSettings = true
 		case "enableApexApprovalLockUnlock":
 			apexSettings = true
 		case "permsetsInFieldCreation":
@@ -274,6 +277,16 @@ func buildSettingsMetadata(settings []string) ForceMetadataFiles {
     <commerceEnabled>true</commerceEnabled>
 </CommerceSettings>`)
 		files["unpackaged/settings/Commerce.settings"] = commerceBuffer.Bytes()
+	}
+
+	if orderSettings {
+		var orderBuffer bytes.Buffer
+		orderBuffer.WriteString(`<?xml version="1.0" encoding="UTF-8"?>
+<OrderSettings xmlns="http://soap.sforce.com/2006/04/metadata">
+    <enableOrders>true</enableOrders>
+    <enableEnhancedCommerceOrders>true</enableEnhancedCommerceOrders>
+</OrderSettings>`)
+		files["unpackaged/settings/Order.settings"] = orderBuffer.Bytes()
 	}
 
 	return files

@@ -92,6 +92,47 @@ func TestBuildSettingsMetadata_ExcludesCommerceSettingsWhenUnused(t *testing.T) 
 	}
 }
 
+func TestBuildSettingsMetadata_AddsOrderSettings_for_enableOrders(t *testing.T) {
+	files := buildSettingsMetadata([]string{"enableOrders"})
+
+	content, ok := files["unpackaged/settings/Order.settings"]
+	if !ok {
+		t.Fatalf("Order.settings not generated")
+	}
+	if !strings.Contains(string(content), "<enableOrders>true</enableOrders>") {
+		t.Errorf("Order.settings missing enableOrders preference:\n%s", content)
+	}
+	if !strings.Contains(string(content), "<enableEnhancedCommerceOrders>true</enableEnhancedCommerceOrders>") {
+		t.Errorf("Order.settings missing enableEnhancedCommerceOrders preference:\n%s", content)
+	}
+	if !strings.Contains(string(content), "<OrderSettings ") {
+		t.Errorf("Order.settings missing OrderSettings metadata type:\n%s", content)
+	}
+}
+
+func TestBuildSettingsMetadata_AddsOrderSettings_for_enableEnhancedCommerceOrders(t *testing.T) {
+	files := buildSettingsMetadata([]string{"enableEnhancedCommerceOrders"})
+
+	content, ok := files["unpackaged/settings/Order.settings"]
+	if !ok {
+		t.Fatalf("Order.settings not generated")
+	}
+	if !strings.Contains(string(content), "<enableOrders>true</enableOrders>") {
+		t.Errorf("Order.settings missing enableOrders preference:\n%s", content)
+	}
+	if !strings.Contains(string(content), "<enableEnhancedCommerceOrders>true</enableEnhancedCommerceOrders>") {
+		t.Errorf("Order.settings missing enableEnhancedCommerceOrders preference:\n%s", content)
+	}
+}
+
+func TestBuildSettingsMetadata_ExcludesOrderSettingsWhenUnused(t *testing.T) {
+	files := buildSettingsMetadata([]string{"enableEnhancedNotes"})
+
+	if _, ok := files["unpackaged/settings/Order.settings"]; ok {
+		t.Fatalf("Order.settings should not be generated when not requested")
+	}
+}
+
 func TestGetScratchOrg_returns_error_when_SignupUsername_is_nil(t *testing.T) {
 	f := &Force{}
 	f.Credentials = &ForceSession{}

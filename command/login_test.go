@@ -174,11 +174,18 @@ func TestExpandProductsToFeatures_CommunitiesProduct(t *testing.T) {
 
 func TestExpandProductsToFeatures_B2BCommerceProduct(t *testing.T) {
 	result := expandProductsToFeatures([]ScratchProduct{B2BCommerceProduct}, []ScratchFeature{}, map[string]string{})
-	if len(result) != 1 {
-		t.Errorf("Expected 1 feature from b2bcommerce product, got %d", len(result))
+	if len(result) != 2 {
+		t.Errorf("Expected 2 features from b2bcommerce product, got %d", len(result))
 	}
-	if result[0] != "B2BCommerce" {
-		t.Errorf("Expected B2BCommerce, got %s", result[0])
+	featureMap := make(map[string]bool)
+	for _, f := range result {
+		featureMap[f] = true
+	}
+	if !featureMap["B2BCommerce"] {
+		t.Error("Expected B2BCommerce in b2bcommerce product")
+	}
+	if !featureMap["OrderManagement"] {
+		t.Error("Expected OrderManagement in b2bcommerce product")
 	}
 }
 
@@ -248,11 +255,21 @@ func TestExpandProductsToSettings_CommunitiesProduct(t *testing.T) {
 
 func TestExpandProductsToSettings_B2BCommerceProduct(t *testing.T) {
 	result := expandProductsToSettings([]ScratchProduct{B2BCommerceProduct}, []ScratchSetting{})
-	if len(result) != 1 {
-		t.Errorf("Expected 1 setting from b2bcommerce product, got %d", len(result))
+	if len(result) != 3 {
+		t.Errorf("Expected 3 settings from b2bcommerce product, got %d", len(result))
 	}
-	if result[0] != "commerceEnabled" {
-		t.Errorf("Expected commerceEnabled, got %s", result[0])
+	settingMap := make(map[string]bool)
+	for _, s := range result {
+		settingMap[s] = true
+	}
+	if !settingMap["commerceEnabled"] {
+		t.Error("Expected commerceEnabled in b2bcommerce product")
+	}
+	if !settingMap["enableOrders"] {
+		t.Error("Expected enableOrders in b2bcommerce product")
+	}
+	if !settingMap["enableEnhancedCommerceOrders"] {
+		t.Error("Expected enableEnhancedCommerceOrders in b2bcommerce product")
 	}
 }
 
@@ -326,6 +343,7 @@ func TestScratchFeatureIds_AllFeaturesDefined(t *testing.T) {
 		"HealthCloudAddOn":                  true,
 		"HealthCloudUser":                   true,
 		"InsightsPlatform":                  true,
+		"OrderManagement":                   true,
 		"PersonAccounts":                    true,
 		"ScvMultipartyAndConsult":           true,
 		"ServiceCloud":                      true,
@@ -436,6 +454,8 @@ func TestScratchSettingIds_AllSettingsDefined(t *testing.T) {
 		"enableApexApprovalLockUnlock": true,
 		"permsetsInFieldCreation":      true,
 		"enableLightningPreviewPref":   true,
+		"enableOrders":                 true,
+		"enableEnhancedCommerceOrders": true,
 	}
 
 	if len(ScratchSettingIds) != len(expectedSettings) {
