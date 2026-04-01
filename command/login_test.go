@@ -226,6 +226,16 @@ func TestExpandProductsToFeatures_EventLogFile(t *testing.T) {
 	}
 }
 
+func TestExpandProductsToFeatures_PlatformCache(t *testing.T) {
+	result := expandProductsToFeatures([]ScratchProduct{}, []ScratchFeature{PlatformCache}, map[string]string{})
+	if len(result) != 1 {
+		t.Fatalf("Expected 1 feature, got %d", len(result))
+	}
+	if result[0] != "PlatformCache" {
+		t.Errorf("Expected PlatformCache, got %s", result[0])
+	}
+}
+
 func TestExpandProductsToSettings_NoProductsOrSettings(t *testing.T) {
 	result := expandProductsToSettings([]ScratchProduct{}, []ScratchSetting{})
 	if len(result) != 0 {
@@ -344,6 +354,7 @@ func TestScratchFeatureIds_AllFeaturesDefined(t *testing.T) {
 		"HealthCloudUser":                   true,
 		"InsightsPlatform":                  true,
 		"OrderManagement":                   true,
+		"PlatformCache":                     true,
 		"PersonAccounts":                    true,
 		"ScvMultipartyAndConsult":           true,
 		"ServiceCloud":                      true,

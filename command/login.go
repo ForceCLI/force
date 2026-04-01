@@ -32,6 +32,7 @@ const (
 	EinsteinAnalyticsPlus
 	EinsteinBuilderFree
 	DevelopmentWave
+	PlatformCache
 	ServiceCloud
 	ScvMultipartyAndConsult
 	ServiceCloudVoicePartnerTelephony
@@ -55,6 +56,7 @@ var ScratchFeatureIds = map[ScratchFeature][]string{
 	EinsteinAnalyticsPlus:             {"EinsteinAnalyticsPlus"},
 	EinsteinBuilderFree:               {"EinsteinBuilderFree"},
 	DevelopmentWave:                   {"DevelopmentWave"},
+	PlatformCache:                     {"PlatformCache"},
 	ServiceCloud:                      {"ServiceCloud"},
 	ScvMultipartyAndConsult:           {"ScvMultipartyAndConsult"},
 	ServiceCloudVoicePartnerTelephony: {"ServiceCloudVoicePartnerTelephony"},
@@ -223,6 +225,7 @@ Available Features:
   HealthCloudUser                     - Enables Health Cloud user licenses
   InsightsPlatform                    - Enables Insights Platform
   OrderManagement                     - Enables Salesforce Order Management
+  PlatformCache                       - Enables Platform Cache
   PersonAccounts                      - Enables Person Accounts (B2C account model)
   ScvMultipartyAndConsult             - Enables Service Cloud Voice multiparty and consult (requires quantity, default: 10)
   ServiceCloud                        - Enables Service Cloud

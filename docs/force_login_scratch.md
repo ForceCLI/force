@@ -21,6 +21,7 @@ Available Features:
   HealthCloudUser                     - Enables Health Cloud user licenses
   InsightsPlatform                    - Enables Insights Platform
   OrderManagement                     - Enables Salesforce Order Management
+  PlatformCache                       - Enables Platform Cache
   PersonAccounts                      - Enables Person Accounts (B2C account model)
   ScvMultipartyAndConsult             - Enables Service Cloud Voice multiparty and consult (requires quantity, default: 10)
   ServiceCloud                        - Enables Service Cloud
@@ -106,4 +107,3 @@ force login scratch [flags]
 ### SEE ALSO
 
 * [force login](force_login.md)	 - Log into Salesforce and store a session token
-
