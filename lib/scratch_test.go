@@ -133,6 +133,29 @@ func TestBuildSettingsMetadata_ExcludesOrderSettingsWhenUnused(t *testing.T) {
 	}
 }
 
+func TestBuildSettingsMetadata_AddsLiveAgentSettings(t *testing.T) {
+	files := buildSettingsMetadata([]string{"enableLiveAgent"})
+
+	content, ok := files["unpackaged/settings/LiveAgent.settings"]
+	if !ok {
+		t.Fatalf("LiveAgent.settings not generated")
+	}
+	if !strings.Contains(string(content), "<enableLiveAgent>true</enableLiveAgent>") {
+		t.Errorf("LiveAgent.settings missing enableLiveAgent preference:\n%s", content)
+	}
+	if !strings.Contains(string(content), "<LiveAgentSettings ") {
+		t.Errorf("LiveAgent.settings missing LiveAgentSettings metadata type:\n%s", content)
+	}
+}
+
+func TestBuildSettingsMetadata_ExcludesLiveAgentSettingsWhenUnused(t *testing.T) {
+	files := buildSettingsMetadata([]string{"enableEnhancedNotes"})
+
+	if _, ok := files["unpackaged/settings/LiveAgent.settings"]; ok {
+		t.Fatalf("LiveAgent.settings should not be generated when not requested")
+	}
+}
+
 func TestGetScratchOrg_returns_error_when_SignupUsername_is_nil(t *testing.T) {
 	f := &Force{}
 	f.Credentials = &ForceSession{}

@@ -20,6 +20,7 @@ Available Features:
   HealthCloudAddOn                    - Enables Health Cloud add-on
   HealthCloudUser                     - Enables Health Cloud user licenses
   InsightsPlatform                    - Enables Insights Platform
+  LiveAgent                           - Enables Live Agent (Chat)
   OrderManagement                     - Enables Salesforce Order Management
   PlatformCache                       - Enables Platform Cache
   PersonAccounts                      - Enables Person Accounts (B2C account model)
@@ -35,6 +36,7 @@ Available Products:
   crmanalytics - CRM Analytics (enables AnalyticsAdminPerms, WavePlatform, InsightsPlatform, EinsteinAnalyticsPlus, EinsteinBuilderFree, DevelopmentWave)
   fsc          - Financial Services Cloud (enables PersonAccounts, ContactsToMultipleAccounts, FinancialServicesUser)
   healthcloud  - Health Cloud (enables HealthCloudAddOn, HealthCloudUser)
+  liveagent    - Live Agent (enables LiveAgent feature and enableLiveAgent setting)
 
 Available Editions:
   Developer           - Developer Edition (default)
@@ -56,6 +58,7 @@ Available Settings (deployed after org creation):
   enableLightningPreviewPref - Enable Lightning Experience preview pref
   enableOrders - Enable Orders
   enableEnhancedCommerceOrders - Enable Enhanced Commerce Orders
+  enableLiveAgent - Enable Live Agent (Chat)
 
 Available Releases:
   preview  - Create scratch org on the next (preview) release
@@ -73,6 +76,7 @@ Examples:
   force login scratch --product communities
   force login scratch --product crmanalytics
   force login scratch --product healthcloud
+  force login scratch --product liveagent
   force login scratch --release preview
   force login scratch --release previous
   force login scratch --duration 14

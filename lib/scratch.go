@@ -208,6 +208,7 @@ func buildSettingsMetadata(settings []string) ForceMetadataFiles {
 	lightningExperienceSettings := false
 	commerceSettings := false
 	orderSettings := false
+	liveAgentSettings := false
 
 	for _, setting := range settings {
 		switch setting {
@@ -240,6 +241,8 @@ func buildSettingsMetadata(settings []string) ForceMetadataFiles {
 			userManagementSettings = true
 		case "enableLightningPreviewPref":
 			lightningExperienceSettings = true
+		case "enableLiveAgent":
+			liveAgentSettings = true
 		}
 	}
 
@@ -287,6 +290,15 @@ func buildSettingsMetadata(settings []string) ForceMetadataFiles {
     <enableEnhancedCommerceOrders>true</enableEnhancedCommerceOrders>
 </OrderSettings>`)
 		files["unpackaged/settings/Order.settings"] = orderBuffer.Bytes()
+	}
+
+	if liveAgentSettings {
+		var liveAgentBuffer bytes.Buffer
+		liveAgentBuffer.WriteString(`<?xml version="1.0" encoding="UTF-8"?>
+<LiveAgentSettings xmlns="http://soap.sforce.com/2006/04/metadata">
+    <enableLiveAgent>true</enableLiveAgent>
+</LiveAgentSettings>`)
+		files["unpackaged/settings/LiveAgent.settings"] = liveAgentBuffer.Bytes()
 	}
 
 	return files

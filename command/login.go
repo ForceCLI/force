@@ -37,6 +37,7 @@ const (
 	ScvMultipartyAndConsult
 	ServiceCloudVoicePartnerTelephony
 	OrderManagement
+	LiveAgent
 )
 
 var ScratchFeatureIds = map[ScratchFeature][]string{
@@ -61,6 +62,7 @@ var ScratchFeatureIds = map[ScratchFeature][]string{
 	ScvMultipartyAndConsult:           {"ScvMultipartyAndConsult"},
 	ServiceCloudVoicePartnerTelephony: {"ServiceCloudVoicePartnerTelephony"},
 	OrderManagement:                   {"OrderManagement"},
+	LiveAgent:                         {"LiveAgent"},
 }
 
 type ScratchProduct enumflag.Flag
@@ -71,6 +73,7 @@ const (
 	HealthCloudProduct
 	CRMAnalyticsProduct
 	B2BCommerceProduct
+	LiveAgentProduct
 )
 
 var ScratchProductIds = map[ScratchProduct][]string{
@@ -79,6 +82,7 @@ var ScratchProductIds = map[ScratchProduct][]string{
 	HealthCloudProduct:  {"healthcloud"},
 	CRMAnalyticsProduct: {"crmanalytics"},
 	B2BCommerceProduct:  {"b2bcommerce"},
+	LiveAgentProduct:    {"liveagent"},
 }
 
 type ScratchEdition enumflag.Flag
@@ -117,6 +121,7 @@ const (
 	EnableLightningPreviewPref
 	EnableOrders
 	EnableEnhancedCommerceOrders
+	EnableLiveAgent
 )
 
 var ScratchSettingIds = map[ScratchSetting][]string{
@@ -129,6 +134,7 @@ var ScratchSettingIds = map[ScratchSetting][]string{
 	EnableLightningPreviewPref:   {"enableLightningPreviewPref"},
 	EnableOrders:                 {"enableOrders"},
 	EnableEnhancedCommerceOrders: {"enableEnhancedCommerceOrders"},
+	EnableLiveAgent:              {"enableLiveAgent"},
 }
 
 type ScratchRelease enumflag.Flag
@@ -224,6 +230,7 @@ Available Features:
   HealthCloudAddOn                    - Enables Health Cloud add-on
   HealthCloudUser                     - Enables Health Cloud user licenses
   InsightsPlatform                    - Enables Insights Platform
+  LiveAgent                           - Enables Live Agent (Chat)
   OrderManagement                     - Enables Salesforce Order Management
   PlatformCache                       - Enables Platform Cache
   PersonAccounts                      - Enables Person Accounts (B2C account model)
@@ -239,6 +246,7 @@ Available Products:
   crmanalytics - CRM Analytics (enables AnalyticsAdminPerms, WavePlatform, InsightsPlatform, EinsteinAnalyticsPlus, EinsteinBuilderFree, DevelopmentWave)
   fsc          - Financial Services Cloud (enables PersonAccounts, ContactsToMultipleAccounts, FinancialServicesUser)
   healthcloud  - Health Cloud (enables HealthCloudAddOn, HealthCloudUser)
+  liveagent    - Live Agent (enables LiveAgent feature and enableLiveAgent setting)
 
 Available Editions:
   Developer           - Developer Edition (default)
@@ -260,6 +268,7 @@ Available Settings (deployed after org creation):
   enableLightningPreviewPref - Enable Lightning Experience preview pref
   enableOrders - Enable Orders
   enableEnhancedCommerceOrders - Enable Enhanced Commerce Orders
+  enableLiveAgent - Enable Live Agent (Chat)
 
 Available Releases:
   preview  - Create scratch org on the next (preview) release
@@ -277,6 +286,7 @@ Examples:
   force login scratch --product communities
   force login scratch --product crmanalytics
   force login scratch --product healthcloud
+  force login scratch --product liveagent
   force login scratch --release preview
   force login scratch --release previous
   force login scratch --duration 14`,
@@ -351,6 +361,7 @@ func expandProductsToFeatures(products []ScratchProduct, features []ScratchFeatu
 		HealthCloudProduct:  {HealthCloudAddOn, HealthCloudUser},
 		CRMAnalyticsProduct: {AnalyticsAdminPerms, WavePlatform, InsightsPlatform, EinsteinAnalyticsPlus, EinsteinBuilderFree, DevelopmentWave},
 		B2BCommerceProduct:  {B2BCommerce, OrderManagement},
+		LiveAgentProduct:    {LiveAgent},
 	}
 
 	featureSet := make(map[ScratchFeature]bool)
@@ -395,6 +406,7 @@ func expandProductsToSettings(products []ScratchProduct, settings []ScratchSetti
 	productSettings := map[ScratchProduct][]ScratchSetting{
 		CommunitiesProduct: {NetworksEnabled},
 		B2BCommerceProduct: {CommerceEnabled, EnableOrders, EnableEnhancedCommerceOrders},
+		LiveAgentProduct:   {EnableLiveAgent},
 	}
 
 	settingSet := make(map[ScratchSetting]bool)

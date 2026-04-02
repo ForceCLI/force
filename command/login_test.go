@@ -353,6 +353,7 @@ func TestScratchFeatureIds_AllFeaturesDefined(t *testing.T) {
 		"HealthCloudAddOn":                  true,
 		"HealthCloudUser":                   true,
 		"InsightsPlatform":                  true,
+		"LiveAgent":                         true,
 		"OrderManagement":                   true,
 		"PlatformCache":                     true,
 		"PersonAccounts":                    true,
@@ -467,6 +468,7 @@ func TestScratchSettingIds_AllSettingsDefined(t *testing.T) {
 		"enableLightningPreviewPref":   true,
 		"enableOrders":                 true,
 		"enableEnhancedCommerceOrders": true,
+		"enableLiveAgent":              true,
 	}
 
 	if len(ScratchSettingIds) != len(expectedSettings) {
@@ -587,5 +589,45 @@ func TestExpandProductsToFeatures_ServiceCloudVoicePartnerTelephony_CustomQuanti
 	}
 	if result[0] != "ServiceCloudVoicePartnerTelephony:25" {
 		t.Errorf("Expected ServiceCloudVoicePartnerTelephony:25, got %s", result[0])
+	}
+}
+
+func TestExpandProductsToFeatures_LiveAgent(t *testing.T) {
+	result := expandProductsToFeatures([]ScratchProduct{}, []ScratchFeature{LiveAgent}, map[string]string{})
+	if len(result) != 1 {
+		t.Fatalf("Expected 1 feature, got %d", len(result))
+	}
+	if result[0] != "LiveAgent" {
+		t.Errorf("Expected LiveAgent, got %s", result[0])
+	}
+}
+
+func TestExpandProductsToFeatures_LiveAgentProduct(t *testing.T) {
+	result := expandProductsToFeatures([]ScratchProduct{LiveAgentProduct}, []ScratchFeature{}, map[string]string{})
+	if len(result) != 1 {
+		t.Fatalf("Expected 1 feature from liveagent product, got %d", len(result))
+	}
+	if result[0] != "LiveAgent" {
+		t.Errorf("Expected LiveAgent, got %s", result[0])
+	}
+}
+
+func TestExpandProductsToSettings_LiveAgentProduct(t *testing.T) {
+	result := expandProductsToSettings([]ScratchProduct{LiveAgentProduct}, []ScratchSetting{})
+	if len(result) != 1 {
+		t.Errorf("Expected 1 setting from liveagent product, got %d", len(result))
+	}
+	if result[0] != "enableLiveAgent" {
+		t.Errorf("Expected enableLiveAgent, got %s", result[0])
+	}
+}
+
+func TestConvertSettingsToStrings_EnableLiveAgent(t *testing.T) {
+	result := convertSettingsToStrings([]ScratchSetting{EnableLiveAgent})
+	if len(result) != 1 {
+		t.Errorf("Expected 1 setting, got %d", len(result))
+	}
+	if result[0] != "enableLiveAgent" {
+		t.Errorf("Expected enableLiveAgent, got %s", result[0])
 	}
 }
