@@ -469,6 +469,7 @@ func TestScratchSettingIds_AllSettingsDefined(t *testing.T) {
 		"enableOrders":                 true,
 		"enableEnhancedCommerceOrders": true,
 		"enableLiveAgent":              true,
+		"enableMultiCurrency":          true,
 	}
 
 	if len(ScratchSettingIds) != len(expectedSettings) {
@@ -629,5 +630,15 @@ func TestConvertSettingsToStrings_EnableLiveAgent(t *testing.T) {
 	}
 	if result[0] != "enableLiveAgent" {
 		t.Errorf("Expected enableLiveAgent, got %s", result[0])
+	}
+}
+
+func TestConvertSettingsToStrings_EnableMultiCurrency(t *testing.T) {
+	result := convertSettingsToStrings([]ScratchSetting{EnableMultiCurrency})
+	if len(result) != 1 {
+		t.Errorf("Expected 1 setting, got %d", len(result))
+	}
+	if result[0] != "enableMultiCurrency" {
+		t.Errorf("Expected enableMultiCurrency, got %s", result[0])
 	}
 }

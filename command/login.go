@@ -122,6 +122,7 @@ const (
 	EnableOrders
 	EnableEnhancedCommerceOrders
 	EnableLiveAgent
+	EnableMultiCurrency
 )
 
 var ScratchSettingIds = map[ScratchSetting][]string{
@@ -135,6 +136,7 @@ var ScratchSettingIds = map[ScratchSetting][]string{
 	EnableOrders:                 {"enableOrders"},
 	EnableEnhancedCommerceOrders: {"enableEnhancedCommerceOrders"},
 	EnableLiveAgent:              {"enableLiveAgent"},
+	EnableMultiCurrency:          {"enableMultiCurrency"},
 }
 
 type ScratchRelease enumflag.Flag
@@ -269,6 +271,7 @@ Available Settings (deployed after org creation):
   enableOrders - Enable Orders
   enableEnhancedCommerceOrders - Enable Enhanced Commerce Orders
   enableLiveAgent - Enable Live Agent (Chat)
+  enableMultiCurrency - Enable Multi-Currency
 
 Available Releases:
   preview  - Create scratch org on the next (preview) release

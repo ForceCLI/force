@@ -209,6 +209,7 @@ func buildSettingsMetadata(settings []string) ForceMetadataFiles {
 	commerceSettings := false
 	orderSettings := false
 	liveAgentSettings := false
+	currencySettings := false
 
 	for _, setting := range settings {
 		switch setting {
@@ -243,6 +244,8 @@ func buildSettingsMetadata(settings []string) ForceMetadataFiles {
 			lightningExperienceSettings = true
 		case "enableLiveAgent":
 			liveAgentSettings = true
+		case "enableMultiCurrency":
+			currencySettings = true
 		}
 	}
 
@@ -299,6 +302,15 @@ func buildSettingsMetadata(settings []string) ForceMetadataFiles {
     <enableLiveAgent>true</enableLiveAgent>
 </LiveAgentSettings>`)
 		files["unpackaged/settings/LiveAgent.settings"] = liveAgentBuffer.Bytes()
+	}
+
+	if currencySettings {
+		var currencyBuffer bytes.Buffer
+		currencyBuffer.WriteString(`<?xml version="1.0" encoding="UTF-8"?>
+<CurrencySettings xmlns="http://soap.sforce.com/2006/04/metadata">
+    <enableMultiCurrency>true</enableMultiCurrency>
+</CurrencySettings>`)
+		files["unpackaged/settings/Currency.settings"] = currencyBuffer.Bytes()
 	}
 
 	return files

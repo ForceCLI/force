@@ -59,6 +59,7 @@ Available Settings (deployed after org creation):
   enableOrders - Enable Orders
   enableEnhancedCommerceOrders - Enable Enhanced Commerce Orders
   enableLiveAgent - Enable Live Agent (Chat)
+  enableMultiCurrency - Enable Multi-Currency
 
 Available Releases:
   preview  - Create scratch org on the next (preview) release

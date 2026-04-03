@@ -156,6 +156,29 @@ func TestBuildSettingsMetadata_ExcludesLiveAgentSettingsWhenUnused(t *testing.T)
 	}
 }
 
+func TestBuildSettingsMetadata_AddsCurrencySettings(t *testing.T) {
+	files := buildSettingsMetadata([]string{"enableMultiCurrency"})
+
+	content, ok := files["unpackaged/settings/Currency.settings"]
+	if !ok {
+		t.Fatalf("Currency.settings not generated")
+	}
+	if !strings.Contains(string(content), "<enableMultiCurrency>true</enableMultiCurrency>") {
+		t.Errorf("Currency.settings missing enableMultiCurrency preference:\n%s", content)
+	}
+	if !strings.Contains(string(content), "<CurrencySettings ") {
+		t.Errorf("Currency.settings missing CurrencySettings metadata type:\n%s", content)
+	}
+}
+
+func TestBuildSettingsMetadata_ExcludesCurrencySettingsWhenUnused(t *testing.T) {
+	files := buildSettingsMetadata([]string{"enableEnhancedNotes"})
+
+	if _, ok := files["unpackaged/settings/Currency.settings"]; ok {
+		t.Fatalf("Currency.settings should not be generated when not requested")
+	}
+}
+
 func TestGetScratchOrg_returns_error_when_SignupUsername_is_nil(t *testing.T) {
 	f := &Force{}
 	f.Credentials = &ForceSession{}
