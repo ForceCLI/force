@@ -2,6 +2,7 @@ package command
 
 import (
 	"fmt"
+	"time"
 
 	"strings"
 
@@ -12,9 +13,10 @@ import (
 )
 
 var (
-	namespaceTestFlag string
-	classFlag         string
-	verboselogging    bool
+	namespaceTestFlag   string
+	classFlag           string
+	verboselogging      bool
+	integrationTestFlag bool
 )
 
 func init() {
@@ -22,6 +24,7 @@ func init() {
 	testCmd.Flags().StringVarP(&namespaceTestFlag, "namespace", "n", "", "namespace to run tests in")
 	testCmd.Flags().StringP("reporttype", "f", "text", "report type format (text or junit)")
 	testCmd.Flags().StringVarP(&classFlag, "class", "c", "", "class to run tests from")
+	testCmd.Flags().BoolVar(&integrationTestFlag, "integration", false, "run an @IntegrationTest class asynchronously via the Tooling API")
 	RootCmd.AddCommand(testCmd)
 }
 
@@ -39,10 +42,15 @@ Examples:
   force test -namespace=ns Test4
   force test -class=Test1 method1 method2
   force test -v Test1
+  force test --integration MyIntegrationTest
 `,
 
 	Run: func(cmd *cobra.Command, args []string) {
 		reportFormat, _ := cmd.Flags().GetString("reporttype")
+		if integrationTestFlag {
+			runIntegrationTest(reportFormat, args)
+			return
+		}
 		runTests(reportFormat, args)
 	},
 }
@@ -146,4 +154,59 @@ func runTests(reportFormat string, args []string) {
 			ErrorAndExit("Tests Failed")
 		}
 	}
+}
+
+// runIntegrationTest drives the Tooling API runTestsAsynchronous endpoint for a
+// single @IntegrationTest class. The Salesforce Tooling API only allows one
+// concurrent asynchronous integration test run at a time, so we reject
+// requests that target more than one class.
+func runIntegrationTest(reportFormat string, args []string) {
+	if classFlag != "" {
+		args = append([]string{classFlag}, args...)
+	}
+	if len(args) != 1 {
+		ErrorAndExit("--integration requires exactly one class (or class.method) argument")
+	}
+	target := strings.Replace(args[0], "::", ".", 1)
+
+	result, err := force.RunIntegrationTest(target, 2*time.Second, 30*time.Minute)
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
+
+	output := GenerateIntegrationTestResults(result)
+	fmt.Print(output)
+
+	success := result.Status == "Completed" && result.MethodsFailed == 0
+	desktop.NotifySuccess("test", success)
+	if !success {
+		ErrorAndExit("Integration tests Failed")
+	}
+}
+
+// GenerateIntegrationTestResults formats an IntegrationTestResult for display.
+func GenerateIntegrationTestResults(result IntegrationTestResult) string {
+	var b strings.Builder
+	fmt.Fprintln(&b)
+	fmt.Fprintf(&b, "Integration Test Run: %s (status: %s)\n", result.AsyncApexJobID, result.Status)
+	fmt.Fprintf(&b, "  Classes:  %d/%d completed\n", result.ClassesCompleted, result.ClassesEnqueued)
+	fmt.Fprintf(&b, "  Methods:  %d/%d completed, %d failed\n", result.MethodsCompleted, result.MethodsEnqueued, result.MethodsFailed)
+	if result.TestTime > 0 {
+		fmt.Fprintf(&b, "  TestTime: %dms\n", result.TestTime)
+	}
+	fmt.Fprintln(&b)
+	fmt.Fprintln(&b, "Results:")
+	for _, r := range result.Results {
+		switch r.Outcome {
+		case "Pass":
+			fmt.Fprintf(&b, "  [PASS]  %s::%s (%dms)\n", r.ClassName, r.MethodName, r.RunTime)
+		default:
+			fmt.Fprintf(&b, "  [%s]  %s::%s: %s\n", strings.ToUpper(r.Outcome), r.ClassName, r.MethodName, r.Message)
+			if r.StackTrace != "" {
+				fmt.Fprintf(&b, "    %s\n", r.StackTrace)
+			}
+		}
+	}
+	fmt.Fprintln(&b)
+	return b.String()
 }

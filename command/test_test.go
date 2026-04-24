@@ -72,4 +72,54 @@ var _ = Describe("Test", func() {
 			Expect(output).ToNot(MatchRegexp(`\D0%`))
 		})
 	})
+
+	Describe("GenerateIntegrationTestResults", func() {
+		It("should mark passing methods with [PASS] and include the run time", func() {
+			result := IntegrationTestResult{
+				AsyncApexJobID:   "707aer000000001AAA",
+				Status:           "Completed",
+				ClassesEnqueued:  1,
+				ClassesCompleted: 1,
+				MethodsEnqueued:  1,
+				MethodsCompleted: 1,
+				TestTime:         1234,
+				Results: []IntegrationTestMethodResult{{
+					ClassName:  "SampleIntegrationTest",
+					MethodName: "happy_path",
+					Outcome:    "Pass",
+					RunTime:    42,
+				}},
+			}
+			output := GenerateIntegrationTestResults(result)
+			Expect(output).To(ContainSubstring("Integration Test Run: 707aer000000001AAA"))
+			Expect(output).To(ContainSubstring("status: Completed"))
+			Expect(output).To(ContainSubstring("1/1 completed"))
+			Expect(output).To(ContainSubstring("TestTime: 1234ms"))
+			Expect(output).To(ContainSubstring("[PASS]  SampleIntegrationTest::happy_path (42ms)"))
+		})
+
+		It("should render failures with message and stack trace", func() {
+			result := IntegrationTestResult{
+				AsyncApexJobID:   "707aer000000002AAA",
+				Status:           "Completed",
+				ClassesEnqueued:  1,
+				ClassesCompleted: 1,
+				MethodsEnqueued:  1,
+				MethodsCompleted: 1,
+				MethodsFailed:    1,
+				Results: []IntegrationTestMethodResult{{
+					ClassName:  "SampleIntegrationTest",
+					MethodName: "broken_path",
+					Outcome:    "Fail",
+					Message:    "boom",
+					StackTrace: "Class.SampleIntegrationTest.broken_path: line 1, column 1",
+					RunTime:    10,
+				}},
+			}
+			output := GenerateIntegrationTestResults(result)
+			Expect(output).To(ContainSubstring("1 failed"))
+			Expect(output).To(ContainSubstring("[FAIL]  SampleIntegrationTest::broken_path: boom"))
+			Expect(output).To(ContainSubstring("Class.SampleIntegrationTest.broken_path: line 1, column 1"))
+		})
+	})
 })
