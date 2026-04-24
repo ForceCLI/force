@@ -112,3 +112,4 @@ force login scratch [flags]
 ### SEE ALSO
 
 * [force login](force_login.md)	 - Log into Salesforce and store a session token
+

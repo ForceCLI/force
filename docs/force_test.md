@@ -15,6 +15,7 @@ Examples:
   force test -namespace=ns Test4
   force test -class=Test1 method1 method2
   force test -v Test1
+  force test --integration MyIntegrationTest
 
 
 ```
@@ -26,6 +27,7 @@ force test (all | classname... | classname.method...) [flags]
 ```
   -c, --class string        class to run tests from
   -h, --help                help for test
+      --integration         run an @IntegrationTest class asynchronously via the Tooling API
   -n, --namespace string    namespace to run tests in
   -f, --reporttype string   report type format (text or junit) (default "text")
   -v, --verbose             set verbose logging
