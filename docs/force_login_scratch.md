@@ -24,6 +24,7 @@ Available Features:
   OrderManagement                     - Enables Salesforce Order Management
   PlatformCache                       - Enables Platform Cache
   PersonAccounts                      - Enables Person Accounts (B2C account model)
+  PlatformEncryption                  - Enables Shield Platform Encryption
   ScvMultipartyAndConsult             - Enables Service Cloud Voice multiparty and consult (requires quantity, default: 10)
   ServiceCloud                        - Enables Service Cloud
   ServiceCloudVoicePartnerTelephony   - Enables Service Cloud Voice Partner Telephony (requires quantity 1-50, default: 10)

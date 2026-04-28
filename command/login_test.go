@@ -236,6 +236,16 @@ func TestExpandProductsToFeatures_PlatformCache(t *testing.T) {
 	}
 }
 
+func TestExpandProductsToFeatures_PlatformEncryption(t *testing.T) {
+	result := expandProductsToFeatures([]ScratchProduct{}, []ScratchFeature{PlatformEncryption}, map[string]string{})
+	if len(result) != 1 {
+		t.Fatalf("Expected 1 feature, got %d", len(result))
+	}
+	if result[0] != "PlatformEncryption" {
+		t.Errorf("Expected PlatformEncryption, got %s", result[0])
+	}
+}
+
 func TestExpandProductsToSettings_NoProductsOrSettings(t *testing.T) {
 	result := expandProductsToSettings([]ScratchProduct{}, []ScratchSetting{})
 	if len(result) != 0 {
@@ -356,6 +366,7 @@ func TestScratchFeatureIds_AllFeaturesDefined(t *testing.T) {
 		"LiveAgent":                         true,
 		"OrderManagement":                   true,
 		"PlatformCache":                     true,
+		"PlatformEncryption":                true,
 		"PersonAccounts":                    true,
 		"ScvMultipartyAndConsult":           true,
 		"ServiceCloud":                      true,
