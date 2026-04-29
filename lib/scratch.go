@@ -210,6 +210,8 @@ func buildSettingsMetadata(settings []string) ForceMetadataFiles {
 	orderSettings := false
 	liveAgentSettings := false
 	currencySettings := false
+	revenueManagementSettings := false
+	subscriptionManagementSettings := false
 
 	for _, setting := range settings {
 		switch setting {
@@ -246,6 +248,10 @@ func buildSettingsMetadata(settings []string) ForceMetadataFiles {
 			liveAgentSettings = true
 		case "enableMultiCurrency":
 			currencySettings = true
+		case "enableCoreCPQ":
+			revenueManagementSettings = true
+		case "enableSubscriptionManagement":
+			subscriptionManagementSettings = true
 		}
 	}
 
@@ -311,6 +317,24 @@ func buildSettingsMetadata(settings []string) ForceMetadataFiles {
     <enableMultiCurrency>true</enableMultiCurrency>
 </CurrencySettings>`)
 		files["unpackaged/settings/Currency.settings"] = currencyBuffer.Bytes()
+	}
+
+	if revenueManagementSettings {
+		var buffer bytes.Buffer
+		buffer.WriteString(`<?xml version="1.0" encoding="UTF-8"?>
+<RevenueManagementSettings xmlns="http://soap.sforce.com/2006/04/metadata">
+    <enableCoreCPQ>true</enableCoreCPQ>
+</RevenueManagementSettings>`)
+		files["unpackaged/settings/RevenueManagement.settings"] = buffer.Bytes()
+	}
+
+	if subscriptionManagementSettings {
+		var buffer bytes.Buffer
+		buffer.WriteString(`<?xml version="1.0" encoding="UTF-8"?>
+<SubscriptionManagementSettings xmlns="http://soap.sforce.com/2006/04/metadata">
+    <enableSubscriptionManagement>true</enableSubscriptionManagement>
+</SubscriptionManagementSettings>`)
+		files["unpackaged/settings/SubscriptionManagement.settings"] = buffer.Bytes()
 	}
 
 	return files

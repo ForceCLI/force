@@ -179,6 +179,52 @@ func TestBuildSettingsMetadata_ExcludesCurrencySettingsWhenUnused(t *testing.T) 
 	}
 }
 
+func TestBuildSettingsMetadata_AddsRevenueManagementSettings(t *testing.T) {
+	files := buildSettingsMetadata([]string{"enableCoreCPQ"})
+
+	content, ok := files["unpackaged/settings/RevenueManagement.settings"]
+	if !ok {
+		t.Fatalf("RevenueManagement.settings not generated")
+	}
+	if !strings.Contains(string(content), "<enableCoreCPQ>true</enableCoreCPQ>") {
+		t.Errorf("RevenueManagement.settings missing enableCoreCPQ preference:\n%s", content)
+	}
+	if !strings.Contains(string(content), "<RevenueManagementSettings ") {
+		t.Errorf("RevenueManagement.settings missing RevenueManagementSettings metadata type:\n%s", content)
+	}
+}
+
+func TestBuildSettingsMetadata_ExcludesRevenueManagementSettingsWhenUnused(t *testing.T) {
+	files := buildSettingsMetadata([]string{"enableEnhancedNotes"})
+
+	if _, ok := files["unpackaged/settings/RevenueManagement.settings"]; ok {
+		t.Fatalf("RevenueManagement.settings should not be generated when not requested")
+	}
+}
+
+func TestBuildSettingsMetadata_AddsSubscriptionManagementSettings(t *testing.T) {
+	files := buildSettingsMetadata([]string{"enableSubscriptionManagement"})
+
+	content, ok := files["unpackaged/settings/SubscriptionManagement.settings"]
+	if !ok {
+		t.Fatalf("SubscriptionManagement.settings not generated")
+	}
+	if !strings.Contains(string(content), "<enableSubscriptionManagement>true</enableSubscriptionManagement>") {
+		t.Errorf("SubscriptionManagement.settings missing enableSubscriptionManagement preference:\n%s", content)
+	}
+	if !strings.Contains(string(content), "<SubscriptionManagementSettings ") {
+		t.Errorf("SubscriptionManagement.settings missing SubscriptionManagementSettings metadata type:\n%s", content)
+	}
+}
+
+func TestBuildSettingsMetadata_ExcludesSubscriptionManagementSettingsWhenUnused(t *testing.T) {
+	files := buildSettingsMetadata([]string{"enableEnhancedNotes"})
+
+	if _, ok := files["unpackaged/settings/SubscriptionManagement.settings"]; ok {
+		t.Fatalf("SubscriptionManagement.settings should not be generated when not requested")
+	}
+}
+
 func TestGetScratchOrg_returns_error_when_SignupUsername_is_nil(t *testing.T) {
 	f := &Force{}
 	f.Credentials = &ForceSession{}

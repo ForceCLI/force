@@ -368,6 +368,8 @@ func TestScratchFeatureIds_AllFeaturesDefined(t *testing.T) {
 		"PlatformCache":                     true,
 		"PlatformEncryption":                true,
 		"PersonAccounts":                    true,
+		"RevSubscriptionManagement":         true,
+		"CoreCpq":                           true,
 		"ScvMultipartyAndConsult":           true,
 		"ServiceCloud":                      true,
 		"ServiceCloudVoicePartnerTelephony": true,
@@ -481,6 +483,8 @@ func TestScratchSettingIds_AllSettingsDefined(t *testing.T) {
 		"enableEnhancedCommerceOrders": true,
 		"enableLiveAgent":              true,
 		"enableMultiCurrency":          true,
+		"enableCoreCPQ":                true,
+		"enableSubscriptionManagement": true,
 	}
 
 	if len(ScratchSettingIds) != len(expectedSettings) {

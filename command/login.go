@@ -39,6 +39,8 @@ const (
 	OrderManagement
 	LiveAgent
 	PlatformEncryption
+	RevSubscriptionManagement
+	CoreCpq
 )
 
 var ScratchFeatureIds = map[ScratchFeature][]string{
@@ -65,6 +67,8 @@ var ScratchFeatureIds = map[ScratchFeature][]string{
 	OrderManagement:                   {"OrderManagement"},
 	LiveAgent:                         {"LiveAgent"},
 	PlatformEncryption:                {"PlatformEncryption"},
+	RevSubscriptionManagement:         {"RevSubscriptionManagement"},
+	CoreCpq:                           {"CoreCpq"},
 }
 
 type ScratchProduct enumflag.Flag
@@ -125,6 +129,8 @@ const (
 	EnableEnhancedCommerceOrders
 	EnableLiveAgent
 	EnableMultiCurrency
+	EnableCoreCPQ
+	EnableSubscriptionManagement
 )
 
 var ScratchSettingIds = map[ScratchSetting][]string{
@@ -139,6 +145,8 @@ var ScratchSettingIds = map[ScratchSetting][]string{
 	EnableEnhancedCommerceOrders: {"enableEnhancedCommerceOrders"},
 	EnableLiveAgent:              {"enableLiveAgent"},
 	EnableMultiCurrency:          {"enableMultiCurrency"},
+	EnableCoreCPQ:                {"enableCoreCPQ"},
+	EnableSubscriptionManagement: {"enableSubscriptionManagement"},
 }
 
 type ScratchRelease enumflag.Flag
@@ -239,6 +247,8 @@ Available Features:
   PlatformCache                       - Enables Platform Cache
   PersonAccounts                      - Enables Person Accounts (B2C account model)
   PlatformEncryption                  - Enables Shield Platform Encryption
+  RevSubscriptionManagement           - Enables Subscription Management (B2B subscriptions and one-time sales)
+  CoreCpq                             - Enables Revenue Cloud / Salesforce CPQ Core
   ScvMultipartyAndConsult             - Enables Service Cloud Voice multiparty and consult (requires quantity, default: 10)
   ServiceCloud                        - Enables Service Cloud
   ServiceCloudVoicePartnerTelephony   - Enables Service Cloud Voice Partner Telephony (requires quantity 1-50, default: 10)
@@ -275,6 +285,8 @@ Available Settings (deployed after org creation):
   enableEnhancedCommerceOrders - Enable Enhanced Commerce Orders
   enableLiveAgent - Enable Live Agent (Chat)
   enableMultiCurrency - Enable Multi-Currency
+  enableCoreCPQ - Enable Revenue Cloud / Salesforce CPQ Core (RevenueManagementSettings)
+  enableSubscriptionManagement - Enable Subscription Management (SubscriptionManagementSettings)
 
 Available Releases:
   preview  - Create scratch org on the next (preview) release
