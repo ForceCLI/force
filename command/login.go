@@ -41,6 +41,7 @@ const (
 	PlatformEncryption
 	RevSubscriptionManagement
 	CoreCpq
+	Knowledge
 )
 
 var ScratchFeatureIds = map[ScratchFeature][]string{
@@ -69,6 +70,7 @@ var ScratchFeatureIds = map[ScratchFeature][]string{
 	PlatformEncryption:                {"PlatformEncryption"},
 	RevSubscriptionManagement:         {"RevSubscriptionManagement"},
 	CoreCpq:                           {"CoreCpq"},
+	Knowledge:                         {"Knowledge"},
 }
 
 type ScratchProduct enumflag.Flag
@@ -80,6 +82,7 @@ const (
 	CRMAnalyticsProduct
 	B2BCommerceProduct
 	LiveAgentProduct
+	KnowledgeProduct
 )
 
 var ScratchProductIds = map[ScratchProduct][]string{
@@ -89,6 +92,7 @@ var ScratchProductIds = map[ScratchProduct][]string{
 	CRMAnalyticsProduct: {"crmanalytics"},
 	B2BCommerceProduct:  {"b2bcommerce"},
 	LiveAgentProduct:    {"liveagent"},
+	KnowledgeProduct:    {"knowledge"},
 }
 
 type ScratchEdition enumflag.Flag
@@ -131,6 +135,8 @@ const (
 	EnableMultiCurrency
 	EnableCoreCPQ
 	EnableSubscriptionManagement
+	EnableKnowledge
+	EnableLightningKnowledge
 )
 
 var ScratchSettingIds = map[ScratchSetting][]string{
@@ -147,6 +153,8 @@ var ScratchSettingIds = map[ScratchSetting][]string{
 	EnableMultiCurrency:          {"enableMultiCurrency"},
 	EnableCoreCPQ:                {"enableCoreCPQ"},
 	EnableSubscriptionManagement: {"enableSubscriptionManagement"},
+	EnableKnowledge:              {"enableKnowledge"},
+	EnableLightningKnowledge:     {"enableLightningKnowledge"},
 }
 
 type ScratchRelease enumflag.Flag
@@ -242,6 +250,7 @@ Available Features:
   HealthCloudAddOn                    - Enables Health Cloud add-on
   HealthCloudUser                     - Enables Health Cloud user licenses
   InsightsPlatform                    - Enables Insights Platform
+  Knowledge                           - Enables Salesforce Knowledge
   LiveAgent                           - Enables Live Agent (Chat)
   OrderManagement                     - Enables Salesforce Order Management
   PlatformCache                       - Enables Platform Cache
@@ -261,6 +270,7 @@ Available Products:
   crmanalytics - CRM Analytics (enables AnalyticsAdminPerms, WavePlatform, InsightsPlatform, EinsteinAnalyticsPlus, EinsteinBuilderFree, DevelopmentWave)
   fsc          - Financial Services Cloud (enables PersonAccounts, ContactsToMultipleAccounts, FinancialServicesUser)
   healthcloud  - Health Cloud (enables HealthCloudAddOn, HealthCloudUser)
+  knowledge    - Salesforce Knowledge (enables Knowledge feature and enableKnowledge, enableLightningKnowledge settings)
   liveagent    - Live Agent (enables LiveAgent feature and enableLiveAgent setting)
 
 Available Editions:
@@ -287,6 +297,8 @@ Available Settings (deployed after org creation):
   enableMultiCurrency - Enable Multi-Currency
   enableCoreCPQ - Enable Revenue Cloud / Salesforce CPQ Core (RevenueManagementSettings)
   enableSubscriptionManagement - Enable Subscription Management (SubscriptionManagementSettings)
+  enableKnowledge - Enable Salesforce Knowledge (KnowledgeSettings)
+  enableLightningKnowledge - Enable Lightning Knowledge (KnowledgeSettings)
 
 Available Releases:
   preview  - Create scratch org on the next (preview) release
@@ -304,6 +316,7 @@ Examples:
   force login scratch --product communities
   force login scratch --product crmanalytics
   force login scratch --product healthcloud
+  force login scratch --product knowledge
   force login scratch --product liveagent
   force login scratch --release preview
   force login scratch --release previous
@@ -380,6 +393,7 @@ func expandProductsToFeatures(products []ScratchProduct, features []ScratchFeatu
 		CRMAnalyticsProduct: {AnalyticsAdminPerms, WavePlatform, InsightsPlatform, EinsteinAnalyticsPlus, EinsteinBuilderFree, DevelopmentWave},
 		B2BCommerceProduct:  {B2BCommerce, OrderManagement},
 		LiveAgentProduct:    {LiveAgent},
+		KnowledgeProduct:    {Knowledge},
 	}
 
 	featureSet := make(map[ScratchFeature]bool)
@@ -425,6 +439,7 @@ func expandProductsToSettings(products []ScratchProduct, settings []ScratchSetti
 		CommunitiesProduct: {NetworksEnabled},
 		B2BCommerceProduct: {CommerceEnabled, EnableOrders, EnableEnhancedCommerceOrders},
 		LiveAgentProduct:   {EnableLiveAgent},
+		KnowledgeProduct:   {EnableKnowledge, EnableLightningKnowledge},
 	}
 
 	settingSet := make(map[ScratchSetting]bool)

@@ -246,6 +246,63 @@ func TestExpandProductsToFeatures_PlatformEncryption(t *testing.T) {
 	}
 }
 
+func TestExpandProductsToFeatures_Knowledge(t *testing.T) {
+	result := expandProductsToFeatures([]ScratchProduct{}, []ScratchFeature{Knowledge}, map[string]string{})
+	if len(result) != 1 {
+		t.Fatalf("Expected 1 feature, got %d", len(result))
+	}
+	if result[0] != "Knowledge" {
+		t.Errorf("Expected Knowledge, got %s", result[0])
+	}
+}
+
+func TestExpandProductsToFeatures_KnowledgeProduct(t *testing.T) {
+	result := expandProductsToFeatures([]ScratchProduct{KnowledgeProduct}, []ScratchFeature{}, map[string]string{})
+	if len(result) != 1 {
+		t.Fatalf("Expected 1 feature from knowledge product, got %d", len(result))
+	}
+	if result[0] != "Knowledge" {
+		t.Errorf("Expected Knowledge, got %s", result[0])
+	}
+}
+
+func TestExpandProductsToSettings_KnowledgeProduct(t *testing.T) {
+	result := expandProductsToSettings([]ScratchProduct{KnowledgeProduct}, []ScratchSetting{})
+	if len(result) != 2 {
+		t.Fatalf("Expected 2 settings from knowledge product, got %d", len(result))
+	}
+	settingMap := make(map[string]bool)
+	for _, s := range result {
+		settingMap[s] = true
+	}
+	if !settingMap["enableKnowledge"] {
+		t.Error("Expected enableKnowledge in knowledge product")
+	}
+	if !settingMap["enableLightningKnowledge"] {
+		t.Error("Expected enableLightningKnowledge in knowledge product")
+	}
+}
+
+func TestConvertSettingsToStrings_EnableKnowledge(t *testing.T) {
+	result := convertSettingsToStrings([]ScratchSetting{EnableKnowledge})
+	if len(result) != 1 {
+		t.Fatalf("Expected 1 setting, got %d", len(result))
+	}
+	if result[0] != "enableKnowledge" {
+		t.Errorf("Expected enableKnowledge, got %s", result[0])
+	}
+}
+
+func TestConvertSettingsToStrings_EnableLightningKnowledge(t *testing.T) {
+	result := convertSettingsToStrings([]ScratchSetting{EnableLightningKnowledge})
+	if len(result) != 1 {
+		t.Fatalf("Expected 1 setting, got %d", len(result))
+	}
+	if result[0] != "enableLightningKnowledge" {
+		t.Errorf("Expected enableLightningKnowledge, got %s", result[0])
+	}
+}
+
 func TestExpandProductsToSettings_NoProductsOrSettings(t *testing.T) {
 	result := expandProductsToSettings([]ScratchProduct{}, []ScratchSetting{})
 	if len(result) != 0 {
@@ -363,6 +420,7 @@ func TestScratchFeatureIds_AllFeaturesDefined(t *testing.T) {
 		"HealthCloudAddOn":                  true,
 		"HealthCloudUser":                   true,
 		"InsightsPlatform":                  true,
+		"Knowledge":                         true,
 		"LiveAgent":                         true,
 		"OrderManagement":                   true,
 		"PlatformCache":                     true,
@@ -485,6 +543,8 @@ func TestScratchSettingIds_AllSettingsDefined(t *testing.T) {
 		"enableMultiCurrency":          true,
 		"enableCoreCPQ":                true,
 		"enableSubscriptionManagement": true,
+		"enableKnowledge":              true,
+		"enableLightningKnowledge":     true,
 	}
 
 	if len(ScratchSettingIds) != len(expectedSettings) {

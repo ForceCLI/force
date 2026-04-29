@@ -212,6 +212,8 @@ func buildSettingsMetadata(settings []string) ForceMetadataFiles {
 	currencySettings := false
 	revenueManagementSettings := false
 	subscriptionManagementSettings := false
+	enableKnowledge := false
+	enableLightningKnowledge := false
 
 	for _, setting := range settings {
 		switch setting {
@@ -252,6 +254,10 @@ func buildSettingsMetadata(settings []string) ForceMetadataFiles {
 			revenueManagementSettings = true
 		case "enableSubscriptionManagement":
 			subscriptionManagementSettings = true
+		case "enableKnowledge":
+			enableKnowledge = true
+		case "enableLightningKnowledge":
+			enableLightningKnowledge = true
 		}
 	}
 
@@ -335,6 +341,21 @@ func buildSettingsMetadata(settings []string) ForceMetadataFiles {
     <enableSubscriptionManagement>true</enableSubscriptionManagement>
 </SubscriptionManagementSettings>`)
 		files["unpackaged/settings/SubscriptionManagement.settings"] = buffer.Bytes()
+	}
+
+	if enableKnowledge || enableLightningKnowledge {
+		var buffer bytes.Buffer
+		buffer.WriteString(`<?xml version="1.0" encoding="UTF-8"?>
+<KnowledgeSettings xmlns="http://soap.sforce.com/2006/04/metadata">
+`)
+		if enableKnowledge {
+			buffer.WriteString("    <enableKnowledge>true</enableKnowledge>\n")
+		}
+		if enableLightningKnowledge {
+			buffer.WriteString("    <enableLightningKnowledge>true</enableLightningKnowledge>\n")
+		}
+		buffer.WriteString(`</KnowledgeSettings>`)
+		files["unpackaged/settings/Knowledge.settings"] = buffer.Bytes()
 	}
 
 	return files

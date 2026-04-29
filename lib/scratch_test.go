@@ -225,6 +225,62 @@ func TestBuildSettingsMetadata_ExcludesSubscriptionManagementSettingsWhenUnused(
 	}
 }
 
+func TestBuildSettingsMetadata_AddsKnowledgeSettingsForEnableKnowledge(t *testing.T) {
+	files := buildSettingsMetadata([]string{"enableKnowledge"})
+
+	content, ok := files["unpackaged/settings/Knowledge.settings"]
+	if !ok {
+		t.Fatalf("Knowledge.settings not generated")
+	}
+	if !strings.Contains(string(content), "<KnowledgeSettings ") {
+		t.Errorf("Knowledge.settings missing KnowledgeSettings metadata type:\n%s", content)
+	}
+	if !strings.Contains(string(content), "<enableKnowledge>true</enableKnowledge>") {
+		t.Errorf("Knowledge.settings missing enableKnowledge preference:\n%s", content)
+	}
+	if strings.Contains(string(content), "<enableLightningKnowledge>") {
+		t.Errorf("Knowledge.settings should not contain enableLightningKnowledge when only enableKnowledge requested:\n%s", content)
+	}
+}
+
+func TestBuildSettingsMetadata_AddsKnowledgeSettingsForEnableLightningKnowledge(t *testing.T) {
+	files := buildSettingsMetadata([]string{"enableLightningKnowledge"})
+
+	content, ok := files["unpackaged/settings/Knowledge.settings"]
+	if !ok {
+		t.Fatalf("Knowledge.settings not generated")
+	}
+	if !strings.Contains(string(content), "<enableLightningKnowledge>true</enableLightningKnowledge>") {
+		t.Errorf("Knowledge.settings missing enableLightningKnowledge preference:\n%s", content)
+	}
+	if strings.Contains(string(content), "<enableKnowledge>") {
+		t.Errorf("Knowledge.settings should not contain enableKnowledge when only enableLightningKnowledge requested:\n%s", content)
+	}
+}
+
+func TestBuildSettingsMetadata_AddsKnowledgeSettingsForBoth(t *testing.T) {
+	files := buildSettingsMetadata([]string{"enableKnowledge", "enableLightningKnowledge"})
+
+	content, ok := files["unpackaged/settings/Knowledge.settings"]
+	if !ok {
+		t.Fatalf("Knowledge.settings not generated")
+	}
+	if !strings.Contains(string(content), "<enableKnowledge>true</enableKnowledge>") {
+		t.Errorf("Knowledge.settings missing enableKnowledge preference:\n%s", content)
+	}
+	if !strings.Contains(string(content), "<enableLightningKnowledge>true</enableLightningKnowledge>") {
+		t.Errorf("Knowledge.settings missing enableLightningKnowledge preference:\n%s", content)
+	}
+}
+
+func TestBuildSettingsMetadata_ExcludesKnowledgeSettingsWhenUnused(t *testing.T) {
+	files := buildSettingsMetadata([]string{"enableEnhancedNotes"})
+
+	if _, ok := files["unpackaged/settings/Knowledge.settings"]; ok {
+		t.Fatalf("Knowledge.settings should not be generated when not requested")
+	}
+}
+
 func TestGetScratchOrg_returns_error_when_SignupUsername_is_nil(t *testing.T) {
 	f := &Force{}
 	f.Credentials = &ForceSession{}
