@@ -281,6 +281,208 @@ func TestBuildSettingsMetadata_ExcludesKnowledgeSettingsWhenUnused(t *testing.T)
 	}
 }
 
+func TestBuildSettingsMetadata_AddsBillingSettings(t *testing.T) {
+	files := buildSettingsMetadata([]string{"enableBillingSetup"})
+	content, ok := files["unpackaged/settings/Billing.settings"]
+	if !ok {
+		t.Fatalf("Billing.settings not generated")
+	}
+	if !strings.Contains(string(content), "<BillingSettings ") {
+		t.Errorf("Billing.settings missing BillingSettings root:\n%s", content)
+	}
+	if !strings.Contains(string(content), "<enableBillingSetup>true</enableBillingSetup>") {
+		t.Errorf("Billing.settings missing enableBillingSetup:\n%s", content)
+	}
+}
+
+func TestBuildSettingsMetadata_AddsExperienceBundleSettings(t *testing.T) {
+	files := buildSettingsMetadata([]string{"enableExperienceBundleMetadata"})
+	content, ok := files["unpackaged/settings/ExperienceBundle.settings"]
+	if !ok {
+		t.Fatalf("ExperienceBundle.settings not generated")
+	}
+	if !strings.Contains(string(content), "<enableExperienceBundleMetadata>true</enableExperienceBundleMetadata>") {
+		t.Errorf("ExperienceBundle.settings missing preference:\n%s", content)
+	}
+}
+
+func TestBuildSettingsMetadata_LightningExperienceSupportsS1Desktop(t *testing.T) {
+	files := buildSettingsMetadata([]string{"enableS1DesktopEnabled"})
+	content, ok := files["unpackaged/settings/LightningExperience.settings"]
+	if !ok {
+		t.Fatalf("LightningExperience.settings not generated for enableS1DesktopEnabled")
+	}
+	if !strings.Contains(string(content), "<enableS1DesktopEnabled>true</enableS1DesktopEnabled>") {
+		t.Errorf("LightningExperience.settings missing enableS1DesktopEnabled:\n%s", content)
+	}
+	if strings.Contains(string(content), "<enableLightningPreviewPref>") {
+		t.Errorf("LightningExperience.settings should not contain enableLightningPreviewPref when only enableS1DesktopEnabled requested:\n%s", content)
+	}
+}
+
+func TestBuildSettingsMetadata_LightningExperienceCombinesFlags(t *testing.T) {
+	files := buildSettingsMetadata([]string{"enableLightningPreviewPref", "enableS1DesktopEnabled"})
+	content, ok := files["unpackaged/settings/LightningExperience.settings"]
+	if !ok {
+		t.Fatalf("LightningExperience.settings not generated")
+	}
+	if !strings.Contains(string(content), "<enableLightningPreviewPref>true</enableLightningPreviewPref>") {
+		t.Errorf("LightningExperience.settings missing enableLightningPreviewPref:\n%s", content)
+	}
+	if !strings.Contains(string(content), "<enableS1DesktopEnabled>true</enableS1DesktopEnabled>") {
+		t.Errorf("LightningExperience.settings missing enableS1DesktopEnabled:\n%s", content)
+	}
+}
+
+func TestBuildSettingsMetadata_OrderSettingsAddsExtendedFlags(t *testing.T) {
+	files := buildSettingsMetadata([]string{
+		"enableOrders", "enableOrderEvents", "enableOptionalPricebook",
+		"enableZeroQuantity", "enableNegativeQuantity",
+	})
+	content, ok := files["unpackaged/settings/Order.settings"]
+	if !ok {
+		t.Fatalf("Order.settings not generated")
+	}
+	for _, want := range []string{
+		"<enableOrders>true</enableOrders>",
+		"<enableEnhancedCommerceOrders>true</enableEnhancedCommerceOrders>",
+		"<enableOrderEvents>true</enableOrderEvents>",
+		"<enableOptionalPricebook>true</enableOptionalPricebook>",
+		"<enableZeroQuantity>true</enableZeroQuantity>",
+		"<enableNegativeQuantity>true</enableNegativeQuantity>",
+	} {
+		if !strings.Contains(string(content), want) {
+			t.Errorf("Order.settings missing %q:\n%s", want, content)
+		}
+	}
+}
+
+func TestBuildSettingsMetadata_QuoteSettingsCombinesFlags(t *testing.T) {
+	files := buildSettingsMetadata([]string{"enableQuote", "enableQuotesWithoutOppEnabled"})
+	content, ok := files["unpackaged/settings/Quote.settings"]
+	if !ok {
+		t.Fatalf("Quote.settings not generated")
+	}
+	if !strings.Contains(string(content), "<enableQuote>true</enableQuote>") {
+		t.Errorf("Quote.settings missing enableQuote:\n%s", content)
+	}
+	if !strings.Contains(string(content), "<enableQuotesWithoutOppEnabled>true</enableQuotesWithoutOppEnabled>") {
+		t.Errorf("Quote.settings missing enableQuotesWithoutOppEnabled:\n%s", content)
+	}
+}
+
+func TestBuildSettingsMetadata_AddsIndustriesContextSettings(t *testing.T) {
+	files := buildSettingsMetadata([]string{"enableContextDefinitions"})
+	content, ok := files["unpackaged/settings/IndustriesContext.settings"]
+	if !ok {
+		t.Fatalf("IndustriesContext.settings not generated")
+	}
+	if !strings.Contains(string(content), "<IndustriesContextSettings ") {
+		t.Errorf("IndustriesContext.settings missing root element:\n%s", content)
+	}
+}
+
+func TestBuildSettingsMetadata_AddsEinsteinGptSettings(t *testing.T) {
+	files := buildSettingsMetadata([]string{"enableEinsteinGptPlatform"})
+	content, ok := files["unpackaged/settings/EinsteinGpt.settings"]
+	if !ok {
+		t.Fatalf("EinsteinGpt.settings not generated")
+	}
+	if !strings.Contains(string(content), "<enableEinsteinGptPlatform>true</enableEinsteinGptPlatform>") {
+		t.Errorf("EinsteinGpt.settings missing preference:\n%s", content)
+	}
+}
+
+func TestBuildSettingsMetadata_AddsOpportunitySettings(t *testing.T) {
+	files := buildSettingsMetadata([]string{"enableOpportunityTeam"})
+	content, ok := files["unpackaged/settings/Opportunity.settings"]
+	if !ok {
+		t.Fatalf("Opportunity.settings not generated")
+	}
+	if !strings.Contains(string(content), "<enableOpportunityTeam>true</enableOpportunityTeam>") {
+		t.Errorf("Opportunity.settings missing preference:\n%s", content)
+	}
+}
+
+func TestBuildSettingsMetadata_AddsOrderManagementSettings(t *testing.T) {
+	files := buildSettingsMetadata([]string{"enableOrderManagement"})
+	content, ok := files["unpackaged/settings/OrderManagement.settings"]
+	if !ok {
+		t.Fatalf("OrderManagement.settings not generated")
+	}
+	if !strings.Contains(string(content), "<OrderManagementSettings ") {
+		t.Errorf("OrderManagement.settings missing root element:\n%s", content)
+	}
+	if !strings.Contains(string(content), "<enableOrderManagement>true</enableOrderManagement>") {
+		t.Errorf("OrderManagement.settings missing preference:\n%s", content)
+	}
+}
+
+func TestBuildSettingsMetadata_AddsIndustriesPricingSettings(t *testing.T) {
+	files := buildSettingsMetadata([]string{
+		"enableHighAvailability", "enablePricingWaterfall",
+		"enablePricingWaterfallPersistence", "enableSalesforcePricing",
+	})
+	content, ok := files["unpackaged/settings/IndustriesPricing.settings"]
+	if !ok {
+		t.Fatalf("IndustriesPricing.settings not generated")
+	}
+	for _, want := range []string{
+		"<enableHighAvailability>true</enableHighAvailability>",
+		"<enablePricingWaterfall>true</enablePricingWaterfall>",
+		"<enablePricingWaterfallPersistence>true</enablePricingWaterfallPersistence>",
+		"<enableSalesforcePricing>true</enableSalesforcePricing>",
+	} {
+		if !strings.Contains(string(content), want) {
+			t.Errorf("IndustriesPricing.settings missing %q:\n%s", want, content)
+		}
+	}
+}
+
+func TestBuildSettingsMetadata_AddsIndustriesRatingSettings(t *testing.T) {
+	files := buildSettingsMetadata([]string{
+		"enableRating", "enableRatingWaterfall", "enableRatingWaterfallPersistence",
+	})
+	content, ok := files["unpackaged/settings/IndustriesRating.settings"]
+	if !ok {
+		t.Fatalf("IndustriesRating.settings not generated")
+	}
+	for _, want := range []string{
+		"<enableRating>true</enableRating>",
+		"<enableRatingWaterfall>true</enableRatingWaterfall>",
+		"<enableRatingWaterfallPersistence>true</enableRatingWaterfallPersistence>",
+	} {
+		if !strings.Contains(string(content), want) {
+			t.Errorf("IndustriesRating.settings missing %q:\n%s", want, content)
+		}
+	}
+}
+
+func TestBuildSettingsMetadata_AddsProductConfiguratorSettings(t *testing.T) {
+	files := buildSettingsMetadata([]string{"enableProductConfigurator"})
+	content, ok := files["unpackaged/settings/ProductConfigurator.settings"]
+	if !ok {
+		t.Fatalf("ProductConfigurator.settings not generated")
+	}
+	if !strings.Contains(string(content), "<enableProductConfigurator>true</enableProductConfigurator>") {
+		t.Errorf("ProductConfigurator.settings missing preference:\n%s", content)
+	}
+}
+
+func TestBuildSettingsMetadata_AddsDynamicFulfillmentOrchestratorSettings(t *testing.T) {
+	files := buildSettingsMetadata([]string{"enableDFOPref"})
+	content, ok := files["unpackaged/settings/DynamicFulfillmentOrchestrator.settings"]
+	if !ok {
+		t.Fatalf("DynamicFulfillmentOrchestrator.settings not generated")
+	}
+	if !strings.Contains(string(content), "<DynamicFulfillmentOrchestratorSettings ") {
+		t.Errorf("DynamicFulfillmentOrchestrator.settings missing root element:\n%s", content)
+	}
+	if !strings.Contains(string(content), "<enableDFOPref>true</enableDFOPref>") {
+		t.Errorf("DynamicFulfillmentOrchestrator.settings missing preference:\n%s", content)
+	}
+}
+
 func TestGetScratchOrg_returns_error_when_SignupUsername_is_nil(t *testing.T) {
 	f := &Force{}
 	f.Credentials = &ForceSession{}

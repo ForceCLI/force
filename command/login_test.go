@@ -256,6 +256,26 @@ func TestExpandProductsToFeatures_Knowledge(t *testing.T) {
 	}
 }
 
+func TestExpandProductsToFeatures_DSARPortability(t *testing.T) {
+	result := expandProductsToFeatures([]ScratchProduct{}, []ScratchFeature{DSARPortability}, map[string]string{})
+	if len(result) != 1 {
+		t.Fatalf("Expected 1 feature, got %d", len(result))
+	}
+	if result[0] != "DSARPortability" {
+		t.Errorf("Expected DSARPortability, got %s", result[0])
+	}
+}
+
+func TestExpandProductsToFeatures_ProgramManagement(t *testing.T) {
+	result := expandProductsToFeatures([]ScratchProduct{}, []ScratchFeature{ProgramManagement}, map[string]string{})
+	if len(result) != 1 {
+		t.Fatalf("Expected 1 feature, got %d", len(result))
+	}
+	if result[0] != "ProgramManagement" {
+		t.Errorf("Expected ProgramManagement, got %s", result[0])
+	}
+}
+
 func TestExpandProductsToFeatures_KnowledgeProduct(t *testing.T) {
 	result := expandProductsToFeatures([]ScratchProduct{KnowledgeProduct}, []ScratchFeature{}, map[string]string{})
 	if len(result) != 1 {
@@ -290,6 +310,55 @@ func TestConvertSettingsToStrings_EnableKnowledge(t *testing.T) {
 	}
 	if result[0] != "enableKnowledge" {
 		t.Errorf("Expected enableKnowledge, got %s", result[0])
+	}
+}
+
+func TestExpandProductsToFeatures_RevenueCloudProduct(t *testing.T) {
+	result := expandProductsToFeatures([]ScratchProduct{RevenueCloudProduct}, []ScratchFeature{}, map[string]string{})
+	expected := []string{
+		"EnableSetPasswordInApi", "OrderSaveLogicEnabled", "OrderManagement",
+		"PartnerCommunity", "Communities", "CustomerCommunityPlus", "CoreCpq",
+		"UsageManagement", "BillingAdvanced", "DocGen", "Einstein1AIPlatform",
+	}
+	if len(result) != len(expected) {
+		t.Fatalf("Expected %d features from revenuecloud product, got %d: %v", len(expected), len(result), result)
+	}
+	got := make(map[string]bool)
+	for _, f := range result {
+		got[f] = true
+	}
+	for _, want := range expected {
+		if !got[want] {
+			t.Errorf("Expected %s in revenuecloud product, missing", want)
+		}
+	}
+}
+
+func TestExpandProductsToSettings_RevenueCloudProduct(t *testing.T) {
+	result := expandProductsToSettings([]ScratchProduct{RevenueCloudProduct}, []ScratchSetting{})
+	expected := []string{
+		"enableBillingSetup", "networksEnabled", "enableMultiCurrency",
+		"enableExperienceBundleMetadata", "enableS1DesktopEnabled",
+		"enableContextDefinitions", "enableEinsteinGptPlatform", "enableOpportunityTeam",
+		"enableOrderManagement", "enableOrders", "enableEnhancedCommerceOrders",
+		"enableOrderEvents", "enableOptionalPricebook", "enableZeroQuantity",
+		"enableNegativeQuantity", "enableQuote", "enableQuotesWithoutOppEnabled",
+		"enableHighAvailability", "enablePricingWaterfall",
+		"enablePricingWaterfallPersistence", "enableSalesforcePricing",
+		"enableRating", "enableRatingWaterfall", "enableRatingWaterfallPersistence",
+		"enableCoreCPQ", "enableProductConfigurator", "enableDFOPref",
+	}
+	if len(result) != len(expected) {
+		t.Fatalf("Expected %d settings from revenuecloud product, got %d: %v", len(expected), len(result), result)
+	}
+	got := make(map[string]bool)
+	for _, s := range result {
+		got[s] = true
+	}
+	for _, want := range expected {
+		if !got[want] {
+			t.Errorf("Expected %s in revenuecloud product, missing", want)
+		}
 	}
 }
 
@@ -413,6 +482,7 @@ func TestScratchFeatureIds_AllFeaturesDefined(t *testing.T) {
 		"Communities":                       true,
 		"ContactsToMultipleAccounts":        true,
 		"DevelopmentWave":                   true,
+		"DSARPortability":                   true,
 		"EinsteinAnalyticsPlus":             true,
 		"EinsteinBuilderFree":               true,
 		"EventLogFile":                      true,
@@ -426,6 +496,7 @@ func TestScratchFeatureIds_AllFeaturesDefined(t *testing.T) {
 		"PlatformCache":                     true,
 		"PlatformEncryption":                true,
 		"PersonAccounts":                    true,
+		"ProgramManagement":                 true,
 		"RevSubscriptionManagement":         true,
 		"CoreCpq":                           true,
 		"ScvMultipartyAndConsult":           true,
@@ -433,6 +504,14 @@ func TestScratchFeatureIds_AllFeaturesDefined(t *testing.T) {
 		"ServiceCloudVoicePartnerTelephony": true,
 		"StateAndCountryPicklist":           true,
 		"WavePlatform":                      true,
+		"EnableSetPasswordInApi":            true,
+		"OrderSaveLogicEnabled":             true,
+		"PartnerCommunity":                  true,
+		"CustomerCommunityPlus":             true,
+		"UsageManagement":                   true,
+		"BillingAdvanced":                   true,
+		"DocGen":                            true,
+		"Einstein1AIPlatform":               true,
 	}
 
 	if len(ScratchFeatureIds) != len(expectedFeatures) {
@@ -530,21 +609,42 @@ func TestConvertSettingsToStrings_EnableLightningPreviewPref(t *testing.T) {
 
 func TestScratchSettingIds_AllSettingsDefined(t *testing.T) {
 	expectedSettings := map[string]bool{
-		"enableEnhancedNotes":          true,
-		"enableQuote":                  true,
-		"networksEnabled":              true,
-		"commerceEnabled":              true,
-		"enableApexApprovalLockUnlock": true,
-		"permsetsInFieldCreation":      true,
-		"enableLightningPreviewPref":   true,
-		"enableOrders":                 true,
-		"enableEnhancedCommerceOrders": true,
-		"enableLiveAgent":              true,
-		"enableMultiCurrency":          true,
-		"enableCoreCPQ":                true,
-		"enableSubscriptionManagement": true,
-		"enableKnowledge":              true,
-		"enableLightningKnowledge":     true,
+		"enableEnhancedNotes":               true,
+		"enableQuote":                       true,
+		"networksEnabled":                   true,
+		"commerceEnabled":                   true,
+		"enableApexApprovalLockUnlock":      true,
+		"permsetsInFieldCreation":           true,
+		"enableLightningPreviewPref":        true,
+		"enableOrders":                      true,
+		"enableEnhancedCommerceOrders":      true,
+		"enableLiveAgent":                   true,
+		"enableMultiCurrency":               true,
+		"enableCoreCPQ":                     true,
+		"enableSubscriptionManagement":      true,
+		"enableKnowledge":                   true,
+		"enableLightningKnowledge":          true,
+		"enableBillingSetup":                true,
+		"enableExperienceBundleMetadata":    true,
+		"enableS1DesktopEnabled":            true,
+		"enableContextDefinitions":          true,
+		"enableEinsteinGptPlatform":         true,
+		"enableOpportunityTeam":             true,
+		"enableOrderManagement":             true,
+		"enableOrderEvents":                 true,
+		"enableOptionalPricebook":           true,
+		"enableZeroQuantity":                true,
+		"enableNegativeQuantity":            true,
+		"enableQuotesWithoutOppEnabled":     true,
+		"enableHighAvailability":            true,
+		"enablePricingWaterfall":            true,
+		"enablePricingWaterfallPersistence": true,
+		"enableSalesforcePricing":           true,
+		"enableRating":                      true,
+		"enableRatingWaterfall":             true,
+		"enableRatingWaterfallPersistence":  true,
+		"enableProductConfigurator":         true,
+		"enableDFOPref":                     true,
 	}
 
 	if len(ScratchSettingIds) != len(expectedSettings) {

@@ -188,6 +188,42 @@ func (f *Force) DeploySettings(settings []string) error {
 	return nil
 }
 
+// settingsFile builds a settings metadata XML file with the given root
+// element and the requested true preferences. Returns nil if no preferences
+// are enabled. Preferences are emitted in the order they appear in flags.
+func settingsFile(rootElement string, flags []settingsFlag) []byte {
+	any := false
+	for _, f := range flags {
+		if f.enabled {
+			any = true
+			break
+		}
+	}
+	if !any {
+		return nil
+	}
+	var buf bytes.Buffer
+	buf.WriteString(`<?xml version="1.0" encoding="UTF-8"?>
+<`)
+	buf.WriteString(rootElement)
+	buf.WriteString(` xmlns="http://soap.sforce.com/2006/04/metadata">
+`)
+	for _, f := range flags {
+		if f.enabled {
+			fmt.Fprintf(&buf, "    <%s>true</%s>\n", f.name, f.name)
+		}
+	}
+	buf.WriteString(`</`)
+	buf.WriteString(rootElement)
+	buf.WriteString(`>`)
+	return buf.Bytes()
+}
+
+type settingsFlag struct {
+	name    string
+	enabled bool
+}
+
 func buildSettingsMetadata(settings []string) ForceMetadataFiles {
 	files := make(ForceMetadataFiles)
 
@@ -202,161 +238,213 @@ func buildSettingsMetadata(settings []string) ForceMetadataFiles {
 </Package>`
 	files["unpackaged/package.xml"] = []byte(packageXml)
 
-	// Create settings file for each requested setting
-	apexSettings := false
-	userManagementSettings := false
-	lightningExperienceSettings := false
-	commerceSettings := false
-	orderSettings := false
-	liveAgentSettings := false
-	currencySettings := false
-	revenueManagementSettings := false
-	subscriptionManagementSettings := false
-	enableKnowledge := false
-	enableLightningKnowledge := false
+	// Track each preference individually so multiple flags can share one file.
+	var (
+		enableEnhancedNotes               bool
+		enableTasksOnEnhancedNotes        bool
+		enableQuote                       bool
+		enableQuotesWithoutOppEnabled     bool
+		networksEnabled                   bool
+		commerceEnabled                   bool
+		enableOrders                      bool
+		enableEnhancedCommerceOrders      bool
+		enableOrderEvents                 bool
+		enableOptionalPricebook           bool
+		enableZeroQuantity                bool
+		enableNegativeQuantity            bool
+		enableApexApprovalLockUnlock      bool
+		permsetsInFieldCreation           bool
+		enableLightningPreviewPref        bool
+		enableS1DesktopEnabled            bool
+		enableLiveAgent                   bool
+		enableMultiCurrency               bool
+		enableCoreCPQ                     bool
+		enableSubscriptionManagement      bool
+		enableKnowledge                   bool
+		enableLightningKnowledge          bool
+		enableBillingSetup                bool
+		enableExperienceBundleMetadata    bool
+		enableContextDefinitions          bool
+		enableEinsteinGptPlatform         bool
+		enableOpportunityTeam             bool
+		enableOrderManagement             bool
+		enableHighAvailability            bool
+		enablePricingWaterfall            bool
+		enablePricingWaterfallPersistence bool
+		enableSalesforcePricing           bool
+		enableRating                      bool
+		enableRatingWaterfall             bool
+		enableRatingWaterfallPersistence  bool
+		enableProductConfigurator         bool
+		enableDFOPref                     bool
+	)
 
 	for _, setting := range settings {
 		switch setting {
 		case "enableEnhancedNotes":
-			enhancedNotesSettings := `<?xml version="1.0" encoding="UTF-8"?>
-<EnhancedNotesSettings xmlns="http://soap.sforce.com/2006/04/metadata">
-    <enableEnhancedNotes>true</enableEnhancedNotes>
-    <enableTasksOnEnhancedNotes>true</enableTasksOnEnhancedNotes>
-</EnhancedNotesSettings>`
-			files["unpackaged/settings/EnhancedNotes.settings"] = []byte(enhancedNotesSettings)
+			enableEnhancedNotes = true
+			enableTasksOnEnhancedNotes = true
 		case "enableQuote":
-			quoteSettings := `<?xml version="1.0" encoding="UTF-8"?>
-<QuoteSettings xmlns="http://soap.sforce.com/2006/04/metadata">
-    <enableQuote>true</enableQuote>
-</QuoteSettings>`
-			files["unpackaged/settings/Quote.settings"] = []byte(quoteSettings)
+			enableQuote = true
+		case "enableQuotesWithoutOppEnabled":
+			enableQuotesWithoutOppEnabled = true
 		case "networksEnabled":
-			communitiesSettings := `<?xml version="1.0" encoding="UTF-8"?>
-<CommunitiesSettings xmlns="http://soap.sforce.com/2006/04/metadata">
-    <enableNetworksEnabled>true</enableNetworksEnabled>
-</CommunitiesSettings>`
-			files["unpackaged/settings/Communities.settings"] = []byte(communitiesSettings)
+			networksEnabled = true
 		case "commerceEnabled":
-			commerceSettings = true
+			commerceEnabled = true
 		case "enableOrders", "enableEnhancedCommerceOrders":
-			orderSettings = true
+			enableOrders = true
+			enableEnhancedCommerceOrders = true
+		case "enableOrderEvents":
+			enableOrderEvents = true
+		case "enableOptionalPricebook":
+			enableOptionalPricebook = true
+		case "enableZeroQuantity":
+			enableZeroQuantity = true
+		case "enableNegativeQuantity":
+			enableNegativeQuantity = true
 		case "enableApexApprovalLockUnlock":
-			apexSettings = true
+			enableApexApprovalLockUnlock = true
 		case "permsetsInFieldCreation":
-			userManagementSettings = true
+			permsetsInFieldCreation = true
 		case "enableLightningPreviewPref":
-			lightningExperienceSettings = true
+			enableLightningPreviewPref = true
+		case "enableS1DesktopEnabled":
+			enableS1DesktopEnabled = true
 		case "enableLiveAgent":
-			liveAgentSettings = true
+			enableLiveAgent = true
 		case "enableMultiCurrency":
-			currencySettings = true
+			enableMultiCurrency = true
 		case "enableCoreCPQ":
-			revenueManagementSettings = true
+			enableCoreCPQ = true
 		case "enableSubscriptionManagement":
-			subscriptionManagementSettings = true
+			enableSubscriptionManagement = true
 		case "enableKnowledge":
 			enableKnowledge = true
 		case "enableLightningKnowledge":
 			enableLightningKnowledge = true
+		case "enableBillingSetup":
+			enableBillingSetup = true
+		case "enableExperienceBundleMetadata":
+			enableExperienceBundleMetadata = true
+		case "enableContextDefinitions":
+			enableContextDefinitions = true
+		case "enableEinsteinGptPlatform":
+			enableEinsteinGptPlatform = true
+		case "enableOpportunityTeam":
+			enableOpportunityTeam = true
+		case "enableOrderManagement":
+			enableOrderManagement = true
+		case "enableHighAvailability":
+			enableHighAvailability = true
+		case "enablePricingWaterfall":
+			enablePricingWaterfall = true
+		case "enablePricingWaterfallPersistence":
+			enablePricingWaterfallPersistence = true
+		case "enableSalesforcePricing":
+			enableSalesforcePricing = true
+		case "enableRating":
+			enableRating = true
+		case "enableRatingWaterfall":
+			enableRatingWaterfall = true
+		case "enableRatingWaterfallPersistence":
+			enableRatingWaterfallPersistence = true
+		case "enableProductConfigurator":
+			enableProductConfigurator = true
+		case "enableDFOPref":
+			enableDFOPref = true
 		}
 	}
 
-	if apexSettings {
-		var apexBuffer bytes.Buffer
-		apexBuffer.WriteString(`<?xml version="1.0" encoding="UTF-8"?>
-<ApexSettings xmlns="http://soap.sforce.com/2006/04/metadata">
-    <enableApexApprovalLockUnlock>true</enableApexApprovalLockUnlock>
-</ApexSettings>`)
-		files["unpackaged/settings/Apex.settings"] = apexBuffer.Bytes()
-	}
-
-	if userManagementSettings {
-		var userMgmtBuffer bytes.Buffer
-		userMgmtBuffer.WriteString(`<?xml version="1.0" encoding="UTF-8"?>
-<UserManagementSettings xmlns="http://soap.sforce.com/2006/04/metadata">
-    <permsetsInFieldCreation>true</permsetsInFieldCreation>
-</UserManagementSettings>`)
-		files["unpackaged/settings/UserManagement.settings"] = userMgmtBuffer.Bytes()
-	}
-
-	if lightningExperienceSettings {
-		var lexBuffer bytes.Buffer
-		lexBuffer.WriteString(`<?xml version="1.0" encoding="UTF-8"?>
-<LightningExperienceSettings xmlns="http://soap.sforce.com/2006/04/metadata">
-    <enableLightningPreviewPref>true</enableLightningPreviewPref>
-</LightningExperienceSettings>`)
-		files["unpackaged/settings/LightningExperience.settings"] = lexBuffer.Bytes()
-	}
-
-	if commerceSettings {
-		var commerceBuffer bytes.Buffer
-		commerceBuffer.WriteString(`<?xml version="1.0" encoding="UTF-8"?>
-<CommerceSettings xmlns="http://soap.sforce.com/2006/04/metadata">
-    <commerceEnabled>true</commerceEnabled>
-</CommerceSettings>`)
-		files["unpackaged/settings/Commerce.settings"] = commerceBuffer.Bytes()
-	}
-
-	if orderSettings {
-		var orderBuffer bytes.Buffer
-		orderBuffer.WriteString(`<?xml version="1.0" encoding="UTF-8"?>
-<OrderSettings xmlns="http://soap.sforce.com/2006/04/metadata">
-    <enableOrders>true</enableOrders>
-    <enableEnhancedCommerceOrders>true</enableEnhancedCommerceOrders>
-</OrderSettings>`)
-		files["unpackaged/settings/Order.settings"] = orderBuffer.Bytes()
-	}
-
-	if liveAgentSettings {
-		var liveAgentBuffer bytes.Buffer
-		liveAgentBuffer.WriteString(`<?xml version="1.0" encoding="UTF-8"?>
-<LiveAgentSettings xmlns="http://soap.sforce.com/2006/04/metadata">
-    <enableLiveAgent>true</enableLiveAgent>
-</LiveAgentSettings>`)
-		files["unpackaged/settings/LiveAgent.settings"] = liveAgentBuffer.Bytes()
-	}
-
-	if currencySettings {
-		var currencyBuffer bytes.Buffer
-		currencyBuffer.WriteString(`<?xml version="1.0" encoding="UTF-8"?>
-<CurrencySettings xmlns="http://soap.sforce.com/2006/04/metadata">
-    <enableMultiCurrency>true</enableMultiCurrency>
-</CurrencySettings>`)
-		files["unpackaged/settings/Currency.settings"] = currencyBuffer.Bytes()
-	}
-
-	if revenueManagementSettings {
-		var buffer bytes.Buffer
-		buffer.WriteString(`<?xml version="1.0" encoding="UTF-8"?>
-<RevenueManagementSettings xmlns="http://soap.sforce.com/2006/04/metadata">
-    <enableCoreCPQ>true</enableCoreCPQ>
-</RevenueManagementSettings>`)
-		files["unpackaged/settings/RevenueManagement.settings"] = buffer.Bytes()
-	}
-
-	if subscriptionManagementSettings {
-		var buffer bytes.Buffer
-		buffer.WriteString(`<?xml version="1.0" encoding="UTF-8"?>
-<SubscriptionManagementSettings xmlns="http://soap.sforce.com/2006/04/metadata">
-    <enableSubscriptionManagement>true</enableSubscriptionManagement>
-</SubscriptionManagementSettings>`)
-		files["unpackaged/settings/SubscriptionManagement.settings"] = buffer.Bytes()
-	}
-
-	if enableKnowledge || enableLightningKnowledge {
-		var buffer bytes.Buffer
-		buffer.WriteString(`<?xml version="1.0" encoding="UTF-8"?>
-<KnowledgeSettings xmlns="http://soap.sforce.com/2006/04/metadata">
-`)
-		if enableKnowledge {
-			buffer.WriteString("    <enableKnowledge>true</enableKnowledge>\n")
+	emit := func(path, root string, flags []settingsFlag) {
+		if content := settingsFile(root, flags); content != nil {
+			files[path] = content
 		}
-		if enableLightningKnowledge {
-			buffer.WriteString("    <enableLightningKnowledge>true</enableLightningKnowledge>\n")
-		}
-		buffer.WriteString(`</KnowledgeSettings>`)
-		files["unpackaged/settings/Knowledge.settings"] = buffer.Bytes()
 	}
+
+	emit("unpackaged/settings/EnhancedNotes.settings", "EnhancedNotesSettings", []settingsFlag{
+		{"enableEnhancedNotes", enableEnhancedNotes},
+		{"enableTasksOnEnhancedNotes", enableTasksOnEnhancedNotes},
+	})
+	emit("unpackaged/settings/Quote.settings", "QuoteSettings", []settingsFlag{
+		{"enableQuote", enableQuote},
+		{"enableQuotesWithoutOppEnabled", enableQuotesWithoutOppEnabled},
+	})
+	emit("unpackaged/settings/Communities.settings", "CommunitiesSettings", []settingsFlag{
+		{"enableNetworksEnabled", networksEnabled},
+	})
+	emit("unpackaged/settings/Commerce.settings", "CommerceSettings", []settingsFlag{
+		{"commerceEnabled", commerceEnabled},
+	})
+	emit("unpackaged/settings/Order.settings", "OrderSettings", []settingsFlag{
+		{"enableOrders", enableOrders},
+		{"enableEnhancedCommerceOrders", enableEnhancedCommerceOrders},
+		{"enableOrderEvents", enableOrderEvents},
+		{"enableOptionalPricebook", enableOptionalPricebook},
+		{"enableZeroQuantity", enableZeroQuantity},
+		{"enableNegativeQuantity", enableNegativeQuantity},
+	})
+	emit("unpackaged/settings/Apex.settings", "ApexSettings", []settingsFlag{
+		{"enableApexApprovalLockUnlock", enableApexApprovalLockUnlock},
+	})
+	emit("unpackaged/settings/UserManagement.settings", "UserManagementSettings", []settingsFlag{
+		{"permsetsInFieldCreation", permsetsInFieldCreation},
+	})
+	emit("unpackaged/settings/LightningExperience.settings", "LightningExperienceSettings", []settingsFlag{
+		{"enableLightningPreviewPref", enableLightningPreviewPref},
+		{"enableS1DesktopEnabled", enableS1DesktopEnabled},
+	})
+	emit("unpackaged/settings/LiveAgent.settings", "LiveAgentSettings", []settingsFlag{
+		{"enableLiveAgent", enableLiveAgent},
+	})
+	emit("unpackaged/settings/Currency.settings", "CurrencySettings", []settingsFlag{
+		{"enableMultiCurrency", enableMultiCurrency},
+	})
+	emit("unpackaged/settings/RevenueManagement.settings", "RevenueManagementSettings", []settingsFlag{
+		{"enableCoreCPQ", enableCoreCPQ},
+	})
+	emit("unpackaged/settings/SubscriptionManagement.settings", "SubscriptionManagementSettings", []settingsFlag{
+		{"enableSubscriptionManagement", enableSubscriptionManagement},
+	})
+	emit("unpackaged/settings/Knowledge.settings", "KnowledgeSettings", []settingsFlag{
+		{"enableKnowledge", enableKnowledge},
+		{"enableLightningKnowledge", enableLightningKnowledge},
+	})
+	emit("unpackaged/settings/Billing.settings", "BillingSettings", []settingsFlag{
+		{"enableBillingSetup", enableBillingSetup},
+	})
+	emit("unpackaged/settings/ExperienceBundle.settings", "ExperienceBundleSettings", []settingsFlag{
+		{"enableExperienceBundleMetadata", enableExperienceBundleMetadata},
+	})
+	emit("unpackaged/settings/IndustriesContext.settings", "IndustriesContextSettings", []settingsFlag{
+		{"enableContextDefinitions", enableContextDefinitions},
+	})
+	emit("unpackaged/settings/EinsteinGpt.settings", "EinsteinGptSettings", []settingsFlag{
+		{"enableEinsteinGptPlatform", enableEinsteinGptPlatform},
+	})
+	emit("unpackaged/settings/Opportunity.settings", "OpportunitySettings", []settingsFlag{
+		{"enableOpportunityTeam", enableOpportunityTeam},
+	})
+	emit("unpackaged/settings/OrderManagement.settings", "OrderManagementSettings", []settingsFlag{
+		{"enableOrderManagement", enableOrderManagement},
+	})
+	emit("unpackaged/settings/IndustriesPricing.settings", "IndustriesPricingSettings", []settingsFlag{
+		{"enableHighAvailability", enableHighAvailability},
+		{"enablePricingWaterfall", enablePricingWaterfall},
+		{"enablePricingWaterfallPersistence", enablePricingWaterfallPersistence},
+		{"enableSalesforcePricing", enableSalesforcePricing},
+	})
+	emit("unpackaged/settings/IndustriesRating.settings", "IndustriesRatingSettings", []settingsFlag{
+		{"enableRating", enableRating},
+		{"enableRatingWaterfall", enableRatingWaterfall},
+		{"enableRatingWaterfallPersistence", enableRatingWaterfallPersistence},
+	})
+	emit("unpackaged/settings/ProductConfigurator.settings", "ProductConfiguratorSettings", []settingsFlag{
+		{"enableProductConfigurator", enableProductConfigurator},
+	})
+	emit("unpackaged/settings/DynamicFulfillmentOrchestrator.settings", "DynamicFulfillmentOrchestratorSettings", []settingsFlag{
+		{"enableDFOPref", enableDFOPref},
+	})
 
 	return files
 }
