@@ -276,6 +276,62 @@ func TestExpandProductsToFeatures_ProgramManagement(t *testing.T) {
 	}
 }
 
+func TestExpandProductsToFeatures_EmbeddedServiceMessaging(t *testing.T) {
+	result := expandProductsToFeatures([]ScratchProduct{}, []ScratchFeature{EmbeddedServiceMessaging}, map[string]string{})
+	if len(result) != 1 {
+		t.Fatalf("Expected 1 feature, got %d", len(result))
+	}
+	if result[0] != "EmbeddedServiceMessaging" {
+		t.Errorf("Expected EmbeddedServiceMessaging, got %s", result[0])
+	}
+}
+
+func TestExpandProductsToFeatures_BYOOTT_DefaultQuantity(t *testing.T) {
+	result := expandProductsToFeatures([]ScratchProduct{}, []ScratchFeature{BYOOTT}, map[string]string{})
+	if len(result) != 1 {
+		t.Fatalf("Expected 1 feature, got %d", len(result))
+	}
+	if result[0] != "BYOOTT:10" {
+		t.Errorf("Expected BYOOTT:10, got %s", result[0])
+	}
+}
+
+func TestExpandProductsToFeatures_BYOOTT_CustomQuantity(t *testing.T) {
+	result := expandProductsToFeatures([]ScratchProduct{}, []ScratchFeature{BYOOTT}, map[string]string{"BYOOTT": "5"})
+	if len(result) != 1 {
+		t.Fatalf("Expected 1 feature, got %d", len(result))
+	}
+	if result[0] != "BYOOTT:5" {
+		t.Errorf("Expected BYOOTT:5, got %s", result[0])
+	}
+}
+
+func TestExpandProductsToFeatures_LiveMessage(t *testing.T) {
+	result := expandProductsToFeatures([]ScratchProduct{}, []ScratchFeature{LiveMessage}, map[string]string{})
+	if len(result) != 1 {
+		t.Fatalf("Expected 1 feature, got %d", len(result))
+	}
+	if result[0] != "LiveMessage" {
+		t.Errorf("Expected LiveMessage, got %s", result[0])
+	}
+}
+
+func TestExpandProductsToFeatures_MessagingProduct(t *testing.T) {
+	result := expandProductsToFeatures([]ScratchProduct{MessagingProduct}, []ScratchFeature{}, map[string]string{})
+	if len(result) != 3 {
+		t.Fatalf("Expected 3 features from messaging product, got %d: %v", len(result), result)
+	}
+	got := make(map[string]bool)
+	for _, f := range result {
+		got[f] = true
+	}
+	for _, want := range []string{"EmbeddedServiceMessaging", "LiveMessage", "BYOOTT:10"} {
+		if !got[want] {
+			t.Errorf("Expected %s in messaging product, missing", want)
+		}
+	}
+}
+
 func TestExpandProductsToFeatures_KnowledgeProduct(t *testing.T) {
 	result := expandProductsToFeatures([]ScratchProduct{KnowledgeProduct}, []ScratchFeature{}, map[string]string{})
 	if len(result) != 1 {
@@ -512,6 +568,9 @@ func TestScratchFeatureIds_AllFeaturesDefined(t *testing.T) {
 		"BillingAdvanced":                   true,
 		"DocGen":                            true,
 		"Einstein1AIPlatform":               true,
+		"EmbeddedServiceMessaging":          true,
+		"BYOOTT":                            true,
+		"LiveMessage":                       true,
 	}
 
 	if len(ScratchFeatureIds) != len(expectedFeatures) {

@@ -11,6 +11,7 @@ Available Features:
   ApexUserModeWithPermset             - Enables Apex code to run in user mode with a permission set session
   B2BCommerce                         - Enables B2B Commerce
   BillingAdvanced                     - Enables Advanced Billing (Revenue Cloud)
+  BYOOTT                              - Enables Bring Your Own Over-The-Top messaging channel (requires quantity, default: 10)
   Communities                         - Enables Experience Cloud (Communities)
   ContactsToMultipleAccounts          - Allows a single Contact to be associated with multiple Accounts
   CustomerCommunityPlus               - Enables Customer Community Plus user licenses
@@ -20,6 +21,7 @@ Available Features:
   Einstein1AIPlatform                 - Enables Einstein 1 AI Platform
   EinsteinAnalyticsPlus               - Enables Einstein Analytics Plus
   EinsteinBuilderFree                 - Enables Einstein Builder Free
+  EmbeddedServiceMessaging            - Enables Embedded Service Messaging (Messaging for In-App and Web)
   EnableSetPasswordInApi              - Allows setting passwords via API
   EventLogFile                        - Enables Event Log File
   FinancialServicesUser               - Enables Financial Services Cloud user licenses (requires quantity, default: 10)
@@ -28,6 +30,7 @@ Available Features:
   InsightsPlatform                    - Enables Insights Platform
   Knowledge                           - Enables Salesforce Knowledge
   LiveAgent                           - Enables Live Agent (Chat)
+  LiveMessage                         - Enables LiveMessage (SMS/MMS messaging)
   OrderManagement                     - Enables Salesforce Order Management
   OrderSaveLogicEnabled               - Enables order save behavior logic
   PartnerCommunity                    - Enables Partner Community user licenses
@@ -50,6 +53,7 @@ Available Products:
   healthcloud  - Health Cloud (enables HealthCloudAddOn, HealthCloudUser)
   knowledge    - Salesforce Knowledge (enables Knowledge feature and enableKnowledge, enableLightningKnowledge settings)
   liveagent    - Live Agent (enables LiveAgent feature and enableLiveAgent setting)
+  messaging    - Messaging (enables EmbeddedServiceMessaging, LiveMessage, BYOOTT features)
   revenuecloud - Revenue Cloud (enables CoreCpq, BillingAdvanced, UsageManagement, DocGen, Einstein1AIPlatform, OrderManagement, Communities, PartnerCommunity, CustomerCommunityPlus, EnableSetPasswordInApi, OrderSaveLogicEnabled features and a comprehensive set of billing/order/quote/pricing/rating settings)
 
 Available Editions:
@@ -118,6 +122,7 @@ Examples:
   force login scratch --product healthcloud
   force login scratch --product knowledge
   force login scratch --product liveagent
+  force login scratch --product messaging
   force login scratch --product revenuecloud
   force login scratch --release preview
   force login scratch --release previous
