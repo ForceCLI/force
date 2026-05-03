@@ -316,6 +316,16 @@ func TestExpandProductsToFeatures_LiveMessage(t *testing.T) {
 	}
 }
 
+func TestExpandProductsToFeatures_Enablement(t *testing.T) {
+	result := expandProductsToFeatures([]ScratchProduct{}, []ScratchFeature{Enablement}, map[string]string{})
+	if len(result) != 1 {
+		t.Fatalf("Expected 1 feature, got %d", len(result))
+	}
+	if result[0] != "Enablement" {
+		t.Errorf("Expected Enablement, got %s", result[0])
+	}
+}
+
 func TestExpandProductsToFeatures_MessagingProduct(t *testing.T) {
 	result := expandProductsToFeatures([]ScratchProduct{MessagingProduct}, []ScratchFeature{}, map[string]string{})
 	if len(result) != 3 {
@@ -571,6 +581,7 @@ func TestScratchFeatureIds_AllFeaturesDefined(t *testing.T) {
 		"EmbeddedServiceMessaging":          true,
 		"BYOOTT":                            true,
 		"LiveMessage":                       true,
+		"Enablement":                        true,
 	}
 
 	if len(ScratchFeatureIds) != len(expectedFeatures) {

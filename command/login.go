@@ -55,6 +55,7 @@ const (
 	EmbeddedServiceMessaging
 	BYOOTT
 	LiveMessage
+	Enablement
 )
 
 var ScratchFeatureIds = map[ScratchFeature][]string{
@@ -97,6 +98,7 @@ var ScratchFeatureIds = map[ScratchFeature][]string{
 	EmbeddedServiceMessaging:          {"EmbeddedServiceMessaging"},
 	BYOOTT:                            {"BYOOTT"},
 	LiveMessage:                       {"LiveMessage"},
+	Enablement:                        {"Enablement"},
 }
 
 type ScratchProduct enumflag.Flag
@@ -325,6 +327,7 @@ Available Features:
   EinsteinAnalyticsPlus               - Enables Einstein Analytics Plus
   EinsteinBuilderFree                 - Enables Einstein Builder Free
   EmbeddedServiceMessaging            - Enables Embedded Service Messaging (Messaging for In-App and Web)
+  Enablement                          - Enables Enablement (in-app guided learning programs)
   EnableSetPasswordInApi              - Allows setting passwords via API
   EventLogFile                        - Enables Event Log File
   FinancialServicesUser               - Enables Financial Services Cloud user licenses (requires quantity, default: 10)

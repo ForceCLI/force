@@ -22,6 +22,7 @@ Available Features:
   EinsteinAnalyticsPlus               - Enables Einstein Analytics Plus
   EinsteinBuilderFree                 - Enables Einstein Builder Free
   EmbeddedServiceMessaging            - Enables Embedded Service Messaging (Messaging for In-App and Web)
+  Enablement                          - Enables Enablement (in-app guided learning programs)
   EnableSetPasswordInApi              - Allows setting passwords via API
   EventLogFile                        - Enables Event Log File
   FinancialServicesUser               - Enables Financial Services Cloud user licenses (requires quantity, default: 10)
@@ -38,6 +39,8 @@ Available Features:
   PersonAccounts                      - Enables Person Accounts (B2C account model)
   PlatformEncryption                  - Enables Shield Platform Encryption
   ProgramManagement                   - Enables Program Management Module (Salesforce.org Nonprofit/Education)
+  RevSubscriptionManagement           - Enables Subscription Management (B2B subscriptions and one-time sales)
+  CoreCpq                             - Enables Revenue Cloud / Salesforce CPQ Core
   ScvMultipartyAndConsult             - Enables Service Cloud Voice multiparty and consult (requires quantity, default: 10)
   ServiceCloud                        - Enables Service Cloud
   ServiceCloudVoicePartnerTelephony   - Enables Service Cloud Voice Partner Telephony (requires quantity 1-50, default: 10)
