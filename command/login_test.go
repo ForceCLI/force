@@ -326,6 +326,16 @@ func TestExpandProductsToFeatures_Enablement(t *testing.T) {
 	}
 }
 
+func TestExpandProductsToFeatures_SurveyAdvancedFeatures(t *testing.T) {
+	result := expandProductsToFeatures([]ScratchProduct{}, []ScratchFeature{SurveyAdvancedFeatures}, map[string]string{})
+	if len(result) != 1 {
+		t.Fatalf("Expected 1 feature, got %d", len(result))
+	}
+	if result[0] != "SurveyAdvancedFeatures" {
+		t.Errorf("Expected SurveyAdvancedFeatures, got %s", result[0])
+	}
+}
+
 func TestExpandProductsToFeatures_MessagingProduct(t *testing.T) {
 	result := expandProductsToFeatures([]ScratchProduct{MessagingProduct}, []ScratchFeature{}, map[string]string{})
 	if len(result) != 3 {
@@ -582,6 +592,7 @@ func TestScratchFeatureIds_AllFeaturesDefined(t *testing.T) {
 		"BYOOTT":                            true,
 		"LiveMessage":                       true,
 		"Enablement":                        true,
+		"SurveyAdvancedFeatures":            true,
 	}
 
 	if len(ScratchFeatureIds) != len(expectedFeatures) {

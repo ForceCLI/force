@@ -56,6 +56,7 @@ const (
 	BYOOTT
 	LiveMessage
 	Enablement
+	SurveyAdvancedFeatures
 )
 
 var ScratchFeatureIds = map[ScratchFeature][]string{
@@ -99,6 +100,7 @@ var ScratchFeatureIds = map[ScratchFeature][]string{
 	BYOOTT:                            {"BYOOTT"},
 	LiveMessage:                       {"LiveMessage"},
 	Enablement:                        {"Enablement"},
+	SurveyAdvancedFeatures:            {"SurveyAdvancedFeatures"},
 }
 
 type ScratchProduct enumflag.Flag
@@ -350,6 +352,7 @@ Available Features:
   ServiceCloud                        - Enables Service Cloud
   ServiceCloudVoicePartnerTelephony   - Enables Service Cloud Voice Partner Telephony (requires quantity 1-50, default: 10)
   StateAndCountryPicklist             - Enables State and Country Picklists for standard address fields
+  SurveyAdvancedFeatures              - Enables advanced Salesforce Surveys features
   UsageManagement                     - Enables Usage Management (Revenue Cloud)
   WavePlatform                        - Enables Wave Platform (CRM Analytics)
 
