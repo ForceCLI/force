@@ -57,6 +57,7 @@ const (
 	LiveMessage
 	Enablement
 	SurveyAdvancedFeatures
+	Slack
 )
 
 var ScratchFeatureIds = map[ScratchFeature][]string{
@@ -101,6 +102,7 @@ var ScratchFeatureIds = map[ScratchFeature][]string{
 	LiveMessage:                       {"LiveMessage"},
 	Enablement:                        {"Enablement"},
 	SurveyAdvancedFeatures:            {"SurveyAdvancedFeatures"},
+	Slack:                             {"Slack"},
 }
 
 type ScratchProduct enumflag.Flag
@@ -351,6 +353,7 @@ Available Features:
   ScvMultipartyAndConsult             - Enables Service Cloud Voice multiparty and consult (requires quantity, default: 10)
   ServiceCloud                        - Enables Service Cloud
   ServiceCloudVoicePartnerTelephony   - Enables Service Cloud Voice Partner Telephony (requires quantity 1-50, default: 10)
+  Slack                               - Enables Salesforce-Slack integration (required for SlackApp metadata and slash command registration)
   StateAndCountryPicklist             - Enables State and Country Picklists for standard address fields
   SurveyAdvancedFeatures              - Enables advanced Salesforce Surveys features
   UsageManagement                     - Enables Usage Management (Revenue Cloud)

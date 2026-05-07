@@ -124,6 +124,7 @@ func runExport(root string, excludeMetadataNames []string, showWarnings bool) {
 		"ExperienceBundle",
 		"ExternalCredential",
 		"ExternalDataSource",
+		"ExternalServiceRegistration",
 		"FieldSet",
 		"FlexiPage",
 		"Flow",
@@ -182,10 +183,12 @@ func runExport(root string, excludeMetadataNames []string, showWarnings bool) {
 		"SharingReason",
 		"SharingRules",
 		"Skill",
+		"SlackApp",
 		"StaticResource",
 		"Territory",
 		"Translations",
 		"ValidationRule",
+		"ViewDefinition",
 		"Workflow",
 	}
 

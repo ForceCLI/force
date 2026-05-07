@@ -99,6 +99,68 @@ var _ = Describe("Packagebuilder", func() {
 			})
 		})
 
+		Context("when adding a SlackApp file", func() {
+			var slackAppPath string
+			var slackAppMetaPath string
+
+			BeforeEach(func() {
+				os.MkdirAll(tempDir+"/src/slackapps", 0755)
+				slackAppPath = tempDir + "/src/slackapps/ApexSlackApp.slackapp"
+				ioutil.WriteFile(slackAppPath, []byte("description: example\n"), 0644)
+				slackAppMetaPath = tempDir + "/src/slackapps/ApexSlackApp.slackapp-meta.xml"
+				ioutil.WriteFile(slackAppMetaPath, []byte(`<?xml version="1.0" encoding="UTF-8"?>`), 0644)
+			})
+
+			It("should add the payload to the package.xml under SlackApp", func() {
+				err := pb.AddFile(slackAppPath)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(pb.Files).To(HaveKey("slackapps/ApexSlackApp.slackapp"))
+				Expect(pb.Files).To(HaveKey("slackapps/ApexSlackApp.slackapp-meta.xml"))
+				Expect(pb.Metadata).To(HaveKey("SlackApp"))
+				Expect(pb.Metadata["SlackApp"].Members[0]).To(Equal("ApexSlackApp"))
+			})
+
+			It("should resolve the metadata type when adding the -meta.xml side", func() {
+				err := pb.AddFile(slackAppMetaPath)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(pb.Files).To(HaveKey("slackapps/ApexSlackApp.slackapp"))
+				Expect(pb.Files).To(HaveKey("slackapps/ApexSlackApp.slackapp-meta.xml"))
+				Expect(pb.Metadata).To(HaveKey("SlackApp"))
+				Expect(pb.Metadata["SlackApp"].Members[0]).To(Equal("ApexSlackApp"))
+			})
+		})
+
+		Context("when adding a ViewDefinition file", func() {
+			var viewPath string
+			var viewMetaPath string
+
+			BeforeEach(func() {
+				os.MkdirAll(tempDir+"/src/viewdefinitions", 0755)
+				viewPath = tempDir + "/src/viewdefinitions/app_home.view"
+				ioutil.WriteFile(viewPath, []byte("components: []\n"), 0644)
+				viewMetaPath = tempDir + "/src/viewdefinitions/app_home.view-meta.xml"
+				ioutil.WriteFile(viewMetaPath, []byte(`<?xml version="1.0" encoding="UTF-8"?>`), 0644)
+			})
+
+			It("should add the payload to the package.xml under ViewDefinition", func() {
+				err := pb.AddFile(viewPath)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(pb.Files).To(HaveKey("viewdefinitions/app_home.view"))
+				Expect(pb.Files).To(HaveKey("viewdefinitions/app_home.view-meta.xml"))
+				Expect(pb.Metadata).To(HaveKey("ViewDefinition"))
+				Expect(pb.Metadata["ViewDefinition"].Members[0]).To(Equal("app_home"))
+			})
+
+			It("should resolve the metadata type when adding the -meta.xml side", func() {
+				err := pb.AddFile(viewMetaPath)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(pb.Files).To(HaveKey("viewdefinitions/app_home.view"))
+				Expect(pb.Files).To(HaveKey("viewdefinitions/app_home.view-meta.xml"))
+				Expect(pb.Metadata).To(HaveKey("ViewDefinition"))
+				Expect(pb.Metadata["ViewDefinition"].Members[0]).To(Equal("app_home"))
+			})
+		})
+
 		Context("when adding a CustomMetadata file", func() {
 			var customMetadataPath string
 
@@ -279,6 +341,27 @@ var _ = Describe("Packagebuilder", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(metadataType).To(Equal("ApexClass"))
 				Expect(metadataName).To(Equal("MyClass"))
+			})
+
+			It("should handle ExternalServiceRegistration files", func() {
+				metadataType, metadataName, err := pb.GetMetaForAbsolutePath("/path/to/src/externalServiceRegistrations/OpenLibrary.externalServiceRegistration")
+				Expect(err).ToNot(HaveOccurred())
+				Expect(metadataType).To(Equal("ExternalServiceRegistration"))
+				Expect(metadataName).To(Equal("OpenLibrary"))
+			})
+
+			It("should handle SlackApp files", func() {
+				metadataType, metadataName, err := pb.GetMetaForAbsolutePath("/path/to/src/slackapps/ApexSlackApp.slackapp")
+				Expect(err).ToNot(HaveOccurred())
+				Expect(metadataType).To(Equal("SlackApp"))
+				Expect(metadataName).To(Equal("ApexSlackApp"))
+			})
+
+			It("should handle ViewDefinition files", func() {
+				metadataType, metadataName, err := pb.GetMetaForAbsolutePath("/path/to/src/viewdefinitions/app_home.view")
+				Expect(err).ToNot(HaveOccurred())
+				Expect(metadataType).To(Equal("ViewDefinition"))
+				Expect(metadataName).To(Equal("app_home"))
 			})
 
 		})
