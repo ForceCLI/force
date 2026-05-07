@@ -593,6 +593,7 @@ func TestScratchFeatureIds_AllFeaturesDefined(t *testing.T) {
 		"LiveMessage":                       true,
 		"Enablement":                        true,
 		"SurveyAdvancedFeatures":            true,
+		"Slack":                             true,
 	}
 
 	if len(ScratchFeatureIds) != len(expectedFeatures) {
