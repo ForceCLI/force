@@ -153,3 +153,63 @@ func ForceLoginAtEndpointAndSaveClientCredentials(endpoint string, clientId stri
 	username, err = ForceSaveLogin(creds, output)
 	return
 }
+
+func PasswordFlowLoginAtEndpoint(endpoint string, clientId string, clientSecret string, username string, password string) (creds ForceSession, err error) {
+	attrs := url.Values{}
+	attrs.Set("grant_type", "password")
+	attrs.Set("client_id", clientId)
+	if clientSecret != "" {
+		attrs.Set("client_secret", clientSecret)
+	}
+	attrs.Set("username", username)
+	attrs.Set("password", password)
+
+	postVars := attrs.Encode()
+	tokenURL := tokenURL(endpoint)
+	req, err := httpRequest("POST", tokenURL, bytes.NewReader([]byte(postVars)))
+	if err != nil {
+		return
+	}
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	res, err := doRequest(req)
+	if err != nil {
+		return
+	}
+	defer res.Body.Close()
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return
+	}
+
+	if res.StatusCode != 200 {
+		var oauthError *OAuthError
+		err = json.Unmarshal(body, &oauthError)
+		if err != nil {
+			return
+		}
+		if oauthError.Error == "invalid_grant" && oauthError.ErrorDescription == "authentication failure" {
+			err = errors.New(oauthError.ErrorDescription + ": Note that only Connected Apps support the username/password flow; External Client Apps do not")
+			return
+		}
+		err = errors.New(oauthError.ErrorDescription)
+		return
+	}
+
+	err = json.Unmarshal(body, &creds)
+	creds.SessionOptions = &SessionOptions{}
+	if creds.RefreshToken != "" {
+		creds.SessionOptions.RefreshMethod = RefreshOauth
+	}
+	creds.EndpointUrl = endpoint
+	creds.ClientId = clientId
+	return
+}
+
+func ForceLoginAtEndpointAndSavePasswordFlow(endpoint string, clientId string, clientSecret string, username string, password string, output *os.File) (name string, err error) {
+	creds, err := PasswordFlowLoginAtEndpoint(endpoint, clientId, clientSecret, username, password)
+	if err != nil {
+		return
+	}
+	name, err = ForceSaveLogin(creds, output)
+	return
+}

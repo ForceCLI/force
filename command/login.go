@@ -268,8 +268,8 @@ var featuresRequiringQuantity = map[string]bool{
 const defaultFeatureQuantity = "10"
 
 func init() {
-	loginCmd.Flags().StringP("user", "u", "", "username for SOAP login")
-	loginCmd.Flags().StringP("password", "p", "", "password for SOAP login")
+	loginCmd.Flags().StringP("user", "u", "", "username for SOAP or OAuth Username-Password login")
+	loginCmd.Flags().StringP("password", "p", "", "password for SOAP or OAuth Username-Password login")
 	loginCmd.Flags().StringP("api-version", "v", "", "API version to use")
 	loginCmd.Flags().String("connected-app-client-id", "", "Client Id (aka Consumer Key) to use instead of default")
 	loginCmd.Flags().StringP("key", "k", "", "JWT signing key filename")
@@ -476,7 +476,8 @@ to get a new session token automatically when needed.`,
 `,
 	Args: cobra.MaximumNArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
-		if connectedAppClientId, _ := cmd.Flags().GetString("connected-app-client-id"); connectedAppClientId != "" {
+		connectedAppClientId, _ := cmd.Flags().GetString("connected-app-client-id")
+		if connectedAppClientId != "" {
 			ClientId = connectedAppClientId
 		}
 		endpoint := getEndpoint(cmd)
@@ -485,7 +486,7 @@ to get a new session token automatically when needed.`,
 		keyFile, _ := cmd.Flags().GetString("key")
 		clientSecret, _ := cmd.Flags().GetString("connected-app-client-secret")
 		switch {
-		case clientSecret != "":
+		case username == "" && clientSecret != "":
 			clientCredentialsLogin(endpoint, ClientId, clientSecret)
 		case username == "":
 			deviceFlow, _ := cmd.Flags().GetBool("device-flow")
@@ -498,9 +499,12 @@ to get a new session token automatically when needed.`,
 			}
 		case keyFile != "":
 			jwtLogin(endpoint, username, keyFile)
+		case clientSecret != "":
+			password, _ := cmd.Flags().GetString("password")
+			passwordLogin(endpoint, ClientId, clientSecret, username, password)
 		default:
 			password, _ := cmd.Flags().GetString("password")
-			passwordLogin(endpoint, username, password)
+			soapLogin(endpoint, username, password)
 		}
 	},
 }
@@ -676,7 +680,7 @@ func clientCredentialsLogin(endpoint, clientId, clientSecret string) {
 	}
 }
 
-func passwordLogin(endpoint, username, password string) {
+func passwordLogin(endpoint, clientId, clientSecret, username, password string) {
 	if len(password) == 0 {
 		var err error
 		password, err = speakeasy.Ask("Password: ")
@@ -684,6 +688,21 @@ func passwordLogin(endpoint, username, password string) {
 			ErrorAndExit(err.Error())
 		}
 	}
+	_, err := ForceLoginAtEndpointAndSavePasswordFlow(endpoint, clientId, clientSecret, username, password, os.Stdout)
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
+}
+
+func soapLogin(endpoint, username, password string) {
+	if len(password) == 0 {
+		var err error
+		password, err = speakeasy.Ask("Password: ")
+		if err != nil {
+			ErrorAndExit(err.Error())
+		}
+	}
+	fmt.Fprintln(os.Stderr, "Warning: SOAP login will no longer be supported after Summer '27. Pass --connected-app-client-id and --connected-app-client-secret to use the OAuth Username/Password flow instead.")
 	_, err := ForceLoginAtEndpointAndSaveSoap(endpoint, username, password, os.Stdout)
 	if err != nil {
 		ErrorAndExit(err.Error())

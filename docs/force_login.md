@@ -43,10 +43,10 @@ force login [flags]
                                              logged in system. non-production server to login to (values are 'pre',
                                              'test', or full instance url
   -k, --key string                           JWT signing key filename
-  -p, --password string                      password for SOAP login
+  -p, --password string                      password for SOAP or OAuth Username-Password login
   -P, --port int                             port for local OAuth callback server (default 3835)
   -s, --skip                                 skip login if already authenticated and only save token (useful with SSO)
-  -u, --user string                          username for SOAP login
+  -u, --user string                          username for SOAP or OAuth Username-Password login
 ```
 
 ### Options inherited from parent commands
