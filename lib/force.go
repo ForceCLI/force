@@ -100,7 +100,7 @@ type ForceSession struct {
 	Scope          string `json:"scope"`
 	Id             string `json:"id"`
 	ClientId       string
-	RefreshToken   string `json:"refresh_token,omitempty"`
+	RefreshToken   string
 	ForceEndpoint  ForceEndpoint
 	EndpointUrl    string `json:"endpoint_url"`
 	UserInfo       *UserInfo

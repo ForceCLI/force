@@ -508,6 +508,44 @@ func TestDeleteRecord_returns_ScratchOrgExpiredError_on_420(t *testing.T) {
 	}
 }
 
+func TestForceSession_Marshal_uses_RefreshToken_key(t *testing.T) {
+	session := ForceSession{
+		AccessToken:  "access",
+		RefreshToken: "refresh",
+	}
+
+	body, err := json.Marshal(session)
+	if err != nil {
+		t.Fatalf("json.Marshal returned error: %v", err)
+	}
+
+	var raw map[string]interface{}
+	if err := json.Unmarshal(body, &raw); err != nil {
+		t.Fatalf("json.Unmarshal returned error: %v", err)
+	}
+
+	if raw["RefreshToken"] != "refresh" {
+		t.Errorf("Expected RefreshToken key with value 'refresh', got %v", raw["RefreshToken"])
+	}
+
+	if _, ok := raw["refresh_token"]; ok {
+		t.Errorf("Did not expect refresh_token key in marshalled session; would break backwards compatibility with on-disk sessions")
+	}
+}
+
+func TestForceSession_Unmarshal_legacy_RefreshToken_key(t *testing.T) {
+	legacy := []byte(`{"access_token":"access","RefreshToken":"refresh"}`)
+
+	var session ForceSession
+	if err := json.Unmarshal(legacy, &session); err != nil {
+		t.Fatalf("json.Unmarshal returned error: %v", err)
+	}
+
+	if session.RefreshToken != "refresh" {
+		t.Errorf("Expected RefreshToken 'refresh' loaded from legacy on-disk format, got %q", session.RefreshToken)
+	}
+}
+
 func TestGetRecord_returns_ScratchOrgExpiredError_on_420(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(420)

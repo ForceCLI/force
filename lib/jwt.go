@@ -195,7 +195,16 @@ func PasswordFlowLoginAtEndpoint(endpoint string, clientId string, clientSecret 
 		return
 	}
 
-	err = json.Unmarshal(body, &creds)
+	if err = json.Unmarshal(body, &creds); err != nil {
+		return
+	}
+	var tokenResponse struct {
+		RefreshToken string `json:"refresh_token"`
+	}
+	if err = json.Unmarshal(body, &tokenResponse); err != nil {
+		return
+	}
+	creds.RefreshToken = tokenResponse.RefreshToken
 	creds.SessionOptions = &SessionOptions{}
 	if creds.RefreshToken != "" {
 		creds.SessionOptions.RefreshMethod = RefreshOauth
