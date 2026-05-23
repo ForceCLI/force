@@ -194,45 +194,47 @@ const (
 	EnableRatingWaterfallPersistence
 	EnableProductConfigurator
 	EnableDFOPref
+	EnableRelateContactToMultipleAccounts
 )
 
 var ScratchSettingIds = map[ScratchSetting][]string{
-	EnableEnhancedNotes:               {"enableEnhancedNotes"},
-	EnableQuote:                       {"enableQuote"},
-	NetworksEnabled:                   {"networksEnabled"},
-	CommerceEnabled:                   {"commerceEnabled"},
-	EnableApexApprovalLockUnlock:      {"enableApexApprovalLockUnlock"},
-	PermsetsInFieldCreation:           {"permsetsInFieldCreation"},
-	EnableLightningPreviewPref:        {"enableLightningPreviewPref"},
-	EnableOrders:                      {"enableOrders"},
-	EnableEnhancedCommerceOrders:      {"enableEnhancedCommerceOrders"},
-	EnableLiveAgent:                   {"enableLiveAgent"},
-	EnableMultiCurrency:               {"enableMultiCurrency"},
-	EnableCoreCPQ:                     {"enableCoreCPQ"},
-	EnableSubscriptionManagement:      {"enableSubscriptionManagement"},
-	EnableKnowledge:                   {"enableKnowledge"},
-	EnableLightningKnowledge:          {"enableLightningKnowledge"},
-	EnableBillingSetup:                {"enableBillingSetup"},
-	EnableExperienceBundleMetadata:    {"enableExperienceBundleMetadata"},
-	EnableS1DesktopEnabled:            {"enableS1DesktopEnabled"},
-	EnableContextDefinitions:          {"enableContextDefinitions"},
-	EnableEinsteinGptPlatform:         {"enableEinsteinGptPlatform"},
-	EnableOpportunityTeam:             {"enableOpportunityTeam"},
-	EnableOrderManagementSetting:      {"enableOrderManagement"},
-	EnableOrderEvents:                 {"enableOrderEvents"},
-	EnableOptionalPricebook:           {"enableOptionalPricebook"},
-	EnableZeroQuantity:                {"enableZeroQuantity"},
-	EnableNegativeQuantity:            {"enableNegativeQuantity"},
-	EnableQuotesWithoutOppEnabled:     {"enableQuotesWithoutOppEnabled"},
-	EnableHighAvailability:            {"enableHighAvailability"},
-	EnablePricingWaterfall:            {"enablePricingWaterfall"},
-	EnablePricingWaterfallPersistence: {"enablePricingWaterfallPersistence"},
-	EnableSalesforcePricing:           {"enableSalesforcePricing"},
-	EnableRating:                      {"enableRating"},
-	EnableRatingWaterfall:             {"enableRatingWaterfall"},
-	EnableRatingWaterfallPersistence:  {"enableRatingWaterfallPersistence"},
-	EnableProductConfigurator:         {"enableProductConfigurator"},
-	EnableDFOPref:                     {"enableDFOPref"},
+	EnableEnhancedNotes:                   {"enableEnhancedNotes"},
+	EnableQuote:                           {"enableQuote"},
+	NetworksEnabled:                       {"networksEnabled"},
+	CommerceEnabled:                       {"commerceEnabled"},
+	EnableApexApprovalLockUnlock:          {"enableApexApprovalLockUnlock"},
+	PermsetsInFieldCreation:               {"permsetsInFieldCreation"},
+	EnableLightningPreviewPref:            {"enableLightningPreviewPref"},
+	EnableOrders:                          {"enableOrders"},
+	EnableEnhancedCommerceOrders:          {"enableEnhancedCommerceOrders"},
+	EnableLiveAgent:                       {"enableLiveAgent"},
+	EnableMultiCurrency:                   {"enableMultiCurrency"},
+	EnableCoreCPQ:                         {"enableCoreCPQ"},
+	EnableSubscriptionManagement:          {"enableSubscriptionManagement"},
+	EnableKnowledge:                       {"enableKnowledge"},
+	EnableLightningKnowledge:              {"enableLightningKnowledge"},
+	EnableBillingSetup:                    {"enableBillingSetup"},
+	EnableExperienceBundleMetadata:        {"enableExperienceBundleMetadata"},
+	EnableS1DesktopEnabled:                {"enableS1DesktopEnabled"},
+	EnableContextDefinitions:              {"enableContextDefinitions"},
+	EnableEinsteinGptPlatform:             {"enableEinsteinGptPlatform"},
+	EnableOpportunityTeam:                 {"enableOpportunityTeam"},
+	EnableOrderManagementSetting:          {"enableOrderManagement"},
+	EnableOrderEvents:                     {"enableOrderEvents"},
+	EnableOptionalPricebook:               {"enableOptionalPricebook"},
+	EnableZeroQuantity:                    {"enableZeroQuantity"},
+	EnableNegativeQuantity:                {"enableNegativeQuantity"},
+	EnableQuotesWithoutOppEnabled:         {"enableQuotesWithoutOppEnabled"},
+	EnableHighAvailability:                {"enableHighAvailability"},
+	EnablePricingWaterfall:                {"enablePricingWaterfall"},
+	EnablePricingWaterfallPersistence:     {"enablePricingWaterfallPersistence"},
+	EnableSalesforcePricing:               {"enableSalesforcePricing"},
+	EnableRating:                          {"enableRating"},
+	EnableRatingWaterfall:                 {"enableRatingWaterfall"},
+	EnableRatingWaterfallPersistence:      {"enableRatingWaterfallPersistence"},
+	EnableProductConfigurator:             {"enableProductConfigurator"},
+	EnableDFOPref:                         {"enableDFOPref"},
+	EnableRelateContactToMultipleAccounts: {"enableRelateContactToMultipleAccounts"},
 }
 
 type ScratchRelease enumflag.Flag
@@ -417,6 +419,7 @@ Available Settings (deployed after org creation):
   enableRatingWaterfallPersistence  - Persist Rating Waterfall (IndustriesRatingSettings)
   enableProductConfigurator         - Enable Product Configurator (ProductConfiguratorSettings)
   enableDFOPref                     - Enable Dynamic Fulfillment Orchestrator (DynamicFulfillmentOrchestratorSettings)
+  enableRelateContactToMultipleAccounts - Allow a Contact to be related to multiple Accounts (AccountSettings)
 
 Available Releases:
   preview  - Create scratch org on the next (preview) release

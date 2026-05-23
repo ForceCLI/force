@@ -483,6 +483,28 @@ func TestBuildSettingsMetadata_AddsDynamicFulfillmentOrchestratorSettings(t *tes
 	}
 }
 
+func TestBuildSettingsMetadata_AddsAccountSettingsForEnableRelateContactToMultipleAccounts(t *testing.T) {
+	files := buildSettingsMetadata([]string{"enableRelateContactToMultipleAccounts"})
+	content, ok := files["unpackaged/settings/Account.settings"]
+	if !ok {
+		t.Fatalf("Account.settings not generated")
+	}
+	if !strings.Contains(string(content), "<AccountSettings ") {
+		t.Errorf("Account.settings missing root element:\n%s", content)
+	}
+	if !strings.Contains(string(content), "<enableRelateContactToMultipleAccounts>true</enableRelateContactToMultipleAccounts>") {
+		t.Errorf("Account.settings missing preference:\n%s", content)
+	}
+}
+
+func TestBuildSettingsMetadata_ExcludesAccountSettingsWhenUnused(t *testing.T) {
+	files := buildSettingsMetadata([]string{"enableEnhancedNotes"})
+
+	if _, ok := files["unpackaged/settings/Account.settings"]; ok {
+		t.Fatalf("Account.settings should not be generated when not requested")
+	}
+}
+
 func TestGetScratchOrg_returns_error_when_SignupUsername_is_nil(t *testing.T) {
 	f := &Force{}
 	f.Credentials = &ForceSession{}

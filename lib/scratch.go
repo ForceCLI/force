@@ -240,43 +240,44 @@ func buildSettingsMetadata(settings []string) ForceMetadataFiles {
 
 	// Track each preference individually so multiple flags can share one file.
 	var (
-		enableEnhancedNotes               bool
-		enableTasksOnEnhancedNotes        bool
-		enableQuote                       bool
-		enableQuotesWithoutOppEnabled     bool
-		networksEnabled                   bool
-		commerceEnabled                   bool
-		enableOrders                      bool
-		enableEnhancedCommerceOrders      bool
-		enableOrderEvents                 bool
-		enableOptionalPricebook           bool
-		enableZeroQuantity                bool
-		enableNegativeQuantity            bool
-		enableApexApprovalLockUnlock      bool
-		permsetsInFieldCreation           bool
-		enableLightningPreviewPref        bool
-		enableS1DesktopEnabled            bool
-		enableLiveAgent                   bool
-		enableMultiCurrency               bool
-		enableCoreCPQ                     bool
-		enableSubscriptionManagement      bool
-		enableKnowledge                   bool
-		enableLightningKnowledge          bool
-		enableBillingSetup                bool
-		enableExperienceBundleMetadata    bool
-		enableContextDefinitions          bool
-		enableEinsteinGptPlatform         bool
-		enableOpportunityTeam             bool
-		enableOrderManagement             bool
-		enableHighAvailability            bool
-		enablePricingWaterfall            bool
-		enablePricingWaterfallPersistence bool
-		enableSalesforcePricing           bool
-		enableRating                      bool
-		enableRatingWaterfall             bool
-		enableRatingWaterfallPersistence  bool
-		enableProductConfigurator         bool
-		enableDFOPref                     bool
+		enableEnhancedNotes                   bool
+		enableTasksOnEnhancedNotes            bool
+		enableQuote                           bool
+		enableQuotesWithoutOppEnabled         bool
+		networksEnabled                       bool
+		commerceEnabled                       bool
+		enableOrders                          bool
+		enableEnhancedCommerceOrders          bool
+		enableOrderEvents                     bool
+		enableOptionalPricebook               bool
+		enableZeroQuantity                    bool
+		enableNegativeQuantity                bool
+		enableApexApprovalLockUnlock          bool
+		permsetsInFieldCreation               bool
+		enableLightningPreviewPref            bool
+		enableS1DesktopEnabled                bool
+		enableLiveAgent                       bool
+		enableMultiCurrency                   bool
+		enableCoreCPQ                         bool
+		enableSubscriptionManagement          bool
+		enableKnowledge                       bool
+		enableLightningKnowledge              bool
+		enableBillingSetup                    bool
+		enableExperienceBundleMetadata        bool
+		enableContextDefinitions              bool
+		enableEinsteinGptPlatform             bool
+		enableOpportunityTeam                 bool
+		enableOrderManagement                 bool
+		enableHighAvailability                bool
+		enablePricingWaterfall                bool
+		enablePricingWaterfallPersistence     bool
+		enableSalesforcePricing               bool
+		enableRating                          bool
+		enableRatingWaterfall                 bool
+		enableRatingWaterfallPersistence      bool
+		enableProductConfigurator             bool
+		enableDFOPref                         bool
+		enableRelateContactToMultipleAccounts bool
 	)
 
 	for _, setting := range settings {
@@ -353,6 +354,8 @@ func buildSettingsMetadata(settings []string) ForceMetadataFiles {
 			enableProductConfigurator = true
 		case "enableDFOPref":
 			enableDFOPref = true
+		case "enableRelateContactToMultipleAccounts":
+			enableRelateContactToMultipleAccounts = true
 		}
 	}
 
@@ -444,6 +447,9 @@ func buildSettingsMetadata(settings []string) ForceMetadataFiles {
 	})
 	emit("unpackaged/settings/DynamicFulfillmentOrchestrator.settings", "DynamicFulfillmentOrchestratorSettings", []settingsFlag{
 		{"enableDFOPref", enableDFOPref},
+	})
+	emit("unpackaged/settings/Account.settings", "AccountSettings", []settingsFlag{
+		{"enableRelateContactToMultipleAccounts", enableRelateContactToMultipleAccounts},
 	})
 
 	return files
