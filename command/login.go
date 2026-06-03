@@ -83,6 +83,7 @@ const (
 	OmniStudioRuntime
 	PublicSectorAccess
 	SharedActivities
+	HighVelocitySales
 )
 
 var ScratchFeatureIds = map[ScratchFeature][]string{
@@ -153,6 +154,7 @@ var ScratchFeatureIds = map[ScratchFeature][]string{
 	OmniStudioRuntime:                 {"OmniStudioRuntime"},
 	PublicSectorAccess:                {"PublicSectorAccess"},
 	SharedActivities:                  {"SharedActivities"},
+	HighVelocitySales:                 {"HighVelocitySales"},
 }
 
 type ScratchProduct enumflag.Flag
@@ -460,6 +462,7 @@ Available Features:
   Fundraising                         - Enables Fundraising
   HealthCloudAddOn                    - Enables Health Cloud add-on
   HealthCloudUser                     - Enables Health Cloud user licenses
+  HighVelocitySales                   - Enables High Velocity Sales (Sales Engagement)
   IndustriesActionPlan                - Enables Industries Action Plans
   IndustriesSalesExcellenceAddOn      - Enables Industries Sales Excellence Add-On
   IndustriesServiceExcellenceAddOn    - Enables Industries Service Excellence Add-On

@@ -750,6 +750,7 @@ func TestScratchFeatureIds_AllFeaturesDefined(t *testing.T) {
 		"OmniStudioRuntime":                 true,
 		"PublicSectorAccess":                true,
 		"SharedActivities":                  true,
+		"HighVelocitySales":                 true,
 	}
 
 	if len(ScratchFeatureIds) != len(expectedFeatures) {
