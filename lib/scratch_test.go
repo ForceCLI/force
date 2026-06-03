@@ -505,6 +505,152 @@ func TestBuildSettingsMetadata_ExcludesAccountSettingsWhenUnused(t *testing.T) {
 	}
 }
 
+func TestBuildSettingsMetadata_AddsChatterSettings(t *testing.T) {
+	files := buildSettingsMetadata([]string{"enableChatter"})
+
+	content, ok := files["unpackaged/settings/Chatter.settings"]
+	if !ok {
+		t.Fatalf("Expected Chatter.settings to be generated")
+	}
+	if !strings.Contains(string(content), "<enableChatter>true</enableChatter>") {
+		t.Errorf("Expected enableChatter in Chatter.settings, got: %s", string(content))
+	}
+}
+
+func TestBuildSettingsMetadata_AddsIndustriesSettings(t *testing.T) {
+	files := buildSettingsMetadata([]string{"enableEducationCloud", "enableAcademicOperations", "enableStudentSuccess"})
+
+	content, ok := files["unpackaged/settings/Industries.settings"]
+	if !ok {
+		t.Fatalf("Expected Industries.settings to be generated")
+	}
+	s := string(content)
+	for _, flag := range []string{"enableEducationCloud", "enableAcademicOperations", "enableStudentSuccess"} {
+		if !strings.Contains(s, "<"+flag+">true</"+flag+">") {
+			t.Errorf("Expected %s in Industries.settings, got: %s", flag, s)
+		}
+	}
+}
+
+func TestBuildSettingsMetadata_AddsMobileSettings(t *testing.T) {
+	files := buildSettingsMetadata([]string{"enableS1EncryptedStoragePref2"})
+
+	content, ok := files["unpackaged/settings/Mobile.settings"]
+	if !ok {
+		t.Fatalf("Expected Mobile.settings to be generated")
+	}
+	if !strings.Contains(string(content), "<enableS1EncryptedStoragePref2>false</enableS1EncryptedStoragePref2>") {
+		t.Errorf("Expected enableS1EncryptedStoragePref2 set to false in Mobile.settings, got: %s", string(content))
+	}
+}
+
+func TestBuildSettingsMetadata_AddsNameSettings(t *testing.T) {
+	files := buildSettingsMetadata([]string{"enableMiddleName", "enableNameSuffix"})
+
+	content, ok := files["unpackaged/settings/Name.settings"]
+	if !ok {
+		t.Fatalf("Expected Name.settings to be generated")
+	}
+	s := string(content)
+	if !strings.Contains(s, "<enableMiddleName>true</enableMiddleName>") {
+		t.Errorf("Expected enableMiddleName in Name.settings, got: %s", s)
+	}
+	if !strings.Contains(s, "<enableNameSuffix>true</enableNameSuffix>") {
+		t.Errorf("Expected enableNameSuffix in Name.settings, got: %s", s)
+	}
+}
+
+func TestBuildSettingsMetadata_AddsInterestTaggingSettings(t *testing.T) {
+	files := buildSettingsMetadata([]string{"enableInterestTagging"})
+
+	content, ok := files["unpackaged/settings/InterestTagging.settings"]
+	if !ok {
+		t.Fatalf("Expected InterestTagging.settings to be generated")
+	}
+	if !strings.Contains(string(content), "<enableInterestTagging>true</enableInterestTagging>") {
+		t.Errorf("Expected enableInterestTagging in InterestTagging.settings, got: %s", string(content))
+	}
+}
+
+func TestBuildSettingsMetadata_AddsDocumentChecklistSettings(t *testing.T) {
+	files := buildSettingsMetadata([]string{"deleteDCIWithFiles"})
+
+	content, ok := files["unpackaged/settings/DocumentChecklist.settings"]
+	if !ok {
+		t.Fatalf("Expected DocumentChecklist.settings to be generated")
+	}
+	if !strings.Contains(string(content), "<deleteDCIWithFiles>true</deleteDCIWithFiles>") {
+		t.Errorf("Expected deleteDCIWithFiles in DocumentChecklist.settings, got: %s", string(content))
+	}
+}
+
+func TestBuildSettingsMetadata_AddsForecastingSettings(t *testing.T) {
+	files := buildSettingsMetadata([]string{"enableForecasts"})
+
+	content, ok := files["unpackaged/settings/Forecasting.settings"]
+	if !ok {
+		t.Fatalf("Expected Forecasting.settings to be generated")
+	}
+	if !strings.Contains(string(content), "<enableForecasts>true</enableForecasts>") {
+		t.Errorf("Expected enableForecasts in Forecasting.settings, got: %s", string(content))
+	}
+}
+
+func TestBuildSettingsMetadata_AddsProductSettings(t *testing.T) {
+	files := buildSettingsMetadata([]string{"enableRevenueSchedule"})
+
+	content, ok := files["unpackaged/settings/Product.settings"]
+	if !ok {
+		t.Fatalf("Expected Product.settings to be generated")
+	}
+	if !strings.Contains(string(content), "<enableRevenueSchedule>true</enableRevenueSchedule>") {
+		t.Errorf("Expected enableRevenueSchedule in Product.settings, got: %s", string(content))
+	}
+}
+
+func TestBuildSettingsMetadata_CommunitiesSettingsIncludesCommunityWorkspaces(t *testing.T) {
+	files := buildSettingsMetadata([]string{"enableCommunityWorkspaces", "networksEnabled"})
+
+	content, ok := files["unpackaged/settings/Communities.settings"]
+	if !ok {
+		t.Fatalf("Expected Communities.settings to be generated")
+	}
+	s := string(content)
+	if !strings.Contains(s, "<enableCommunityWorkspaces>true</enableCommunityWorkspaces>") {
+		t.Errorf("Expected enableCommunityWorkspaces in Communities.settings, got: %s", s)
+	}
+	if !strings.Contains(s, "<enableNetworksEnabled>true</enableNetworksEnabled>") {
+		t.Errorf("Expected enableNetworksEnabled in Communities.settings, got: %s", s)
+	}
+}
+
+func TestBuildSettingsMetadata_ApexSettingsIncludesDisableParallelTesting(t *testing.T) {
+	files := buildSettingsMetadata([]string{"enableDisableParallelApexTesting"})
+
+	content, ok := files["unpackaged/settings/Apex.settings"]
+	if !ok {
+		t.Fatalf("Expected Apex.settings to be generated")
+	}
+	if !strings.Contains(string(content), "<enableDisableParallelApexTesting>true</enableDisableParallelApexTesting>") {
+		t.Errorf("Expected enableDisableParallelApexTesting in Apex.settings, got: %s", string(content))
+	}
+}
+
+func TestBuildSettingsMetadata_UserManagementSettingsIncludesEnhancedPermsetMgmt(t *testing.T) {
+	files := buildSettingsMetadata([]string{"enableEnhancedPermsetMgmt", "enableEnhancedProfileMgmt", "enableNewProfileUI"})
+
+	content, ok := files["unpackaged/settings/UserManagement.settings"]
+	if !ok {
+		t.Fatalf("Expected UserManagement.settings to be generated")
+	}
+	s := string(content)
+	for _, flag := range []string{"enableEnhancedPermsetMgmt", "enableEnhancedProfileMgmt", "enableNewProfileUI"} {
+		if !strings.Contains(s, "<"+flag+">true</"+flag+">") {
+			t.Errorf("Expected %s in UserManagement.settings, got: %s", flag, s)
+		}
+	}
+}
+
 func TestGetScratchOrg_returns_error_when_SignupUsername_is_nil(t *testing.T) {
 	f := &Force{}
 	f.Credentials = &ForceSession{}

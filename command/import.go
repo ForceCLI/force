@@ -90,7 +90,9 @@ func sourceDir(cmd *cobra.Command) string {
 	if filepath.IsAbs(dir) {
 		root = dir
 	}
-	return root
+	// Normalize so a trailing slash doesn't break path stripping in runImport,
+	// where file keys are derived by trimming root+separator from each path.
+	return filepath.Clean(root)
 }
 
 func runImport(root string, options ForceDeployOptions, displayOptions *deployOutputOptions, smartFlowVersion bool) {

@@ -306,6 +306,26 @@ func TestExpandProductsToFeatures_BYOOTT_CustomQuantity(t *testing.T) {
 	}
 }
 
+func TestExpandProductsToFeatures_EducationCloud_DefaultQuantity(t *testing.T) {
+	result := expandProductsToFeatures([]ScratchProduct{}, []ScratchFeature{EducationCloud}, map[string]string{})
+	if len(result) != 1 {
+		t.Fatalf("Expected 1 feature, got %d", len(result))
+	}
+	if result[0] != "EducationCloud:10" {
+		t.Errorf("Expected EducationCloud:10, got %s", result[0])
+	}
+}
+
+func TestExpandProductsToFeatures_EducationCloud_CustomQuantity(t *testing.T) {
+	result := expandProductsToFeatures([]ScratchProduct{}, []ScratchFeature{EducationCloud}, map[string]string{"EducationCloud": "5"})
+	if len(result) != 1 {
+		t.Fatalf("Expected 1 feature, got %d", len(result))
+	}
+	if result[0] != "EducationCloud:5" {
+		t.Errorf("Expected EducationCloud:5, got %s", result[0])
+	}
+}
+
 func TestExpandProductsToFeatures_LiveMessage(t *testing.T) {
 	result := expandProductsToFeatures([]ScratchProduct{}, []ScratchFeature{LiveMessage}, map[string]string{})
 	if len(result) != 1 {
@@ -348,6 +368,117 @@ func TestExpandProductsToFeatures_MessagingProduct(t *testing.T) {
 	for _, want := range []string{"EmbeddedServiceMessaging", "LiveMessage", "BYOOTT:10"} {
 		if !got[want] {
 			t.Errorf("Expected %s in messaging product, missing", want)
+		}
+	}
+}
+
+func TestExpandProductsToFeatures_EducationCloudProduct(t *testing.T) {
+	result := expandProductsToFeatures([]ScratchProduct{EducationCloudProduct}, []ScratchFeature{}, map[string]string{})
+	expectedFeatures := []string{
+		"EducationCloud:10",
+		"AccountingSubledgerGrowthEdition",
+		"AccountingSubledgerUser",
+		"AdmissionsConnectUser",
+		"AdvisorLinkFeature",
+		"AdvisorLinkPathwaysFeature",
+		"AnalyticsQueryService",
+		"Assessments",
+		"Communities",
+		"ContactsToMultipleAccounts",
+		"DataProcessingEngine",
+		"DecisionTable",
+		"DocGen",
+		"DocGenDesigner",
+		"DocGenInd",
+		"DocumentChecklist",
+		"EnableSetPasswordInApi",
+		"FlowSites",
+		"Fundraising",
+		"IndustriesActionPlan",
+		"IndustriesSalesExcellenceAddOn",
+		"IndustriesServiceExcellenceAddOn",
+		"Knowledge",
+		"LightningScheduler",
+		"LightningServiceConsole",
+		"MarketingUser",
+		"OmniStudioDesigner",
+		"OmniStudioRuntime",
+		"PersonAccounts",
+		"PublicSectorAccess",
+		"SharedActivities",
+		"StateAndCountryPicklist",
+	}
+	if len(result) != len(expectedFeatures) {
+		t.Fatalf("Expected %d features from education cloud product, got %d: %v", len(expectedFeatures), len(result), result)
+	}
+	got := make(map[string]bool)
+	for _, f := range result {
+		got[f] = true
+	}
+	for _, want := range expectedFeatures {
+		if !got[want] {
+			t.Errorf("Expected %s in education cloud product, missing", want)
+		}
+	}
+}
+
+func TestExpandProductsToFeatures_EducationCloudProduct_CustomQuantity(t *testing.T) {
+	result := expandProductsToFeatures([]ScratchProduct{EducationCloudProduct}, []ScratchFeature{}, map[string]string{"EducationCloud": "20"})
+	got := make(map[string]bool)
+	for _, f := range result {
+		got[f] = true
+	}
+	if !got["EducationCloud:20"] {
+		t.Errorf("Expected EducationCloud:20, got features: %v", result)
+	}
+}
+
+func TestExpandProductsToSettings_EducationCloudProduct(t *testing.T) {
+	result := expandProductsToSettings([]ScratchProduct{EducationCloudProduct}, []ScratchSetting{})
+	expectedSettings := []string{
+		"enableRelateContactToMultipleAccounts",
+		"enableDisableParallelApexTesting",
+		"enableChatter",
+		"enableCommunityWorkspaces",
+		"networksEnabled",
+		"deleteDCIWithFiles",
+		"enableEnhancedNotes",
+		"enableForecasts",
+		"enableS1DesktopEnabled",
+		"enableS1EncryptedStoragePref2",
+		"enableAcademicOperations",
+		"enableAlumniRelations",
+		"enableBenefitManagementPreference",
+		"enableBenefitAndGoalSharingPref",
+		"enableCarePlansPreference",
+		"enableDiscoveryFrameworkMetadata",
+		"enableEducationCloud",
+		"enableFundraising",
+		"enableGroupMembershipPref",
+		"enableIndustriesAssessment",
+		"enableInteractionSummaryPref",
+		"enableInteractionSummaryRoleHierarchy",
+		"enableStudentSuccess",
+		"enableInterestTagging",
+		"enableMiddleName",
+		"enableNameSuffix",
+		"enableOpportunityTeam",
+		"enableRevenueSchedule",
+		"enableEnhancedPermsetMgmt",
+		"enableEnhancedProfileMgmt",
+		"enableNewProfileUI",
+		"permsetsInFieldCreation",
+	}
+	if len(result) != len(expectedSettings) {
+		t.Fatalf("Expected %d settings from education cloud product, got %d: %v", len(expectedSettings), len(result), result)
+	}
+	got := make(map[string]bool)
+	for _, s := range result {
+		got[s] = true
+	}
+	for _, want := range expectedSettings {
+		if !got[want] {
+			t.Errorf("Expected %s in education cloud product settings, missing", want)
 		}
 	}
 }
@@ -594,6 +725,31 @@ func TestScratchFeatureIds_AllFeaturesDefined(t *testing.T) {
 		"Enablement":                        true,
 		"SurveyAdvancedFeatures":            true,
 		"Slack":                             true,
+		"EducationCloud":                    true,
+		"AccountingSubledgerGrowthEdition":  true,
+		"AccountingSubledgerUser":           true,
+		"AdmissionsConnectUser":             true,
+		"AdvisorLinkFeature":                true,
+		"AdvisorLinkPathwaysFeature":        true,
+		"AnalyticsQueryService":             true,
+		"Assessments":                       true,
+		"DataProcessingEngine":              true,
+		"DecisionTable":                     true,
+		"DocGenDesigner":                    true,
+		"DocGenInd":                         true,
+		"DocumentChecklist":                 true,
+		"FlowSites":                         true,
+		"Fundraising":                       true,
+		"IndustriesActionPlan":              true,
+		"IndustriesSalesExcellenceAddOn":    true,
+		"IndustriesServiceExcellenceAddOn":  true,
+		"LightningScheduler":                true,
+		"LightningServiceConsole":           true,
+		"MarketingUser":                     true,
+		"OmniStudioDesigner":                true,
+		"OmniStudioRuntime":                 true,
+		"PublicSectorAccess":                true,
+		"SharedActivities":                  true,
 	}
 
 	if len(ScratchFeatureIds) != len(expectedFeatures) {
@@ -728,6 +884,32 @@ func TestScratchSettingIds_AllSettingsDefined(t *testing.T) {
 		"enableProductConfigurator":             true,
 		"enableDFOPref":                         true,
 		"enableRelateContactToMultipleAccounts": true,
+		"enableDisableParallelApexTesting":      true,
+		"enableChatter":                         true,
+		"enableCommunityWorkspaces":             true,
+		"deleteDCIWithFiles":                    true,
+		"enableForecasts":                       true,
+		"enableS1EncryptedStoragePref2":         true,
+		"enableAcademicOperations":              true,
+		"enableAlumniRelations":                 true,
+		"enableBenefitManagementPreference":     true,
+		"enableBenefitAndGoalSharingPref":       true,
+		"enableCarePlansPreference":             true,
+		"enableDiscoveryFrameworkMetadata":      true,
+		"enableEducationCloud":                  true,
+		"enableFundraising":                     true,
+		"enableGroupMembershipPref":             true,
+		"enableIndustriesAssessment":            true,
+		"enableInteractionSummaryPref":          true,
+		"enableInteractionSummaryRoleHierarchy": true,
+		"enableStudentSuccess":                  true,
+		"enableInterestTagging":                 true,
+		"enableMiddleName":                      true,
+		"enableNameSuffix":                      true,
+		"enableRevenueSchedule":                 true,
+		"enableEnhancedPermsetMgmt":             true,
+		"enableEnhancedProfileMgmt":             true,
+		"enableNewProfileUI":                    true,
 	}
 
 	if len(ScratchSettingIds) != len(expectedSettings) {

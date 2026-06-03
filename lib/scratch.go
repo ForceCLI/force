@@ -228,14 +228,14 @@ func buildSettingsMetadata(settings []string) ForceMetadataFiles {
 	files := make(ForceMetadataFiles)
 
 	// Create package.xml at root of zip
-	packageXml := `<?xml version="1.0" encoding="UTF-8"?>
+	packageXml := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
 <Package xmlns="http://soap.sforce.com/2006/04/metadata">
     <types>
         <members>*</members>
         <name>Settings</name>
     </types>
-    <version>64.0</version>
-</Package>`
+    <version>%s</version>
+</Package>`, ApiVersionNumber())
 	files["unpackaged/package.xml"] = []byte(packageXml)
 
 	// Track each preference individually so multiple flags can share one file.
@@ -278,6 +278,32 @@ func buildSettingsMetadata(settings []string) ForceMetadataFiles {
 		enableProductConfigurator             bool
 		enableDFOPref                         bool
 		enableRelateContactToMultipleAccounts bool
+		enableDisableParallelApexTesting      bool
+		enableChatter                         bool
+		enableCommunityWorkspaces             bool
+		deleteDCIWithFiles                    bool
+		enableForecasts                       bool
+		enableS1EncryptedStoragePref2         bool
+		enableAcademicOperations              bool
+		enableAlumniRelations                 bool
+		enableBenefitManagementPreference     bool
+		enableBenefitAndGoalSharingPref       bool
+		enableCarePlansPreference             bool
+		enableDiscoveryFrameworkMetadata      bool
+		enableEducationCloud                  bool
+		enableFundraising                     bool
+		enableGroupMembershipPref             bool
+		enableIndustriesAssessment            bool
+		enableInteractionSummaryPref          bool
+		enableInteractionSummaryRoleHierarchy bool
+		enableStudentSuccess                  bool
+		enableInterestTagging                 bool
+		enableMiddleName                      bool
+		enableNameSuffix                      bool
+		enableRevenueSchedule                 bool
+		enableEnhancedPermsetMgmt             bool
+		enableEnhancedProfileMgmt             bool
+		enableNewProfileUI                    bool
 	)
 
 	for _, setting := range settings {
@@ -356,6 +382,58 @@ func buildSettingsMetadata(settings []string) ForceMetadataFiles {
 			enableDFOPref = true
 		case "enableRelateContactToMultipleAccounts":
 			enableRelateContactToMultipleAccounts = true
+		case "enableDisableParallelApexTesting":
+			enableDisableParallelApexTesting = true
+		case "enableChatter":
+			enableChatter = true
+		case "enableCommunityWorkspaces":
+			enableCommunityWorkspaces = true
+		case "deleteDCIWithFiles":
+			deleteDCIWithFiles = true
+		case "enableForecasts":
+			enableForecasts = true
+		case "enableS1EncryptedStoragePref2":
+			enableS1EncryptedStoragePref2 = true
+		case "enableAcademicOperations":
+			enableAcademicOperations = true
+		case "enableAlumniRelations":
+			enableAlumniRelations = true
+		case "enableBenefitManagementPreference":
+			enableBenefitManagementPreference = true
+		case "enableBenefitAndGoalSharingPref":
+			enableBenefitAndGoalSharingPref = true
+		case "enableCarePlansPreference":
+			enableCarePlansPreference = true
+		case "enableDiscoveryFrameworkMetadata":
+			enableDiscoveryFrameworkMetadata = true
+		case "enableEducationCloud":
+			enableEducationCloud = true
+		case "enableFundraising":
+			enableFundraising = true
+		case "enableGroupMembershipPref":
+			enableGroupMembershipPref = true
+		case "enableIndustriesAssessment":
+			enableIndustriesAssessment = true
+		case "enableInteractionSummaryPref":
+			enableInteractionSummaryPref = true
+		case "enableInteractionSummaryRoleHierarchy":
+			enableInteractionSummaryRoleHierarchy = true
+		case "enableStudentSuccess":
+			enableStudentSuccess = true
+		case "enableInterestTagging":
+			enableInterestTagging = true
+		case "enableMiddleName":
+			enableMiddleName = true
+		case "enableNameSuffix":
+			enableNameSuffix = true
+		case "enableRevenueSchedule":
+			enableRevenueSchedule = true
+		case "enableEnhancedPermsetMgmt":
+			enableEnhancedPermsetMgmt = true
+		case "enableEnhancedProfileMgmt":
+			enableEnhancedProfileMgmt = true
+		case "enableNewProfileUI":
+			enableNewProfileUI = true
 		}
 	}
 
@@ -374,6 +452,7 @@ func buildSettingsMetadata(settings []string) ForceMetadataFiles {
 		{"enableQuotesWithoutOppEnabled", enableQuotesWithoutOppEnabled},
 	})
 	emit("unpackaged/settings/Communities.settings", "CommunitiesSettings", []settingsFlag{
+		{"enableCommunityWorkspaces", enableCommunityWorkspaces},
 		{"enableNetworksEnabled", networksEnabled},
 	})
 	emit("unpackaged/settings/Commerce.settings", "CommerceSettings", []settingsFlag{
@@ -389,9 +468,13 @@ func buildSettingsMetadata(settings []string) ForceMetadataFiles {
 	})
 	emit("unpackaged/settings/Apex.settings", "ApexSettings", []settingsFlag{
 		{"enableApexApprovalLockUnlock", enableApexApprovalLockUnlock},
+		{"enableDisableParallelApexTesting", enableDisableParallelApexTesting},
 	})
 	emit("unpackaged/settings/UserManagement.settings", "UserManagementSettings", []settingsFlag{
 		{"permsetsInFieldCreation", permsetsInFieldCreation},
+		{"enableEnhancedPermsetMgmt", enableEnhancedPermsetMgmt},
+		{"enableEnhancedProfileMgmt", enableEnhancedProfileMgmt},
+		{"enableNewProfileUI", enableNewProfileUI},
 	})
 	emit("unpackaged/settings/LightningExperience.settings", "LightningExperienceSettings", []settingsFlag{
 		{"enableLightningPreviewPref", enableLightningPreviewPref},
@@ -450,6 +533,46 @@ func buildSettingsMetadata(settings []string) ForceMetadataFiles {
 	})
 	emit("unpackaged/settings/Account.settings", "AccountSettings", []settingsFlag{
 		{"enableRelateContactToMultipleAccounts", enableRelateContactToMultipleAccounts},
+	})
+	emit("unpackaged/settings/Chatter.settings", "ChatterSettings", []settingsFlag{
+		{"enableChatter", enableChatter},
+	})
+	emit("unpackaged/settings/DocumentChecklist.settings", "DocumentChecklistSettings", []settingsFlag{
+		{"deleteDCIWithFiles", deleteDCIWithFiles},
+	})
+	emit("unpackaged/settings/Forecasting.settings", "ForecastingSettings", []settingsFlag{
+		{"enableForecasts", enableForecasts},
+	})
+	if enableS1EncryptedStoragePref2 {
+		files["unpackaged/settings/Mobile.settings"] = []byte(`<?xml version="1.0" encoding="UTF-8"?>
+<MobileSettings xmlns="http://soap.sforce.com/2006/04/metadata">
+    <enableS1EncryptedStoragePref2>false</enableS1EncryptedStoragePref2>
+</MobileSettings>`)
+	}
+	emit("unpackaged/settings/Industries.settings", "IndustriesSettings", []settingsFlag{
+		{"enableAcademicOperations", enableAcademicOperations},
+		{"enableAlumniRelations", enableAlumniRelations},
+		{"enableBenefitManagementPreference", enableBenefitManagementPreference},
+		{"enableBenefitAndGoalSharingPref", enableBenefitAndGoalSharingPref},
+		{"enableCarePlansPreference", enableCarePlansPreference},
+		{"enableDiscoveryFrameworkMetadata", enableDiscoveryFrameworkMetadata},
+		{"enableEducationCloud", enableEducationCloud},
+		{"enableFundraising", enableFundraising},
+		{"enableGroupMembershipPref", enableGroupMembershipPref},
+		{"enableIndustriesAssessment", enableIndustriesAssessment},
+		{"enableInteractionSummaryPref", enableInteractionSummaryPref},
+		{"enableInteractionSummaryRoleHierarchy", enableInteractionSummaryRoleHierarchy},
+		{"enableStudentSuccess", enableStudentSuccess},
+	})
+	emit("unpackaged/settings/InterestTagging.settings", "InterestTaggingSettings", []settingsFlag{
+		{"enableInterestTagging", enableInterestTagging},
+	})
+	emit("unpackaged/settings/Name.settings", "NameSettings", []settingsFlag{
+		{"enableMiddleName", enableMiddleName},
+		{"enableNameSuffix", enableNameSuffix},
+	})
+	emit("unpackaged/settings/Product.settings", "ProductSettings", []settingsFlag{
+		{"enableRevenueSchedule", enableRevenueSchedule},
 	})
 
 	return files

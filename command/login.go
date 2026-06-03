@@ -58,6 +58,31 @@ const (
 	Enablement
 	SurveyAdvancedFeatures
 	Slack
+	EducationCloud
+	AccountingSubledgerGrowthEdition
+	AccountingSubledgerUser
+	AdmissionsConnectUser
+	AdvisorLinkFeature
+	AdvisorLinkPathwaysFeature
+	AnalyticsQueryService
+	Assessments
+	DataProcessingEngine
+	DecisionTable
+	DocGenDesigner
+	DocGenInd
+	DocumentChecklist
+	FlowSites
+	Fundraising
+	IndustriesActionPlan
+	IndustriesSalesExcellenceAddOn
+	IndustriesServiceExcellenceAddOn
+	LightningScheduler
+	LightningServiceConsole
+	MarketingUser
+	OmniStudioDesigner
+	OmniStudioRuntime
+	PublicSectorAccess
+	SharedActivities
 )
 
 var ScratchFeatureIds = map[ScratchFeature][]string{
@@ -103,6 +128,31 @@ var ScratchFeatureIds = map[ScratchFeature][]string{
 	Enablement:                        {"Enablement"},
 	SurveyAdvancedFeatures:            {"SurveyAdvancedFeatures"},
 	Slack:                             {"Slack"},
+	EducationCloud:                    {"EducationCloud"},
+	AccountingSubledgerGrowthEdition:  {"AccountingSubledgerGrowthEdition"},
+	AccountingSubledgerUser:           {"AccountingSubledgerUser"},
+	AdmissionsConnectUser:             {"AdmissionsConnectUser"},
+	AdvisorLinkFeature:                {"AdvisorLinkFeature"},
+	AdvisorLinkPathwaysFeature:        {"AdvisorLinkPathwaysFeature"},
+	AnalyticsQueryService:             {"AnalyticsQueryService"},
+	Assessments:                       {"Assessments"},
+	DataProcessingEngine:              {"DataProcessingEngine"},
+	DecisionTable:                     {"DecisionTable"},
+	DocGenDesigner:                    {"DocGenDesigner"},
+	DocGenInd:                         {"DocGenInd"},
+	DocumentChecklist:                 {"DocumentChecklist"},
+	FlowSites:                         {"FlowSites"},
+	Fundraising:                       {"Fundraising"},
+	IndustriesActionPlan:              {"IndustriesActionPlan"},
+	IndustriesSalesExcellenceAddOn:    {"IndustriesSalesExcellenceAddOn"},
+	IndustriesServiceExcellenceAddOn:  {"IndustriesServiceExcellenceAddOn"},
+	LightningScheduler:                {"LightningScheduler"},
+	LightningServiceConsole:           {"LightningServiceConsole"},
+	MarketingUser:                     {"MarketingUser"},
+	OmniStudioDesigner:                {"OmniStudioDesigner"},
+	OmniStudioRuntime:                 {"OmniStudioRuntime"},
+	PublicSectorAccess:                {"PublicSectorAccess"},
+	SharedActivities:                  {"SharedActivities"},
 }
 
 type ScratchProduct enumflag.Flag
@@ -117,18 +167,20 @@ const (
 	KnowledgeProduct
 	RevenueCloudProduct
 	MessagingProduct
+	EducationCloudProduct
 )
 
 var ScratchProductIds = map[ScratchProduct][]string{
-	FSC:                 {"fsc"},
-	CommunitiesProduct:  {"communities"},
-	HealthCloudProduct:  {"healthcloud"},
-	CRMAnalyticsProduct: {"crmanalytics"},
-	B2BCommerceProduct:  {"b2bcommerce"},
-	LiveAgentProduct:    {"liveagent"},
-	KnowledgeProduct:    {"knowledge"},
-	RevenueCloudProduct: {"revenuecloud"},
-	MessagingProduct:    {"messaging"},
+	FSC:                   {"fsc"},
+	CommunitiesProduct:    {"communities"},
+	HealthCloudProduct:    {"healthcloud"},
+	CRMAnalyticsProduct:   {"crmanalytics"},
+	B2BCommerceProduct:    {"b2bcommerce"},
+	LiveAgentProduct:      {"liveagent"},
+	KnowledgeProduct:      {"knowledge"},
+	RevenueCloudProduct:   {"revenuecloud"},
+	MessagingProduct:      {"messaging"},
+	EducationCloudProduct: {"educationcloud"},
 }
 
 type ScratchEdition enumflag.Flag
@@ -195,6 +247,32 @@ const (
 	EnableProductConfigurator
 	EnableDFOPref
 	EnableRelateContactToMultipleAccounts
+	EnableDisableParallelApexTesting
+	EnableChatter
+	EnableCommunityWorkspaces
+	DeleteDCIWithFiles
+	EnableForecasts
+	EnableS1EncryptedStoragePref2
+	EnableAcademicOperations
+	EnableAlumniRelations
+	EnableBenefitManagementPreference
+	EnableBenefitAndGoalSharingPref
+	EnableCarePlansPreference
+	EnableDiscoveryFrameworkMetadata
+	EnableEducationCloud
+	EnableFundraising
+	EnableGroupMembershipPref
+	EnableIndustriesAssessment
+	EnableInteractionSummaryPref
+	EnableInteractionSummaryRoleHierarchy
+	EnableStudentSuccess
+	EnableInterestTagging
+	EnableMiddleName
+	EnableNameSuffix
+	EnableRevenueSchedule
+	EnableEnhancedPermsetMgmt
+	EnableEnhancedProfileMgmt
+	EnableNewProfileUI
 )
 
 var ScratchSettingIds = map[ScratchSetting][]string{
@@ -235,6 +313,32 @@ var ScratchSettingIds = map[ScratchSetting][]string{
 	EnableProductConfigurator:             {"enableProductConfigurator"},
 	EnableDFOPref:                         {"enableDFOPref"},
 	EnableRelateContactToMultipleAccounts: {"enableRelateContactToMultipleAccounts"},
+	EnableDisableParallelApexTesting:      {"enableDisableParallelApexTesting"},
+	EnableChatter:                         {"enableChatter"},
+	EnableCommunityWorkspaces:             {"enableCommunityWorkspaces"},
+	DeleteDCIWithFiles:                    {"deleteDCIWithFiles"},
+	EnableForecasts:                       {"enableForecasts"},
+	EnableS1EncryptedStoragePref2:         {"enableS1EncryptedStoragePref2"},
+	EnableAcademicOperations:              {"enableAcademicOperations"},
+	EnableAlumniRelations:                 {"enableAlumniRelations"},
+	EnableBenefitManagementPreference:     {"enableBenefitManagementPreference"},
+	EnableBenefitAndGoalSharingPref:       {"enableBenefitAndGoalSharingPref"},
+	EnableCarePlansPreference:             {"enableCarePlansPreference"},
+	EnableDiscoveryFrameworkMetadata:      {"enableDiscoveryFrameworkMetadata"},
+	EnableEducationCloud:                  {"enableEducationCloud"},
+	EnableFundraising:                     {"enableFundraising"},
+	EnableGroupMembershipPref:             {"enableGroupMembershipPref"},
+	EnableIndustriesAssessment:            {"enableIndustriesAssessment"},
+	EnableInteractionSummaryPref:          {"enableInteractionSummaryPref"},
+	EnableInteractionSummaryRoleHierarchy: {"enableInteractionSummaryRoleHierarchy"},
+	EnableStudentSuccess:                  {"enableStudentSuccess"},
+	EnableInterestTagging:                 {"enableInterestTagging"},
+	EnableMiddleName:                      {"enableMiddleName"},
+	EnableNameSuffix:                      {"enableNameSuffix"},
+	EnableRevenueSchedule:                 {"enableRevenueSchedule"},
+	EnableEnhancedPermsetMgmt:             {"enableEnhancedPermsetMgmt"},
+	EnableEnhancedProfileMgmt:             {"enableEnhancedProfileMgmt"},
+	EnableNewProfileUI:                    {"enableNewProfileUI"},
 }
 
 type ScratchRelease enumflag.Flag
@@ -265,6 +369,7 @@ var featuresRequiringQuantity = map[string]bool{
 	"ScvMultipartyAndConsult":           true,
 	"ServiceCloudVoicePartnerTelephony": true,
 	"BYOOTT":                            true,
+	"EducationCloud":                    true,
 }
 
 const defaultFeatureQuantity = "10"
@@ -318,17 +423,31 @@ var scratchCmd = &cobra.Command{
 	Long: `Create scratch org and log in
 
 Available Features:
+  AccountingSubledgerGrowthEdition    - Enables Accounting Subledger Growth Edition
+  AccountingSubledgerUser             - Enables Accounting Subledger user licenses
+  AdmissionsConnectUser               - Enables Admissions Connect user licenses
+  AdvisorLinkFeature                  - Enables Advisor Link
+  AdvisorLinkPathwaysFeature          - Enables Advisor Link Pathways
   AnalyticsAdminPerms                 - Enables CRM Analytics admin permissions
+  AnalyticsQueryService               - Enables Analytics Query Service
   ApexUserModeWithPermset             - Enables Apex code to run in user mode with a permission set session
+  Assessments                         - Enables Assessments
   B2BCommerce                         - Enables B2B Commerce
   BillingAdvanced                     - Enables Advanced Billing (Revenue Cloud)
   BYOOTT                              - Enables Bring Your Own Over-The-Top messaging channel (requires quantity, default: 10)
   Communities                         - Enables Experience Cloud (Communities)
   ContactsToMultipleAccounts          - Allows a single Contact to be associated with multiple Accounts
+  CoreCpq                             - Enables Revenue Cloud / Salesforce CPQ Core
   CustomerCommunityPlus               - Enables Customer Community Plus user licenses
+  DataProcessingEngine                - Enables Data Processing Engine
+  DecisionTable                       - Enables Decision Table
   DevelopmentWave                     - Enables CRM Analytics development features
   DocGen                              - Enables Document Generation
+  DocGenDesigner                      - Enables Document Generation Designer
+  DocGenInd                           - Enables Industries Document Generation
+  DocumentChecklist                   - Enables Document Checklist
   DSARPortability                     - Enables Data Subject Access Request (DSAR) data portability
+  EducationCloud                      - Enables Education Cloud user licenses (requires quantity, default: 10)
   Einstein1AIPlatform                 - Enables Einstein 1 AI Platform
   EinsteinAnalyticsPlus               - Enables Einstein Analytics Plus
   EinsteinBuilderFree                 - Enables Einstein Builder Free
@@ -337,24 +456,35 @@ Available Features:
   EnableSetPasswordInApi              - Allows setting passwords via API
   EventLogFile                        - Enables Event Log File
   FinancialServicesUser               - Enables Financial Services Cloud user licenses (requires quantity, default: 10)
+  FlowSites                           - Enables Flow Sites
+  Fundraising                         - Enables Fundraising
   HealthCloudAddOn                    - Enables Health Cloud add-on
   HealthCloudUser                     - Enables Health Cloud user licenses
+  IndustriesActionPlan                - Enables Industries Action Plans
+  IndustriesSalesExcellenceAddOn      - Enables Industries Sales Excellence Add-On
+  IndustriesServiceExcellenceAddOn    - Enables Industries Service Excellence Add-On
   InsightsPlatform                    - Enables Insights Platform
   Knowledge                           - Enables Salesforce Knowledge
+  LightningScheduler                  - Enables Lightning Scheduler
+  LightningServiceConsole             - Enables Lightning Service Console
   LiveAgent                           - Enables Live Agent (Chat)
   LiveMessage                         - Enables LiveMessage (SMS/MMS messaging)
+  MarketingUser                       - Enables Marketing User licenses
+  OmniStudioDesigner                  - Enables OmniStudio Designer
+  OmniStudioRuntime                   - Enables OmniStudio Runtime
   OrderManagement                     - Enables Salesforce Order Management
   OrderSaveLogicEnabled               - Enables order save behavior logic
   PartnerCommunity                    - Enables Partner Community user licenses
-  PlatformCache                       - Enables Platform Cache
   PersonAccounts                      - Enables Person Accounts (B2C account model)
+  PlatformCache                       - Enables Platform Cache
   PlatformEncryption                  - Enables Shield Platform Encryption
   ProgramManagement                   - Enables Program Management Module (Salesforce.org Nonprofit/Education)
+  PublicSectorAccess                  - Enables Public Sector Access
   RevSubscriptionManagement           - Enables Subscription Management (B2B subscriptions and one-time sales)
-  CoreCpq                             - Enables Revenue Cloud / Salesforce CPQ Core
   ScvMultipartyAndConsult             - Enables Service Cloud Voice multiparty and consult (requires quantity, default: 10)
   ServiceCloud                        - Enables Service Cloud
   ServiceCloudVoicePartnerTelephony   - Enables Service Cloud Voice Partner Telephony (requires quantity 1-50, default: 10)
+  SharedActivities                    - Enables Shared Activities
   Slack                               - Enables Salesforce-Slack integration (required for SlackApp metadata and slash command registration)
   StateAndCountryPicklist             - Enables State and Country Picklists for standard address fields
   SurveyAdvancedFeatures              - Enables advanced Salesforce Surveys features
@@ -362,15 +492,16 @@ Available Features:
   WavePlatform                        - Enables Wave Platform (CRM Analytics)
 
 Available Products:
-  b2bcommerce  - B2B Commerce (enables B2BCommerce, OrderManagement features and commerceEnabled, enableOrders, enableEnhancedCommerceOrders settings)
-  communities  - Experience Cloud (enables Communities feature and networksEnabled setting)
-  crmanalytics - CRM Analytics (enables AnalyticsAdminPerms, WavePlatform, InsightsPlatform, EinsteinAnalyticsPlus, EinsteinBuilderFree, DevelopmentWave)
-  fsc          - Financial Services Cloud (enables PersonAccounts, ContactsToMultipleAccounts, FinancialServicesUser)
-  healthcloud  - Health Cloud (enables HealthCloudAddOn, HealthCloudUser)
-  knowledge    - Salesforce Knowledge (enables Knowledge feature and enableKnowledge, enableLightningKnowledge settings)
-  liveagent    - Live Agent (enables LiveAgent feature and enableLiveAgent setting)
-  messaging    - Messaging (enables EmbeddedServiceMessaging, LiveMessage, BYOOTT features)
-  revenuecloud - Revenue Cloud (enables CoreCpq, BillingAdvanced, UsageManagement, DocGen, Einstein1AIPlatform, OrderManagement, Communities, PartnerCommunity, CustomerCommunityPlus, EnableSetPasswordInApi, OrderSaveLogicEnabled features and a comprehensive set of billing/order/quote/pricing/rating settings)
+  b2bcommerce      - B2B Commerce (enables B2BCommerce, OrderManagement features and commerceEnabled, enableOrders, enableEnhancedCommerceOrders settings)
+  communities      - Experience Cloud (enables Communities feature and networksEnabled setting)
+  crmanalytics     - CRM Analytics (enables AnalyticsAdminPerms, WavePlatform, InsightsPlatform, EinsteinAnalyticsPlus, EinsteinBuilderFree, DevelopmentWave)
+  educationcloud   - Education Cloud (enables EducationCloud, PersonAccounts, Communities, Knowledge, and many other Education Cloud features with a comprehensive set of industries/education settings)
+  fsc              - Financial Services Cloud (enables PersonAccounts, ContactsToMultipleAccounts, FinancialServicesUser)
+  healthcloud      - Health Cloud (enables HealthCloudAddOn, HealthCloudUser)
+  knowledge        - Salesforce Knowledge (enables Knowledge feature and enableKnowledge, enableLightningKnowledge settings)
+  liveagent        - Live Agent (enables LiveAgent feature and enableLiveAgent setting)
+  messaging        - Messaging (enables EmbeddedServiceMessaging, LiveMessage, BYOOTT features)
+  revenuecloud     - Revenue Cloud (enables CoreCpq, BillingAdvanced, UsageManagement, DocGen, Einstein1AIPlatform, OrderManagement, Communities, PartnerCommunity, CustomerCommunityPlus, EnableSetPasswordInApi, OrderSaveLogicEnabled features and a comprehensive set of billing/order/quote/pricing/rating settings)
 
 Available Editions:
   Developer           - Developer Edition (default)
@@ -420,6 +551,32 @@ Available Settings (deployed after org creation):
   enableProductConfigurator         - Enable Product Configurator (ProductConfiguratorSettings)
   enableDFOPref                     - Enable Dynamic Fulfillment Orchestrator (DynamicFulfillmentOrchestratorSettings)
   enableRelateContactToMultipleAccounts - Allow a Contact to be related to multiple Accounts (AccountSettings)
+  enableDisableParallelApexTesting      - Disable parallel Apex testing (ApexSettings)
+  enableChatter                         - Enable Chatter (ChatterSettings)
+  enableCommunityWorkspaces             - Enable Community Workspaces (CommunitiesSettings)
+  deleteDCIWithFiles                    - Delete Document Checklist Items with files (DocumentChecklistSettings)
+  enableForecasts                       - Enable Forecasts (ForecastingSettings)
+  enableS1EncryptedStoragePref2         - Disable S1 encrypted storage (MobileSettings)
+  enableAcademicOperations              - Enable Academic Operations (IndustriesSettings)
+  enableAlumniRelations                 - Enable Alumni Relations (IndustriesSettings)
+  enableBenefitManagementPreference     - Enable Benefit Management (IndustriesSettings)
+  enableBenefitAndGoalSharingPref       - Enable Benefit and Goal Sharing (IndustriesSettings)
+  enableCarePlansPreference             - Enable Care Plans (IndustriesSettings)
+  enableDiscoveryFrameworkMetadata      - Enable Discovery Framework Metadata (IndustriesSettings)
+  enableEducationCloud                  - Enable Education Cloud (IndustriesSettings)
+  enableFundraising                     - Enable Fundraising (IndustriesSettings)
+  enableGroupMembershipPref             - Enable Group Membership (IndustriesSettings)
+  enableIndustriesAssessment            - Enable Industries Assessment (IndustriesSettings)
+  enableInteractionSummaryPref          - Enable Interaction Summary (IndustriesSettings)
+  enableInteractionSummaryRoleHierarchy - Enable Interaction Summary Role Hierarchy (IndustriesSettings)
+  enableStudentSuccess                  - Enable Student Success (IndustriesSettings)
+  enableInterestTagging                 - Enable Interest Tagging (InterestTaggingSettings)
+  enableMiddleName                      - Enable Middle Name (NameSettings)
+  enableNameSuffix                      - Enable Name Suffix (NameSettings)
+  enableRevenueSchedule                 - Enable Revenue Schedule (ProductSettings)
+  enableEnhancedPermsetMgmt             - Enable Enhanced Permission Set Management (UserManagementSettings)
+  enableEnhancedProfileMgmt             - Enable Enhanced Profile Management (UserManagementSettings)
+  enableNewProfileUI                    - Enable New Profile UI (UserManagementSettings)
 
 Available Releases:
   preview  - Create scratch org on the next (preview) release
@@ -436,6 +593,7 @@ Examples:
   force login scratch --product b2bcommerce
   force login scratch --product communities
   force login scratch --product crmanalytics
+  force login scratch --product educationcloud
   force login scratch --product healthcloud
   force login scratch --product knowledge
   force login scratch --product liveagent
@@ -535,6 +693,40 @@ func expandProductsToFeatures(products []ScratchProduct, features []ScratchFeatu
 			Einstein1AIPlatform,
 		},
 		MessagingProduct: {EmbeddedServiceMessaging, LiveMessage, BYOOTT},
+		EducationCloudProduct: {
+			EducationCloud,
+			AccountingSubledgerGrowthEdition,
+			AccountingSubledgerUser,
+			AdmissionsConnectUser,
+			AdvisorLinkFeature,
+			AdvisorLinkPathwaysFeature,
+			AnalyticsQueryService,
+			Assessments,
+			Communities,
+			ContactsToMultipleAccounts,
+			DataProcessingEngine,
+			DecisionTable,
+			DocGen,
+			DocGenDesigner,
+			DocGenInd,
+			DocumentChecklist,
+			EnableSetPasswordInApi,
+			FlowSites,
+			Fundraising,
+			IndustriesActionPlan,
+			IndustriesSalesExcellenceAddOn,
+			IndustriesServiceExcellenceAddOn,
+			Knowledge,
+			LightningScheduler,
+			LightningServiceConsole,
+			MarketingUser,
+			OmniStudioDesigner,
+			OmniStudioRuntime,
+			PersonAccounts,
+			PublicSectorAccess,
+			SharedActivities,
+			StateAndCountryPicklist,
+		},
 	}
 
 	featureSet := make(map[ScratchFeature]bool)
@@ -610,6 +802,40 @@ func expandProductsToSettings(products []ScratchProduct, settings []ScratchSetti
 			EnableProductConfigurator,
 			EnableDFOPref,
 		},
+		EducationCloudProduct: {
+			EnableRelateContactToMultipleAccounts,
+			EnableDisableParallelApexTesting,
+			EnableChatter,
+			EnableCommunityWorkspaces,
+			NetworksEnabled,
+			DeleteDCIWithFiles,
+			EnableEnhancedNotes,
+			EnableForecasts,
+			EnableS1DesktopEnabled,
+			EnableS1EncryptedStoragePref2,
+			EnableAcademicOperations,
+			EnableAlumniRelations,
+			EnableBenefitManagementPreference,
+			EnableBenefitAndGoalSharingPref,
+			EnableCarePlansPreference,
+			EnableDiscoveryFrameworkMetadata,
+			EnableEducationCloud,
+			EnableFundraising,
+			EnableGroupMembershipPref,
+			EnableIndustriesAssessment,
+			EnableInteractionSummaryPref,
+			EnableInteractionSummaryRoleHierarchy,
+			EnableStudentSuccess,
+			EnableInterestTagging,
+			EnableMiddleName,
+			EnableNameSuffix,
+			EnableOpportunityTeam,
+			EnableRevenueSchedule,
+			EnableEnhancedPermsetMgmt,
+			EnableEnhancedProfileMgmt,
+			EnableNewProfileUI,
+			PermsetsInFieldCreation,
+		},
 	}
 
 	settingSet := make(map[ScratchSetting]bool)
@@ -635,9 +861,39 @@ func expandProductsToSettings(products []ScratchProduct, settings []ScratchSetti
 }
 
 func scratchLogin(scratchUser string, features []string, edition string, settings []string, namespace string, release string, duration int) {
-	_, err := ForceScratchCreateLoginAndSaveWithDuration(scratchUser, features, edition, settings, namespace, release, duration, os.Stderr)
+	if force == nil {
+		ErrorAndExit("You must be logged into a Dev Hub org to authenticate as a scratch org user.")
+	}
+	fmt.Fprintln(os.Stderr, "Creating new Scratch Org...")
+	scratchOrgId, err := force.CreateScratchOrgWithDuration(scratchUser, features, edition, settings, namespace, release, duration)
 	if err != nil {
 		ErrorAndExit(err.Error())
+	}
+	session, err := force.ForceLoginNewScratch(scratchOrgId)
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
+	scratchForce := NewForce(&session)
+	// Use the scratch org's latest supported API version for subsequent
+	// operations. Settings deployment in particular relies on metadata fields
+	// that don't exist in older API versions.
+	if latest, err := scratchForce.LatestApiVersion(); err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: unable to determine scratch org API version: %s\n", err)
+	} else {
+		SetApiVersion(latest)
+		scratchForce.Metadata.ApiVersion = latest
+		session.SessionOptions.ApiVersion = latest
+	}
+	_, err = ForceSaveLogin(session, os.Stderr)
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
+	if len(settings) > 0 {
+		fmt.Fprintln(os.Stderr, "Deploying settings...")
+		err = scratchForce.DeploySettings(settings)
+		if err != nil {
+			ErrorAndExit(fmt.Sprintf("Settings deployment failed: %s", err.Error()))
+		}
 	}
 }
 
