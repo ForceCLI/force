@@ -187,6 +187,7 @@ func runExport(root string, excludeMetadataNames []string, showWarnings bool) {
 		"StaticResource",
 		"Territory",
 		"Translations",
+		"UiFormatSpecificationSet",
 		"ValidationRule",
 		"ViewDefinition",
 		"Workflow",

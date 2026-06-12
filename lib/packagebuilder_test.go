@@ -161,6 +161,24 @@ var _ = Describe("Packagebuilder", func() {
 			})
 		})
 
+		Context("when adding a UiFormatSpecificationSet file", func() {
+			var uiFormatPath string
+
+			BeforeEach(func() {
+				os.MkdirAll(tempDir+"/src/uiFormatSpecificationSets", 0755)
+				uiFormatPath = tempDir + "/src/uiFormatSpecificationSets/Access_Packages.uiFormatSpecificationSet"
+				ioutil.WriteFile(uiFormatPath, []byte(`<?xml version="1.0" encoding="UTF-8"?>`), 0644)
+			})
+
+			It("should add the file to the package.xml under UiFormatSpecificationSet", func() {
+				err := pb.AddFile(uiFormatPath)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(pb.Files).To(HaveKey("uiFormatSpecificationSets/Access_Packages.uiFormatSpecificationSet"))
+				Expect(pb.Metadata).To(HaveKey("UiFormatSpecificationSet"))
+				Expect(pb.Metadata["UiFormatSpecificationSet"].Members[0]).To(Equal("Access_Packages"))
+			})
+		})
+
 		Context("when adding a CustomMetadata file", func() {
 			var customMetadataPath string
 
@@ -362,6 +380,13 @@ var _ = Describe("Packagebuilder", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(metadataType).To(Equal("ViewDefinition"))
 				Expect(metadataName).To(Equal("app_home"))
+			})
+
+			It("should handle UiFormatSpecificationSet files", func() {
+				metadataType, metadataName, err := pb.GetMetaForAbsolutePath("/path/to/src/uiFormatSpecificationSets/Access_Packages.uiFormatSpecificationSet")
+				Expect(err).ToNot(HaveOccurred())
+				Expect(metadataType).To(Equal("UiFormatSpecificationSet"))
+				Expect(metadataName).To(Equal("Access_Packages"))
 			})
 
 		})

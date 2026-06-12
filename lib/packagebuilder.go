@@ -143,6 +143,7 @@ var metapaths = []metapath{
 	{path: "tabs", name: "CustomTab"},
 	{path: "translations", name: "Translations"},
 	{path: "triggers", name: "ApexTrigger"},
+	{path: "uiFormatSpecificationSets", name: "UiFormatSpecificationSet", extension: ".uiFormatSpecificationSet"},
 	{path: "viewdefinitions", name: "ViewDefinition", extension: ".view"},
 	{path: "weblinks", name: "CustomPageWebLink"},
 	{path: "workflows", name: "Workflow"},
