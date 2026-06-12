@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/ForceCLI/force/desktop"
+	"github.com/ForceCLI/force/desktop/notify"
 	"github.com/spf13/cobra"
 )
 
@@ -24,7 +24,7 @@ Determines if notifications should be used
 		var err error
 		shouldNotify := true
 		if len(args) == 0 {
-			shouldNotify = desktop.GetShouldNotify()
+			shouldNotify = notify.GetShouldNotify()
 			fmt.Println("Show notifications: " + strconv.FormatBool(shouldNotify))
 			return
 		}
@@ -34,6 +34,6 @@ Determines if notifications should be used
 			fmt.Println("Expecting a boolean parameter.")
 		}
 
-		desktop.SetShouldNotify(shouldNotify)
+		notify.SetShouldNotify(shouldNotify)
 	},
 }

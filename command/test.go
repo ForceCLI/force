@@ -6,7 +6,7 @@ import (
 
 	"strings"
 
-	"github.com/ForceCLI/force/desktop"
+	"github.com/ForceCLI/force/desktop/notify"
 	. "github.com/ForceCLI/force/error"
 	. "github.com/ForceCLI/force/lib"
 	"github.com/spf13/cobra"
@@ -149,7 +149,7 @@ func runTests(reportFormat string, args []string) {
 
 		success := len(result.FMethodNames) == 0
 		// Handle notifications
-		desktop.NotifySuccess("test", success)
+		notify.NotifySuccess("test", success)
 		if !success {
 			ErrorAndExit("Tests Failed")
 		}
@@ -178,7 +178,7 @@ func runIntegrationTest(reportFormat string, args []string) {
 	fmt.Print(output)
 
 	success := result.Status == "Completed" && result.MethodsFailed == 0
-	desktop.NotifySuccess("test", success)
+	notify.NotifySuccess("test", success)
 	if !success {
 		ErrorAndExit("Integration tests Failed")
 	}
