@@ -1181,6 +1181,74 @@ func TestGetBulk2QueryResults_WithMaxRecords(t *testing.T) {
 	}
 }
 
+func TestGetBulk2QueryResultsWithCallback(t *testing.T) {
+	expectedCSV := "Id,Name\n001000000000001AAA,Test Account\n"
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.Contains(r.URL.RawQuery, "maxRecords=100") {
+			t.Errorf("Expected maxRecords=100, got: %s", r.URL.RawQuery)
+		}
+		w.Header().Set("Content-Type", "text/csv")
+		w.Header().Set("Sforce-Locator", "ABC123")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(expectedCSV))
+	}))
+	defer server.Close()
+
+	force := &Force{
+		Credentials: &ForceSession{
+			InstanceUrl: server.URL,
+			AccessToken: "test-token",
+		},
+	}
+
+	var buf bytes.Buffer
+	var locator string
+	err := force.GetBulk2QueryResultsWithCallback("7501234567890QUERY", "", 100, func(resp *http.Response) error {
+		defer resp.Body.Close()
+		locator = resp.Header.Get("Sforce-Locator")
+		_, err := io.Copy(&buf, resp.Body)
+		return err
+	})
+	if err != nil {
+		t.Fatalf("GetBulk2QueryResultsWithCallback failed: %v", err)
+	}
+	if buf.String() != expectedCSV {
+		t.Errorf("Expected data '%s', got '%s'", expectedCSV, buf.String())
+	}
+	if locator != "ABC123" {
+		t.Errorf("Expected locator 'ABC123', got '%s'", locator)
+	}
+}
+
+func TestGetBulk2QueryResultsWithCallback_HttpError(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(`[{"errorCode":"INVALIDJOB","message":"job not found"}]`))
+	}))
+	defer server.Close()
+
+	force := &Force{
+		Credentials: &ForceSession{
+			InstanceUrl: server.URL,
+			AccessToken: "test-token",
+		},
+	}
+
+	called := false
+	err := force.GetBulk2QueryResultsWithCallback("7501234567890QUERY", "", 0, func(resp *http.Response) error {
+		called = true
+		return nil
+	})
+	if err == nil {
+		t.Fatal("Expected an error for a non-2xx response, got nil")
+	}
+	if called {
+		t.Error("Callback should not be invoked for an HTTP error response")
+	}
+}
+
 func TestAbortBulk2QueryJob(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "PATCH" {
