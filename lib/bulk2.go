@@ -525,10 +525,10 @@ func (f *Force) GetBulk2QueryJobInfoWithContext(ctx context.Context, jobId strin
 	}
 }
 
-// GetBulk2QueryResults retrieves results for a Bulk API 2.0 query job
-// locator is used for pagination, pass empty string for the first page
-// maxRecords limits the number of records returned (0 for default)
-func (f *Force) GetBulk2QueryResults(jobId string, locator string, maxRecords int) (Bulk2QueryResults, error) {
+// bulk2QueryResultsUrl builds the results URL for a Bulk API 2.0 query job.
+// locator paginates results (empty for the first page); maxRecords caps the
+// page size (0 leaves the page size up to Salesforce).
+func (f *Force) bulk2QueryResultsUrl(jobId string, locator string, maxRecords int) string {
 	url := fmt.Sprintf("%s/%s/results", f.bulk2QueryUrl(), jobId)
 	if locator != "" {
 		url = fmt.Sprintf("%s?locator=%s", url, locator)
@@ -538,9 +538,18 @@ func (f *Force) GetBulk2QueryResults(jobId string, locator string, maxRecords in
 	} else if maxRecords > 0 {
 		url = fmt.Sprintf("%s?maxRecords=%d", url, maxRecords)
 	}
+	return url
+}
 
+// GetBulk2QueryResults retrieves results for a Bulk API 2.0 query job
+// locator is used for pagination, pass empty string for the first page
+// maxRecords limits the number of records returned (0 for default)
+//
+// The entire page is buffered in memory. For large result sets, prefer
+// GetBulk2QueryResultsWithCallback to stream the page without buffering it.
+func (f *Force) GetBulk2QueryResults(jobId string, locator string, maxRecords int) (Bulk2QueryResults, error) {
 	req := NewRequest("GET").
-		AbsoluteUrl(url).
+		AbsoluteUrl(f.bulk2QueryResultsUrl(jobId, locator, maxRecords)).
 		WithHeader("Accept", "text/csv").
 		ReadResponseBody()
 
@@ -573,6 +582,40 @@ func (f *Force) GetBulk2QueryResultsWithContext(ctx context.Context, jobId strin
 		return Bulk2QueryResults{}, fmt.Errorf("GetBulk2QueryResults canceled: %w", ctx.Err())
 	case <-done:
 		return result, err
+	}
+}
+
+// GetBulk2QueryResultsWithCallback retrieves results for a Bulk API 2.0 query
+// job, invoking callback with the raw HTTP response so the caller can stream the
+// CSV body (for example, to a file) instead of buffering the whole page in
+// memory. The callback is responsible for reading and closing the response
+// body. The next-page locator is available from the "Sforce-Locator" response
+// header; an empty or "null" value indicates the final page.
+//
+// The callback is only invoked for a successful response; HTTP errors are
+// returned directly and the body is not passed to the callback.
+func (f *Force) GetBulk2QueryResultsWithCallback(jobId string, locator string, maxRecords int, callback HttpCallback) error {
+	req := NewRequest("GET").
+		AbsoluteUrl(f.bulk2QueryResultsUrl(jobId, locator, maxRecords)).
+		WithHeader("Accept", "text/csv").
+		WithResponseCallback(callback)
+	_, err := f.ExecuteRequest(req)
+	return err
+}
+
+// GetBulk2QueryResultsWithCallbackWithContext retrieves results for a Bulk API 2.0 query job with context
+func (f *Force) GetBulk2QueryResultsWithCallbackWithContext(ctx context.Context, jobId string, locator string, maxRecords int, callback HttpCallback) error {
+	done := make(chan struct{})
+	var err error
+	go func() {
+		defer close(done)
+		err = f.GetBulk2QueryResultsWithCallback(jobId, locator, maxRecords, callback)
+	}()
+	select {
+	case <-ctx.Done():
+		return fmt.Errorf("GetBulk2QueryResultsWithCallback canceled: %w", ctx.Err())
+	case <-done:
+		return err
 	}
 }
 
