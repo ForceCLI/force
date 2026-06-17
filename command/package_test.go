@@ -1,8 +1,12 @@
 package command
 
 import (
+	"encoding/xml"
 	"reflect"
+	"strings"
 	"testing"
+
+	"github.com/ForceCLI/force/lib"
 )
 
 func Test_package_version_create_command_requires_flags(t *testing.T) {
@@ -122,6 +126,98 @@ func Test_buildPackageVersionDescriptor_omits_dependencies_when_empty(t *testing
 
 	if _, ok := descriptor["dependencies"]; ok {
 		t.Error("Did not expect dependencies to be present in descriptor")
+	}
+}
+
+func Test_addProfileTypeToManifest_appends_profile_type_when_absent(t *testing.T) {
+	manifest := []byte(xml.Header + `<Package xmlns="http://soap.sforce.com/2006/04/metadata">
+    <types>
+        <members>GoBridge</members>
+        <name>ApexClass</name>
+    </types>
+    <version>67.0</version>
+</Package>`)
+
+	updated, err := addProfileTypeToManifest(manifest)
+	if err != nil {
+		t.Fatalf("Unexpected error: %s", err)
+	}
+
+	var p lib.Package
+	if err := xml.Unmarshal(updated, &p); err != nil {
+		t.Fatalf("Failed to parse updated manifest: %s", err)
+	}
+
+	if len(p.Types) != 2 {
+		t.Fatalf("Expected 2 types, got %d", len(p.Types))
+	}
+	if p.Types[1].Name != "Profile" {
+		t.Errorf("Expected Profile type to be appended, got %q", p.Types[1].Name)
+	}
+	if len(p.Types[1].Members) != 0 {
+		t.Errorf("Expected Profile type to have no members, got %v", p.Types[1].Members)
+	}
+	if p.Version != "67.0" {
+		t.Errorf("Expected version to be preserved, got %q", p.Version)
+	}
+
+	// The Profile <types> element must precede <version> to satisfy the
+	// Package schema's element ordering.
+	if typesIdx, versionIdx := strings.LastIndex(string(updated), "<types>"), strings.Index(string(updated), "<version>"); typesIdx > versionIdx {
+		t.Errorf("Expected all <types> elements before <version>, got types at %d and version at %d", typesIdx, versionIdx)
+	}
+}
+
+func Test_addProfileTypeToManifest_leaves_manifest_unchanged_when_profile_present(t *testing.T) {
+	manifest := []byte(xml.Header + `<Package xmlns="http://soap.sforce.com/2006/04/metadata">
+    <types>
+        <members>Admin</members>
+        <name>Profile</name>
+    </types>
+    <version>67.0</version>
+</Package>`)
+
+	updated, err := addProfileTypeToManifest(manifest)
+	if err != nil {
+		t.Fatalf("Unexpected error: %s", err)
+	}
+
+	if !reflect.DeepEqual(updated, manifest) {
+		t.Errorf("Expected manifest to be unchanged.\ngot=%s\nwant=%s", updated, manifest)
+	}
+}
+
+func Test_addProfileTypeToManifest_returns_error_for_invalid_xml(t *testing.T) {
+	if _, err := addProfileTypeToManifest([]byte("not xml")); err == nil {
+		t.Error("Expected an error for invalid package.xml")
+	}
+}
+
+func Test_collectZipDirectories_returns_sorted_directory_entries(t *testing.T) {
+	files := lib.ForceMetadataFiles{
+		"package.xml":                        nil,
+		"classes/GoBridge.cls":               nil,
+		"classes/GoBridge.cls-meta.xml":      nil,
+		"objects/Thunder_Settings__c.object": nil,
+		"lwc/go/go.js":                       nil,
+		"lwc/thunder/thunder.js":             nil,
+	}
+
+	got := collectZipDirectories(files)
+	want := []string{"classes/", "lwc/", "lwc/go/", "lwc/thunder/", "objects/"}
+
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("Unexpected directories.\ngot=%v\nwant=%v", got, want)
+	}
+}
+
+func Test_collectZipDirectories_returns_empty_when_no_subdirectories(t *testing.T) {
+	files := lib.ForceMetadataFiles{
+		"package.xml": nil,
+	}
+
+	if got := collectZipDirectories(files); len(got) != 0 {
+		t.Errorf("Expected no directories, got %v", got)
 	}
 }
 

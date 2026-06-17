@@ -4,12 +4,14 @@ import (
 	"archive/zip"
 	"bytes"
 	"encoding/json"
+	"encoding/xml"
 	"fmt"
 	"io"
 	"mime/multipart"
 	"net/textproto"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -638,6 +640,27 @@ func runCreatePackageVersion(path string, packageId string, namespace string, ve
 		}
 	}
 
+	// The descriptor's ancestorId must be a Package2Version (05i) ID. If a
+	// Subscriber Package Version (04t) ID was provided, convert it.
+	if strings.HasPrefix(ancestorId, "04t") {
+		query := fmt.Sprintf("SELECT Id FROM Package2Version WHERE SubscriberPackageVersionId = '%s'", ancestorId)
+		result, err := force.Query(query, func(options *lib.QueryOptions) {
+			options.IsTooling = true
+		})
+		if err != nil {
+			ErrorAndExit("Failed to resolve ancestor version: " + err.Error())
+		}
+		if len(result.Records) == 0 {
+			ErrorAndExit(fmt.Sprintf("No Package2Version found for ancestor: %s", ancestorId))
+		}
+		if id, ok := result.Records[0]["Id"].(string); ok {
+			fmt.Printf("Resolved ancestor %s to Package2Version %s\n", ancestorId, id)
+			ancestorId = id
+		} else {
+			ErrorAndExit("Failed to resolve ancestor Package2Version ID")
+		}
+	}
+
 	for _, dependency := range dependencies {
 		if !strings.HasPrefix(dependency, "04t") {
 			ErrorAndExit(fmt.Sprintf("Invalid dependency ID: %s. Must be a Subscriber Package Version ID (04t)", dependency))
@@ -686,11 +709,42 @@ func runCreatePackageVersion(path string, packageId string, namespace string, ve
 
 	// ForceMetadataFiles() adds package.xml automatically
 	packageFiles := pb.ForceMetadataFiles()
+
+	// The Salesforce CLI always includes an (often empty) Profile type in the
+	// manifest so that profile settings are recalculated for the package's
+	// components. Add it when no profiles are present.
+	if manifest, ok := packageFiles["package.xml"]; ok {
+		updated, err := addProfileTypeToManifest(manifest)
+		if err != nil {
+			ErrorAndExit(err.Error())
+		}
+		packageFiles["package.xml"] = updated
+	}
+
 	packageZipBuffer := new(bytes.Buffer)
 	packageZipWriter := zip.NewWriter(packageZipBuffer)
 
 	// Set a proper timestamp (current time)
 	modTime := time.Now()
+
+	// Collect directory entries so the zip matches the layout the Salesforce
+	// CLI produces (each directory is written as its own zero-length entry).
+	dirs := collectZipDirectories(packageFiles)
+
+	for _, dir := range dirs {
+		header := &zip.FileHeader{
+			Name:           dir,
+			Method:         zip.Store,
+			Modified:       modTime,
+			CreatorVersion: 0x14, // Version 2.0 made by (FAT filesystem)
+			ReaderVersion:  0x0A, // Version 1.0 needed to extract
+			ExternalAttrs:  0,    // FAT attributes
+		}
+		header.SetMode(os.ModeDir | 0755)
+		if _, err := packageZipWriter.CreateHeader(header); err != nil {
+			ErrorAndExit("Failed to create zip directory entry: " + err.Error())
+		}
+	}
 
 	for filePath, fileData := range packageFiles {
 		// Create a zip header with proper settings
@@ -783,10 +837,12 @@ func runCreatePackageVersion(path string, packageId string, namespace string, ve
 
 	// Add Package2VersionCreateRequest field (second part)
 	request := map[string]interface{}{
-		"Package2Id":            packageId,
-		"CalculateCodeCoverage": codeCoverage,
-		"SkipValidation":        skipValidation,
-		"AsyncValidation":       asyncValidation,
+		"Package2Id":                 packageId,
+		"CalculateCodeCoverage":      codeCoverage,
+		"SkipValidation":             skipValidation,
+		"AsyncValidation":            asyncValidation,
+		"CalcTransitiveDependencies": false,
+		"IsDevUsePkgZipRequested":    false,
 	}
 	if tag != "" {
 		request["Tag"] = tag
@@ -828,6 +884,50 @@ func runCreatePackageVersion(path string, packageId string, namespace string, ve
 	if packageVersionId != "" {
 		fmt.Printf("Package version created successfully: %s\n", packageVersionId)
 	}
+}
+
+// addProfileTypeToManifest ensures the package.xml manifest includes a Profile
+// type, matching the Salesforce CLI which always adds one (often empty) so that
+// profile settings are recalculated for the package's components. The manifest
+// is re-marshaled so the Profile <types> element is correctly ordered before
+// <version>. If a Profile type is already present the manifest is returned
+// unchanged.
+func addProfileTypeToManifest(manifest []byte) ([]byte, error) {
+	var p lib.Package
+	if err := xml.Unmarshal(manifest, &p); err != nil {
+		return nil, fmt.Errorf("Failed to parse package.xml: %w", err)
+	}
+	for _, t := range p.Types {
+		if t.Name == "Profile" {
+			return manifest, nil
+		}
+	}
+	p.Types = append(p.Types, lib.MetaType{Name: "Profile"})
+	byteXml, err := xml.MarshalIndent(p, "", "    ")
+	if err != nil {
+		return nil, fmt.Errorf("Failed to marshal package.xml: %w", err)
+	}
+	return append([]byte(xml.Header), byteXml...), nil
+}
+
+// collectZipDirectories returns the sorted set of directory entries (each with a
+// trailing slash) implied by the file paths, so the package zip mirrors the
+// layout the Salesforce CLI produces, which writes each directory as its own
+// zero-length entry.
+func collectZipDirectories(files lib.ForceMetadataFiles) []string {
+	dirSet := make(map[string]bool)
+	for filePath := range files {
+		parts := strings.Split(filePath, "/")
+		for i := 1; i < len(parts); i++ {
+			dirSet[strings.Join(parts[:i], "/")+"/"] = true
+		}
+	}
+	dirs := make([]string, 0, len(dirSet))
+	for dir := range dirSet {
+		dirs = append(dirs, dir)
+	}
+	sort.Strings(dirs)
+	return dirs
 }
 
 func buildPackageVersionDescriptor(versionName string, versionNumber string, versionDescription string, packageId string, ancestorId string, dependencies []string) map[string]interface{} {
