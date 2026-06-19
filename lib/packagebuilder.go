@@ -77,7 +77,7 @@ var metapaths = []metapath{
 	{path: "EmbeddedServiceConfig", name: "EmbeddedServiceConfig"},
 	{path: "email", name: "EmailTemplate", hasFolder: true},
 	{path: "escalationRules", name: "EscalationRules"},
-	{path: "experiences", name: "ExperienceBundle"},
+	{path: "experiences", name: "ExperienceBundle", hasFolder: true, onlyFolder: true},
 	{path: "externalClientApps", name: "ExternalClientApplication"},
 	{path: "externalCredentials", name: "ExternalCredential"},
 	{path: "externalServiceRegistrations", name: "ExternalServiceRegistration"},
@@ -313,6 +313,17 @@ func (pb *PackageBuilder) AddDirectory(fpath string) error {
 		}
 	}
 
+	// Bundle metadata such as ExperienceBundle stores its -meta.xml file
+	// alongside the bundle directory rather than inside it. Include it so the
+	// bundle can be deployed by pushing only its directory.
+	if isComponent {
+		if m := bundleMetadata(fpath); m != "" {
+			if err = pb.AddFile(m); err != nil {
+				return fmt.Errorf("Failed to add metadata for bundle: %w", err)
+			}
+		}
+	}
+
 	files, err := ioutil.ReadDir(fpath)
 	if err != nil {
 		return err
@@ -383,6 +394,34 @@ func correspondingMetadata(path string) string {
 		return ""
 	}
 	return fmeta
+}
+
+// bundleMetadata returns the path to a bundle's -meta.xml file when it is a
+// sibling of the bundle directory rather than a file inside it. ExperienceBundle
+// stores its metadata file alongside the bundle directory, e.g.
+// experiences/MySite.site-meta.xml for the experiences/MySite bundle.
+func bundleMetadata(dir string) string {
+	parent := filepath.Dir(dir)
+	base := filepath.Base(dir)
+	entries, err := ioutil.ReadDir(parent)
+	if err != nil {
+		return ""
+	}
+	for _, e := range entries {
+		if e.IsDir() {
+			continue
+		}
+		name := e.Name()
+		if !strings.HasSuffix(name, "-meta.xml") {
+			continue
+		}
+		trimmed := strings.TrimSuffix(name, "-meta.xml")
+		trimmed = strings.TrimSuffix(trimmed, filepath.Ext(trimmed))
+		if trimmed == base {
+			return filepath.Join(parent, name)
+		}
+	}
+	return ""
 }
 
 // Adds the file to a temp directory for deploy
@@ -514,6 +553,13 @@ func (pb *PackageBuilder) GetMetaForAbsolutePath(path string) (metaName string, 
 		objectName = strings.TrimSuffix(strings.Join(parts[1:], string(os.PathSeparator)), filepath.Ext(path))
 		if pb.isComponent(path) {
 			objectName = parts[1]
+			// Bundle metadata files (e.g. ExperienceBundle's
+			// experiences/MySite.site-meta.xml) live alongside the bundle
+			// directory. Reduce the file name to the bundle name.
+			if strings.HasSuffix(objectName, "-meta.xml") {
+				objectName = strings.TrimSuffix(objectName, "-meta.xml")
+				objectName = strings.TrimSuffix(objectName, filepath.Ext(objectName))
+			}
 		}
 	}
 

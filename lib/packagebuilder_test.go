@@ -328,6 +328,54 @@ var _ = Describe("Packagebuilder", func() {
 				Expect(pb.Metadata).To(HaveKey("LightningComponentBundle"))
 			})
 		})
+
+		Describe("adding an experience bundle", func() {
+			var experienceRoot string
+
+			BeforeEach(func() {
+				experienceRoot = tempDir + "/src/experiences/Catapult_Client_Portal1"
+				mustMkdir(experienceRoot + "/routes")
+				mustMkdir(experienceRoot + "/views")
+				mustMkdir(experienceRoot + "/config")
+				mustWrite(experienceRoot+"/routes/home.json", "{}")
+				mustWrite(experienceRoot+"/views/home.json", "{}")
+				mustWrite(experienceRoot+"/config/mainAppPage.json", "{}")
+				// ExperienceBundle stores its metadata file as a sibling of the
+				// bundle directory.
+				mustWrite(tempDir+"/src/experiences/Catapult_Client_Portal1.site-meta.xml", "<Site/>")
+			})
+
+			It("uses the bundle name as the only package member", func() {
+				err := pb.AddDirectory(experienceRoot)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(pb.Metadata).To(HaveKey("ExperienceBundle"))
+				Expect(pb.Metadata["ExperienceBundle"].Members).To(ConsistOf("Catapult_Client_Portal1"))
+			})
+
+			It("adds nested files with their full relative paths", func() {
+				err := pb.AddDirectory(experienceRoot)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(pb.Files).To(HaveKey("experiences/Catapult_Client_Portal1/routes/home.json"))
+				Expect(pb.Files).To(HaveKey("experiences/Catapult_Client_Portal1/views/home.json"))
+				Expect(pb.Files).To(HaveKey("experiences/Catapult_Client_Portal1/config/mainAppPage.json"))
+			})
+
+			It("includes the sibling metadata file when only the bundle directory is pushed", func() {
+				err := pb.AddDirectory(experienceRoot)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(pb.Files).To(HaveKey("experiences/Catapult_Client_Portal1.site-meta.xml"))
+				Expect(pb.Metadata["ExperienceBundle"].Members).To(ConsistOf("Catapult_Client_Portal1"))
+			})
+
+			It("uses the bundle name when adding the experiences parent directory", func() {
+				err := pb.AddDirectory(tempDir + "/src/experiences")
+				Expect(err).ToNot(HaveOccurred())
+				Expect(pb.Metadata).To(HaveKey("ExperienceBundle"))
+				Expect(pb.Metadata["ExperienceBundle"].Members).To(ConsistOf("Catapult_Client_Portal1"))
+				Expect(pb.Files).To(HaveKey("experiences/Catapult_Client_Portal1/routes/home.json"))
+				Expect(pb.Files).To(HaveKey("experiences/Catapult_Client_Portal1.site-meta.xml"))
+			})
+		})
 	})
 
 	Describe("GetMetaForAbsolutePath", func() {
@@ -352,6 +400,20 @@ var _ = Describe("Packagebuilder", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(metadataType).To(Equal("LightningComponentBundle"))
 				Expect(metadataName).To(Equal("supercomponent"))
+			})
+
+			It("should handle ExperienceBundle directories", func() {
+				metadataType, metadataName, err := pb.GetMetaForAbsolutePath("/path/to/src/experiences/Catapult_Client_Portal1")
+				Expect(err).ToNot(HaveOccurred())
+				Expect(metadataType).To(Equal("ExperienceBundle"))
+				Expect(metadataName).To(Equal("Catapult_Client_Portal1"))
+			})
+
+			It("should handle ExperienceBundle nested files", func() {
+				metadataType, metadataName, err := pb.GetMetaForAbsolutePath("/path/to/src/experiences/Catapult_Client_Portal1/routes/home.json")
+				Expect(err).ToNot(HaveOccurred())
+				Expect(metadataType).To(Equal("ExperienceBundle"))
+				Expect(metadataName).To(Equal("Catapult_Client_Portal1"))
 			})
 
 			It("should handle normal components", func() {
