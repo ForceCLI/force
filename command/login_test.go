@@ -216,6 +216,16 @@ func TestExpandProductsToFeatures_ApexUserModeWithPermset(t *testing.T) {
 	}
 }
 
+func TestExpandProductsToFeatures_InvoiceManagement(t *testing.T) {
+	result := expandProductsToFeatures([]ScratchProduct{}, []ScratchFeature{InvoiceManagement}, map[string]string{})
+	if len(result) != 1 {
+		t.Fatalf("Expected 1 feature, got %d", len(result))
+	}
+	if result[0] != "InvoiceManagement" {
+		t.Errorf("Expected InvoiceManagement, got %s", result[0])
+	}
+}
+
 func TestExpandProductsToFeatures_EventLogFile(t *testing.T) {
 	result := expandProductsToFeatures([]ScratchProduct{}, []ScratchFeature{EventLogFile}, map[string]string{})
 	if len(result) != 1 {
@@ -526,6 +536,7 @@ func TestExpandProductsToFeatures_RevenueCloudProduct(t *testing.T) {
 		"EnableSetPasswordInApi", "OrderSaveLogicEnabled", "OrderManagement",
 		"PartnerCommunity", "Communities", "CustomerCommunityPlus", "CoreCpq",
 		"UsageManagement", "BillingAdvanced", "DocGen", "Einstein1AIPlatform",
+		"InvoiceManagement",
 	}
 	if len(result) != len(expected) {
 		t.Fatalf("Expected %d features from revenuecloud product, got %d: %v", len(expected), len(result), result)
@@ -751,6 +762,7 @@ func TestScratchFeatureIds_AllFeaturesDefined(t *testing.T) {
 		"PublicSectorAccess":                true,
 		"SharedActivities":                  true,
 		"HighVelocitySales":                 true,
+		"InvoiceManagement":                 true,
 	}
 
 	if len(ScratchFeatureIds) != len(expectedFeatures) {

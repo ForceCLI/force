@@ -84,6 +84,7 @@ const (
 	PublicSectorAccess
 	SharedActivities
 	HighVelocitySales
+	InvoiceManagement
 )
 
 var ScratchFeatureIds = map[ScratchFeature][]string{
@@ -155,6 +156,7 @@ var ScratchFeatureIds = map[ScratchFeature][]string{
 	PublicSectorAccess:                {"PublicSectorAccess"},
 	SharedActivities:                  {"SharedActivities"},
 	HighVelocitySales:                 {"HighVelocitySales"},
+	InvoiceManagement:                 {"InvoiceManagement"},
 }
 
 type ScratchProduct enumflag.Flag
@@ -467,6 +469,7 @@ Available Features:
   IndustriesSalesExcellenceAddOn      - Enables Industries Sales Excellence Add-On
   IndustriesServiceExcellenceAddOn    - Enables Industries Service Excellence Add-On
   InsightsPlatform                    - Enables Insights Platform
+  InvoiceManagement                   - Enables Invoice Management (Revenue Cloud)
   Knowledge                           - Enables Salesforce Knowledge
   LightningScheduler                  - Enables Lightning Scheduler
   LightningServiceConsole             - Enables Lightning Service Console
@@ -504,7 +507,7 @@ Available Products:
   knowledge        - Salesforce Knowledge (enables Knowledge feature and enableKnowledge, enableLightningKnowledge settings)
   liveagent        - Live Agent (enables LiveAgent feature and enableLiveAgent setting)
   messaging        - Messaging (enables EmbeddedServiceMessaging, LiveMessage, BYOOTT features)
-  revenuecloud     - Revenue Cloud (enables CoreCpq, BillingAdvanced, UsageManagement, DocGen, Einstein1AIPlatform, OrderManagement, Communities, PartnerCommunity, CustomerCommunityPlus, EnableSetPasswordInApi, OrderSaveLogicEnabled features and a comprehensive set of billing/order/quote/pricing/rating settings)
+  revenuecloud     - Revenue Cloud (enables CoreCpq, BillingAdvanced, UsageManagement, DocGen, Einstein1AIPlatform, InvoiceManagement, OrderManagement, Communities, PartnerCommunity, CustomerCommunityPlus, EnableSetPasswordInApi, OrderSaveLogicEnabled features and a comprehensive set of billing/order/quote/pricing/rating settings)
 
 Available Editions:
   Developer           - Developer Edition (default)
@@ -694,6 +697,7 @@ func expandProductsToFeatures(products []ScratchProduct, features []ScratchFeatu
 			BillingAdvanced,
 			DocGen,
 			Einstein1AIPlatform,
+			InvoiceManagement,
 		},
 		MessagingProduct: {EmbeddedServiceMessaging, LiveMessage, BYOOTT},
 		EducationCloudProduct: {
