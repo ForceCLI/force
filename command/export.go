@@ -91,6 +91,7 @@ func runExport(root string, excludeMetadataNames []string, showWarnings bool) {
 		"AuraDefinitionBundle",
 		"AuthProvider",
 		"AutoResponseRules",
+		"BrandingSet",
 		"BusinessHoursSettings",
 		"BusinessProcess",
 		"CallCenter",

@@ -179,6 +179,24 @@ var _ = Describe("Packagebuilder", func() {
 			})
 		})
 
+		Context("when adding a BrandingSet file", func() {
+			var brandingSetPath string
+
+			BeforeEach(func() {
+				os.MkdirAll(tempDir+"/src/brandingSets", 0755)
+				brandingSetPath = tempDir + "/src/brandingSets/My_Branding.brandingSet"
+				ioutil.WriteFile(brandingSetPath, []byte(`<?xml version="1.0" encoding="UTF-8"?>`), 0644)
+			})
+
+			It("should add the file to the package.xml under BrandingSet", func() {
+				err := pb.AddFile(brandingSetPath)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(pb.Files).To(HaveKey("brandingSets/My_Branding.brandingSet"))
+				Expect(pb.Metadata).To(HaveKey("BrandingSet"))
+				Expect(pb.Metadata["BrandingSet"].Members[0]).To(Equal("My_Branding"))
+			})
+		})
+
 		Context("when adding a CustomMetadata file", func() {
 			var customMetadataPath string
 
@@ -449,6 +467,13 @@ var _ = Describe("Packagebuilder", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(metadataType).To(Equal("UiFormatSpecificationSet"))
 				Expect(metadataName).To(Equal("Access_Packages"))
+			})
+
+			It("should handle BrandingSet files", func() {
+				metadataType, metadataName, err := pb.GetMetaForAbsolutePath("/path/to/src/brandingSets/My_Branding.brandingSet")
+				Expect(err).ToNot(HaveOccurred())
+				Expect(metadataType).To(Equal("BrandingSet"))
+				Expect(metadataName).To(Equal("My_Branding"))
 			})
 
 		})

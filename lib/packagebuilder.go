@@ -51,6 +51,7 @@ var metapaths = []metapath{
 	{path: "authproviders", name: "AuthProvider"},
 	{path: "aura", name: "AuraDefinitionBundle", hasFolder: true, onlyFolder: true},
 	{path: "autoResponseRules", name: "AutoResponseRules"},
+	{path: "brandingSets", name: "BrandingSet", extension: ".brandingSet"},
 	{path: "callCenters", name: "CallCenter"},
 	{path: "cachePartitions", name: "PlatformCachePartition"},
 	{path: "certs", name: "Certificate"},
