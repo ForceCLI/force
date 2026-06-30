@@ -1,8 +1,65 @@
 package command
 
 import (
+	"net/http"
 	"testing"
+
+	"github.com/spf13/cobra"
 )
+
+func TestAutoAssignOptions(t *testing.T) {
+	tests := []struct {
+		name        string
+		assign      bool
+		noAssign    bool
+		expectSet   bool
+		expectValue string
+	}{
+		{
+			name:      "no_flags_adds_no_header",
+			expectSet: false,
+		},
+		{
+			name:        "assign_sets_header_true",
+			assign:      true,
+			expectSet:   true,
+			expectValue: "true",
+		},
+		{
+			name:        "no_assign_sets_header_false",
+			noAssign:    true,
+			expectSet:   true,
+			expectValue: "false",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cmd := &cobra.Command{}
+			cmd.Flags().Bool("assign", tt.assign, "")
+			cmd.Flags().Bool("no-assign", tt.noAssign, "")
+
+			options := autoAssignOptions(cmd)
+
+			req, err := http.NewRequest("POST", "http://example.com", nil)
+			if err != nil {
+				t.Fatalf("Failed to create request: %s", err)
+			}
+			for _, option := range options {
+				option(req)
+			}
+
+			got := req.Header.Get("Sforce-Auto-Assign")
+			if tt.expectSet {
+				if got != tt.expectValue {
+					t.Errorf("Expected Sforce-Auto-Assign=%q, got %q", tt.expectValue, got)
+				}
+			} else if got != "" {
+				t.Errorf("Expected no Sforce-Auto-Assign header, got %q", got)
+			}
+		})
+	}
+}
 
 func TestParseArgumentAttrs(t *testing.T) {
 	tests := []struct {

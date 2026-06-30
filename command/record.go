@@ -2,6 +2,7 @@ package command
 
 import (
 	"fmt"
+	"net/http"
 	"strings"
 
 	. "github.com/ForceCLI/force/error"
@@ -11,6 +12,11 @@ import (
 
 func init() {
 	recordDeleteCmd.Flags().BoolP("tooling", "t", false, "delete using object record")
+
+	recordCreateCmd.Flags().Bool("assign", false, "run assignment rules (set Sforce-Auto-Assign header to true)")
+	recordCreateCmd.Flags().Bool("no-assign", false, "skip assignment rules (set Sforce-Auto-Assign header to false)")
+	recordUpdateCmd.Flags().Bool("assign", false, "run assignment rules (set Sforce-Auto-Assign header to true)")
+	recordUpdateCmd.Flags().Bool("no-assign", false, "skip assignment rules (set Sforce-Auto-Assign header to false)")
 
 	recordCmd.AddCommand(recordGetCmd)
 	recordCmd.AddCommand(recordCreateCmd)
@@ -49,7 +55,8 @@ var recordCreateCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		object := args[0]
 		fields := args[1:]
-		runRecordCreate(object, fields)
+		options := autoAssignOptions(cmd)
+		runRecordCreate(object, fields, options...)
 	},
 }
 
@@ -62,7 +69,8 @@ var recordUpdateCmd = &cobra.Command{
 		object := args[0]
 		id := args[1]
 		fields := args[2:]
-		runRecordUpdate(object, id, fields)
+		options := autoAssignOptions(cmd)
+		runRecordUpdate(object, id, fields, options...)
 	},
 }
 
@@ -140,20 +148,27 @@ Usage:
 
   force record get <object> <id>
   force record get <object> <extid>:<value>
-  force record create <object> [<fields>]
-  force record update <object> <id> [<fields>]
-  force record update <object> <extid>:<value> [<fields>]
+  force record create [--assign|--no-assign] <object> [<fields>]
+  force record update [--assign|--no-assign] <object> <id> [<fields>]
+  force record update [--assign|--no-assign] <object> <extid>:<value> [<fields>]
   force record upsert <object> <extid>:<value> [<fields>]
   force record delete <object> <id>
   force record merge <object> <masterId> <duplicateId>
   force record undelete <id>
+
+The --assign and --no-assign flags control the Sforce-Auto-Assign header,
+which determines whether active assignment rules run when creating or
+updating Leads and Cases. When neither flag is set, Salesforce uses its
+default behavior.
 `,
 	Example: `
   force record get User 00Ei0000000000
   force record get User username:user@name.org
   force record create User Name:"David Dollar" Phone:0000000000
+  force record create --no-assign Case Subject:"Test" Status:New Origin:Web
   force record update User 00Ei0000000000 State:GA
   force record update User username:user@name.org State:GA
+  force record update --assign Lead 00Q000000000000 Status:Working
   force record upsert Account External_Id__c:ABC123 Name:"Acme Corp"
   force record delete User 00Ei0000000000
   force record merge Contact 0033c00002YDNNWAA5 0033c00002YDPqkAAH
@@ -170,9 +185,9 @@ func runRecordGet(sobject, id string) {
 	}
 }
 
-func runRecordCreate(object string, fields []string) {
+func runRecordCreate(object string, fields []string, options ...func(*http.Request)) {
 	attrs := parseArgumentAttrs(fields)
-	id, err, emessages := force.CreateRecord(object, attrs)
+	id, err, emessages := force.CreateRecord(object, attrs, options...)
 	if err != nil {
 		if len(emessages) > 0 {
 			ErrorAndExit("Failed to create record: %s (%s)", err.Error(), emessages[0].ErrorCode)
@@ -182,9 +197,9 @@ func runRecordCreate(object string, fields []string) {
 	fmt.Printf("Record created: %s\n", id)
 }
 
-func runRecordUpdate(object string, id string, fields []string) {
+func runRecordUpdate(object string, id string, fields []string, options ...func(*http.Request)) {
 	attrs := parseArgumentAttrs(fields)
-	err := force.UpdateRecord(object, id, attrs)
+	err := force.UpdateRecord(object, id, attrs, options...)
 	if err != nil {
 		ErrorAndExit("Failed to update record: %s", err.Error())
 	}
@@ -250,6 +265,31 @@ func runToolingRecordDelete(object, id string) {
 		ErrorAndExit("Failed to delete record: %s", err.Error())
 	}
 	fmt.Println("Record deleted")
+}
+
+// autoAssignOptions returns request options that set the Sforce-Auto-Assign
+// header based on the --assign and --no-assign flags. When neither flag is
+// set, no header is added and Salesforce uses its default behavior.
+func autoAssignOptions(cmd *cobra.Command) []func(*http.Request) {
+	assign, _ := cmd.Flags().GetBool("assign")
+	noAssign, _ := cmd.Flags().GetBool("no-assign")
+	if assign && noAssign {
+		ErrorAndExit("Cannot use --assign and --no-assign together")
+	}
+	var value string
+	switch {
+	case assign:
+		value = "true"
+	case noAssign:
+		value = "false"
+	default:
+		return nil
+	}
+	return []func(*http.Request){
+		func(req *http.Request) {
+			req.Header.Set("Sforce-Auto-Assign", value)
+		},
+	}
 }
 
 func parseArgumentAttrs(pairs []string) (parsed map[string]string) {

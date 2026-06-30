@@ -1032,9 +1032,9 @@ func (f *Force) GetRecord(sobject, id string) (object ForceRecord, err error) {
 	return
 }
 
-func (f *Force) CreateRecord(sobject string, attrs map[string]string) (id string, err error, emessages []ForceError) {
+func (f *Force) CreateRecord(sobject string, attrs map[string]string, requestOptions ...func(*http.Request)) (id string, err error, emessages []ForceError) {
 	url := fmt.Sprintf("%s/services/data/%s/sobjects/%s", f.Credentials.InstanceUrl, apiVersion, sobject)
-	body, err, emessages := f.httpPost(url, attrs)
+	body, err, emessages := f.httpPost(url, attrs, requestOptions...)
 	var result ForceCreateRecordResult
 	json.Unmarshal(body, &result)
 	id = result.Id
@@ -1335,7 +1335,7 @@ func (f *Force) DescribeSObjectWithETag(objecttype string, ifNoneMatch string) (
 	return result, nil
 }
 
-func (f *Force) UpdateRecord(sobject string, id string, attrs map[string]string) (err error) {
+func (f *Force) UpdateRecord(sobject string, id string, attrs map[string]string, requestOptions ...func(*http.Request)) (err error) {
 	fields := strings.Split(id, ":")
 	var url string
 	if len(fields) == 1 {
@@ -1343,7 +1343,7 @@ func (f *Force) UpdateRecord(sobject string, id string, attrs map[string]string)
 	} else {
 		url = fmt.Sprintf("%s/services/data/%s/sobjects/%s/%s/%s", f.Credentials.InstanceUrl, apiVersion, sobject, fields[0], fields[1])
 	}
-	_, err = f.httpPatch(url, attrs)
+	_, err = f.httpPatch(url, attrs, requestOptions...)
 	return
 }
 
@@ -1692,19 +1692,19 @@ func (f *Force) readResponseBody(res *http.Response) ([]byte, error) {
 	return body, f._coerceHttpError(res, body)
 }
 
-func (f *Force) httpPost(url string, attrs map[string]string) (body []byte, err error, emessages []ForceError) {
-	body, err, emessages = f.httpPostAttributes(url, attrs)
+func (f *Force) httpPost(url string, attrs map[string]string, requestOptions ...func(*http.Request)) (body []byte, err error, emessages []ForceError) {
+	body, err, emessages = f.httpPostAttributes(url, attrs, requestOptions...)
 	if err == SessionExpiredError {
 		err = f.RefreshSession()
 		if err != nil {
 			return
 		}
-		return f.httpPost(url, attrs)
+		return f.httpPost(url, attrs, requestOptions...)
 	}
 	return
 }
 
-func (f *Force) httpPostAttributes(url string, attrs map[string]string) (body []byte, err error, emessages []ForceError) {
+func (f *Force) httpPostAttributes(url string, attrs map[string]string, requestOptions ...func(*http.Request)) (body []byte, err error, emessages []ForceError) {
 	rbody, _ := json.Marshal(attrs)
 	req, err := httpRequest("POST", url, bytes.NewReader(rbody))
 	if err != nil {
@@ -1712,6 +1712,9 @@ func (f *Force) httpPostAttributes(url string, attrs map[string]string) (body []
 	}
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", f.Credentials.AccessToken))
 	req.Header.Add("Content-Type", "application/json")
+	for _, option := range requestOptions {
+		option(req)
+	}
 	res, err := doRequest(req)
 	if err != nil {
 		return
@@ -1740,19 +1743,19 @@ func (f *Force) httpPostAttributes(url string, attrs map[string]string) (body []
 	return
 }
 
-func (f *Force) httpPatch(url string, attrs map[string]string) (body []byte, err error) {
-	body, err = f.httpPatchAttributes(url, attrs)
+func (f *Force) httpPatch(url string, attrs map[string]string, requestOptions ...func(*http.Request)) (body []byte, err error) {
+	body, err = f.httpPatchAttributes(url, attrs, requestOptions...)
 	if err == SessionExpiredError {
 		err = f.RefreshSession()
 		if err != nil {
 			return
 		}
-		return f.httpPatchAttributes(url, attrs)
+		return f.httpPatchAttributes(url, attrs, requestOptions...)
 	}
 	return
 }
 
-func (f *Force) httpPatchAttributes(url string, attrs map[string]string) (body []byte, err error) {
+func (f *Force) httpPatchAttributes(url string, attrs map[string]string, requestOptions ...func(*http.Request)) (body []byte, err error) {
 	rbody, _ := json.Marshal(attrs)
 	req, err := httpRequest("PATCH", url, bytes.NewReader(rbody))
 	if err != nil {
@@ -1760,6 +1763,9 @@ func (f *Force) httpPatchAttributes(url string, attrs map[string]string) (body [
 	}
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", f.Credentials.AccessToken))
 	req.Header.Add("Content-Type", "application/json")
+	for _, option := range requestOptions {
+		option(req)
+	}
 	res, err := doRequest(req)
 	if err != nil {
 		return
