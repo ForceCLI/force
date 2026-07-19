@@ -5,6 +5,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -76,11 +77,51 @@ func (s *Soap) ExecuteLogin(username, password string) (response []byte, err err
 }
 
 func (s *Soap) Execute(action, query string) (response []byte, err error) {
+	res, err := s.execute(action, query)
+	if err != nil {
+		return
+	}
+	defer res.Body.Close()
+	response, err = ioutil.ReadAll(res.Body)
+	if err != nil {
+		return
+	}
+	if isSoapInvalidSessionError(response) {
+		err = SessionExpiredError
+		return
+	}
+	err = processError(response)
+	return
+}
+
+// ExecuteExtract performs the SOAP request like Execute, but streams the text
+// content of the named element to w instead of including it in the returned
+// response. Use for responses with very large payloads, like the
+// base64-encoded zip file in a checkRetrieveStatus response.
+func (s *Soap) ExecuteExtract(action, query, element string, w io.Writer) (response []byte, err error) {
+	res, err := s.execute(action, query)
+	if err != nil {
+		return
+	}
+	defer res.Body.Close()
+	response, err = extractElementText(res.Body, element, w)
+	if err != nil {
+		return
+	}
+	if isSoapInvalidSessionError(response) {
+		err = SessionExpiredError
+		return
+	}
+	err = processError(response)
+	return
+}
+
+func (s *Soap) execute(action, query string) (res *http.Response, err error) {
 	soap := `
-		<env:Envelope xmlns:xsd="http://www.w3.org/2001/XMLSchema" 
-		xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
-		xmlns:env="http://schemas.xmlsoap.org/soap/envelope/" 
-		xmlns:cmd="%s" 
+		<env:Envelope xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+		xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		xmlns:env="http://schemas.xmlsoap.org/soap/envelope/"
+		xmlns:cmd="%s"
 		xmlns:apex="http://soap.sforce.com/2006/08/apex">
 			<env:Header>
 				<cmd:SessionHeader>
@@ -103,28 +144,22 @@ func (s *Soap) Execute(action, query string) (response []byte, err error) {
 	}
 	req.Header.Add("Content-Type", "text/xml")
 	req.Header.Add("SOAPACtion", action)
-	res, err := doRequest(req)
+	res, err = doRequest(req)
 	if err != nil {
 		return
 	}
-	defer res.Body.Close()
 	if res.Header.Get(http.CanonicalHeaderKey("x-sfdc-edge-err")) == "true" {
+		res.Body.Close()
+		res = nil
 		err = errors.New("Unexpected error from Salesforce Edge")
 		return
 	}
 	if res.StatusCode == 401 {
+		res.Body.Close()
+		res = nil
 		err = errors.New("authorization expired, please run `force login`")
 		return
 	}
-	response, err = ioutil.ReadAll(res.Body)
-	if err != nil {
-		return
-	}
-	if isSoapInvalidSessionError(response) {
-		err = SessionExpiredError
-		return
-	}
-	err = processError(response)
 	return
 }
 

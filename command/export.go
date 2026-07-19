@@ -2,7 +2,6 @@ package command
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sort"
@@ -220,7 +219,10 @@ func runExport(root string, excludeMetadataNames []string, showWarnings bool) {
 		}
 	}
 
-	files, problems, err := force.Metadata.Retrieve(query)
+	if err := os.MkdirAll(root, 0755); err != nil {
+		ErrorAndExit(err.Error())
+	}
+	problems, err := force.Metadata.RetrieveToDir(root, query)
 	if err != nil {
 		fmt.Printf("Encountered and error with retrieve...\n")
 		ErrorAndExit(err.Error())
@@ -228,16 +230,6 @@ func runExport(root string, excludeMetadataNames []string, showWarnings bool) {
 	if showWarnings {
 		for _, problem := range problems {
 			fmt.Fprintln(os.Stderr, problem)
-		}
-	}
-	for name, data := range files {
-		file := filepath.Join(root, name)
-		dir := filepath.Dir(file)
-		if err := os.MkdirAll(dir, 0755); err != nil {
-			ErrorAndExit(err.Error())
-		}
-		if err := ioutil.WriteFile(filepath.Join(root, name), data, 0644); err != nil {
-			ErrorAndExit(err.Error())
 		}
 	}
 	fmt.Printf("Exported to %s\n", root)

@@ -8,6 +8,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -786,38 +787,90 @@ func (fm *ForceMetadata) CheckDeployStatus(id string) (results ForceCheckDeploym
 }
 
 func (fm *ForceMetadata) CheckRetrieveStatus(id string) (files ForceMetadataFiles, problems []string, err error) {
-	body, err := fm.soapExecute("checkRetrieveStatus", fmt.Sprintf("<id>%s</id>", id))
+	tmp, err := os.CreateTemp("", "force-retrieve-*.zip")
 	if err != nil {
 		return
 	}
+	defer os.Remove(tmp.Name())
+	defer tmp.Close()
+	problems, err = fm.checkRetrieveStatusTo(id, tmp)
+	if err != nil {
+		return
+	}
+	if preserveZip {
+		if err = copyFileContents(tmp.Name(), "inbound.zip"); err != nil {
+			return
+		}
+	}
+	zipfiles, err := zip.OpenReader(tmp.Name())
+	if err != nil {
+		return
+	}
+	defer zipfiles.Close()
+	files = make(map[string][]byte)
+	for _, file := range zipfiles.File {
+		fd, ferr := file.Open()
+		if ferr != nil {
+			err = ferr
+			return
+		}
+		data, ferr := ioutil.ReadAll(fd)
+		fd.Close()
+		if ferr != nil {
+			err = ferr
+			return
+		}
+		files[file.Name] = data
+	}
+	return
+}
+
+// checkRetrieveStatusTo streams the base64-decoded zip payload of the
+// checkRetrieveStatus response to zipOut instead of holding it in memory. A
+// session-expired response contains no zip payload, so nothing has been
+// written to zipOut when the request is retried after refreshing the session.
+func (fm *ForceMetadata) checkRetrieveStatusTo(id string, zipOut io.Writer) (problems []string, err error) {
+	url := fmt.Sprintf("%s/services/Soap/m/%s", fm.Force.Credentials.InstanceUrl, fm.ApiVersion)
+	soap := NewSoap(url, "http://soap.sforce.com/2006/04/metadata", fm.Force.Credentials.AccessToken)
+	b64 := newBase64Writer(zipOut)
+	body, err := soap.ExecuteExtract("checkRetrieveStatus", fmt.Sprintf("<id>%s</id>", id), "zipFile", b64)
+	if err == SessionExpiredError {
+		if err = fm.Force.RefreshSession(); err != nil {
+			return
+		}
+		return fm.checkRetrieveStatusTo(id, zipOut)
+	}
+	if err != nil {
+		return
+	}
+	if err = b64.Close(); err != nil {
+		return
+	}
 	var status struct {
-		ZipFile  string   `xml:"Body>checkRetrieveStatusResponse>result>zipFile"`
 		Problems []string `xml:"Body>checkRetrieveStatusResponse>result>messages>problem"`
 	}
 	if err = xml.Unmarshal(body, &status); err != nil {
 		return
 	}
-	data, err := base64.StdEncoding.DecodeString(status.ZipFile)
-	if err != nil {
-		return
-	}
 	problems = status.Problems
-
-	zipfiles, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
-	if preserveZip == true {
-		ioutil.WriteFile("inbound.zip", data, 0644)
-	}
-	if err != nil {
-		return
-	}
-	files = make(map[string][]byte)
-	for _, file := range zipfiles.File {
-		fd, _ := file.Open()
-		defer fd.Close()
-		data, _ := ioutil.ReadAll(fd)
-		files[file.Name] = data
-	}
 	return
+}
+
+func copyFileContents(src, dst string) error {
+	in, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+	out, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	if err != nil {
+		return err
+	}
+	if _, err := io.Copy(out, in); err != nil {
+		out.Close()
+		return err
+	}
+	return out.Close()
 }
 
 func (fm *ForceMetadata) DescribeMetadata() (describe MetadataDescribeResult, err error) {
@@ -1359,8 +1412,7 @@ func (fm *ForceMetadata) RetrieveByPackageXmlContents(data []byte) (files ForceM
 	return
 }
 
-func (fm *ForceMetadata) Retrieve(query ForceMetadataQuery) (files ForceMetadataFiles, problems []string, err error) {
-
+func (fm *ForceMetadata) startRetrieve(query ForceMetadataQuery) (id string, err error) {
 	soap := `
 		<retrieveRequest>
 			<apiVersion>%s</apiVersion>
@@ -1396,11 +1448,19 @@ func (fm *ForceMetadata) Retrieve(query ForceMetadataQuery) (files ForceMetadata
 	if err = xml.Unmarshal(body, &status); err != nil {
 		return
 	}
+	id = status.Id
+	return
+}
 
-	if err = fm.CheckStatus(status.Id); err != nil {
+func (fm *ForceMetadata) Retrieve(query ForceMetadataQuery) (files ForceMetadataFiles, problems []string, err error) {
+	id, err := fm.startRetrieve(query)
+	if err != nil {
 		return
 	}
-	raw_files, problems, err := fm.CheckRetrieveStatus(status.Id)
+	if err = fm.CheckStatus(id); err != nil {
+		return
+	}
+	raw_files, problems, err := fm.CheckRetrieveStatus(id)
 	if err != nil {
 		return
 	}
@@ -1410,6 +1470,78 @@ func (fm *ForceMetadata) Retrieve(query ForceMetadataQuery) (files ForceMetadata
 		files[name] = data
 	}
 	return
+}
+
+// RetrieveToDir retrieves metadata and extracts it directly under root,
+// streaming the zip payload to a temporary file and writing each entry to
+// disk as it is decompressed, so the retrieved metadata is never held in
+// memory. The "unpackaged/" prefix is stripped from entry names.
+func (fm *ForceMetadata) RetrieveToDir(root string, query ForceMetadataQuery) (problems []string, err error) {
+	id, err := fm.startRetrieve(query)
+	if err != nil {
+		return
+	}
+	if err = fm.CheckStatus(id); err != nil {
+		return
+	}
+	tmp, err := os.CreateTemp("", "force-retrieve-*.zip")
+	if err != nil {
+		return
+	}
+	defer os.Remove(tmp.Name())
+	defer tmp.Close()
+	problems, err = fm.checkRetrieveStatusTo(id, tmp)
+	if err != nil {
+		return
+	}
+	err = extractZipToDir(tmp.Name(), root, "unpackaged/")
+	return
+}
+
+func extractZipToDir(zipPath, root, stripPrefix string) error {
+	zipfiles, err := zip.OpenReader(zipPath)
+	if err != nil {
+		return err
+	}
+	defer zipfiles.Close()
+	cleanRoot := filepath.Clean(root)
+	for _, file := range zipfiles.File {
+		name := strings.Replace(file.Name, stripPrefix, "", -1)
+		target := filepath.Join(cleanRoot, filepath.FromSlash(name))
+		if target != cleanRoot && !strings.HasPrefix(target, cleanRoot+string(os.PathSeparator)) {
+			return fmt.Errorf("zip entry %s would extract outside %s", file.Name, root)
+		}
+		if file.FileInfo().IsDir() {
+			if err := os.MkdirAll(target, 0755); err != nil {
+				return err
+			}
+			continue
+		}
+		if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
+			return err
+		}
+		if err := writeZipEntry(file, target); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func writeZipEntry(file *zip.File, target string) error {
+	fd, err := file.Open()
+	if err != nil {
+		return err
+	}
+	defer fd.Close()
+	out, err := os.OpenFile(target, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	if err != nil {
+		return err
+	}
+	if _, err := io.Copy(out, fd); err != nil {
+		out.Close()
+		return err
+	}
+	return out.Close()
 }
 
 func (fm *ForceMetadata) RetrievePackage(packageName string) (files ForceMetadataFiles, problems []string, err error) {
