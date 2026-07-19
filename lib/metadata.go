@@ -34,6 +34,12 @@ var AlreadyCompletedError = errors.New("Deployment already completed")
 
 var preserveZip bool
 
+// SetPreserveZip controls whether retrieved zip payloads are also saved to
+// inbound.zip in the working directory.
+func SetPreserveZip(value bool) {
+	preserveZip = value
+}
+
 func (bo *BigObject) ToXml() string {
 	soap := `<?xml version="1.0" encoding="UTF-8"?>
 		<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
@@ -1356,59 +1362,28 @@ func (fm *ForceMetadata) RetrieveByPackageXml(package_xml string) (ForceMetadata
 }
 
 func (fm *ForceMetadata) RetrieveByPackageXmlContents(data []byte) (files ForceMetadataFiles, problems []string, err error) {
-	soap := `
-		<retrieveRequest>
-			<apiVersion>%s</apiVersion>
-			<unpackaged>
-				%s
-			</unpackaged>
-		</retrieveRequest>
-	`
-
-	type types struct {
-		Name    string   `xml:"name"`
-		Members []string `xml:"members"`
+	query, err := PackageXmlToQuery(data)
+	if err != nil {
+		return
 	}
+	return fm.Retrieve(query)
+}
 
+// PackageXmlToQuery converts the contents of a package.xml manifest into a
+// ForceMetadataQuery.
+func PackageXmlToQuery(data []byte) (query ForceMetadataQuery, err error) {
 	var pxml struct {
-		Results []types `xml:"types"`
+		Types []struct {
+			Name    string   `xml:"name"`
+			Members []string `xml:"members"`
+		} `xml:"types"`
 	}
-
-	xml.Unmarshal(data, &pxml)
-
-	xml_types := ""
-	for _, p_xml := range pxml.Results {
-		xml, err := xml.MarshalIndent(p_xml, " ", "    ")
-		if err != nil {
-			ErrorAndExit(err.Error())
-		}
-		xml_types += fmt.Sprintf("%s\n", xml)
-	}
-
-	body, err := fm.soapExecute("retrieve", fmt.Sprintf(soap, apiVersionNumber, xml_types))
-	if err != nil {
+	if err = xml.Unmarshal(data, &pxml); err != nil {
 		return
 	}
-	var status struct {
-		Id string `xml:"Body>retrieveResponse>result>id"`
+	for _, t := range pxml.Types {
+		query = append(query, ForceMetadataQueryElement{Name: []string{t.Name}, Members: t.Members})
 	}
-	if err = xml.Unmarshal(body, &status); err != nil {
-		return
-	}
-
-	if err = fm.CheckStatus(status.Id); err != nil {
-		return
-	}
-	raw_files, problems, err := fm.CheckRetrieveStatus(status.Id)
-	if err != nil {
-		return
-	}
-	files = make(ForceMetadataFiles)
-	for raw_name, data := range raw_files {
-		name := strings.Replace(raw_name, "unpackaged/", "", -1)
-		files[name] = data
-	}
-
 	return
 }
 
@@ -1453,34 +1428,102 @@ func (fm *ForceMetadata) startRetrieve(query ForceMetadataQuery) (id string, err
 }
 
 func (fm *ForceMetadata) Retrieve(query ForceMetadataQuery) (files ForceMetadataFiles, problems []string, err error) {
-	id, err := fm.startRetrieve(query)
-	if err != nil {
-		return
-	}
-	if err = fm.CheckStatus(id); err != nil {
-		return
-	}
-	raw_files, problems, err := fm.CheckRetrieveStatus(id)
-	if err != nil {
-		return
-	}
 	files = make(ForceMetadataFiles)
-	for raw_name, data := range raw_files {
-		name := strings.Replace(raw_name, "unpackaged/", "", -1)
+	problems, err = fm.RetrieveStream(query, collectFiles(files))
+	return
+}
+
+// collectFiles returns a RetrieveEntryHandler that reads each entry into
+// files.
+func collectFiles(files ForceMetadataFiles) RetrieveEntryHandler {
+	return func(name string, r io.Reader) error {
+		data, err := io.ReadAll(r)
+		if err != nil {
+			return err
+		}
 		files[name] = data
+		return nil
 	}
+}
+
+// RetrieveEntryHandler receives each retrieved file as it is decompressed.
+// name has the retrieve prefix (e.g. "unpackaged/") stripped and uses forward
+// slashes. The handler must consume r before returning.
+type RetrieveEntryHandler func(name string, r io.Reader) error
+
+// RetrieveStream retrieves metadata, streaming each retrieved file to handle
+// as it is decompressed, so the retrieved metadata is never held in memory.
+// Queries exceeding the retrieve file limit are split into multiple retrieve
+// calls; the package.xml manifests of all batches are merged and passed to
+// handle once, after all other entries.
+func (fm *ForceMetadata) RetrieveStream(query ForceMetadataQuery, handle RetrieveEntryHandler) (problems []string, err error) {
+	var packageXmls [][]byte
+	zipCount := 0
+	for _, batch := range splitQuery(query, maxFilesPerRetrieve) {
+		var batchProblems []string
+		batchProblems, err = fm.retrieveBatchStream(batch, &zipCount, &packageXmls, handle)
+		if err != nil {
+			return
+		}
+		problems = append(problems, batchProblems...)
+	}
+	err = emitPackageXml(packageXmls, handle)
+	return
+}
+
+// retrieveBatchStream retrieves one batch. If the server still rejects the
+// batch for having too many files, which can happen when wildcard members
+// expand past the limit, the batch is bisected and each half retried.
+func (fm *ForceMetadata) retrieveBatchStream(batch ForceMetadataQuery, zipCount *int, packageXmls *[][]byte, handle RetrieveEntryHandler) (problems []string, err error) {
+	id, err := fm.startRetrieve(batch)
+	if err == nil {
+		problems, err = fm.streamRetrieveResult(id, zipCount, packageXmls, handle)
+	}
+	if isRetrieveLimitError(err) {
+		if total := countQueryMembers(batch); total > 1 {
+			Log.Info("Retrieve exceeded the file limit; splitting into smaller retrieve calls")
+			problems = nil
+			for _, half := range splitQuery(batch, (total+1)/2) {
+				var halfProblems []string
+				halfProblems, err = fm.retrieveBatchStream(half, zipCount, packageXmls, handle)
+				if err != nil {
+					return
+				}
+				problems = append(problems, halfProblems...)
+			}
+		}
+	}
+	return
+}
+
+// RetrievePackageStream retrieves an unmanaged package, streaming each
+// retrieved file to handle as it is decompressed.
+func (fm *ForceMetadata) RetrievePackageStream(packageName string, handle RetrieveEntryHandler) (problems []string, err error) {
+	id, err := fm.startRetrievePackage(packageName)
+	if err != nil {
+		return
+	}
+	var packageXmls [][]byte
+	zipCount := 0
+	problems, err = fm.streamRetrieveResult(id, &zipCount, &packageXmls, handle)
+	if err != nil {
+		return
+	}
+	err = emitPackageXml(packageXmls, handle)
 	return
 }
 
 // RetrieveToDir retrieves metadata and extracts it directly under root,
 // streaming the zip payload to a temporary file and writing each entry to
-// disk as it is decompressed, so the retrieved metadata is never held in
-// memory. The "unpackaged/" prefix is stripped from entry names.
+// disk as it is decompressed.
 func (fm *ForceMetadata) RetrieveToDir(root string, query ForceMetadataQuery) (problems []string, err error) {
-	id, err := fm.startRetrieve(query)
-	if err != nil {
-		return
-	}
+	return fm.RetrieveStream(query, EntryDiskWriter(root))
+}
+
+// streamRetrieveResult downloads the result zip for a completed retrieve to a
+// temporary file and streams its entries to handle. package.xml entries are
+// collected into packageXmls instead so they can be merged across batches.
+func (fm *ForceMetadata) streamRetrieveResult(id string, zipCount *int, packageXmls *[][]byte, handle RetrieveEntryHandler) (problems []string, err error) {
 	if err = fm.CheckStatus(id); err != nil {
 		return
 	}
@@ -1494,65 +1537,99 @@ func (fm *ForceMetadata) RetrieveToDir(root string, query ForceMetadataQuery) (p
 	if err != nil {
 		return
 	}
-	err = extractZipToDir(tmp.Name(), root, "unpackaged/")
+	*zipCount++
+	if preserveZip {
+		name := "inbound.zip"
+		if *zipCount > 1 {
+			name = fmt.Sprintf("inbound-%d.zip", *zipCount)
+		}
+		if err = copyFileContents(tmp.Name(), name); err != nil {
+			return
+		}
+	}
+	err = streamZipEntries(tmp.Name(), "unpackaged/", packageXmls, handle)
 	return
 }
 
-func extractZipToDir(zipPath, root, stripPrefix string) error {
+func streamZipEntries(zipPath, stripPrefix string, packageXmls *[][]byte, handle RetrieveEntryHandler) error {
 	zipfiles, err := zip.OpenReader(zipPath)
 	if err != nil {
 		return err
 	}
 	defer zipfiles.Close()
-	cleanRoot := filepath.Clean(root)
 	for _, file := range zipfiles.File {
-		name := strings.Replace(file.Name, stripPrefix, "", -1)
-		target := filepath.Join(cleanRoot, filepath.FromSlash(name))
-		if target != cleanRoot && !strings.HasPrefix(target, cleanRoot+string(os.PathSeparator)) {
-			return fmt.Errorf("zip entry %s would extract outside %s", file.Name, root)
-		}
 		if file.FileInfo().IsDir() {
-			if err := os.MkdirAll(target, 0755); err != nil {
-				return err
-			}
 			continue
 		}
-		if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
+		name := strings.Replace(file.Name, stripPrefix, "", -1)
+		fd, err := file.Open()
+		if err != nil {
 			return err
 		}
-		if err := writeZipEntry(file, target); err != nil {
-			return err
+		if name == "package.xml" {
+			data, rerr := io.ReadAll(fd)
+			fd.Close()
+			if rerr != nil {
+				return rerr
+			}
+			*packageXmls = append(*packageXmls, data)
+			continue
+		}
+		herr := handle(name, fd)
+		fd.Close()
+		if herr != nil {
+			return herr
 		}
 	}
 	return nil
 }
 
-func writeZipEntry(file *zip.File, target string) error {
-	fd, err := file.Open()
-	if err != nil {
-		return err
+func emitPackageXml(packageXmls [][]byte, handle RetrieveEntryHandler) error {
+	if len(packageXmls) == 0 {
+		return nil
 	}
-	defer fd.Close()
-	out, err := os.OpenFile(target, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
-	if err != nil {
-		return err
+	pkg := packageXmls[0]
+	if len(packageXmls) > 1 {
+		var err error
+		if pkg, err = mergePackageXml(packageXmls...); err != nil {
+			return err
+		}
 	}
-	if _, err := io.Copy(out, fd); err != nil {
-		out.Close()
-		return err
-	}
-	return out.Close()
+	return handle("package.xml", bytes.NewReader(pkg))
 }
 
-func (fm *ForceMetadata) RetrievePackage(packageName string) (files ForceMetadataFiles, problems []string, err error) {
+// EntryDiskWriter returns a RetrieveEntryHandler that writes each entry to
+// its path under root.
+func EntryDiskWriter(root string) RetrieveEntryHandler {
+	cleanRoot := filepath.Clean(root)
+	return func(name string, r io.Reader) error {
+		target := filepath.Join(cleanRoot, filepath.FromSlash(name))
+		if target != cleanRoot && !strings.HasPrefix(target, cleanRoot+string(os.PathSeparator)) {
+			return fmt.Errorf("entry %s would be written outside %s", name, root)
+		}
+		if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
+			return err
+		}
+		out, err := os.OpenFile(target, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+		if err != nil {
+			return err
+		}
+		if _, err := io.Copy(out, r); err != nil {
+			out.Close()
+			return err
+		}
+		return out.Close()
+	}
+}
+
+func (fm *ForceMetadata) startRetrievePackage(packageName string) (id string, err error) {
 	soap := `
 		<retrieveRequest>
 			<apiVersion>%s</apiVersion>
 			<packageNames>%s</packageNames>
 		</retrieveRequest>
 	`
-	soap = fmt.Sprintf(soap, apiVersionNumber, packageName)
-	body, err := fm.soapExecute("retrieve", soap)
+	body, err := fm.soapExecute("retrieve", fmt.Sprintf(soap, apiVersionNumber, packageName))
 	if err != nil {
 		return
 	}
@@ -1562,18 +1639,13 @@ func (fm *ForceMetadata) RetrievePackage(packageName string) (files ForceMetadat
 	if err = xml.Unmarshal(body, &status); err != nil {
 		return
 	}
-	if err = fm.CheckStatus(status.Id); err != nil {
-		return
-	}
-	raw_files, problems, err := fm.CheckRetrieveStatus(status.Id)
-	if err != nil {
-		return
-	}
+	id = status.Id
+	return
+}
+
+func (fm *ForceMetadata) RetrievePackage(packageName string) (files ForceMetadataFiles, problems []string, err error) {
 	files = make(ForceMetadataFiles)
-	for raw_name, data := range raw_files {
-		name := strings.Replace(raw_name, fmt.Sprintf("unpackaged%s", string(os.PathSeparator)), "", -1)
-		files[name] = data
-	}
+	problems, err = fm.RetrievePackageStream(packageName, collectFiles(files))
 	return
 }
 

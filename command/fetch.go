@@ -5,7 +5,6 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -41,6 +40,7 @@ Export specified artifact(s) to a local directory. Use "package" type to retriev
   force fetch -x myproj/metadata/package.xml
 `,
 	Run: func(cmd *cobra.Command, args []string) {
+		SetPreserveZip(preserveZip)
 		if len(args) > 0 {
 			buildPackageAndFetch(args)
 			return
@@ -101,14 +101,15 @@ func getWildcardQuery(force *Force, metadataTypes metaName) (query ForceMetadata
 }
 
 func runFetchForPackageXml(packageXml string) {
-	files, problems, err := force.Metadata.RetrieveByPackageXml(packageXml)
+	data, err := os.ReadFile(packageXml)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
-	for _, problem := range problems {
-		fmt.Fprintln(os.Stderr, problem)
+	query, err := PackageXmlToQuery(data)
+	if err != nil {
+		ErrorAndExit(err.Error())
 	}
-	unpackFiles(files)
+	runFetchQuery(query)
 }
 
 // Fetch by Type
@@ -120,112 +121,139 @@ func runFetch() {
 		ErrorAndExit("You cannot specify entity names if you specify more than one metadata type.")
 	}
 
-	var files ForceMetadataFiles
-	var problems []string
-	var err error
-
 	if len(metadataTypes) == 1 && strings.ToLower(metadataTypes[0]) == "package" {
-		if len(metadataName) > 0 {
-			for names := range metadataName {
-				files, problems, err = force.Metadata.RetrievePackage(metadataName[names])
-				if err != nil {
-					ErrorAndExit(err.Error())
-				}
-				if preserveZip {
-					os.Rename("inbound.zip", fmt.Sprintf("%s.zip", metadataName[names]))
-				}
-			}
-		}
-	} else {
-		query := ForceMetadataQuery{}
-		if len(metadataName) > 0 {
-			mq := ForceMetadataQueryElement{
-				Name:    metadataTypes,
-				Members: metadataName,
-			}
-			query = append(query, mq)
-		} else {
-			query, err = getWildcardQuery(force, metadataTypes)
+		unpacker := newFetchUnpacker(fetchRoot())
+		var problems []string
+		for names := range metadataName {
+			packageProblems, err := force.Metadata.RetrievePackageStream(metadataName[names], unpacker.handle)
 			if err != nil {
 				ErrorAndExit(err.Error())
 			}
+			problems = append(problems, packageProblems...)
+			if preserveZip {
+				os.Rename("inbound.zip", fmt.Sprintf("%s.zip", metadataName[names]))
+			}
 		}
-		files, problems, err = force.Metadata.Retrieve(query)
+		unpacker.finish(problems)
+		return
+	}
+
+	var query ForceMetadataQuery
+	var err error
+	if len(metadataName) > 0 {
+		query = ForceMetadataQuery{
+			{
+				Name:    metadataTypes,
+				Members: metadataName,
+			},
+		}
+	} else {
+		query, err = getWildcardQuery(force, metadataTypes)
 		if err != nil {
 			ErrorAndExit(err.Error())
 		}
 	}
+	runFetchQuery(query)
+}
+
+func runFetchQuery(query ForceMetadataQuery) {
+	unpacker := newFetchUnpacker(fetchRoot())
+	problems, err := force.Metadata.RetrieveStream(query, unpacker.handle)
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
+	unpacker.finish(problems)
+}
+
+func fetchRoot() string {
+	root := targetDirectory
+	if root == "" {
+		var err error
+		root, err = config.GetSourceDir()
+		if err != nil {
+			fmt.Printf("Error obtaining root directory\n")
+			ErrorAndExit(err.Error())
+		}
+	}
+	return root
+}
+
+// fetchUnpacker writes retrieved entries to disk as they are streamed,
+// preserving an existing package.xml and recording static resource metadata
+// files for expansion after the retrieve completes.
+type fetchUnpacker struct {
+	root            string
+	existingPackage bool
+	write           RetrieveEntryHandler
+	count           int
+	resourceMetas   []string
+}
+
+func newFetchUnpacker(root string) *fetchUnpacker {
+	existingPackage, _ := pathExists(filepath.Join(root, "package.xml"))
+	return &fetchUnpacker{
+		root:            root,
+		existingPackage: existingPackage,
+		write:           EntryDiskWriter(root),
+	}
+}
+
+func (u *fetchUnpacker) handle(name string, r io.Reader) error {
+	if name == "package.xml" {
+		if u.existingPackage {
+			return nil
+		}
+	} else {
+		u.count++
+	}
+	if err := u.write(name, r); err != nil {
+		return err
+	}
+	if unpack && strings.HasSuffix(name, ".resource-meta.xml") {
+		u.resourceMetas = append(u.resourceMetas, name)
+	}
+	return nil
+}
+
+func (u *fetchUnpacker) finish(problems []string) {
 	for _, problem := range problems {
 		fmt.Fprintln(os.Stderr, problem)
 	}
-	unpackFiles(files)
-}
-
-func unpackFiles(files ForceMetadataFiles) {
-	var err error
-	var expandResources bool = unpack
-
-	resourcesMap := make(map[string]string)
-
-	root := targetDirectory
-	if root == "" {
-		root, err = config.GetSourceDir()
-	}
-	if err != nil {
-		fmt.Printf("Error obtaining root directory\n")
-		ErrorAndExit(err.Error())
-	}
-	existingPackage, _ := pathExists(filepath.Join(root, "package.xml"))
-
-	if len(files) == 1 {
+	if u.count == 0 {
 		ErrorAndExit("Could not find any objects for " + strings.Join(metadataTypes, ", ") + ". (Is the metadata type correct?)")
 	}
-	for name, data := range files {
-		if !existingPackage || name != "package.xml" {
-			file := filepath.Join(root, name)
-			dir := filepath.Dir(file)
-			if err := os.MkdirAll(dir, 0755); err != nil {
-				ErrorAndExit(err.Error())
-			}
-			if err := ioutil.WriteFile(filepath.Join(root, name), data, 0644); err != nil {
-				ErrorAndExit(err.Error())
-			}
-			isResource := strings.HasSuffix(file, ".resource-meta.xml")
-			//Handle expanding static resources into a "bundle" folder
-			if isResource && expandResources {
-				if string(os.PathSeparator) != "/" {
-					name = strings.Replace(name, "/", string(os.PathSeparator), -1)
-				}
-				pathParts := strings.Split(name, string(os.PathSeparator))
-				resourceName := pathParts[cap(pathParts)-1]
-				resourceExt := strings.Split(resourceName, ".")[1]
-				resourceName = strings.Split(resourceName, ".")[0]
+	u.expandResources()
+	fmt.Printf("Exported to %s\n", u.root)
+}
 
-				if resourceExt == "resource-meta" {
-					//Check the xml to determine the mime type of the resource
-					// We are looking for application/zip
-					var meta struct {
-						CacheControl string `xml:"cacheControl"`
-						ContentType  string `xml:"contentType"`
-					}
-					if err = xml.Unmarshal([]byte(data), &meta); err != nil {
-						//return
-					}
-					if meta.ContentType == "application/zip" {
-						// this is the meat for a zip file, so add the map
-						resourcesMap[resourceName] = filepath.Join(filepath.Dir(file), resourceName+".resource")
-					}
-				}
-			}
+// expandResources expands static resources with a zip content type into a
+// "bundle" folder
+func (u *fetchUnpacker) expandResources() {
+	if len(u.resourceMetas) == 0 {
+		return
+	}
+	resourcesMap := make(map[string]string)
+	for _, name := range u.resourceMetas {
+		file := filepath.Join(u.root, filepath.FromSlash(name))
+		data, err := os.ReadFile(file)
+		if err != nil {
+			continue
+		}
+		var meta struct {
+			CacheControl string `xml:"cacheControl"`
+			ContentType  string `xml:"contentType"`
+		}
+		if err := xml.Unmarshal(data, &meta); err != nil {
+			continue
+		}
+		if meta.ContentType == "application/zip" {
+			resourceName := strings.TrimSuffix(filepath.Base(file), ".resource-meta.xml")
+			resourcesMap[resourceName] = filepath.Join(filepath.Dir(file), resourceName+".resource")
 		}
 	}
-
-	// Now we need to see if we have any zips to expand
-	if expandResources && len(resourcesMap) > 0 {
+	if len(resourcesMap) > 0 {
 		unpackResources(resourcesMap)
 	}
-
-	fmt.Printf("Exported to %s\n", root)
 }
 
 func pathExists(path string) (bool, error) {
@@ -271,14 +299,11 @@ func buildPackageAndFetch(paths []string) {
 		ErrorAndExit("Nothing to fetch")
 	}
 
-	files, problems, err := force.Metadata.RetrieveByPackageXmlContents(packageXml)
+	query, err := PackageXmlToQuery(packageXml)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
-	for _, problem := range problems {
-		fmt.Fprintln(os.Stderr, problem)
-	}
-	unpackFiles(files)
+	runFetchQuery(query)
 }
 
 func unpackResources(resourceMap map[string]string) {

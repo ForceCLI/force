@@ -164,18 +164,13 @@ func TestBase64Writer_Truncated(t *testing.T) {
 	}
 }
 
-func TestExtractZipToDir(t *testing.T) {
-	dir := t.TempDir()
-	zipPath := filepath.Join(dir, "test.zip")
-	zf, err := os.Create(zipPath)
+func writeTestZip(t *testing.T, path string, entries map[string]string) {
+	t.Helper()
+	zf, err := os.Create(path)
 	if err != nil {
 		t.Fatal(err)
 	}
 	zw := zip.NewWriter(zf)
-	entries := map[string]string{
-		"unpackaged/classes/Foo.cls": "public class Foo {}",
-		"unpackaged/package.xml":     "<Package/>",
-	}
 	for name, content := range entries {
 		f, err := zw.Create(name)
 		if err != nil {
@@ -191,47 +186,45 @@ func TestExtractZipToDir(t *testing.T) {
 	if err := zf.Close(); err != nil {
 		t.Fatal(err)
 	}
+}
+
+func TestStreamZipEntries(t *testing.T) {
+	dir := t.TempDir()
+	zipPath := filepath.Join(dir, "test.zip")
+	writeTestZip(t, zipPath, map[string]string{
+		"unpackaged/classes/Foo.cls": "public class Foo {}",
+		"unpackaged/package.xml":     "<Package/>",
+		"unpackaged/emptydir/":       "",
+	})
 
 	root := filepath.Join(dir, "out")
-	if err := extractZipToDir(zipPath, root, "unpackaged/"); err != nil {
+	var packageXmls [][]byte
+	if err := streamZipEntries(zipPath, "unpackaged/", &packageXmls, EntryDiskWriter(root)); err != nil {
 		t.Fatal(err)
 	}
-	for name, content := range entries {
-		rel := strings.TrimPrefix(name, "unpackaged/")
-		data, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(rel)))
-		if err != nil {
-			t.Fatal(err)
-		}
-		if string(data) != content {
-			t.Errorf("%s = %q, want %q", rel, data, content)
-		}
+	data, err := os.ReadFile(filepath.Join(root, "classes", "Foo.cls"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(data) != "public class Foo {}" {
+		t.Errorf("Foo.cls = %q", data)
+	}
+	// package.xml is collected for merging, not passed to the handler
+	if _, err := os.Stat(filepath.Join(root, "package.xml")); !os.IsNotExist(err) {
+		t.Errorf("package.xml should not be written by streamZipEntries")
+	}
+	if len(packageXmls) != 1 || string(packageXmls[0]) != "<Package/>" {
+		t.Errorf("packageXmls = %q", packageXmls)
+	}
+	if _, err := os.Stat(filepath.Join(root, "emptydir")); !os.IsNotExist(err) {
+		t.Errorf("directory entries should be skipped")
 	}
 }
 
-func TestExtractZipToDir_PathTraversal(t *testing.T) {
-	dir := t.TempDir()
-	zipPath := filepath.Join(dir, "evil.zip")
-	zf, err := os.Create(zipPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	zw := zip.NewWriter(zf)
-	f, err := zw.Create("../evil.txt")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := f.Write([]byte("bad")); err != nil {
-		t.Fatal(err)
-	}
-	if err := zw.Close(); err != nil {
-		t.Fatal(err)
-	}
-	if err := zf.Close(); err != nil {
-		t.Fatal(err)
-	}
-
-	root := filepath.Join(dir, "out")
-	if err := extractZipToDir(zipPath, root, "unpackaged/"); err == nil {
+func TestEntryDiskWriter_PathTraversal(t *testing.T) {
+	root := filepath.Join(t.TempDir(), "out")
+	write := EntryDiskWriter(root)
+	if err := write("../evil.txt", strings.NewReader("bad")); err == nil {
 		t.Fatal("expected error for path traversal entry")
 	}
 }
