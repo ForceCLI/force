@@ -206,15 +206,17 @@ const (
 	PartnerProfessional
 )
 
+// The first value for each edition is the ScratchOrgInfo Edition picklist
+// value sent to Salesforce; any additional values are accepted flag aliases.
 var ScratchEditionIds = map[ScratchEdition][]string{
 	Developer:           {"Developer"},
 	Enterprise:          {"Enterprise"},
 	Group:               {"Group"},
 	Professional:        {"Professional"},
-	PartnerDeveloper:    {"PartnerDeveloper"},
-	PartnerEnterprise:   {"PartnerEnterprise"},
-	PartnerGroup:        {"PartnerGroup"},
-	PartnerProfessional: {"PartnerProfessional"},
+	PartnerDeveloper:    {"Partner Developer", "PartnerDeveloper"},
+	PartnerEnterprise:   {"Partner Enterprise", "PartnerEnterprise"},
+	PartnerGroup:        {"Partner Group", "PartnerGroup"},
+	PartnerProfessional: {"Partner Professional", "PartnerProfessional"},
 }
 
 type ScratchSetting enumflag.Flag

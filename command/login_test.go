@@ -709,29 +709,35 @@ func TestExpandProductsToSettings_Deduplication(t *testing.T) {
 }
 
 func TestScratchEditionIds_AllEditionsDefined(t *testing.T) {
-	expectedEditions := map[string]bool{
-		"Developer":           true,
-		"Enterprise":          true,
-		"Group":               true,
-		"Professional":        true,
-		"PartnerDeveloper":    true,
-		"PartnerEnterprise":   true,
-		"PartnerGroup":        true,
-		"PartnerProfessional": true,
+	expectedEditions := map[ScratchEdition][]string{
+		Developer:           {"Developer"},
+		Enterprise:          {"Enterprise"},
+		Group:               {"Group"},
+		Professional:        {"Professional"},
+		PartnerDeveloper:    {"Partner Developer", "PartnerDeveloper"},
+		PartnerEnterprise:   {"Partner Enterprise", "PartnerEnterprise"},
+		PartnerGroup:        {"Partner Group", "PartnerGroup"},
+		PartnerProfessional: {"Partner Professional", "PartnerProfessional"},
 	}
 
 	if len(ScratchEditionIds) != len(expectedEditions) {
 		t.Errorf("Expected %d editions, got %d", len(expectedEditions), len(ScratchEditionIds))
 	}
 
-	for _, ids := range ScratchEditionIds {
-		if len(ids) != 1 {
-			t.Errorf("Expected 1 ID per edition, got %d", len(ids))
+	for edition, expectedIds := range expectedEditions {
+		ids, ok := ScratchEditionIds[edition]
+		if !ok {
+			t.Errorf("Missing edition: %v", edition)
 			continue
 		}
-		editionName := ids[0]
-		if !expectedEditions[editionName] {
-			t.Errorf("Unexpected edition: %s", editionName)
+		if len(ids) != len(expectedIds) {
+			t.Errorf("Expected %d IDs for edition %v, got %d", len(expectedIds), edition, len(ids))
+			continue
+		}
+		for i, expected := range expectedIds {
+			if ids[i] != expected {
+				t.Errorf("Expected ID %q at position %d for edition %v, got %q", expected, i, edition, ids[i])
+			}
 		}
 	}
 }
