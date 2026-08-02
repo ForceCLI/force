@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -304,6 +305,7 @@ func buildSettingsMetadata(settings []string) ForceMetadataFiles {
 		enableEnhancedPermsetMgmt             bool
 		enableEnhancedProfileMgmt             bool
 		enableNewProfileUI                    bool
+		enableSurvey                          bool
 	)
 
 	for _, setting := range settings {
@@ -434,6 +436,8 @@ func buildSettingsMetadata(settings []string) ForceMetadataFiles {
 			enableEnhancedProfileMgmt = true
 		case "enableNewProfileUI":
 			enableNewProfileUI = true
+		case "enableSurvey":
+			enableSurvey = true
 		}
 	}
 
@@ -574,8 +578,29 @@ func buildSettingsMetadata(settings []string) ForceMetadataFiles {
 	emit("unpackaged/settings/Product.settings", "ProductSettings", []settingsFlag{
 		{"enableRevenueSchedule", enableRevenueSchedule},
 	})
+	emit("unpackaged/settings/Survey.settings", "SurveySettings", []settingsFlag{
+		{"enableSurvey", enableSurvey},
+	})
 
 	return files
+}
+
+// buildFeaturesParam appends the requested features to the always-enabled
+// base features, skipping any already included in the base list.
+func buildFeaturesParam(features []string) string {
+	allFeatures := "AuthorApex;API;AddCustomApps:30;AddCustomTabs:30;ForceComPlatform;Sites;CustomerSelfService"
+	included := make(map[string]bool)
+	for _, feature := range strings.Split(allFeatures, ";") {
+		included[feature] = true
+	}
+	for _, feature := range features {
+		if included[feature] {
+			continue
+		}
+		included[feature] = true
+		allFeatures += ";" + feature
+	}
+	return allFeatures
 }
 
 // Create a new Scratch Org from a Dev Hub Org
@@ -620,13 +645,7 @@ func (f *Force) CreateScratchOrgWithDuration(username string, features []string,
 		params["Edition"] = "Developer"
 	}
 
-	baseFeatures := "AuthorApex;API;AddCustomApps:30;AddCustomTabs:30;ForceComPlatform;Sites;CustomerSelfService"
-	if len(features) > 0 {
-		for _, feature := range features {
-			baseFeatures += ";" + feature
-		}
-	}
-	params["Features"] = baseFeatures
+	params["Features"] = buildFeaturesParam(features)
 
 	// Note: settings parameter is kept for later deployment after org creation
 

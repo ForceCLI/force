@@ -85,6 +85,8 @@ const (
 	SharedActivities
 	HighVelocitySales
 	InvoiceManagement
+	WorkplaceCommandCenterUser
+	ForceComPlatform
 )
 
 var ScratchFeatureIds = map[ScratchFeature][]string{
@@ -157,6 +159,8 @@ var ScratchFeatureIds = map[ScratchFeature][]string{
 	SharedActivities:                  {"SharedActivities"},
 	HighVelocitySales:                 {"HighVelocitySales"},
 	InvoiceManagement:                 {"InvoiceManagement"},
+	WorkplaceCommandCenterUser:        {"WorkplaceCommandCenterUser"},
+	ForceComPlatform:                  {"ForceComPlatform"},
 }
 
 type ScratchProduct enumflag.Flag
@@ -172,6 +176,7 @@ const (
 	RevenueCloudProduct
 	MessagingProduct
 	EducationCloudProduct
+	WorkComProduct
 )
 
 var ScratchProductIds = map[ScratchProduct][]string{
@@ -185,6 +190,7 @@ var ScratchProductIds = map[ScratchProduct][]string{
 	RevenueCloudProduct:   {"revenuecloud"},
 	MessagingProduct:      {"messaging"},
 	EducationCloudProduct: {"educationcloud"},
+	WorkComProduct:        {"work.com"},
 }
 
 type ScratchEdition enumflag.Flag
@@ -277,6 +283,7 @@ const (
 	EnableEnhancedPermsetMgmt
 	EnableEnhancedProfileMgmt
 	EnableNewProfileUI
+	EnableSurvey
 )
 
 var ScratchSettingIds = map[ScratchSetting][]string{
@@ -343,6 +350,7 @@ var ScratchSettingIds = map[ScratchSetting][]string{
 	EnableEnhancedPermsetMgmt:             {"enableEnhancedPermsetMgmt"},
 	EnableEnhancedProfileMgmt:             {"enableEnhancedProfileMgmt"},
 	EnableNewProfileUI:                    {"enableNewProfileUI"},
+	EnableSurvey:                          {"enableSurvey"},
 }
 
 type ScratchRelease enumflag.Flag
@@ -461,6 +469,7 @@ Available Features:
   EventLogFile                        - Enables Event Log File
   FinancialServicesUser               - Enables Financial Services Cloud user licenses (requires quantity, default: 10)
   FlowSites                           - Enables Flow Sites
+  ForceComPlatform                    - Enables Force.com Platform user licenses (always included in base features)
   Fundraising                         - Enables Fundraising
   HealthCloudAddOn                    - Enables Health Cloud add-on
   HealthCloudUser                     - Enables Health Cloud user licenses
@@ -496,6 +505,7 @@ Available Features:
   SurveyAdvancedFeatures              - Enables advanced Salesforce Surveys features
   UsageManagement                     - Enables Usage Management (Revenue Cloud)
   WavePlatform                        - Enables Wave Platform (CRM Analytics)
+  WorkplaceCommandCenterUser          - Enables Workplace Command Center user licenses (Work.com)
 
 Available Products:
   b2bcommerce      - B2B Commerce (enables B2BCommerce, OrderManagement features and commerceEnabled, enableOrders, enableEnhancedCommerceOrders settings)
@@ -508,6 +518,7 @@ Available Products:
   liveagent        - Live Agent (enables LiveAgent feature and enableLiveAgent setting)
   messaging        - Messaging (enables EmbeddedServiceMessaging, LiveMessage, BYOOTT features)
   revenuecloud     - Revenue Cloud (enables CoreCpq, BillingAdvanced, UsageManagement, DocGen, Einstein1AIPlatform, InvoiceManagement, OrderManagement, Communities, PartnerCommunity, CustomerCommunityPlus, EnableSetPasswordInApi, OrderSaveLogicEnabled features and a comprehensive set of billing/order/quote/pricing/rating settings)
+  work.com         - Work.com (enables Communities, WorkplaceCommandCenterUser, ForceComPlatform features and enableS1DesktopEnabled, enableSurvey, networksEnabled settings)
 
 Available Editions:
   Developer           - Developer Edition (default)
@@ -580,6 +591,7 @@ Available Settings (deployed after org creation):
   enableMiddleName                      - Enable Middle Name (NameSettings)
   enableNameSuffix                      - Enable Name Suffix (NameSettings)
   enableRevenueSchedule                 - Enable Revenue Schedule (ProductSettings)
+  enableSurvey                          - Enable Salesforce Surveys (SurveySettings)
   enableEnhancedPermsetMgmt             - Enable Enhanced Permission Set Management (UserManagementSettings)
   enableEnhancedProfileMgmt             - Enable Enhanced Profile Management (UserManagementSettings)
   enableNewProfileUI                    - Enable New Profile UI (UserManagementSettings)
@@ -605,6 +617,7 @@ Examples:
   force login scratch --product liveagent
   force login scratch --product messaging
   force login scratch --product revenuecloud
+  force login scratch --product work.com
   force login scratch --release preview
   force login scratch --release previous
   force login scratch --duration 14`,
@@ -700,6 +713,7 @@ func expandProductsToFeatures(products []ScratchProduct, features []ScratchFeatu
 			InvoiceManagement,
 		},
 		MessagingProduct: {EmbeddedServiceMessaging, LiveMessage, BYOOTT},
+		WorkComProduct:   {Communities, WorkplaceCommandCenterUser, ForceComPlatform},
 		EducationCloudProduct: {
 			EducationCloud,
 			AccountingSubledgerGrowthEdition,
@@ -780,6 +794,7 @@ func expandProductsToSettings(products []ScratchProduct, settings []ScratchSetti
 		B2BCommerceProduct: {CommerceEnabled, EnableOrders, EnableEnhancedCommerceOrders},
 		LiveAgentProduct:   {EnableLiveAgent},
 		KnowledgeProduct:   {EnableKnowledge, EnableLightningKnowledge},
+		WorkComProduct:     {EnableS1DesktopEnabled, EnableSurvey, NetworksEnabled},
 		RevenueCloudProduct: {
 			EnableBillingSetup,
 			NetworksEnabled,

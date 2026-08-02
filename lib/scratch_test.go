@@ -912,3 +912,50 @@ func TestCreateScratchOrgWithRelease_uses_default_duration_of_7(t *testing.T) {
 		t.Errorf("Expected DurationDays to be '7', got: %v", receivedBody["DurationDays"])
 	}
 }
+
+func TestBuildSettingsMetadata_AddsSurveySettings(t *testing.T) {
+	files := buildSettingsMetadata([]string{"enableSurvey"})
+
+	content, ok := files["unpackaged/settings/Survey.settings"]
+	if !ok {
+		t.Fatalf("Survey.settings not generated")
+	}
+	if !strings.Contains(string(content), "<enableSurvey>true</enableSurvey>") {
+		t.Errorf("Survey.settings missing enableSurvey preference:\n%s", content)
+	}
+	if !strings.Contains(string(content), "<SurveySettings") {
+		t.Errorf("Survey.settings missing SurveySettings root element:\n%s", content)
+	}
+}
+
+func TestBuildSettingsMetadata_ExcludesSurveySettingsWhenUnused(t *testing.T) {
+	files := buildSettingsMetadata([]string{"enableEnhancedNotes"})
+
+	if _, ok := files["unpackaged/settings/Survey.settings"]; ok {
+		t.Fatalf("Survey.settings should not be generated when not requested")
+	}
+}
+
+func TestBuildFeaturesParam_appends_requested_features(t *testing.T) {
+	result := buildFeaturesParam([]string{"Communities", "WorkplaceCommandCenterUser"})
+	if !strings.HasSuffix(result, ";Communities;WorkplaceCommandCenterUser") {
+		t.Errorf("Expected requested features appended, got: %s", result)
+	}
+}
+
+func TestBuildFeaturesParam_skips_duplicate_base_features(t *testing.T) {
+	result := buildFeaturesParam([]string{"ForceComPlatform", "WorkplaceCommandCenterUser"})
+	if strings.Count(result, "ForceComPlatform") != 1 {
+		t.Errorf("Expected ForceComPlatform to appear once, got: %s", result)
+	}
+	if !strings.Contains(result, "WorkplaceCommandCenterUser") {
+		t.Errorf("Expected WorkplaceCommandCenterUser in features, got: %s", result)
+	}
+}
+
+func TestBuildFeaturesParam_skips_repeated_requested_features(t *testing.T) {
+	result := buildFeaturesParam([]string{"Communities", "Communities"})
+	if strings.Count(result, "Communities") != 1 {
+		t.Errorf("Expected Communities to appear once, got: %s", result)
+	}
+}

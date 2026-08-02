@@ -493,6 +493,50 @@ func TestExpandProductsToSettings_EducationCloudProduct(t *testing.T) {
 	}
 }
 
+func TestExpandProductsToFeatures_WorkComProduct(t *testing.T) {
+	result := expandProductsToFeatures([]ScratchProduct{WorkComProduct}, []ScratchFeature{}, map[string]string{})
+	expected := []string{"Communities", "WorkplaceCommandCenterUser", "ForceComPlatform"}
+	if len(result) != len(expected) {
+		t.Fatalf("Expected %d features from work.com product, got %d: %v", len(expected), len(result), result)
+	}
+	got := make(map[string]bool)
+	for _, f := range result {
+		got[f] = true
+	}
+	for _, want := range expected {
+		if !got[want] {
+			t.Errorf("Expected %s in work.com product, missing", want)
+		}
+	}
+}
+
+func TestExpandProductsToSettings_WorkComProduct(t *testing.T) {
+	result := expandProductsToSettings([]ScratchProduct{WorkComProduct}, []ScratchSetting{})
+	expected := []string{"enableS1DesktopEnabled", "enableSurvey", "networksEnabled"}
+	if len(result) != len(expected) {
+		t.Fatalf("Expected %d settings from work.com product, got %d: %v", len(expected), len(result), result)
+	}
+	got := make(map[string]bool)
+	for _, s := range result {
+		got[s] = true
+	}
+	for _, want := range expected {
+		if !got[want] {
+			t.Errorf("Expected %s in work.com product settings, missing", want)
+		}
+	}
+}
+
+func TestConvertSettingsToStrings_EnableSurvey(t *testing.T) {
+	result := convertSettingsToStrings([]ScratchSetting{EnableSurvey})
+	if len(result) != 1 {
+		t.Fatalf("Expected 1 setting, got %d", len(result))
+	}
+	if result[0] != "enableSurvey" {
+		t.Errorf("Expected enableSurvey, got %s", result[0])
+	}
+}
+
 func TestExpandProductsToFeatures_KnowledgeProduct(t *testing.T) {
 	result := expandProductsToFeatures([]ScratchProduct{KnowledgeProduct}, []ScratchFeature{}, map[string]string{})
 	if len(result) != 1 {
@@ -763,6 +807,8 @@ func TestScratchFeatureIds_AllFeaturesDefined(t *testing.T) {
 		"SharedActivities":                  true,
 		"HighVelocitySales":                 true,
 		"InvoiceManagement":                 true,
+		"WorkplaceCommandCenterUser":        true,
+		"ForceComPlatform":                  true,
 	}
 
 	if len(ScratchFeatureIds) != len(expectedFeatures) {
@@ -923,6 +969,7 @@ func TestScratchSettingIds_AllSettingsDefined(t *testing.T) {
 		"enableEnhancedPermsetMgmt":             true,
 		"enableEnhancedProfileMgmt":             true,
 		"enableNewProfileUI":                    true,
+		"enableSurvey":                          true,
 	}
 
 	if len(ScratchSettingIds) != len(expectedSettings) {
