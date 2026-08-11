@@ -815,6 +815,7 @@ func TestScratchFeatureIds_AllFeaturesDefined(t *testing.T) {
 		"InvoiceManagement":                 true,
 		"WorkplaceCommandCenterUser":        true,
 		"ForceComPlatform":                  true,
+		"Division":                          true,
 	}
 
 	if len(ScratchFeatureIds) != len(expectedFeatures) {

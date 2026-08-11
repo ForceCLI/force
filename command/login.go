@@ -87,6 +87,7 @@ const (
 	InvoiceManagement
 	WorkplaceCommandCenterUser
 	ForceComPlatform
+	Division
 )
 
 var ScratchFeatureIds = map[ScratchFeature][]string{
@@ -161,6 +162,7 @@ var ScratchFeatureIds = map[ScratchFeature][]string{
 	InvoiceManagement:                 {"InvoiceManagement"},
 	WorkplaceCommandCenterUser:        {"WorkplaceCommandCenterUser"},
 	ForceComPlatform:                  {"ForceComPlatform"},
+	Division:                          {"Division"},
 }
 
 type ScratchProduct enumflag.Flag
@@ -459,6 +461,7 @@ Available Features:
   DocGen                              - Enables Document Generation
   DocGenDesigner                      - Enables Document Generation Designer
   DocGenInd                           - Enables Industries Document Generation
+  Division                            - Enables Divisions
   DocumentChecklist                   - Enables Document Checklist
   DSARPortability                     - Enables Data Subject Access Request (DSAR) data portability
   EducationCloud                      - Enables Education Cloud user licenses (requires quantity, default: 10)
