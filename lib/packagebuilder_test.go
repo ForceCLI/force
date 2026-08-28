@@ -7,6 +7,7 @@ import (
 	. "github.com/ForceCLI/force/lib"
 
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 )
 
@@ -402,6 +403,22 @@ var _ = Describe("Packagebuilder", func() {
 		BeforeEach(func() {
 			pb = NewFetchBuilder()
 			pb.Root = "/path/to/src"
+		})
+
+		Describe("external client app metadata", func() {
+			DescribeTable("should identify each type from its directory",
+				func(path, expectedType, expectedName string) {
+					metadataType, metadataName, err := pb.GetMetaForAbsolutePath(path)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(metadataType).To(Equal(expectedType))
+					Expect(metadataName).To(Equal(expectedName))
+				},
+				Entry("app", "/path/to/src/externalClientApps/DBAmp.eca", "ExternalClientApplication", "DBAmp"),
+				Entry("oauth policies", "/path/to/src/extlClntAppOauthPolicies/DBAmp_oauthPlcy.ecaOauthPlcy", "ExtlClntAppOauthConfigurablePolicies", "DBAmp_oauthPlcy"),
+				Entry("oauth settings", "/path/to/src/extlClntAppOauthSettings/DBAmp_oauth.ecaOauth", "ExtlClntAppOauthSettings", "DBAmp_oauth"),
+				Entry("global oauth settings", "/path/to/src/extlClntAppGlobalOauthSets/DBAmp_glblOauth.ecaGlblOauth", "ExtlClntAppGlobalOauthSettings", "DBAmp_glblOauth"),
+				Entry("configurable policies", "/path/to/src/extlClntAppConfigurablePolicies/DBAmp_plcy.ecaCnfgPlcy", "ExtlClntAppConfigurablePolicies", "DBAmp_plcy"),
+			)
 		})
 
 		Describe("adding a folder of lightning web components", func() {
