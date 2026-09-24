@@ -88,6 +88,10 @@ const (
 	WorkplaceCommandCenterUser
 	ForceComPlatform
 	Division
+	Grantmaking
+	OutcomeManagement
+	NonprofitCloudCaseManagementUser
+	VolunteerManagement
 )
 
 var ScratchFeatureIds = map[ScratchFeature][]string{
@@ -163,6 +167,10 @@ var ScratchFeatureIds = map[ScratchFeature][]string{
 	WorkplaceCommandCenterUser:        {"WorkplaceCommandCenterUser"},
 	ForceComPlatform:                  {"ForceComPlatform"},
 	Division:                          {"Division"},
+	Grantmaking:                       {"Grantmaking"},
+	OutcomeManagement:                 {"OutcomeManagement"},
+	NonprofitCloudCaseManagementUser:  {"NonprofitCloudCaseManagementUser"},
+	VolunteerManagement:               {"VolunteerManagement"},
 }
 
 type ScratchProduct enumflag.Flag
@@ -179,6 +187,7 @@ const (
 	MessagingProduct
 	EducationCloudProduct
 	WorkComProduct
+	NonprofitCloudProduct
 )
 
 var ScratchProductIds = map[ScratchProduct][]string{
@@ -193,6 +202,7 @@ var ScratchProductIds = map[ScratchProduct][]string{
 	MessagingProduct:      {"messaging"},
 	EducationCloudProduct: {"educationcloud"},
 	WorkComProduct:        {"work.com"},
+	NonprofitCloudProduct: {"nonprofitcloud"},
 }
 
 type ScratchEdition enumflag.Flag
@@ -288,6 +298,18 @@ const (
 	EnableEnhancedProfileMgmt
 	EnableNewProfileUI
 	EnableSurvey
+	EnableGrantmaking
+	EnableOutcomes
+	EnableCompliantDataSharingForBudget
+	EnableCompliantDataSharingForIndividualApplication
+	EnableCompliantDataSharingForFundingAward
+	EnableDisbursementPreference
+	EnableGiftAgreement
+	EnableGiftEntryGrid
+	EnableGiftPlanning
+	EnableProgramCohorts
+	EnableRecordRollup
+	EnableVolunteerManagement
 )
 
 var ScratchSettingIds = map[ScratchSetting][]string{
@@ -355,6 +377,19 @@ var ScratchSettingIds = map[ScratchSetting][]string{
 	EnableEnhancedProfileMgmt:             {"enableEnhancedProfileMgmt"},
 	EnableNewProfileUI:                    {"enableNewProfileUI"},
 	EnableSurvey:                          {"enableSurvey"},
+
+	EnableGrantmaking:                                  {"enableGrantmaking"},
+	EnableOutcomes:                                     {"enableOutcomes"},
+	EnableCompliantDataSharingForBudget:                {"enableCompliantDataSharingForBudget"},
+	EnableCompliantDataSharingForIndividualApplication: {"enableCompliantDataSharingForIndividualApplication"},
+	EnableCompliantDataSharingForFundingAward:          {"enableCompliantDataSharingForFundingAward"},
+	EnableDisbursementPreference:                       {"enableDisbursementPreference"},
+	EnableGiftAgreement:                                {"enableGiftAgreement"},
+	EnableGiftEntryGrid:                                {"enableGiftEntryGrid"},
+	EnableGiftPlanning:                                 {"enableGiftPlanning"},
+	EnableProgramCohorts:                               {"enableProgramCohorts"},
+	EnableRecordRollup:                                 {"enableRecordRollup"},
+	EnableVolunteerManagement:                          {"enableVolunteerManagement"},
 }
 
 type ScratchRelease enumflag.Flag
@@ -476,6 +511,7 @@ Available Features:
   FlowSites                           - Enables Flow Sites
   ForceComPlatform                    - Enables Force.com Platform user licenses (always included in base features)
   Fundraising                         - Enables Fundraising
+  Grantmaking                         - Enables Grantmaking (Nonprofit Cloud)
   HealthCloudAddOn                    - Enables Health Cloud add-on
   HealthCloudUser                     - Enables Health Cloud user licenses
   HighVelocitySales                   - Enables High Velocity Sales (Sales Engagement)
@@ -490,10 +526,12 @@ Available Features:
   LiveAgent                           - Enables Live Agent (Chat)
   LiveMessage                         - Enables LiveMessage (SMS/MMS messaging)
   MarketingUser                       - Enables Marketing User licenses
+  NonprofitCloudCaseManagementUser    - Enables Nonprofit Cloud Case Management user licenses
   OmniStudioDesigner                  - Enables OmniStudio Designer
   OmniStudioRuntime                   - Enables OmniStudio Runtime
   OrderManagement                     - Enables Salesforce Order Management
   OrderSaveLogicEnabled               - Enables order save behavior logic
+  OutcomeManagement                   - Enables Outcome Management
   PartnerCommunity                    - Enables Partner Community user licenses
   PersonAccounts                      - Enables Person Accounts (B2C account model)
   PlatformCache                       - Enables Platform Cache
@@ -509,6 +547,7 @@ Available Features:
   StateAndCountryPicklist             - Enables State and Country Picklists for standard address fields
   SurveyAdvancedFeatures              - Enables advanced Salesforce Surveys features
   UsageManagement                     - Enables Usage Management (Revenue Cloud)
+  VolunteerManagement                 - Enables Volunteer Management (Nonprofit Cloud)
   WavePlatform                        - Enables Wave Platform (CRM Analytics)
   WorkplaceCommandCenterUser          - Enables Workplace Command Center user licenses (Work.com)
 
@@ -522,6 +561,7 @@ Available Products:
   knowledge        - Salesforce Knowledge (enables Knowledge feature and enableKnowledge, enableLightningKnowledge settings)
   liveagent        - Live Agent (enables LiveAgent feature and enableLiveAgent setting)
   messaging        - Messaging (enables EmbeddedServiceMessaging, LiveMessage, BYOOTT features)
+  nonprofitcloud   - Nonprofit Cloud (enables Fundraising, Grantmaking, OutcomeManagement, ProgramManagement, VolunteerManagement, NonprofitCloudCaseManagementUser, FinancialServicesUser (for Record Rollups), PersonAccounts, OmniStudio, and other Nonprofit Cloud features with the Nonprofit Cloud industries settings)
   revenuecloud     - Revenue Cloud (enables CoreCpq, BillingAdvanced, UsageManagement, DocGen, Einstein1AIPlatform, InvoiceManagement, OrderManagement, Communities, PartnerCommunity, CustomerCommunityPlus, EnableSetPasswordInApi, OrderSaveLogicEnabled features and a comprehensive set of billing/order/quote/pricing/rating settings)
   work.com         - Work.com (enables Communities, WorkplaceCommandCenterUser, ForceComPlatform features and enableS1DesktopEnabled, enableSurvey, networksEnabled settings)
 
@@ -584,14 +624,26 @@ Available Settings (deployed after org creation):
   enableBenefitManagementPreference     - Enable Benefit Management (IndustriesSettings)
   enableBenefitAndGoalSharingPref       - Enable Benefit and Goal Sharing (IndustriesSettings)
   enableCarePlansPreference             - Enable Care Plans (IndustriesSettings)
+  enableCompliantDataSharingForBudget   - Enable Compliant Data Sharing for Budget (IndustriesSettings)
+  enableCompliantDataSharingForFundingAward - Enable Compliant Data Sharing for Funding Award (IndustriesSettings)
+  enableCompliantDataSharingForIndividualApplication - Enable Compliant Data Sharing for Individual Application (IndustriesSettings)
+  enableDisbursementPreference          - Enable Benefit Disbursements (IndustriesSettings)
   enableDiscoveryFrameworkMetadata      - Enable Discovery Framework Metadata (IndustriesSettings)
   enableEducationCloud                  - Enable Education Cloud (IndustriesSettings)
   enableFundraising                     - Enable Fundraising (IndustriesSettings)
+  enableGiftAgreement                   - Enable Gift Agreements (IndustriesSettings)
+  enableGiftEntryGrid                   - Enable Gift Entry Grid (IndustriesSettings)
+  enableGiftPlanning                    - Enable Gift Planning (IndustriesSettings)
+  enableGrantmaking                     - Enable Grantmaking (IndustriesSettings)
   enableGroupMembershipPref             - Enable Group Membership (IndustriesSettings)
   enableIndustriesAssessment            - Enable Industries Assessment (IndustriesSettings)
   enableInteractionSummaryPref          - Enable Interaction Summary (IndustriesSettings)
   enableInteractionSummaryRoleHierarchy - Enable Interaction Summary Role Hierarchy (IndustriesSettings)
+  enableOutcomes                        - Enable Outcome Management (IndustriesSettings)
+  enableProgramCohorts                  - Enable Program Cohorts (IndustriesSettings)
+  enableRecordRollup                    - Enable Record Rollups (IndustriesSettings)
   enableStudentSuccess                  - Enable Student Success (IndustriesSettings)
+  enableVolunteerManagement             - Enable Volunteer Management (IndustriesSettings)
   enableInterestTagging                 - Enable Interest Tagging (InterestTaggingSettings)
   enableMiddleName                      - Enable Middle Name (NameSettings)
   enableNameSuffix                      - Enable Name Suffix (NameSettings)
@@ -621,6 +673,7 @@ Examples:
   force login scratch --product knowledge
   force login scratch --product liveagent
   force login scratch --product messaging
+  force login scratch --product nonprofitcloud
   force login scratch --product revenuecloud
   force login scratch --product work.com
   force login scratch --release preview
@@ -719,6 +772,37 @@ func expandProductsToFeatures(products []ScratchProduct, features []ScratchFeatu
 		},
 		MessagingProduct: {EmbeddedServiceMessaging, LiveMessage, BYOOTT},
 		WorkComProduct:   {Communities, WorkplaceCommandCenterUser, ForceComPlatform},
+		NonprofitCloudProduct: {
+			AccountingSubledgerGrowthEdition,
+			AccountingSubledgerUser,
+			AnalyticsQueryService,
+			Assessments,
+			Communities,
+			ContactsToMultipleAccounts,
+			DataProcessingEngine,
+			DecisionTable,
+			DocGen,
+			DocGenDesigner,
+			DocGenInd,
+			DocumentChecklist,
+			EnableSetPasswordInApi,
+			FinancialServicesUser,
+			Fundraising,
+			Grantmaking,
+			IndustriesActionPlan,
+			IndustriesSalesExcellenceAddOn,
+			IndustriesServiceExcellenceAddOn,
+			MarketingUser,
+			NonprofitCloudCaseManagementUser,
+			OmniStudioDesigner,
+			OmniStudioRuntime,
+			OutcomeManagement,
+			PersonAccounts,
+			ProgramManagement,
+			PublicSectorAccess,
+			StateAndCountryPicklist,
+			VolunteerManagement,
+		},
 		EducationCloudProduct: {
 			EducationCloud,
 			AccountingSubledgerGrowthEdition,
@@ -800,6 +884,31 @@ func expandProductsToSettings(products []ScratchProduct, settings []ScratchSetti
 		LiveAgentProduct:   {EnableLiveAgent},
 		KnowledgeProduct:   {EnableKnowledge, EnableLightningKnowledge},
 		WorkComProduct:     {EnableS1DesktopEnabled, EnableSurvey, NetworksEnabled},
+		NonprofitCloudProduct: {
+			EnableS1DesktopEnabled,
+			EnableS1EncryptedStoragePref2,
+			EnableChatter,
+			EnableDisableParallelApexTesting,
+			EnableEnhancedNotes,
+			EnableBenefitManagementPreference,
+			EnableBenefitAndGoalSharingPref,
+			EnableCarePlansPreference,
+			EnableFundraising,
+			EnableGrantmaking,
+			EnableGroupMembershipPref,
+			EnableOutcomes,
+			EnableDisbursementPreference,
+			EnableGiftAgreement,
+			EnableGiftEntryGrid,
+			EnableGiftPlanning,
+			EnableInteractionSummaryPref,
+			EnableProgramCohorts,
+			EnableRecordRollup,
+			EnableVolunteerManagement,
+			EnableMiddleName,
+			EnableNameSuffix,
+			EnableInterestTagging,
+		},
 		RevenueCloudProduct: {
 			EnableBillingSetup,
 			NetworksEnabled,

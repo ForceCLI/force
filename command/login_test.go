@@ -527,6 +527,94 @@ func TestExpandProductsToSettings_WorkComProduct(t *testing.T) {
 	}
 }
 
+func TestExpandProductsToFeatures_NonprofitCloudProduct(t *testing.T) {
+	result := expandProductsToFeatures([]ScratchProduct{NonprofitCloudProduct}, []ScratchFeature{}, map[string]string{})
+	expected := []string{
+		"AccountingSubledgerGrowthEdition",
+		"AccountingSubledgerUser",
+		"AnalyticsQueryService",
+		"Assessments",
+		"Communities",
+		"ContactsToMultipleAccounts",
+		"DataProcessingEngine",
+		"DecisionTable",
+		"DocGen",
+		"DocGenDesigner",
+		"DocGenInd",
+		"DocumentChecklist",
+		"EnableSetPasswordInApi",
+		"FinancialServicesUser:10",
+		"Fundraising",
+		"Grantmaking",
+		"IndustriesActionPlan",
+		"IndustriesSalesExcellenceAddOn",
+		"IndustriesServiceExcellenceAddOn",
+		"MarketingUser",
+		"NonprofitCloudCaseManagementUser",
+		"OmniStudioDesigner",
+		"OmniStudioRuntime",
+		"OutcomeManagement",
+		"PersonAccounts",
+		"ProgramManagement",
+		"PublicSectorAccess",
+		"StateAndCountryPicklist",
+		"VolunteerManagement",
+	}
+	if len(result) != len(expected) {
+		t.Fatalf("Expected %d features from nonprofit cloud product, got %d: %v", len(expected), len(result), result)
+	}
+	got := make(map[string]bool)
+	for _, f := range result {
+		got[f] = true
+	}
+	for _, want := range expected {
+		if !got[want] {
+			t.Errorf("Expected %s in nonprofit cloud product, missing", want)
+		}
+	}
+}
+
+func TestExpandProductsToSettings_NonprofitCloudProduct(t *testing.T) {
+	result := expandProductsToSettings([]ScratchProduct{NonprofitCloudProduct}, []ScratchSetting{})
+	expected := []string{
+		"enableS1DesktopEnabled",
+		"enableS1EncryptedStoragePref2",
+		"enableChatter",
+		"enableDisableParallelApexTesting",
+		"enableEnhancedNotes",
+		"enableBenefitManagementPreference",
+		"enableBenefitAndGoalSharingPref",
+		"enableCarePlansPreference",
+		"enableFundraising",
+		"enableGrantmaking",
+		"enableGroupMembershipPref",
+		"enableOutcomes",
+		"enableDisbursementPreference",
+		"enableGiftAgreement",
+		"enableGiftEntryGrid",
+		"enableGiftPlanning",
+		"enableInteractionSummaryPref",
+		"enableProgramCohorts",
+		"enableRecordRollup",
+		"enableVolunteerManagement",
+		"enableMiddleName",
+		"enableNameSuffix",
+		"enableInterestTagging",
+	}
+	if len(result) != len(expected) {
+		t.Fatalf("Expected %d settings from nonprofit cloud product, got %d: %v", len(expected), len(result), result)
+	}
+	got := make(map[string]bool)
+	for _, s := range result {
+		got[s] = true
+	}
+	for _, want := range expected {
+		if !got[want] {
+			t.Errorf("Expected %s in nonprofit cloud product settings, missing", want)
+		}
+	}
+}
+
 func TestConvertSettingsToStrings_EnableSurvey(t *testing.T) {
 	result := convertSettingsToStrings([]ScratchSetting{EnableSurvey})
 	if len(result) != 1 {
@@ -816,6 +904,10 @@ func TestScratchFeatureIds_AllFeaturesDefined(t *testing.T) {
 		"WorkplaceCommandCenterUser":        true,
 		"ForceComPlatform":                  true,
 		"Division":                          true,
+		"Grantmaking":                       true,
+		"OutcomeManagement":                 true,
+		"NonprofitCloudCaseManagementUser":  true,
+		"VolunteerManagement":               true,
 	}
 
 	if len(ScratchFeatureIds) != len(expectedFeatures) {
@@ -977,6 +1069,19 @@ func TestScratchSettingIds_AllSettingsDefined(t *testing.T) {
 		"enableEnhancedProfileMgmt":             true,
 		"enableNewProfileUI":                    true,
 		"enableSurvey":                          true,
+
+		"enableGrantmaking":                                  true,
+		"enableOutcomes":                                     true,
+		"enableCompliantDataSharingForBudget":                true,
+		"enableCompliantDataSharingForIndividualApplication": true,
+		"enableCompliantDataSharingForFundingAward":          true,
+		"enableDisbursementPreference":                       true,
+		"enableGiftAgreement":                                true,
+		"enableGiftEntryGrid":                                true,
+		"enableGiftPlanning":                                 true,
+		"enableProgramCohorts":                               true,
+		"enableRecordRollup":                                 true,
+		"enableVolunteerManagement":                          true,
 	}
 
 	if len(ScratchSettingIds) != len(expectedSettings) {

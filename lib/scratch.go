@@ -306,6 +306,19 @@ func buildSettingsMetadata(settings []string) ForceMetadataFiles {
 		enableEnhancedProfileMgmt             bool
 		enableNewProfileUI                    bool
 		enableSurvey                          bool
+
+		enableGrantmaking                                  bool
+		enableOutcomes                                     bool
+		enableCompliantDataSharingForBudget                bool
+		enableCompliantDataSharingForIndividualApplication bool
+		enableCompliantDataSharingForFundingAward          bool
+		enableDisbursementPreference                       bool
+		enableGiftAgreement                                bool
+		enableGiftEntryGrid                                bool
+		enableGiftPlanning                                 bool
+		enableProgramCohorts                               bool
+		enableRecordRollup                                 bool
+		enableVolunteerManagement                          bool
 	)
 
 	for _, setting := range settings {
@@ -438,6 +451,30 @@ func buildSettingsMetadata(settings []string) ForceMetadataFiles {
 			enableNewProfileUI = true
 		case "enableSurvey":
 			enableSurvey = true
+		case "enableGrantmaking":
+			enableGrantmaking = true
+		case "enableOutcomes":
+			enableOutcomes = true
+		case "enableCompliantDataSharingForBudget":
+			enableCompliantDataSharingForBudget = true
+		case "enableCompliantDataSharingForIndividualApplication":
+			enableCompliantDataSharingForIndividualApplication = true
+		case "enableCompliantDataSharingForFundingAward":
+			enableCompliantDataSharingForFundingAward = true
+		case "enableDisbursementPreference":
+			enableDisbursementPreference = true
+		case "enableGiftAgreement":
+			enableGiftAgreement = true
+		case "enableGiftEntryGrid":
+			enableGiftEntryGrid = true
+		case "enableGiftPlanning":
+			enableGiftPlanning = true
+		case "enableProgramCohorts":
+			enableProgramCohorts = true
+		case "enableRecordRollup":
+			enableRecordRollup = true
+		case "enableVolunteerManagement":
+			enableVolunteerManagement = true
 		}
 	}
 
@@ -559,14 +596,26 @@ func buildSettingsMetadata(settings []string) ForceMetadataFiles {
 		{"enableBenefitManagementPreference", enableBenefitManagementPreference},
 		{"enableBenefitAndGoalSharingPref", enableBenefitAndGoalSharingPref},
 		{"enableCarePlansPreference", enableCarePlansPreference},
+		{"enableCompliantDataSharingForBudget", enableCompliantDataSharingForBudget},
+		{"enableCompliantDataSharingForFundingAward", enableCompliantDataSharingForFundingAward},
+		{"enableCompliantDataSharingForIndividualApplication", enableCompliantDataSharingForIndividualApplication},
+		{"enableDisbursementPreference", enableDisbursementPreference},
 		{"enableDiscoveryFrameworkMetadata", enableDiscoveryFrameworkMetadata},
 		{"enableEducationCloud", enableEducationCloud},
 		{"enableFundraising", enableFundraising},
+		{"enableGiftAgreement", enableGiftAgreement},
+		{"enableGiftEntryGrid", enableGiftEntryGrid},
+		{"enableGiftPlanning", enableGiftPlanning},
+		{"enableGrantmaking", enableGrantmaking},
 		{"enableGroupMembershipPref", enableGroupMembershipPref},
 		{"enableIndustriesAssessment", enableIndustriesAssessment},
 		{"enableInteractionSummaryPref", enableInteractionSummaryPref},
 		{"enableInteractionSummaryRoleHierarchy", enableInteractionSummaryRoleHierarchy},
+		{"enableOutcomes", enableOutcomes},
+		{"enableProgramCohorts", enableProgramCohorts},
+		{"enableRecordRollup", enableRecordRollup},
 		{"enableStudentSuccess", enableStudentSuccess},
+		{"enableVolunteerManagement", enableVolunteerManagement},
 	})
 	emit("unpackaged/settings/InterestTagging.settings", "InterestTaggingSettings", []settingsFlag{
 		{"enableInterestTagging", enableInterestTagging},

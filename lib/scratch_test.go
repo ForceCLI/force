@@ -532,6 +532,35 @@ func TestBuildSettingsMetadata_AddsIndustriesSettings(t *testing.T) {
 	}
 }
 
+func TestBuildSettingsMetadata_AddsNonprofitCloudIndustriesSettings(t *testing.T) {
+	flags := []string{
+		"enableGrantmaking",
+		"enableOutcomes",
+		"enableCompliantDataSharingForBudget",
+		"enableCompliantDataSharingForIndividualApplication",
+		"enableCompliantDataSharingForFundingAward",
+		"enableDisbursementPreference",
+		"enableGiftAgreement",
+		"enableGiftEntryGrid",
+		"enableGiftPlanning",
+		"enableProgramCohorts",
+		"enableRecordRollup",
+		"enableVolunteerManagement",
+	}
+	files := buildSettingsMetadata(flags)
+
+	content, ok := files["unpackaged/settings/Industries.settings"]
+	if !ok {
+		t.Fatalf("Expected Industries.settings to be generated")
+	}
+	s := string(content)
+	for _, flag := range flags {
+		if !strings.Contains(s, "<"+flag+">true</"+flag+">") {
+			t.Errorf("Expected %s in Industries.settings, got: %s", flag, s)
+		}
+	}
+}
+
 func TestBuildSettingsMetadata_AddsMobileSettings(t *testing.T) {
 	files := buildSettingsMetadata([]string{"enableS1EncryptedStoragePref2"})
 
