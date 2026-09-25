@@ -336,6 +336,29 @@ func TestExpandProductsToFeatures_EducationCloud_CustomQuantity(t *testing.T) {
 	}
 }
 
+func TestExpandProductsToFeatures_InsuranceAddOns_DefaultQuantity(t *testing.T) {
+	result := expandProductsToFeatures([]ScratchProduct{}, []ScratchFeature{InsurancePolicyAdmin, InsuranceClaimMgmt}, map[string]string{})
+	got := make(map[string]bool)
+	for _, f := range result {
+		got[f] = true
+	}
+	for _, want := range []string{"InsurancePolicyAdmin:10", "InsuranceClaimMgmt:10"} {
+		if !got[want] {
+			t.Errorf("Expected %s, got %v", want, result)
+		}
+	}
+}
+
+func TestExpandProductsToFeatures_InsurancePolicyAdmin_CustomQuantity(t *testing.T) {
+	result := expandProductsToFeatures([]ScratchProduct{}, []ScratchFeature{InsurancePolicyAdmin}, map[string]string{"InsurancePolicyAdmin": "1"})
+	if len(result) != 1 {
+		t.Fatalf("Expected 1 feature, got %d", len(result))
+	}
+	if result[0] != "InsurancePolicyAdmin:1" {
+		t.Errorf("Expected InsurancePolicyAdmin:1, got %s", result[0])
+	}
+}
+
 func TestExpandProductsToFeatures_LiveMessage(t *testing.T) {
 	result := expandProductsToFeatures([]ScratchProduct{}, []ScratchFeature{LiveMessage}, map[string]string{})
 	if len(result) != 1 {
@@ -908,6 +931,15 @@ func TestScratchFeatureIds_AllFeaturesDefined(t *testing.T) {
 		"OutcomeManagement":                 true,
 		"NonprofitCloudCaseManagementUser":  true,
 		"VolunteerManagement":               true,
+		"FinancialServicesInsuranceUser":    true,
+		"FSCAlertFramework":                 true,
+		"FSCServiceProcess":                 true,
+		"IndustriesBranchManagement":        true,
+		"IndustriesCompliantDataSharing":    true,
+		"InsuranceCalculationUser":          true,
+		"InsuranceClaimMgmt":                true,
+		"InsurancePolicyAdmin":              true,
+		"BusinessRulesEngine":               true,
 	}
 
 	if len(ScratchFeatureIds) != len(expectedFeatures) {

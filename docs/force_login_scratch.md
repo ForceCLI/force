@@ -81,6 +81,15 @@ Available Features:
   SurveyAdvancedFeatures              - Enables advanced Salesforce Surveys features
   UsageManagement                     - Enables Usage Management (Revenue Cloud)
   VolunteerManagement                 - Enables Volunteer Management (Nonprofit Cloud)
+  FinancialServicesInsuranceUser      - Enables Financial Services insurance components and objects
+  FSCAlertFramework                   - Enables Financial Services Cloud Record Alert objects
+  FSCServiceProcess                   - Enables Service Process Studio for Financial Services Cloud
+  IndustriesBranchManagement          - Enables Branch Management (Financial Services Cloud)
+  IndustriesCompliantDataSharing      - Enables participant management and Compliant Data Sharing
+  InsuranceCalculationUser            - Enables Insurance calculation (Business Rules Engine and OmniStudio runtime licenses)
+  InsuranceClaimMgmt                  - Enables Insurance claim management (requires quantity, default: 10)
+  InsurancePolicyAdmin                - Enables Insurance policy administration (requires quantity, default: 10)
+  BusinessRulesEngine                 - Enables Business Rules Engine (expression sets and lookup tables)
   WavePlatform                        - Enables Wave Platform (CRM Analytics)
   WorkplaceCommandCenterUser          - Enables Workplace Command Center user licenses (Work.com)
 
