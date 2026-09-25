@@ -140,6 +140,11 @@ You can also push all of a specific type of resource from a given folder.
       force push -t ApexClass -f metadata/classes/
       force push -t ApexPage -f metadata/pages/
 
+Files in source (sfdx) format are converted to metadata format before the deploy. An object's files, such as `objects/Account/Account.object-meta.xml` and `objects/Account/fields/Status__c.field-meta.xml`, are composed into `objects/Account.object`, and a file such as `customMetadata/Type.Record.md-meta.xml` is deployed as `customMetadata/Type.Record.md`.
+
+      force push -f src/objects/Account
+      force push -f src/objects/Account/fields/Status__c.field-meta.xml
+
 
 ### import
 Import allows you to import code from local directory. This makes a lot of senses when you want to import code from local directory to a brand new org. This import method import codes from `metadata` folder not from your `src` folder

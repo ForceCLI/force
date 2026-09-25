@@ -9,6 +9,13 @@ Deploy artifact from a local directory
 <metadata>: Accepts either actual directory name or Metadata type
 File path can be specified as - to read from stdin; see examples
 
+Files in source (sfdx) format are converted to metadata format before the
+deploy. The files of an object (objects/Account/Account.object-meta.xml and
+the files under its fields, validationRules, and other component directories)
+are composed into objects/Account.object, and a file such as
+customMetadata/Type.Record.md-meta.xml is deployed as
+customMetadata/Type.Record.md.
+
 
 ```
 force push [flags]
@@ -23,6 +30,7 @@ force push [flags]
   force push -f metadata/classes/MyClass.cls
   force push -checkonly -test MyClass_Test metadata/classes/MyClass.cls
   force push -n MyApex -n MyObject__c
+  force push -f src/objects/Account/fields/Status__c.field-meta.xml
   git diff HEAD^ --name-only --diff-filter=ACM | force push -f -
 
 ```

@@ -9,6 +9,10 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/ForceCLI/force-md/metadata"
+	"github.com/ForceCLI/force-md/metadata/objectTranslations"
+	"github.com/ForceCLI/force-md/metadata/objects"
+	"github.com/ForceCLI/force-md/repo"
 	"github.com/pkg/errors"
 )
 
@@ -37,6 +41,11 @@ type metapath struct {
 	hasFolder  bool
 	onlyFolder bool
 	extension  string
+	// contentFile marks types that keep a content file beside the -meta.xml
+	// file in both source and metadata format (Apex classes, static
+	// resources). Every other type is a single file, which source format
+	// names with a -meta.xml suffix.
+	contentFile bool
 }
 
 var metapaths = []metapath{
@@ -54,14 +63,14 @@ var metapaths = []metapath{
 	{path: "brandingSets", name: "BrandingSet", extension: ".brandingSet"},
 	{path: "callCenters", name: "CallCenter"},
 	{path: "cachePartitions", name: "PlatformCachePartition"},
-	{path: "certs", name: "Certificate"},
+	{path: "certs", name: "Certificate", contentFile: true},
 	{path: "channelLayouts", name: "ChannelLayout"},
-	{path: "classes", name: "ApexClass"},
+	{path: "classes", name: "ApexClass", contentFile: true},
 	{path: "cleanDataServices", name: "CleanDataService"},
 	{path: "communities", name: "Community"},
-	{path: "components", name: "ApexComponent"},
+	{path: "components", name: "ApexComponent", contentFile: true},
 	{path: "connectedApps", name: "ConnectedApp"},
-	{path: "contentassets", name: "ContentAsset"},
+	{path: "contentassets", name: "ContentAsset", contentFile: true},
 	{path: "corsWhitelistOrigins", name: "CorsWhitelistOrigin"},
 	{path: "customApplicationComponents", name: "CustomApplicationComponent"},
 	{path: "customMetadata", name: "CustomMetadata"},
@@ -72,11 +81,11 @@ var metapaths = []metapath{
 	{path: "dataSources", name: "ExternalDataSource"},
 	{path: "datacategorygroups", name: "DataCategoryGroup"},
 	{path: "delegateGroups", name: "DelegateGroup"},
-	{path: "documents", name: "Document", hasFolder: true},
+	{path: "documents", name: "Document", hasFolder: true, contentFile: true},
 	{path: "duplicateRules", name: "DuplicateRule"},
-	{path: "dw", name: "DataWeaveResource"},
+	{path: "dw", name: "DataWeaveResource", contentFile: true},
 	{path: "EmbeddedServiceConfig", name: "EmbeddedServiceConfig"},
-	{path: "email", name: "EmailTemplate", hasFolder: true},
+	{path: "email", name: "EmailTemplate", hasFolder: true, contentFile: true},
 	{path: "escalationRules", name: "EscalationRules"},
 	{path: "experiences", name: "ExperienceBundle", hasFolder: true, onlyFolder: true},
 	{path: "externalClientApps", name: "ExternalClientApplication"},
@@ -115,7 +124,7 @@ var metapaths = []metapath{
 	{path: "omniIntegrationProcedures", name: "OmniIntegrationProcedure"},
 	{path: "omniScripts", name: "OmniScript"},
 	{path: "omniUiCard", name: "OmniUiCard"},
-	{path: "pages", name: "ApexPage"},
+	{path: "pages", name: "ApexPage", contentFile: true},
 	{path: "pathAssistants", name: "PathAssistant"},
 	{path: "permissionsets", name: "PermissionSet"},
 	{path: "permissionsetgroups", name: "PermissionSetGroup"},
@@ -135,21 +144,21 @@ var metapaths = []metapath{
 	{path: "reports", name: "Report", hasFolder: true},
 	{path: "reportTypes", name: "ReportType"},
 	{path: "roles", name: "Role"},
-	{path: "scontrols", name: "Scontrol"},
+	{path: "scontrols", name: "Scontrol", contentFile: true},
 	{path: "settings", name: "Settings"},
 	{path: "sharingRules", name: "SharingRules"},
 	{path: "sharingSets", name: "SharingSet"},
-	{path: "siteDotComSites", name: "SiteDotCom"},
+	{path: "siteDotComSites", name: "SiteDotCom", contentFile: true},
 	{path: "sites", name: "CustomSite"},
-	{path: "slackapps", name: "SlackApp", extension: ".slackapp"},
+	{path: "slackapps", name: "SlackApp", extension: ".slackapp", contentFile: true},
 	{path: "standardValueSets", name: "StandardValueSet"},
-	{path: "staticresources", name: "StaticResource"},
+	{path: "staticresources", name: "StaticResource", contentFile: true},
 	{path: "synonymDictionaries", name: "SynonymDictionary"},
 	{path: "tabs", name: "CustomTab"},
 	{path: "translations", name: "Translations"},
-	{path: "triggers", name: "ApexTrigger"},
+	{path: "triggers", name: "ApexTrigger", contentFile: true},
 	{path: "uiFormatSpecificationSets", name: "UiFormatSpecificationSet", extension: ".uiFormatSpecificationSet"},
-	{path: "viewdefinitions", name: "ViewDefinition", extension: ".view"},
+	{path: "viewdefinitions", name: "ViewDefinition", extension: ".view", contentFile: true},
 	{path: "weblinks", name: "CustomPageWebLink"},
 	{path: "workflows", name: "Workflow"},
 	{path: "cspTrustedSites", name: "CspTrustedSite"},
@@ -160,6 +169,10 @@ type PackageBuilder struct {
 	Metadata map[string]MetaType
 	Files    ForceMetadataFiles
 	Root     string
+	// sourceComponents holds the source-format object and object translation
+	// components added so far. Source format splits an object into a file per
+	// component; metadata format needs them composed into one file.
+	sourceComponents *repo.Repo
 }
 
 func NewPushBuilder() PackageBuilder {
@@ -236,6 +249,10 @@ func (pb *PackageBuilder) AddFile(fpath string) error {
 		return nil
 	}
 
+	if converted, err := pb.addSourceFormatFile(fpath); converted || err != nil {
+		return err
+	}
+
 	isFolderMetadata := isFolderMetadata(fpath)
 	// Path with -meta.xml stripped
 	spath := MetaPathToSourcePath(fpath)
@@ -262,6 +279,134 @@ func (pb *PackageBuilder) AddFile(fpath string) error {
 	}
 
 	return nil
+}
+
+// addSourceFormatFile adds a file written in source (sfdx) format, converting
+// it to metadata format. It reports false for a file that is not in source
+// format, which AddFile then adds as is.
+//
+// A source-format file is a -meta.xml file of a type that has no content
+// file, so no file exists at its path without the -meta.xml suffix: an
+// Apex class's Foo.cls-meta.xml is the same in both formats, while a custom
+// metadata record's Type.Record.md-meta.xml is Type.Record.md in metadata
+// format.
+func (pb *PackageBuilder) addSourceFormatFile(fpath string) (bool, error) {
+	if !strings.HasSuffix(fpath, "-meta.xml") {
+		return false, nil
+	}
+	withoutMetaSuffix := strings.TrimSuffix(fpath, "-meta.xml")
+	if _, err := os.Stat(withoutMetaSuffix); err == nil {
+		return false, nil
+	}
+	relativePath, err := filepath.Rel(pb.Root, fpath)
+	if err != nil || !filepath.IsLocal(relativePath) {
+		return false, nil
+	}
+	parts := strings.Split(relativePath, string(os.PathSeparator))
+	if len(parts) < 2 {
+		return false, nil
+	}
+	mp, ok := metapathForDirectory(parts[0])
+	if !ok || mp.onlyFolder {
+		return false, nil
+	}
+
+	switch {
+	case mp.hasFolder && len(parts) == 2:
+		// A folder: reports/Sales.reportFolder-meta.xml is
+		// reports/Sales-meta.xml in metadata format.
+		base := filepath.Base(withoutMetaSuffix)
+		folderName := strings.TrimSuffix(base, filepath.Ext(base))
+		pb.AddMetaToPackage(mp.name, folderName)
+		return true, pb.addConvertedFile(filepath.Join(parts[0], folderName+"-meta.xml"), fpath)
+	case mp.contentFile:
+		return false, nil
+	case (mp.name == "CustomObject" || mp.name == "CustomObjectTranslation") && len(parts) >= 3:
+		// objects/Account/Account.object-meta.xml or
+		// objects/Account/fields/Name__c.field-meta.xml
+		return true, pb.addDecomposedComponent(mp.name, parts, fpath)
+	default:
+		metadataPath := strings.TrimSuffix(relativePath, "-meta.xml")
+		memberPath := filepath.Join(parts[1:]...)
+		memberPath = strings.TrimSuffix(memberPath, "-meta.xml")
+		pb.AddMetaToPackage(mp.name, strings.TrimSuffix(memberPath, filepath.Ext(memberPath)))
+		return true, pb.addConvertedFile(metadataPath, fpath)
+	}
+}
+
+// addDecomposedComponent adds one component of a source-format object or
+// object translation and rewrites the parent's composed metadata-format file.
+// parts is the component's path relative to the root: the parent's own file
+// (objects/Account/Account.object-meta.xml) or a child component
+// (objects/Account/fields/Name__c.field-meta.xml).
+func (pb *PackageBuilder) addDecomposedComponent(parentType string, parts []string, fpath string) error {
+	parentName := parts[1]
+	if pb.sourceComponents == nil {
+		pb.sourceComponents = repo.NewRepo()
+	}
+	opened, err := pb.sourceComponents.Open(fpath)
+	if err != nil {
+		return fmt.Errorf("Could not read %s: %w", fpath, err)
+	}
+	component, ok := opened.(metadata.RegisterableMetadata)
+	if !ok {
+		return fmt.Errorf("Could not read %s: unsupported metadata", fpath)
+	}
+
+	var composed metadata.FilesGenerator
+	switch parentType {
+	case "CustomObject":
+		// A component of an object is deployed as its own type
+		// (CustomField Account.Name__c) inside the object's file.
+		if component.Type() == parentType {
+			pb.AddMetaToPackage(parentType, parentName)
+		} else {
+			base := strings.TrimSuffix(filepath.Base(fpath), "-meta.xml")
+			pb.AddMetaToPackage(component.Type(), parentName+"."+strings.TrimSuffix(base, filepath.Ext(base)))
+		}
+		composed = objects.ComposeFromChildren(parentName, pb.sourceComponents)
+	case "CustomObjectTranslation":
+		// Field, record type, and validation rule translations have no
+		// metadata type of their own; the object translation is deployed.
+		pb.AddMetaToPackage(parentType, parentName)
+		composed = objectTranslations.ComposeFromChildren(parentName, pb.sourceComponents)
+	default:
+		return fmt.Errorf("Could not add %s: %s is not decomposed in source format", fpath, parentType)
+	}
+
+	files, err := composed.Files(metadata.MetadataFormat)
+	if err != nil {
+		return fmt.Errorf("Could not compose %s %s: %w", parentType, parentName, err)
+	}
+	if pb.IsPush {
+		for relativePath, content := range files {
+			pb.Files[filepath.FromSlash(relativePath)] = content
+		}
+	}
+	return nil
+}
+
+// addConvertedFile adds the contents of the source-format file at fpath under
+// its metadata-format path.
+func (pb *PackageBuilder) addConvertedFile(metadataPath string, fpath string) error {
+	if !pb.IsPush {
+		return nil
+	}
+	fdata, err := ioutil.ReadFile(fpath)
+	if err != nil {
+		return errors.Wrap(err, "failed to add file")
+	}
+	pb.Files[metadataPath] = fdata
+	return nil
+}
+
+func metapathForDirectory(directory string) (metapath, bool) {
+	for _, mp := range metapaths {
+		if mp.path == directory {
+			return mp, true
+		}
+	}
+	return metapath{}, false
 }
 
 func (pb *PackageBuilder) AddMetadataType(metadataType string) error {

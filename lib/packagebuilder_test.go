@@ -397,6 +397,149 @@ var _ = Describe("Packagebuilder", func() {
 		})
 	})
 
+	Describe("source format", func() {
+		var pb PackageBuilder
+		var tempDir string
+
+		const objectXml = `<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <deploymentStatus>Deployed</deploymentStatus>
+    <label>Widget</label>
+    <nameField>
+        <label>Name</label>
+        <type>Text</type>
+    </nameField>
+    <pluralLabel>Widgets</pluralLabel>
+    <sharingModel>ReadWrite</sharingModel>
+</CustomObject>
+`
+		const fieldXml = `<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Score__c</fullName>
+    <label>Score</label>
+    <precision>18</precision>
+    <scale>0</scale>
+    <type>Number</type>
+</CustomField>
+`
+
+		BeforeEach(func() {
+			pb = NewPushBuilder()
+			tempDir, _ = ioutil.TempDir("", "packagebuilder-test")
+			pb.Root = tempDir + "/src"
+			mustMkdir(tempDir + "/src/objects/Widget__c/fields")
+			mustWrite(tempDir+"/src/objects/Widget__c/Widget__c.object-meta.xml", objectXml)
+			mustWrite(tempDir+"/src/objects/Widget__c/fields/Score__c.field-meta.xml", fieldXml)
+		})
+
+		AfterEach(func() {
+			os.RemoveAll(tempDir)
+		})
+
+		It("composes an object directory into one metadata-format object file", func() {
+			err := pb.AddDirectory(tempDir + "/src/objects/Widget__c")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(pb.Files).To(HaveLen(1))
+			Expect(pb.Files).To(HaveKey("objects/Widget__c.object"))
+			object := string(pb.Files["objects/Widget__c.object"])
+			Expect(object).To(ContainSubstring("<label>Widget</label>"))
+			Expect(object).To(ContainSubstring("<fullName>Score__c</fullName>"))
+			Expect(pb.Metadata["CustomObject"].Members).To(ConsistOf("Widget__c"))
+			Expect(pb.Metadata["CustomField"].Members).To(ConsistOf("Widget__c.Score__c"))
+		})
+
+		It("gives the same result when the files are added one at a time", func() {
+			Expect(pb.AddFile(tempDir + "/src/objects/Widget__c/fields/Score__c.field-meta.xml")).To(Succeed())
+			Expect(pb.AddFile(tempDir + "/src/objects/Widget__c/Widget__c.object-meta.xml")).To(Succeed())
+			Expect(pb.Files).To(HaveLen(1))
+			object := string(pb.Files["objects/Widget__c.object"])
+			Expect(object).To(ContainSubstring("<label>Widget</label>"))
+			Expect(object).To(ContainSubstring("<fullName>Score__c</fullName>"))
+			Expect(pb.Metadata["CustomObject"].Members).To(ConsistOf("Widget__c"))
+			Expect(pb.Metadata["CustomField"].Members).To(ConsistOf("Widget__c.Score__c"))
+		})
+
+		It("deploys a field without its object as a CustomField", func() {
+			err := pb.AddFile(tempDir + "/src/objects/Widget__c/fields/Score__c.field-meta.xml")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(pb.Files).To(HaveKey("objects/Widget__c.object"))
+			object := string(pb.Files["objects/Widget__c.object"])
+			Expect(object).To(ContainSubstring("<fullName>Score__c</fullName>"))
+			Expect(object).ToNot(ContainSubstring("<label>Widget</label>"))
+			Expect(pb.Metadata).ToNot(HaveKey("CustomObject"))
+			Expect(pb.Metadata["CustomField"].Members).To(ConsistOf("Widget__c.Score__c"))
+		})
+
+		It("composes an object translation from its components", func() {
+			translationDir := tempDir + "/src/objectTranslations/Widget__c-es"
+			mustMkdir(translationDir + "/fields")
+			mustWrite(translationDir+"/Widget__c-es.objectTranslation-meta.xml", `<?xml version="1.0" encoding="UTF-8"?>
+<CustomObjectTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <caseValues>
+        <plural>false</plural>
+        <value>Artilugio</value>
+    </caseValues>
+</CustomObjectTranslation>
+`)
+			mustWrite(translationDir+"/fields/Score__c.fieldTranslation-meta.xml", `<?xml version="1.0" encoding="UTF-8"?>
+<CustomFieldTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <label>Puntuación</label>
+    <name>Score__c</name>
+</CustomFieldTranslation>
+`)
+			err := pb.AddDirectory(translationDir)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(pb.Files).To(HaveLen(1))
+			Expect(pb.Files).To(HaveKey("objectTranslations/Widget__c-es.objectTranslation"))
+			translation := string(pb.Files["objectTranslations/Widget__c-es.objectTranslation"])
+			Expect(translation).To(ContainSubstring("<value>Artilugio</value>"))
+			Expect(translation).To(ContainSubstring("<name>Score__c</name>"))
+			Expect(pb.Metadata["CustomObjectTranslation"].Members).To(ConsistOf("Widget__c-es"))
+		})
+
+		It("drops the -meta.xml suffix from a custom metadata record", func() {
+			mustMkdir(tempDir + "/src/customMetadata")
+			record := `<CustomMetadata xmlns="http://soap.sforce.com/2006/04/metadata"><label>Primary</label></CustomMetadata>`
+			mustWrite(tempDir+"/src/customMetadata/Widget_Setting.Primary.md-meta.xml", record)
+			err := pb.AddFile(tempDir + "/src/customMetadata/Widget_Setting.Primary.md-meta.xml")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(pb.Files).To(HaveKey("customMetadata/Widget_Setting.Primary.md"))
+			Expect(string(pb.Files["customMetadata/Widget_Setting.Primary.md"])).To(Equal(record))
+			Expect(pb.Metadata["CustomMetadata"].Members).To(ConsistOf("Widget_Setting.Primary"))
+		})
+
+		It("converts a report folder and a report in it", func() {
+			mustMkdir(tempDir + "/src/reports/Sales")
+			mustWrite(tempDir+"/src/reports/Sales.reportFolder-meta.xml", "<ReportFolder/>")
+			mustWrite(tempDir+"/src/reports/Sales/Pipeline.report-meta.xml", "<Report/>")
+			err := pb.AddDirectory(tempDir + "/src/reports")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(pb.Files).To(HaveKey("reports/Sales-meta.xml"))
+			Expect(pb.Files).To(HaveKey("reports/Sales/Pipeline.report"))
+			Expect(pb.Metadata["Report"].Members).To(ConsistOf("Sales", "Sales/Pipeline"))
+		})
+
+		It("converts an email template folder", func() {
+			mustMkdir(tempDir + "/src/email/Notices")
+			mustWrite(tempDir+"/src/email/Notices.emailFolder-meta.xml", "<EmailFolder/>")
+			err := pb.AddFile(tempDir + "/src/email/Notices.emailFolder-meta.xml")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(pb.Files).To(HaveKey("email/Notices-meta.xml"))
+			Expect(pb.Metadata["EmailTemplate"].Members).To(ConsistOf("Notices"))
+		})
+
+		It("leaves an Apex class, which has the same layout in both formats, unchanged", func() {
+			mustMkdir(tempDir + "/src/classes")
+			mustWrite(tempDir+"/src/classes/Widget.cls", "public class Widget {}")
+			mustWrite(tempDir+"/src/classes/Widget.cls-meta.xml", "<ApexClass/>")
+			err := pb.AddDirectory(tempDir + "/src/classes")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(pb.Files).To(HaveKey("classes/Widget.cls"))
+			Expect(pb.Files).To(HaveKey("classes/Widget.cls-meta.xml"))
+			Expect(pb.Metadata["ApexClass"].Members).To(ConsistOf("Widget"))
+		})
+	})
+
 	Describe("GetMetaForAbsolutePath", func() {
 		var pb PackageBuilder
 
