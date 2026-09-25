@@ -49,37 +49,81 @@ func TestExpandProductsToFeatures_MultipleFeatures(t *testing.T) {
 	}
 }
 
+var fscProductFeatures = []string{
+	"PersonAccounts",
+	"ContactsToMultipleAccounts",
+	"FinancialServicesUser:10",
+	"FinancialServicesInsuranceUser",
+	"InsurancePolicyAdmin:10",
+	"InsuranceClaimMgmt:10",
+	"InsuranceCalculationUser",
+	"FSCAlertFramework",
+	"FSCServiceProcess",
+	"IndustriesBranchManagement",
+	"IndustriesCompliantDataSharing",
+	"BusinessRulesEngine",
+	"DataProcessingEngine",
+	"DecisionTable",
+	"DocumentChecklist",
+	"IndustriesActionPlan",
+	"Assessments",
+	"OmniStudioRuntime",
+	"OmniStudioDesigner",
+	"IndustriesServiceExcellenceAddOn",
+	"IndustriesSalesExcellenceAddOn",
+}
+
 func TestExpandProductsToFeatures_FSCProduct(t *testing.T) {
 	result := expandProductsToFeatures([]ScratchProduct{FSC}, []ScratchFeature{}, map[string]string{})
-	if len(result) != 3 {
-		t.Errorf("Expected 3 features from FSC, got %d", len(result))
+	if len(result) != len(fscProductFeatures) {
+		t.Fatalf("Expected %d features from FSC, got %d: %v", len(fscProductFeatures), len(result), result)
 	}
 	featureMap := make(map[string]bool)
 	for _, f := range result {
 		featureMap[f] = true
 	}
-	if !featureMap["PersonAccounts"] {
-		t.Error("Expected PersonAccounts in FSC")
+	for _, want := range fscProductFeatures {
+		if !featureMap[want] {
+			t.Errorf("Expected %s in FSC", want)
+		}
 	}
-	if !featureMap["ContactsToMultipleAccounts"] {
-		t.Error("Expected ContactsToMultipleAccounts in FSC")
+}
+
+func TestExpandProductsToSettings_FSCProduct(t *testing.T) {
+	result := expandProductsToSettings([]ScratchProduct{FSC}, []ScratchSetting{})
+	expected := []string{
+		"enableS1DesktopEnabled",
+		"enableChatter",
+		"enableEnhancedNotes",
+		"enableIndustriesAssessment",
+		"enableInteractionSummaryPref",
+		"enableRecordRollup",
 	}
-	if !featureMap["FinancialServicesUser:10"] {
-		t.Error("Expected FinancialServicesUser:10 in FSC (with default quantity)")
+	if len(result) != len(expected) {
+		t.Fatalf("Expected %d settings from FSC, got %d: %v", len(expected), len(result), result)
+	}
+	got := make(map[string]bool)
+	for _, s := range result {
+		got[s] = true
+	}
+	for _, want := range expected {
+		if !got[want] {
+			t.Errorf("Expected %s in FSC product settings, missing", want)
+		}
 	}
 }
 
 func TestExpandProductsToFeatures_ProductAndFeature_Deduplication(t *testing.T) {
 	result := expandProductsToFeatures([]ScratchProduct{FSC}, []ScratchFeature{PersonAccounts}, map[string]string{})
-	if len(result) != 3 {
-		t.Errorf("Expected 3 unique features (FSC includes PersonAccounts), got %d", len(result))
+	if len(result) != len(fscProductFeatures) {
+		t.Errorf("Expected %d unique features (FSC includes PersonAccounts), got %d", len(fscProductFeatures), len(result))
 	}
 }
 
 func TestExpandProductsToFeatures_MultipleProductsAndFeatures(t *testing.T) {
 	result := expandProductsToFeatures([]ScratchProduct{FSC}, []ScratchFeature{PersonAccounts, ContactsToMultipleAccounts}, map[string]string{})
-	if len(result) != 3 {
-		t.Errorf("Expected 3 unique features, got %d", len(result))
+	if len(result) != len(fscProductFeatures) {
+		t.Errorf("Expected %d unique features, got %d", len(fscProductFeatures), len(result))
 	}
 }
 
@@ -105,8 +149,8 @@ func TestExpandProductsToFeatures_FeatureWithCustomQuantity(t *testing.T) {
 
 func TestExpandProductsToFeatures_FSCProductWithCustomQuantity(t *testing.T) {
 	result := expandProductsToFeatures([]ScratchProduct{FSC}, []ScratchFeature{}, map[string]string{"FinancialServicesUser": "20"})
-	if len(result) != 3 {
-		t.Errorf("Expected 3 features from FSC, got %d", len(result))
+	if len(result) != len(fscProductFeatures) {
+		t.Errorf("Expected %d features from FSC, got %d", len(fscProductFeatures), len(result))
 	}
 	var foundFSU bool
 	for _, f := range result {

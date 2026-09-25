@@ -98,7 +98,7 @@ Available Products:
   communities      - Experience Cloud (enables Communities feature and networksEnabled setting)
   crmanalytics     - CRM Analytics (enables AnalyticsAdminPerms, WavePlatform, InsightsPlatform, EinsteinAnalyticsPlus, EinsteinBuilderFree, DevelopmentWave)
   educationcloud   - Education Cloud (enables EducationCloud, PersonAccounts, Communities, Knowledge, and many other Education Cloud features with a comprehensive set of industries/education settings)
-  fsc              - Financial Services Cloud (enables PersonAccounts, ContactsToMultipleAccounts, FinancialServicesUser)
+  fsc              - Financial Services Cloud (enables PersonAccounts, ContactsToMultipleAccounts, FinancialServicesUser, the insurance policy, claim and calculation features, Record Alerts, Service Process, Branch Management, Compliant Data Sharing, Business Rules Engine, Data Processing Engine, Document Checklist, Action Plans, Assessments, OmniStudio and the Industries sales and service excellence add-ons, with the Interaction Summary, Record Rollup and Assessment industries settings)
   healthcloud      - Health Cloud (enables HealthCloudAddOn, HealthCloudUser)
   knowledge        - Salesforce Knowledge (enables Knowledge feature and enableKnowledge, enableLightningKnowledge settings)
   liveagent        - Live Agent (enables LiveAgent feature and enableLiveAgent setting)
