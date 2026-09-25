@@ -403,6 +403,16 @@ func TestExpandProductsToFeatures_InsurancePolicyAdmin_CustomQuantity(t *testing
 	}
 }
 
+func TestExpandProductsToFeatures_ApexIntegrationTests(t *testing.T) {
+	result := expandProductsToFeatures([]ScratchProduct{}, []ScratchFeature{ApexIntegrationTests}, map[string]string{})
+	if len(result) != 1 {
+		t.Fatalf("Expected 1 feature, got %d", len(result))
+	}
+	if result[0] != "ApexIntegrationTests" {
+		t.Errorf("Expected ApexIntegrationTests, got %s", result[0])
+	}
+}
+
 func TestExpandProductsToFeatures_LiveMessage(t *testing.T) {
 	result := expandProductsToFeatures([]ScratchProduct{}, []ScratchFeature{LiveMessage}, map[string]string{})
 	if len(result) != 1 {
@@ -984,6 +994,7 @@ func TestScratchFeatureIds_AllFeaturesDefined(t *testing.T) {
 		"InsuranceClaimMgmt":                true,
 		"InsurancePolicyAdmin":              true,
 		"BusinessRulesEngine":               true,
+		"ApexIntegrationTests":              true,
 	}
 
 	if len(ScratchFeatureIds) != len(expectedFeatures) {

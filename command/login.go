@@ -101,6 +101,7 @@ const (
 	InsuranceClaimMgmt
 	InsurancePolicyAdmin
 	BusinessRulesEngine
+	ApexIntegrationTests
 )
 
 var ScratchFeatureIds = map[ScratchFeature][]string{
@@ -189,6 +190,7 @@ var ScratchFeatureIds = map[ScratchFeature][]string{
 	InsuranceClaimMgmt:                {"InsuranceClaimMgmt"},
 	InsurancePolicyAdmin:              {"InsurancePolicyAdmin"},
 	BusinessRulesEngine:               {"BusinessRulesEngine"},
+	ApexIntegrationTests:              {"ApexIntegrationTests"},
 }
 
 type ScratchProduct enumflag.Flag
@@ -501,6 +503,7 @@ Available Features:
   AdvisorLinkPathwaysFeature          - Enables Advisor Link Pathways
   AnalyticsAdminPerms                 - Enables CRM Analytics admin permissions
   AnalyticsQueryService               - Enables Analytics Query Service
+  ApexIntegrationTests                - Enables Apex integration tests (@IntegrationTest classes)
   ApexUserModeWithPermset             - Enables Apex code to run in user mode with a permission set session
   Assessments                         - Enables Assessments
   B2BCommerce                         - Enables B2B Commerce
