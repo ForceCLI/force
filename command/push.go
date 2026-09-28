@@ -142,17 +142,21 @@ func runPush(metadataTypes []string, metadataNames []string, resourcePaths []str
 	}
 }
 
+// sourceDirFromPaths finds the directory that holds the metadata type
+// directories of the pushed paths. The first path component is that
+// directory when the component after it names a metadata type
+// (src/classes/MyClass.cls). Otherwise it is the parent of the nearest
+// enclosing metadata type directory, so a path deeper in a project
+// (testdata/everything/cachePartitions/aerreg.cachePartition-meta.xml) finds
+// testdata/everything. Every path must resolve to the same directory.
 func sourceDirFromPaths(resourcePaths []string) string {
 	p := ""
 	for _, path := range resourcePaths {
-		path = filepath.FromSlash(path)
-		parts := strings.Split(path, string(os.PathSeparator))
-		first := parts[0]
+		root := metadataRootForPath(path)
 		if p == "" {
-			p = first
-		} else if p != first {
-			// We found more than one leading path component
-			fmt.Println("could not detect sourceDir from paths. " + p + " != " + first)
+			p = root
+		} else if p != root {
+			fmt.Println("could not detect sourceDir from paths. " + p + " != " + root)
 			return ""
 		}
 	}
@@ -162,6 +166,26 @@ func sourceDirFromPaths(resourcePaths []string) string {
 		return ""
 	}
 	return p
+}
+
+// metadataRootForPath returns the directory holding the metadata type
+// directory that path is in. A path in which no component names a metadata
+// type, such as a source directory itself (src), resolves to its first
+// component.
+func metadataRootForPath(path string) string {
+	parts := strings.Split(filepath.Clean(filepath.FromSlash(path)), string(os.PathSeparator))
+	if len(parts) > 1 && IsMetadataDirectory(parts[1]) {
+		return parts[0]
+	}
+	for i := len(parts) - 1; i >= 0; i-- {
+		if IsMetadataDirectory(parts[i]) {
+			if i == 0 {
+				return "."
+			}
+			return strings.Join(parts[:i], string(os.PathSeparator))
+		}
+	}
+	return parts[0]
 }
 
 // pushByPaths deploys components by explicit paths, with optional smart flow versioning

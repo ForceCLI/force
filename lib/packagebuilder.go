@@ -663,6 +663,17 @@ func (pb *PackageBuilder) getMetaTypeForRelativePath(fpath string) (metaName str
 	return pb.GetMetaForAbsolutePath(fpath)
 }
 
+// IsMetadataDirectory reports whether name is the directory a metadata type's
+// files live in, such as classes or cachePartitions.
+func IsMetadataDirectory(name string) bool {
+	for _, mp := range metapaths {
+		if mp.path == name {
+			return true
+		}
+	}
+	return false
+}
+
 func FindMetapathForFile(file string) (string, error) {
 	parentDir := filepath.Dir(file)
 	parentName := filepath.Base(parentDir)
