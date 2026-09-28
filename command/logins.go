@@ -15,6 +15,7 @@ import (
 func init() {
 	loginsCmd.Flags().StringP("org-id", "o", "", "filter by org id")
 	loginsCmd.Flags().StringP("user-id", "i", "", "filter by user id")
+	loginsCmd.Flags().StringP("namespace", "n", "", "filter by org namespace")
 	loginsCmd.Flags().Bool("sfdx", false, "include SFDX logins")
 	RootCmd.AddCommand(loginsCmd)
 }
@@ -26,6 +27,8 @@ var loginsCmd = &cobra.Command{
 	Short: "List force.com logins used",
 	Example: `
   force logins
+  force logins --namespace myns
+  force logins --namespace ""
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		showSFDX, _ := cmd.Flags().GetBool("sfdx")
@@ -60,7 +63,27 @@ func filters(cmd *cobra.Command) []accountFilter {
 			return strings.ToLower(s.UserInfo.UserId) == strings.ToLower(userId)
 		})
 	}
+
+	if cmd.Flags().Changed("namespace") {
+		namespace, _ := cmd.Flags().GetString("namespace")
+		filters = append(filters, namespaceFilter(namespace))
+	}
 	return filters
+}
+
+// namespaceFilter matches logins whose org namespace equals namespace.  An
+// empty namespace matches logins for orgs without a namespace.
+func namespaceFilter(namespace string) accountFilter {
+	return func(s ForceSession) bool {
+		return strings.EqualFold(sessionNamespace(s), namespace)
+	}
+}
+
+func sessionNamespace(s ForceSession) string {
+	if s.UserInfo == nil {
+		return ""
+	}
+	return s.UserInfo.OrgNamespace
 }
 
 func runLogins(filters []accountFilter, includeSFDX bool) {
@@ -103,7 +126,7 @@ ACCOUNTS:
 			} else {
 				account = fmt.Sprintf("%s \x1b[31;1m\x1b[0m", account)
 			}
-			fmt.Fprintln(w, fmt.Sprintf("%s%s", account, banner))
+			fmt.Fprintln(w, fmt.Sprintf("%s%s\t%s", account, banner, sessionNamespace(creds)))
 		}
 	}
 	if includeSFDX && len(sfdxAuths) > 0 {
@@ -137,7 +160,7 @@ ACCOUNTS:
 			if strings.TrimSpace(instance) == "" {
 				instance = auth.LoginUrl
 			}
-			fmt.Fprintf(w, "%s\t%s\n", name, instance)
+			fmt.Fprintf(w, "%s\t%s\t%s\n", name, instance, sessionNamespace(session))
 		}
 	}
 	fmt.Fprintln(w)

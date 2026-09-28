@@ -34,6 +34,7 @@ type SFDXAuth struct {
 	RefreshToken       string
 	UserId             string
 	InstanceApiVersion string
+	NamespacePrefix    string
 }
 
 const (
@@ -58,6 +59,7 @@ type sfdxAuthFile struct {
 	Password           string `json:"password"`
 	InstanceApiVersion string `json:"instanceApiVersion"`
 	Alias              string `json:"alias"`
+	NamespacePrefix    string `json:"namespacePrefix"`
 }
 
 type sfdxCryptoVersion int
@@ -619,6 +621,7 @@ func GetSFDXAuth(user string) (SFDXAuth, error) {
 		RefreshToken:       firstNonEmpty(refreshToken, authFile.RefreshToken),
 		UserId:             authFile.UserId,
 		InstanceApiVersion: authFile.InstanceApiVersion,
+		NamespacePrefix:    authFile.NamespacePrefix,
 	}
 
 	if auth.AccessToken == "" {
@@ -650,9 +653,10 @@ func SFDXAuthToForceSession(auth SFDXAuth) ForceSession {
 	}
 
 	userInfo := &UserInfo{
-		UserName: auth.Username,
-		OrgId:    auth.Id,
-		UserId:   auth.UserId,
+		UserName:     auth.Username,
+		OrgId:        auth.Id,
+		UserId:       auth.UserId,
+		OrgNamespace: auth.NamespacePrefix,
 	}
 	if userInfo.UserName == "" {
 		userInfo.UserName = alias

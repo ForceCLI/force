@@ -92,9 +92,13 @@ Logout will delete your authentication token and remove the saved record of that
       force logout -u=user@example.org
 
 ### logins
-Logins will list all the user names that you have used to authenticate with the instance URL associated with each one.  The active login will be indicated behind the login name in red.
+Logins will list all the user names that you have used to authenticate with the instance URL and org namespace associated with each one.  The active login will be indicated behind the login name in red.
 
       force logins
+
+The namespace is the org's `Organization.NamespacePrefix`, recorded when you log in or when the session is refreshed.  Use `--namespace` to list only the logins for orgs with a given namespace.
+
+      force logins --namespace myns
 
 ![](https://raw.githubusercontent.com/dcarroll/dcarroll.github.io/master/images/force/screenshot-191.png)
 

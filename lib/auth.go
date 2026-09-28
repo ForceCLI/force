@@ -47,18 +47,25 @@ func fetchUserInfo(creds *ForceSession) (userinfo UserInfo, err error) {
 	if err == nil {
 		userinfo.OrgNamespace = namespace
 	} else {
-		Log.Info("Your profile does not have Modify All Data enabled. Functionallity will be limited.")
+		Log.Info(fmt.Sprintf("Could not determine the org's namespace: %v", err))
 		err = nil
 	}
 	return
 }
 
+// getOrgNamespace returns Organization.NamespacePrefix, which is empty for
+// orgs without a registered namespace.
 func (f *Force) getOrgNamespace() (namespace string, err error) {
-	describe, err := f.Metadata.DescribeMetadata()
+	result, err := f.Query("SELECT NamespacePrefix FROM Organization")
 	if err != nil {
 		return
 	}
-	namespace = describe.NamespacePrefix
+	if len(result.Records) == 0 {
+		return
+	}
+	if ns, ok := result.Records[0]["NamespacePrefix"].(string); ok {
+		namespace = ns
+	}
 	return
 }
 

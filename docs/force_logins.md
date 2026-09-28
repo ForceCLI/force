@@ -11,16 +11,19 @@ force logins [flags]
 ```
 
   force logins
+  force logins --namespace myns
+  force logins --namespace ""
 
 ```
 
 ### Options
 
 ```
-  -h, --help             help for logins
-  -o, --org-id string    filter by org id
-      --sfdx             include SFDX logins
-  -i, --user-id string   filter by user id
+  -h, --help               help for logins
+  -n, --namespace string   filter by org namespace
+  -o, --org-id string      filter by org id
+      --sfdx               include SFDX logins
+  -i, --user-id string     filter by user id
 ```
 
 ### Options inherited from parent commands

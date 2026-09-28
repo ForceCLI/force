@@ -1,6 +1,9 @@
 package lib
 
 import (
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"testing"
 
@@ -99,5 +102,53 @@ func TestUpdateCredentialsDoesNotLog(t *testing.T) {
 
 	if recorder.calls != 0 {
 		t.Fatalf("expected no log entries during UpdateCredentials, got %d", recorder.calls)
+	}
+}
+
+func namespaceQueryServer(t *testing.T, namespace interface{}) *httptest.Server {
+	t.Helper()
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		expectedPath := "/services/data/" + ApiVersion() + "/query"
+		if r.URL.Path != expectedPath {
+			t.Errorf("expected path %s, got %s", expectedPath, r.URL.Path)
+		}
+		if q := r.URL.Query().Get("q"); q != "SELECT NamespacePrefix FROM Organization" {
+			t.Errorf("unexpected query: %s", q)
+		}
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"totalSize": 1,
+			"done":      true,
+			"records": []map[string]interface{}{
+				{"NamespacePrefix": namespace},
+			},
+		})
+	}))
+}
+
+func TestGetOrgNamespaceReturnsOrganizationNamespacePrefix(t *testing.T) {
+	server := namespaceQueryServer(t, "myns")
+	defer server.Close()
+
+	force := NewForce(&ForceSession{InstanceUrl: server.URL, AccessToken: "token"})
+	namespace, err := force.getOrgNamespace()
+	if err != nil {
+		t.Fatalf("getOrgNamespace returned error: %v", err)
+	}
+	if namespace != "myns" {
+		t.Fatalf("expected namespace myns, got %q", namespace)
+	}
+}
+
+func TestGetOrgNamespaceReturnsEmptyStringWithoutNamespace(t *testing.T) {
+	server := namespaceQueryServer(t, nil)
+	defer server.Close()
+
+	force := NewForce(&ForceSession{InstanceUrl: server.URL, AccessToken: "token"})
+	namespace, err := force.getOrgNamespace()
+	if err != nil {
+		t.Fatalf("getOrgNamespace returned error: %v", err)
+	}
+	if namespace != "" {
+		t.Fatalf("expected empty namespace, got %q", namespace)
 	}
 }
