@@ -98,6 +98,7 @@ type Options struct {
 	tail        string
 	querystring string
 	httpGet     func(string) ([]byte, error)
+	totalSize   *int
 }
 
 type PageCallback func([]Record) bool
@@ -152,6 +153,15 @@ func QS(v string) Option {
 	}
 }
 
+// TotalSize stores the query's totalSize in dest.  totalSize is the number
+// of rows the query matched, which is not the number of records returned
+// for an aggregate query such as SELECT COUNT() FROM Account.
+func TotalSize(dest *int) Option {
+	return func(o *Options) {
+		o.totalSize = dest
+	}
+}
+
 type HttpGetter func(string) ([]byte, error)
 
 func HttpGet(f HttpGetter) Option {
@@ -166,7 +176,7 @@ func Query(cb PageCallback, options ...Option) error {
 		option(&opts)
 	}
 	q := queryer{opts.instanceUrl, opts.httpGet}
-	return q.getAllPages(opts.UrlTail(), cb)
+	return q.getPages(opts.UrlTail(), cb, opts.totalSize)
 }
 
 type queryer struct {
@@ -175,6 +185,12 @@ type queryer struct {
 }
 
 func (q queryer) getAllPages(nextRecordsUrl string, cb PageCallback) error {
+	return q.getPages(nextRecordsUrl, cb, nil)
+}
+
+// getPages fetches pages until the query is done or cb returns false.  If
+// totalSize is not nil, the totalSize of the first page is stored in it.
+func (q queryer) getPages(nextRecordsUrl string, cb PageCallback, totalSize *int) error {
 	done := false
 	for !done {
 		body, err := q.httpGet(fmt.Sprintf("%s%s", q.instanceUrl, nextRecordsUrl))
@@ -184,6 +200,10 @@ func (q queryer) getAllPages(nextRecordsUrl string, cb PageCallback) error {
 		currResult := result{}
 		if err := json.Unmarshal(body, &currResult); err != nil {
 			return err
+		}
+		if totalSize != nil {
+			*totalSize = currResult.TotalSize
+			totalSize = nil
 		}
 		records, err := recordsFromMapRecords(q, currResult.Records)
 		if err != nil {

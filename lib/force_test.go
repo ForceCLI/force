@@ -566,3 +566,37 @@ func TestGetRecord_returns_ScratchOrgExpiredError_on_420(t *testing.T) {
 		t.Errorf("Expected ScratchOrgExpiredError, got %v", err)
 	}
 }
+
+func TestQueryReportsTotalSizeOfCountQuery(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Query().Get("q") != "SELECT COUNT() FROM Program__c" {
+			t.Errorf("Unexpected query %q", r.URL.Query().Get("q"))
+		}
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"done":      true,
+			"totalSize": 162,
+			"records":   []interface{}{},
+		})
+	}))
+	defer server.Close()
+
+	force := &Force{
+		Credentials: &ForceSession{
+			InstanceUrl: server.URL,
+			AccessToken: "test-token",
+		},
+	}
+
+	result, err := force.Query("SELECT COUNT() FROM Program__c")
+
+	if err != nil {
+		t.Fatalf("Query returned error: %v", err)
+	}
+	if len(result.Records) != 0 {
+		t.Errorf("Expected no records, got %d", len(result.Records))
+	}
+	if result.TotalSize != 162 {
+		t.Errorf("Expected TotalSize 162, got %d", result.TotalSize)
+	}
+}

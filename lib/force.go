@@ -908,12 +908,13 @@ func (f *Force) QueryAndSend(qs string, processor chan<- ForceRecord, options ..
 func (f *Force) Query(qs string, options ...func(*QueryOptions)) (ForceQueryResult, error) {
 	qopts := f.legacyQueryOptions(qs, options...)
 	result := ForceQueryResult{}
-	records, err := query.Eager(qopts...)
+	var totalSize int
+	records, err := query.Eager(append(qopts, query.TotalSize(&totalSize))...)
 	if err != nil {
 		return result, err
 	}
 	result.Done = true
-	result.TotalSize = len(records)
+	result.TotalSize = totalSize
 	result.Records = make([]ForceRecord, len(records))
 	for i, r := range records {
 		// NOTE: This will keep intact the subquery locator bug
