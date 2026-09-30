@@ -139,6 +139,7 @@ var metapaths = []metapath{
 	{path: "profileSessionSettings", name: "ProfileSessionSetting"},
 	{path: "queues", name: "Queue"},
 	{path: "quickActions", name: "QuickAction"},
+	{path: "RecordAggregationDefinitions", name: "RecordAggregationDefinition", extension: ".RecordAggregationDefinition"},
 	{path: "restrictionRules", name: "RestrictionRule"},
 	{path: "remoteSiteSettings", name: "RemoteSiteSetting"},
 	{path: "reports", name: "Report", hasFolder: true},

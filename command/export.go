@@ -177,6 +177,7 @@ func runExport(root string, excludeMetadataNames []string, showWarnings bool) {
 		"Queue",
 		"QuickAction",
 		"QuoteSettings",
+		"RecordAggregationDefinition",
 		"RecordType",
 		"RestrictionRule",
 		"RemoteSiteSetting",

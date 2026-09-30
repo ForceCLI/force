@@ -180,6 +180,23 @@ var _ = Describe("Packagebuilder", func() {
 			})
 		})
 
+		Context("when adding a RecordAggregationDefinition file", func() {
+			var definitionPath string
+
+			BeforeEach(func() {
+				os.MkdirAll(tempDir+"/src/RecordAggregationDefinitions", 0755)
+				definitionPath = tempDir + "/src/RecordAggregationDefinitions/Donor_Gifts.RecordAggregationDefinition-meta.xml"
+				ioutil.WriteFile(definitionPath, []byte(`<?xml version="1.0" encoding="UTF-8"?>`), 0644)
+			})
+
+			It("should add the file to the package.xml under RecordAggregationDefinition", func() {
+				err := pb.AddFile(definitionPath)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(pb.Metadata).To(HaveKey("RecordAggregationDefinition"))
+				Expect(pb.Metadata["RecordAggregationDefinition"].Members[0]).To(Equal("Donor_Gifts"))
+			})
+		})
+
 		Context("when adding a BrandingSet file", func() {
 			var brandingSetPath string
 
@@ -627,6 +644,13 @@ var _ = Describe("Packagebuilder", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(metadataType).To(Equal("UiFormatSpecificationSet"))
 				Expect(metadataName).To(Equal("Access_Packages"))
+			})
+
+			It("should handle RecordAggregationDefinition files", func() {
+				metadataType, metadataName, err := pb.GetMetaForAbsolutePath("/path/to/src/RecordAggregationDefinitions/Donor_Gifts.RecordAggregationDefinition")
+				Expect(err).ToNot(HaveOccurred())
+				Expect(metadataType).To(Equal("RecordAggregationDefinition"))
+				Expect(metadataName).To(Equal("Donor_Gifts"))
 			})
 
 			It("should handle BrandingSet files", func() {
