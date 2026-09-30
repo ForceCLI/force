@@ -228,3 +228,22 @@ func TestEntryDiskWriter_PathTraversal(t *testing.T) {
 		t.Fatal("expected error for path traversal entry")
 	}
 }
+
+func TestEntryDiskWriter_CurrentDirectoryRoot(t *testing.T) {
+	dir := t.TempDir()
+	t.Chdir(dir)
+	write := EntryDiskWriter(".")
+	if err := write("classes/Foo.cls", strings.NewReader("body")); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+	data, err := os.ReadFile(filepath.Join(dir, "classes", "Foo.cls"))
+	if err != nil {
+		t.Fatalf("read: %v", err)
+	}
+	if string(data) != "body" {
+		t.Errorf("content = %q", data)
+	}
+	if err := write("../evil.txt", strings.NewReader("bad")); err == nil {
+		t.Fatal("expected error for path traversal entry")
+	}
+}

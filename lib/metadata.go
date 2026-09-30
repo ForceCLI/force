@@ -1603,10 +1603,11 @@ func emitPackageXml(packageXmls [][]byte, handle RetrieveEntryHandler) error {
 func EntryDiskWriter(root string) RetrieveEntryHandler {
 	cleanRoot := filepath.Clean(root)
 	return func(name string, r io.Reader) error {
-		target := filepath.Join(cleanRoot, filepath.FromSlash(name))
-		if target != cleanRoot && !strings.HasPrefix(target, cleanRoot+string(os.PathSeparator)) {
+		entry := filepath.FromSlash(name)
+		if !filepath.IsLocal(entry) {
 			return fmt.Errorf("entry %s would be written outside %s", name, root)
 		}
+		target := filepath.Join(cleanRoot, entry)
 		if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
 			return err
 		}
