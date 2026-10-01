@@ -100,6 +100,7 @@ var metapaths = []metapath{
 	{path: "flowDefinitions", name: "FlowDefinition"},
 	{path: "flows", name: "Flow"},
 	{path: "flowtests", name: "FlowTest"},
+	{path: "fundraisingConfigs", name: "FundraisingConfig", extension: ".fundraisingConfig"},
 	{path: "globalPicklists", name: "GlobalPicklist"},
 	{path: "globalValueSets", name: "GlobalValueSet"},
 	{path: "globalValueSetTranslations", name: "GlobalValueSetTranslation"},

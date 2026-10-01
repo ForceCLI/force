@@ -180,6 +180,23 @@ var _ = Describe("Packagebuilder", func() {
 			})
 		})
 
+		Context("when adding a FundraisingConfig file", func() {
+			var configPath string
+
+			BeforeEach(func() {
+				os.MkdirAll(tempDir+"/src/fundraisingConfigs", 0755)
+				configPath = tempDir + "/src/fundraisingConfigs/FundraisingConfig.fundraisingConfig-meta.xml"
+				ioutil.WriteFile(configPath, []byte(`<?xml version="1.0" encoding="UTF-8"?>`), 0644)
+			})
+
+			It("should add the file to the package.xml under FundraisingConfig", func() {
+				err := pb.AddFile(configPath)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(pb.Metadata).To(HaveKey("FundraisingConfig"))
+				Expect(pb.Metadata["FundraisingConfig"].Members[0]).To(Equal("FundraisingConfig"))
+			})
+		})
+
 		Context("when adding a RecordAggregationDefinition file", func() {
 			var definitionPath string
 
@@ -644,6 +661,13 @@ var _ = Describe("Packagebuilder", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(metadataType).To(Equal("UiFormatSpecificationSet"))
 				Expect(metadataName).To(Equal("Access_Packages"))
+			})
+
+			It("should handle FundraisingConfig files", func() {
+				metadataType, metadataName, err := pb.GetMetaForAbsolutePath("/path/to/src/fundraisingConfigs/FundraisingConfig.fundraisingConfig")
+				Expect(err).ToNot(HaveOccurred())
+				Expect(metadataType).To(Equal("FundraisingConfig"))
+				Expect(metadataName).To(Equal("FundraisingConfig"))
 			})
 
 			It("should handle RecordAggregationDefinition files", func() {

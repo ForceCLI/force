@@ -137,6 +137,7 @@ func runExport(root string, excludeMetadataNames []string, showWarnings bool) {
 		"FlowDefinition",
 		"Folder",
 		"ForecastingSettings",
+		"FundraisingConfig",
 		"GlobalValueSet",
 		"Group",
 		"HomePageComponent",
