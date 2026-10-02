@@ -73,4 +73,93 @@ value"`
 			Expect(err).To(MatchError(MatchRegexp("no such file or directory")))
 		})
 	})
+	Describe("CombineBatchResults", func() {
+		It("should include the CSV header only once", func() {
+			results := [][]byte{
+				[]byte("\"Id\",\"Success\",\"Created\",\"Error\"\n\"001000000000000000\",\"true\",\"true\",\"\"\n"),
+				[]byte("\"Id\",\"Success\",\"Created\",\"Error\"\n\"001000000000000001\",\"true\",\"true\",\"\"\n"),
+			}
+			combined, err := CombineBatchResults("CSV", results)
+			Expect(err).To(BeNil())
+			Expect(string(combined)).To(Equal("\"Id\",\"Success\",\"Created\",\"Error\"\n\"001000000000000000\",\"true\",\"true\",\"\"\n\"001000000000000001\",\"true\",\"true\",\"\"\n"))
+		})
+
+		It("should skip empty results and header-only results", func() {
+			results := [][]byte{
+				[]byte(""),
+				[]byte("\"Id\",\"Success\"\n\"001000000000000000\",\"true\""),
+				[]byte("\"Id\",\"Success\"\n"),
+				[]byte("\"Id\",\"Success\"\n\"001000000000000001\",\"true\"\n"),
+			}
+			combined, err := CombineBatchResults("csv", results)
+			Expect(err).To(BeNil())
+			Expect(string(combined)).To(Equal("\"Id\",\"Success\"\n\"001000000000000000\",\"true\"\n\"001000000000000001\",\"true\"\n"))
+		})
+
+		It("should separate non-CSV results with a newline", func() {
+			results := [][]byte{
+				[]byte("<results><result><id>a</id></result></results>"),
+				[]byte("<results><result><id>b</id></result></results>"),
+			}
+			combined, err := CombineBatchResults("XML", results)
+			Expect(err).To(BeNil())
+			Expect(string(combined)).To(Equal("<results><result><id>a</id></result></results>\n<results><result><id>b</id></result></results>\n"))
+		})
+
+		It("should write JSON results as one object per line", func() {
+			results := [][]byte{
+				[]byte(`[ {
+  "success" : true,
+  "created" : true,
+  "id" : "001000000000000000",
+  "errors" : [ ]
+}, {
+  "success" : false,
+  "created" : false,
+  "id" : null,
+  "errors" : [ {
+    "message" : "Required fields are missing: [Name]"
+  } ]
+} ]`),
+				[]byte(""),
+				[]byte(`[ {
+  "success" : true,
+  "created" : true,
+  "id" : "001000000000000001",
+  "errors" : [ ]
+} ]`),
+			}
+			combined, err := CombineBatchResults("JSON", results)
+			Expect(err).To(BeNil())
+			Expect(string(combined)).To(Equal(`{"success":true,"created":true,"id":"001000000000000000","errors":[]}
+{"success":false,"created":false,"id":null,"errors":[{"message":"Required fields are missing: [Name]"}]}
+{"success":true,"created":true,"id":"001000000000000001","errors":[]}
+`))
+		})
+
+		It("should read several concatenated JSON arrays in one result", func() {
+			results := [][]byte{
+				[]byte(`[ { "id" : "a" } ]
+[ { "id" : "b" }, { "id" : "c" } ]
+`),
+			}
+			combined, err := CombineBatchResults("JSON", results)
+			Expect(err).To(BeNil())
+			Expect(string(combined)).To(Equal(`{"id":"a"}
+{"id":"b"}
+{"id":"c"}
+`))
+		})
+
+		It("should report JSON results that are not an array", func() {
+			_, err := CombineBatchResults("JSON", [][]byte{[]byte(`{"success": true}`)})
+			Expect(err).ToNot(BeNil())
+		})
+
+		It("should return nothing when there are no results", func() {
+			combined, err := CombineBatchResults("CSV", nil)
+			Expect(err).To(BeNil())
+			Expect(combined).To(BeEmpty())
+		})
+	})
 })

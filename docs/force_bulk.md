@@ -16,6 +16,8 @@ Load csv file or query data using Bulk API
   force bulk query [-wait | -w] Account [SOQL]
   force bulk query [-chunk | -p]=50000 Account [SOQL]
   force bulk retrieve [job id] [batch id]
+  force bulk result [job id]
+  force bulk result [job id] [batch id]
 
 ```
 

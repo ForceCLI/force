@@ -49,6 +49,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/csv"
+	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"net/http"
@@ -188,12 +189,21 @@ var bulkRetrieveCmd = &cobra.Command{
 }
 
 var bulkResultCmd = &cobra.Command{
-	Use:   "result <jobId> <batchId>",
+	Use:   "result <jobId> [batchId]",
 	Short: "Retrieve job results using Bulk API",
+	Long: `Retrieve job results using Bulk API.
+
+When only a job id is given, the results of every batch in the job are
+retrieved and combined.  For CSV jobs, the header row is included once.  For
+JSON jobs, the results are written as JSON Lines, one object per line.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println(string(retrieveBulkJobBatchResult(args[0], args[1])))
+		if len(args) == 2 {
+			fmt.Println(string(retrieveBulkJobBatchResult(args[0], args[1])))
+			return
+		}
+		fmt.Print(string(retrieveBulkJobResults(args[0])))
 	},
-	Args: cobra.ExactArgs(2),
+	Args: cobra.RangeArgs(1, 2),
 }
 
 var bulkRequestCmd = &cobra.Command{
@@ -255,6 +265,8 @@ var bulkCmd = &cobra.Command{
   force bulk query [-wait | -w] Account [SOQL]
   force bulk query [-chunk | -p]=50000 Account [SOQL]
   force bulk retrieve [job id] [batch id]
+  force bulk result [job id]
+  force bulk result [job id] [batch id]
 `,
 }
 
@@ -443,6 +455,102 @@ func retrieveBulkJobBatchResult(jobId string, batchId string) (result []byte) {
 		ErrorAndExit(err.Error())
 	}
 	return result
+}
+
+// retrieveBulkJobResults retrieves the results of every batch in a job and
+// combines them into a single document.
+func retrieveBulkJobResults(jobId string) []byte {
+	jobInfo := getJobDetails(jobId)
+	var results [][]byte
+	for _, batchInfo := range getBatches(jobId) {
+		results = append(results, retrieveBulkJobBatchResult(jobId, batchInfo.Id))
+	}
+	combined, err := CombineBatchResults(jobInfo.ContentType, results)
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
+	return combined
+}
+
+// CombineBatchResults joins the result documents of a job's batches.  Each CSV
+// result contains a header row, which is kept only for the first non-empty
+// result.  Each JSON result is an array of objects; the objects from every
+// batch are written as JSON Lines, one object per line.  Results in other
+// formats are separated by a newline.
+func CombineBatchResults(contentType string, results [][]byte) ([]byte, error) {
+	switch strings.ToUpper(contentType) {
+	case "CSV":
+		return combineCsvResults(results), nil
+	case "JSON":
+		return combineJsonResults(results)
+	default:
+		return combineRawResults(results), nil
+	}
+}
+
+func combineCsvResults(results [][]byte) []byte {
+	var combined []byte
+	headerIncluded := false
+	for _, result := range results {
+		if len(bytes.TrimSpace(result)) == 0 {
+			continue
+		}
+		if headerIncluded {
+			result = stripFirstLine(result)
+			if len(result) == 0 {
+				continue
+			}
+		}
+		headerIncluded = true
+		combined = appendLine(combined, result)
+	}
+	return combined
+}
+
+func combineJsonResults(results [][]byte) ([]byte, error) {
+	var combined []byte
+	for _, result := range results {
+		if len(bytes.TrimSpace(result)) == 0 {
+			continue
+		}
+		// A batch result is a single JSON array.  Read every top-level array
+		// so that a document holding several concatenated arrays also works.
+		decoder := json.NewDecoder(bytes.NewReader(result))
+		for decoder.More() {
+			var rows []json.RawMessage
+			if err := decoder.Decode(&rows); err != nil {
+				return nil, fmt.Errorf("unable to parse batch result as a JSON array: %w", err)
+			}
+			for _, row := range rows {
+				var compact bytes.Buffer
+				if err := json.Compact(&compact, row); err != nil {
+					return nil, err
+				}
+				combined = appendLine(combined, compact.Bytes())
+			}
+		}
+	}
+	return combined, nil
+}
+
+func combineRawResults(results [][]byte) []byte {
+	var combined []byte
+	for _, result := range results {
+		if len(bytes.TrimSpace(result)) == 0 {
+			continue
+		}
+		combined = appendLine(combined, result)
+	}
+	return combined
+}
+
+// appendLine appends data to combined, ensuring that it ends with a newline.
+func appendLine(combined []byte, data []byte) []byte {
+	combined = append(combined, data...)
+	if combined[len(combined)-1] != '\n' {
+		combined = append(combined, '\n')
+	}
+	return combined
 }
 
 func retrieveBulkJobBatchRequest(jobId string, batchId string) (result []byte) {
