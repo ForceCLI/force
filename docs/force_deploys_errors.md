@@ -9,7 +9,7 @@ force deploys errors [flags]
 ### Options
 
 ```
-  -d, --deploy-id string   Deploy Id to cancel
+  -d, --deploy-id string   Deploy Id to list errors for
   -h, --help               help for errors
 ```
 

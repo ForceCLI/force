@@ -27,10 +27,10 @@ func init() {
 
 	listDeploysCmd.Flags().StringP("format", "f", defaultOutputFormat, "output format: csv, json, json-pretty, console")
 
-	listDeployErrorsCmd.Flags().StringP("deploy-id", "d", "", "Deploy Id to cancel")
+	listDeployErrorsCmd.Flags().StringP("deploy-id", "d", "", "Deploy Id to list errors for")
 	listDeployErrorsCmd.MarkFlagRequired("deploy-id")
 
-	watchDeployCmd.Flags().StringP("deploy-id", "d", "", "Deploy Id to cancel")
+	watchDeployCmd.Flags().StringP("deploy-id", "d", "", "Deploy Id to watch")
 
 	statusDeployCmd.Flags().StringP("deploy-id", "d", "", "Deploy Id to get status for")
 	statusDeployCmd.Flags().BoolP("verbose", "v", false, "Show detailed information including component changes")
@@ -81,8 +81,15 @@ var listDeployErrorsCmd = &cobra.Command{
 }
 
 var watchDeployCmd = &cobra.Command{
-	Use:                   "watch",
-	Short:                 "Monitor metadata deploy",
+	Use:   "watch",
+	Short: "Monitor metadata deploy",
+	Long: `Monitor metadata deploy
+
+The deployment status and progress bars stay at the top of the screen. Test
+and component failures are listed below them in a scrollable area sized to
+the remaining terminal height. Use the arrow keys, PgUp and PgDn to scroll
+the failures, and q to quit. Use "force deploys errors" to print the full
+list of failures.`,
 	DisableFlagsInUseLine: false,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		deployId, _ := cmd.Flags().GetString("deploy-id")
