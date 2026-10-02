@@ -744,13 +744,21 @@ func (fm *ForceMetadata) CheckStatus(id string) error {
 	}
 }
 
+// NumberTestsRun returns the number of tests that have finished, whether
+// they passed or failed. Salesforce reports passed tests in
+// numberTestsCompleted and failed tests in numberTestErrors, so neither
+// field alone gives the number of tests run.
+func (results ForceCheckDeploymentStatusResult) NumberTestsRun() int {
+	return results.NumberTestsCompleted + results.NumberTestErrors
+}
+
 func (results ForceCheckDeploymentStatusResult) String() string {
 	complete := ""
 	if results.Status == "InProgress" {
 		complete = fmt.Sprintf(" (%d/%d)", results.NumberComponentsDeployed, results.NumberComponentsTotal)
 	}
-	if results.NumberTestsCompleted > 0 {
-		complete = fmt.Sprintf(" (%d/%d)", results.NumberTestsCompleted, results.NumberTestsTotal)
+	if results.NumberTestsRun() > 0 {
+		complete = fmt.Sprintf(" (%d/%d)", results.NumberTestsRun(), results.NumberTestsTotal)
 	}
 
 	return fmt.Sprintf("Status: %s%s %s", results.Status, complete, results.StateDetail)

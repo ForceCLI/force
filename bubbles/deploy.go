@@ -46,7 +46,7 @@ func (m DeployModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		cmds = append(cmds, m.progress.SetPercent(completion))
 
-		testCompletion := float64(m.NumberTestsCompleted) / float64(m.NumberTestsTotal)
+		testCompletion := float64(m.NumberTestsRun()) / float64(m.NumberTestsTotal)
 		if math.IsNaN(testCompletion) || testCompletion < 0.01 {
 			testCompletion = 0
 		}
@@ -94,7 +94,8 @@ func (m DeployModel) View() string {
 	totalComponents := infoStyle.Render(fmt.Sprintf("Components Deployed: %d", m.NumberComponentsDeployed))
 	deployedComponents := infoStyle.Render(fmt.Sprintf("Total Components: %d", m.NumberComponentsTotal))
 	totalTests := infoStyle.Render(fmt.Sprintf("Total Tests: %d", m.NumberTestsTotal))
-	passedTests := infoStyle.Render(fmt.Sprintf("Tests Passed: %d", m.NumberTestsCompleted-m.NumberTestErrors))
+	passedTests := infoStyle.Render(fmt.Sprintf("Tests Passed: %d", m.NumberTestsCompleted))
+	failedTests := infoStyle.Render(fmt.Sprintf("Tests Failed: %d", m.NumberTestErrors))
 
 	testResultsHeader := subHeaderStyle.Render("Test Results:")
 	numTestsRun := testResultStyle.Render(fmt.Sprintf("Number of Tests Run: %d", m.Details.RunTestResult.NumberOfTestsRun))
@@ -110,9 +111,9 @@ func (m DeployModel) View() string {
 	components := []string{
 		header, "", id, status, stateDetail, success, createdDate, createdBy,
 		lastModifiedDate, totalComponents, deployedComponents, m.progress.View(), totalTests,
-		passedTests,
+		passedTests, failedTests,
 	}
-	if m.NumberTestsCompleted > 0 {
+	if m.NumberTestsRun() > 0 {
 		components = append(components, m.testProgress.View())
 	} else {
 		components = append(components, m.testProgress.ViewAs(0))
