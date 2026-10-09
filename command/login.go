@@ -1,6 +1,7 @@
 package command
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -458,8 +459,8 @@ func init() {
 	loginCmd.Flags().StringP("instance", "i", "", `Defaults to 'login' or last
 logged in system. non-production server to login to (values are 'pre',
 'test', or full instance url`)
-	loginCmd.Flags().IntP("port", "P", 3835, "port for local OAuth callback server")
-	loginCmd.Flags().Bool("device-flow", false, "use OAuth Device Flow (for headless environments)")
+	loginCmd.Flags().IntP("port", "P", DefaultOAuthCallbackPort, "port for local OAuth callback server")
+	loginCmd.Flags().Bool("device-flow", false, "use OAuth Device Flow (for headless environments); requires --connected-app-client-id")
 
 	scratchCmd.Flags().String("username", "", "username for scratch org user")
 	scratchCmd.Flags().Var(
@@ -741,7 +742,7 @@ to get a new session token automatically when needed.`,
     force login --connected-app-client-id <my-consumer-key> -u user@example.com -key jwt.key
     force login --connected-app-client-id <my-consumer-key> --connected-app-client-secret <my-consumer-secret>
     force login -P 8080
-    force login --device-flow
+    force login --device-flow --connected-app-client-id <my-consumer-key>
     force login scratch
 `,
 	Args: cobra.MaximumNArgs(0),
@@ -763,6 +764,9 @@ to get a new session token automatically when needed.`,
 			skipLogin, _ := cmd.Flags().GetBool("skip")
 			port, _ := cmd.Flags().GetInt("port")
 			if deviceFlow {
+				if err := validateDeviceFlowClientId(connectedAppClientId); err != nil {
+					ErrorAndExit(err.Error())
+				}
 				oauthDeviceFlowLogin(endpoint, skipLogin, port)
 			} else {
 				oauthLogin(endpoint, skipLogin, port)
@@ -1105,6 +1109,18 @@ func oauthLogin(endpoint string, skipLogin bool, port int) {
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
+}
+
+var errDeviceFlowRequiresClientId = errors.New("--device-flow requires --connected-app-client-id: Salesforce allows the device flow only with a local external client app. Create one in the org with the device flow enabled, and pass its consumer key")
+
+// validateDeviceFlowClientId requires a consumer key for the device flow.
+// Salesforce allows the device flow only with a local external client app, so
+// the default connected app cannot be used.
+func validateDeviceFlowClientId(clientId string) error {
+	if clientId == "" {
+		return errDeviceFlowRequiresClientId
+	}
+	return nil
 }
 
 func oauthDeviceFlowLogin(endpoint string, skipLogin bool, port int) {

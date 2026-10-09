@@ -1341,3 +1341,15 @@ func TestConvertSettingsToStrings_EnableMultiCurrency(t *testing.T) {
 		t.Errorf("Expected enableMultiCurrency, got %s", result[0])
 	}
 }
+
+func TestValidateDeviceFlowClientId_RequiresClientId(t *testing.T) {
+	if err := validateDeviceFlowClientId(""); err != errDeviceFlowRequiresClientId {
+		t.Errorf("Expected errDeviceFlowRequiresClientId, got %v", err)
+	}
+}
+
+func TestValidateDeviceFlowClientId_AcceptsClientId(t *testing.T) {
+	if err := validateDeviceFlowClientId("my-consumer-key"); err != nil {
+		t.Errorf("Expected no error with a client id, got %v", err)
+	}
+}
