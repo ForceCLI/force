@@ -11,9 +11,9 @@ import (
 	"io"
 	"io/ioutil"
 	"math/rand"
-	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -395,27 +395,39 @@ func ForceLogin(endpoint ForceEndpoint) (creds ForceSession, err error) {
 }
 
 func ForceLoginAtEndpointWithPrompt(endpoint string, prompt string) (creds ForceSession, err error) {
-	return ForceLoginAtEndpointWithPromptAndPort(endpoint, prompt, 3835)
+	return ForceLoginAtEndpointWithPromptAndPort(endpoint, prompt, DefaultOAuthCallbackPort)
 }
 
+// ForceLoginAtEndpointWithPromptAndPort logs in through the browser using the
+// OAuth 2.0 authorization code flow with PKCE, receiving the redirect on a
+// local HTTP server at targetPort.
 func ForceLoginAtEndpointWithPromptAndPort(endpoint string, prompt string, targetPort int) (creds ForceSession, err error) {
-	ch := make(chan ForceSession)
-	port, err := startLocalHttpServerWithPort(ch, targetPort)
-	var url string
-
-	Redir := fmt.Sprintf("http://localhost:%d/oauth/callback", port)
-
-	url = fmt.Sprintf("%s/services/oauth2/authorize?response_type=token&client_id=%s&redirect_uri=%s&state=%d&prompt=%s", endpoint, ClientId, Redir, port, prompt)
-
-	err = desktop.Open(url)
-	creds = <-ch
-	creds.SessionOptions = &SessionOptions{}
-	if creds.RefreshToken != "" {
-		creds.SessionOptions.RefreshMethod = RefreshOauth
+	codeVerifier, err := randomURLSafeString(32)
+	if err != nil {
+		return
 	}
-	creds.EndpointUrl = endpoint
-	creds.ClientId = ClientId
-	return creds, err
+	state, err := randomURLSafeString(16)
+	if err != nil {
+		return
+	}
+	callback, err := startAuthorizationCodeCallbackServer(targetPort, state)
+	if err != nil {
+		return
+	}
+	defer callback.close()
+
+	redirectURI := OAuthCallbackURL(callback.port)
+	authURL := authorizationCodeURL(endpoint, ClientId, redirectURI, state, prompt, pkceCodeChallenge(codeVerifier))
+	if openErr := desktop.Open(authURL); openErr != nil {
+		fmt.Fprintf(os.Stderr, "Unable to open browser: %s\nOpen this URL to log in:\n%s\n", openErr, authURL)
+	}
+
+	result := <-callback.results
+	if result.err != nil {
+		err = result.err
+		return
+	}
+	return exchangeAuthorizationCode(endpoint, ClientId, result.code, codeVerifier, redirectURI)
 }
 
 func ForceLoginAtEndpointDeviceFlow(endpoint string, prompt string) (creds ForceSession, err error) {
@@ -1846,40 +1858,6 @@ func (result *ForceQueryResult) Update(other ForceQueryResult, force *Force) {
 	result.NextRecordsUrl = fmt.Sprintf("%s%s", force.Credentials.InstanceUrl, other.NextRecordsUrl)
 }
 
-func startLocalHttpServer(ch chan ForceSession) (port int, err error) {
-	return startLocalHttpServerWithPort(ch, 3835)
-}
-
-func startLocalHttpServerWithPort(ch chan ForceSession, targetPort int) (port int, err error) {
-	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", targetPort))
-	if err != nil {
-		return
-	}
-	port = listener.Addr().(*net.TCPAddr).Port
-	h := http.NewServeMux()
-	h.HandleFunc("/oauth/callback", func(w http.ResponseWriter, r *http.Request) {
-		query := r.URL.Query()
-		if query.Get("error") != "" {
-			oauthCallbackError(w, query.Get("error"), query.Get("error_description"))
-			return
-		}
-		if r.Method != "POST" {
-			io.WriteString(w, oauthCallbackHtml())
-			return
-		}
-		var creds ForceSession
-		creds.AccessToken = query.Get("access_token")
-		creds.RefreshToken = query.Get("refresh_token")
-		creds.InstanceUrl = query.Get("instance_url")
-		creds.IssuedAt = query.Get("issued_at")
-		creds.Scope = query.Get("scope")
-		ch <- creds
-		listener.Close()
-	})
-	go http.Serve(listener, h)
-	return
-}
-
 func oauthCallbackError(w io.Writer, code, description string) {
 	tmpl := `
 <!doctype html>
@@ -1908,43 +1886,6 @@ func oauthCallbackError(w io.Writer, code, description string) {
 	if err != nil {
 		ErrorAndExit("Unable to render template: " + err.Error())
 	}
-}
-
-func oauthCallbackHtml() string {
-	return `
-<!doctype html>
-<html>
-  <head>
-	  <title>Force CLI OAuth Callback</title>
-  </head>
-  <body>
-	  <h1>OAuth Callback</h1>
-	  <p id="status">Status: Idle</p>
-	  <script type="text/javascript">
-	  window.onload = function() {
-		  var url = window.location.href.replace('#', '?');
-		  var req = new XMLHttpRequest();
-		  var completeText = 'Complete! You may now close this window';
-		  var errorText = 'Something went wrong!';
-		  var statusEl = document.getElementById('status');
-
-		  req.onreadystatechange=function() {
-
-			  if(req.readyState==4 && req.status==200) {
-				  statusEl.innerHTML = completeText;
-			  } else {
-				  statusEl.innerHTML = errorText;
-			  }
-		  }
-
-		  req.open('POST', url, true);
-		  req.setRequestHeader('Content-Type', 'text/plain');
-		  statusEl.innerHTML = 'Status: Sending Auth...';
-		  req.send();
-	  }
-	  </script>
-  </body>
-</html>`
 }
 
 func (force *Force) GetMetadata() *ForceMetadata {
