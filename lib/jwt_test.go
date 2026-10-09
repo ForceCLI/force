@@ -191,3 +191,32 @@ func TestPasswordFlowLoginAtEndpoint_WithClientSecret(t *testing.T) {
 		t.Fatalf("PasswordFlowLoginAtEndpoint returned error: %v", err)
 	}
 }
+
+func TestPasswordFlowLoginAtEndpoint_ResendsPostAfterRedirect(t *testing.T) {
+	myDomain := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Errorf("Expected POST after redirect, got %s", r.Method)
+		}
+		if err := r.ParseForm(); err != nil {
+			t.Fatalf("Failed to parse form: %v", err)
+		}
+		if r.Form.Get("grant_type") != "password" {
+			t.Errorf("Expected grant_type=password after redirect, got %q", r.Form.Get("grant_type"))
+		}
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"access_token": "test-access-token",
+			"instance_url": "https://example.my.salesforce.com",
+		})
+	}))
+	defer myDomain.Close()
+	lightning := newRedirectingServer(myDomain)
+	defer lightning.Close()
+
+	creds, err := PasswordFlowLoginAtEndpoint(lightning.URL, "test-client-id", "", "user@example.com", "secretpassword")
+	if err != nil {
+		t.Fatalf("PasswordFlowLoginAtEndpoint returned error: %v", err)
+	}
+	if creds.AccessToken != "test-access-token" {
+		t.Errorf("Expected access token test-access-token, got %s", creds.AccessToken)
+	}
+}

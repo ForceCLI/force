@@ -54,7 +54,7 @@ func (s *Soap) ExecuteLogin(username, password string) (response []byte, err err
 	req.Header.Add("Content-Type", "text/xml")
 	req.Header.Add("SOAPACtion", "login")
 
-	res, err := doRequest(req)
+	res, err := doRequest(req, redirectPostOn302)
 	if err != nil {
 		return
 	}

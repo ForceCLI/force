@@ -65,6 +65,13 @@ func redirectPostOn302(c *http.Client) {
 				}
 				req.ContentLength = via[0].ContentLength
 			}
+			// net/http drops the headers describing the body when it turns
+			// the POST into a GET, so restore them along with the body.
+			for _, h := range []string{"Content-Type", "Content-Encoding", "Content-Language", "Content-Location"} {
+				if v, ok := via[0].Header[h]; ok {
+					req.Header[h] = v
+				}
+			}
 		}
 		return nil
 	}

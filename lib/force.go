@@ -431,7 +431,7 @@ func ForceLoginAtEndpointDeviceFlow(endpoint string, prompt string) (creds Force
 	}
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
-	res, err := doRequest(req)
+	res, err := doRequest(req, redirectPostOn302)
 	if err != nil {
 		return
 	}
@@ -495,7 +495,7 @@ func ForceLoginAtEndpointDeviceFlow(endpoint string, prompt string) (creds Force
 		}
 		pollReq.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
-		pollRes, pollErr := doRequest(pollReq)
+		pollRes, pollErr := doRequest(pollReq, redirectPostOn302)
 		if pollErr != nil {
 			continue // Keep polling on temporary errors
 		}

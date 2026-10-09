@@ -60,7 +60,7 @@ func JWTLoginAtEndpoint(endpoint string, assertion string) (creds ForceSession, 
 		return
 	}
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	res, err := doRequest(req)
+	res, err := doRequest(req, redirectPostOn302)
 	if err != nil {
 		return
 	}
@@ -118,7 +118,7 @@ func ClientCredentialsLoginAtEndpoint(endpoint string, clientId string, clientSe
 		return
 	}
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	res, err := doRequest(req)
+	res, err := doRequest(req, redirectPostOn302)
 	if err != nil {
 		return
 	}
@@ -171,7 +171,7 @@ func PasswordFlowLoginAtEndpoint(endpoint string, clientId string, clientSecret 
 		return
 	}
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	res, err := doRequest(req)
+	res, err := doRequest(req, redirectPostOn302)
 	if err != nil {
 		return
 	}

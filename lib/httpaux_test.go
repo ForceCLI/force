@@ -2,6 +2,9 @@ package lib
 
 import (
 	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -72,3 +75,36 @@ var _ = Describe("HttpRetrier", func() {
 		Expect(retrier.attempt).To(Equal(0))
 	})
 })
+
+func TestRedirectPostOn302_ResendsFormBodyAndContentType(t *testing.T) {
+	target := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Errorf("Expected POST after redirect, got %s", r.Method)
+		}
+		if ct := r.Header.Get("Content-Type"); ct != "application/x-www-form-urlencoded" {
+			t.Errorf("Expected Content-Type application/x-www-form-urlencoded after redirect, got %q", ct)
+		}
+		if err := r.ParseForm(); err != nil {
+			t.Fatalf("Failed to parse form: %v", err)
+		}
+		if r.Form.Get("grant_type") != "refresh_token" {
+			t.Errorf("Expected grant_type=refresh_token after redirect, got %q", r.Form.Get("grant_type"))
+		}
+	}))
+	defer target.Close()
+	origin := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, target.URL+"/services/oauth2/token", http.StatusFound)
+	}))
+	defer origin.Close()
+
+	req, err := httpRequest("POST", origin.URL+"/services/oauth2/token", strings.NewReader("grant_type=refresh_token"))
+	if err != nil {
+		t.Fatalf("Failed to create request: %v", err)
+	}
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	res, err := doRequest(req, redirectPostOn302)
+	if err != nil {
+		t.Fatalf("Request failed: %v", err)
+	}
+	res.Body.Close()
+}
