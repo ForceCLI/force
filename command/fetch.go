@@ -32,12 +32,21 @@ var fetchCmd = &cobra.Command{
 	Short: "Export specified artifact(s) to a local directory",
 	Long: `
 Export specified artifact(s) to a local directory. Use "package" type to retrieve an unmanaged package.
+
+Child components, such as a CustomField, are merged into an existing parent
+file, such as objects/Opportunity.object, unless the parent component itself
+is fetched.
+
+Paths to local files or directories can be passed instead of -t. The
+retrieved metadata is written back in the format of those paths, so a source
+(sfdx) format path updates the source format files.
 `,
 	Example: `
   force fetch -t=CustomObject -n=Book__c -n=Author__c
   force fetch -t Aura -n MyComponent -d /Users/me/Documents/Project/home
   force fetch -t AuraDefinitionBundle -t ApexClass
   force fetch -x myproj/metadata/package.xml
+  force fetch force-app/main/default/objects/Account/fields/Email_ID__c.field-meta.xml
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		SetPreserveZip(preserveZip)
@@ -122,7 +131,8 @@ func runFetch() {
 	}
 
 	if len(metadataTypes) == 1 && strings.ToLower(metadataTypes[0]) == "package" {
-		unpacker := newFetchUnpacker(fetchRoot())
+		root := fetchRoot()
+		unpacker := newFetchUnpacker(root, EntryDiskWriter(root))
 		var problems []string
 		for names := range metadataName {
 			packageProblems, err := force.Metadata.RetrievePackageStream(metadataName[names], unpacker.handle)
@@ -157,7 +167,12 @@ func runFetch() {
 }
 
 func runFetchQuery(query ForceMetadataQuery) {
-	unpacker := newFetchUnpacker(fetchRoot())
+	root := fetchRoot()
+	fetchQueryTo(root, query, MergingEntryDiskWriter(root, query))
+}
+
+func fetchQueryTo(root string, query ForceMetadataQuery, write RetrieveEntryHandler) {
+	unpacker := newFetchUnpacker(root, write)
 	problems, err := force.Metadata.RetrieveStream(query, unpacker.handle)
 	if err != nil {
 		ErrorAndExit(err.Error())
@@ -189,12 +204,12 @@ type fetchUnpacker struct {
 	resourceMetas   []string
 }
 
-func newFetchUnpacker(root string) *fetchUnpacker {
+func newFetchUnpacker(root string, write RetrieveEntryHandler) *fetchUnpacker {
 	existingPackage, _ := pathExists(filepath.Join(root, "package.xml"))
 	return &fetchUnpacker{
 		root:            root,
 		existingPackage: existingPackage,
-		write:           EntryDiskWriter(root),
+		write:           write,
 	}
 }
 
@@ -271,9 +286,13 @@ func buildPackageAndFetch(paths []string) {
 	// for each argument
 	// add name and type to package
 	pb := NewFetchBuilder()
-	sourceDir, err := config.GetSourceDir()
-	if err != nil {
-		ErrorAndExit("Could not find source dir")
+	sourceDir := sourceDirFromPaths(paths)
+	if sourceDir == "" {
+		var err error
+		sourceDir, err = config.GetSourceDir()
+		if err != nil {
+			ErrorAndExit("Could not find source dir")
+		}
 	}
 	pb.Root = sourceDir
 	for _, f := range paths {
@@ -303,7 +322,17 @@ func buildPackageAndFetch(paths []string) {
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
-	runFetchQuery(query)
+	root := targetDirectory
+	if root == "" {
+		root = sourceDir
+	}
+	// Write the retrieved metadata back in the format of the paths it was
+	// requested by.
+	write := MergingEntryDiskWriter(root, query)
+	if pb.SourceFormat {
+		write = SourceFormatEntryWriter(root, query)
+	}
+	fetchQueryTo(root, query, write)
 }
 
 func unpackResources(resourceMap map[string]string) {

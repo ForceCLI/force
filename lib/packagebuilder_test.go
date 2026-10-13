@@ -504,6 +504,15 @@ var _ = Describe("Packagebuilder", func() {
 			Expect(pb.Metadata["CustomField"].Members).To(ConsistOf("Widget__c.Score__c"))
 		})
 
+		It("records that a fetch was requested by a source format path", func() {
+			pb = NewFetchBuilder()
+			pb.Root = tempDir + "/src"
+			Expect(pb.AddFile(tempDir + "/src/objects/Widget__c/fields/Score__c.field-meta.xml")).To(Succeed())
+			Expect(pb.SourceFormat).To(BeTrue())
+			Expect(pb.Files).To(BeEmpty())
+			Expect(pb.Metadata["CustomField"].Members).To(ConsistOf("Widget__c.Score__c"))
+		})
+
 		It("composes an object translation from its components", func() {
 			translationDir := tempDir + "/src/objectTranslations/Widget__c-es"
 			mustMkdir(translationDir + "/fields")
@@ -571,6 +580,7 @@ var _ = Describe("Packagebuilder", func() {
 			Expect(pb.Files).To(HaveKey("classes/Widget.cls"))
 			Expect(pb.Files).To(HaveKey("classes/Widget.cls-meta.xml"))
 			Expect(pb.Metadata["ApexClass"].Members).To(ConsistOf("Widget"))
+			Expect(pb.SourceFormat).To(BeFalse())
 		})
 	})
 

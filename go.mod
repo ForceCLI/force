@@ -3,7 +3,7 @@ module github.com/ForceCLI/force
 go 1.26.0
 
 require (
-	github.com/ForceCLI/force-md v0.54.1
+	github.com/ForceCLI/force-md v0.60.0
 	github.com/ForceCLI/inflect v0.0.0-20130829110746-cc00b5ad7a6a
 	github.com/bgentry/speakeasy v0.1.0
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869

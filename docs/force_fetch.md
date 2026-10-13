@@ -7,6 +7,14 @@ Export specified artifact(s) to a local directory
 
 Export specified artifact(s) to a local directory. Use "package" type to retrieve an unmanaged package.
 
+Child components, such as a CustomField, are merged into an existing parent
+file, such as objects/Opportunity.object, unless the parent component itself
+is fetched.
+
+Paths to local files or directories can be passed instead of -t. The
+retrieved metadata is written back in the format of those paths, so a source
+(sfdx) format path updates the source format files.
+
 
 ```
 force fetch -t ApexClass [flags]
@@ -20,6 +28,7 @@ force fetch -t ApexClass [flags]
   force fetch -t Aura -n MyComponent -d /Users/me/Documents/Project/home
   force fetch -t AuraDefinitionBundle -t ApexClass
   force fetch -x myproj/metadata/package.xml
+  force fetch force-app/main/default/objects/Account/fields/Email_ID__c.field-meta.xml
 
 ```
 

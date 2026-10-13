@@ -7,11 +7,13 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	. "github.com/ForceCLI/force/lib"
 )
 
 func TestFetchUnpacker_WritesEntriesAndCounts(t *testing.T) {
 	root := t.TempDir()
-	unpacker := newFetchUnpacker(root)
+	unpacker := newFetchUnpacker(root, EntryDiskWriter(root))
 
 	entries := map[string]string{
 		"classes/Foo.cls": "public class Foo {}",
@@ -44,7 +46,7 @@ func TestFetchUnpacker_PreservesExistingPackageXml(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	unpacker := newFetchUnpacker(root)
+	unpacker := newFetchUnpacker(root, EntryDiskWriter(root))
 	if err := unpacker.handle("package.xml", strings.NewReader("<Package>server</Package>")); err != nil {
 		t.Fatal(err)
 	}
@@ -82,7 +84,7 @@ func TestFetchUnpacker_ExpandsZipResources(t *testing.T) {
 	defer func() { unpack = oldUnpack }()
 
 	root := t.TempDir()
-	unpacker := newFetchUnpacker(root)
+	unpacker := newFetchUnpacker(root, EntryDiskWriter(root))
 
 	resource := buildResourceZip(t, map[string]string{"js/app.js": "console.log(1)"})
 	meta := `<?xml version="1.0" encoding="UTF-8"?>
@@ -117,7 +119,7 @@ func TestFetchUnpacker_DoesNotExpandNonZipResources(t *testing.T) {
 	defer func() { unpack = oldUnpack }()
 
 	root := t.TempDir()
-	unpacker := newFetchUnpacker(root)
+	unpacker := newFetchUnpacker(root, EntryDiskWriter(root))
 
 	meta := `<?xml version="1.0" encoding="UTF-8"?>
 <StaticResource xmlns="http://soap.sforce.com/2006/04/metadata">
@@ -141,7 +143,8 @@ func TestFetchUnpacker_NoResourceCollectionWithoutUnpackFlag(t *testing.T) {
 	unpack = false
 	defer func() { unpack = oldUnpack }()
 
-	unpacker := newFetchUnpacker(t.TempDir())
+	root := t.TempDir()
+	unpacker := newFetchUnpacker(root, EntryDiskWriter(root))
 	meta := `<StaticResource><contentType>application/zip</contentType></StaticResource>`
 	if err := unpacker.handle("staticresources/app.resource-meta.xml", strings.NewReader(meta)); err != nil {
 		t.Fatal(err)

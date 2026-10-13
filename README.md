@@ -169,6 +169,32 @@ Import allows you to import code from local directory. This makes a lot of sense
     |  |package.xml
 
 
+### fetch
+Fetch retrieves specific metadata into a local directory.
+
+    force fetch -t CustomField -n Opportunity.Buyer__c -d src
+
+Some metadata format files hold several components, such as the fields, list
+views, and record types in `objects/Opportunity.object`, or the rules in
+`workflows/Case.workflow`. When fetch retrieves one of these child components
+and the file already exists, it adds or replaces the retrieved components in
+the existing file and keeps the rest of the file. If you fetch the parent
+component itself, such as `-t CustomObject -n Opportunity`, the retrieved file
+replaces the existing one. Retrieving an unmanaged package with `-t package`
+always replaces existing files.
+
+Fetch also takes the paths of local files or directories, and retrieves the
+components they hold. The retrieved metadata is written back in the format
+of the paths given, so a path in a source (sfdx) format project updates the
+source format files:
+
+    force fetch force-app/main/default/objects/Account/fields/Email_ID__c.field-meta.xml
+
+Retrieved objects and object translations are split into a file per child
+component. Fetching a field writes only the field's file; the object's
+`Account.object-meta.xml` file is written only when the object itself is
+fetched.
+
 ### export
 Export allows you to fetch all codes from your org to local machine. This command will export all the codes to a local folder called `src`
 

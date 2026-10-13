@@ -175,6 +175,9 @@ type PackageBuilder struct {
 	// components added so far. Source format splits an object into a file per
 	// component; metadata format needs them composed into one file.
 	sourceComponents *repo.Repo
+	// SourceFormat reports whether any file added was in source (sfdx)
+	// format and had to be converted to metadata format.
+	SourceFormat bool
 }
 
 func NewPushBuilder() PackageBuilder {
@@ -252,6 +255,7 @@ func (pb *PackageBuilder) AddFile(fpath string) error {
 	}
 
 	if converted, err := pb.addSourceFormatFile(fpath); converted || err != nil {
+		pb.SourceFormat = pb.SourceFormat || converted
 		return err
 	}
 

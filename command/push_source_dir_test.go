@@ -13,6 +13,7 @@ func TestMetadataRootForPath(t *testing.T) {
 		{"src/objects/Account/fields/Status__c.field-meta.xml", "src"},
 		{"testdata/everything/cachePartitions/aerreg.cachePartition-meta.xml", "testdata/everything"},
 		{"force-app/main/default/classes/MyClass.cls", "force-app/main/default"},
+		{"force-app/core/main/default/objects/Account/fields/Email_ID__c.field-meta.xml", "force-app/core/main/default"},
 		{"/home/user/project/src/classes/MyClass.cls", "/home/user/project/src"},
 		{"classes/MyClass.cls", "."},
 	}
