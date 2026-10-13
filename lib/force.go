@@ -1564,7 +1564,10 @@ func (f *Force) _makeHttpRequestWithoutRetry(input *httpRequestInput) (*http.Res
 // we also handle rate limit issues, which are a 403, explicitly, so we don't keep refreshing.
 // So we pull these out and handle them in this if/else;
 // if we don't find them, we create a fallback error based on the actual response shape.
-// Then if it's a 401/403, treat the session expired (discard the fallback error);
+// A 403 whose JSON body names an error code other than INVALID_SESSION_ID
+// (FUNCTIONALITY_NOT_ENABLED, INSUFFICIENT_ACCESS, ...) is refused for a reason
+// that a new session does not change, so that error is returned.
+// Otherwise, if it's a 401/403, treat the session expired (discard the fallback error);
 // Finally, return the fallback error.
 func (f *Force) _coerceHttpError(res *http.Response, body []byte) error {
 	if res.StatusCode == 420 {
@@ -1595,6 +1598,9 @@ func (f *Force) _coerceHttpError(res *http.Response, body []byte) error {
 			return PasswordExpiredError
 		} else if len(errors) > 0 {
 			fallbackErr = errors
+			if res.StatusCode == 403 && errors[0].ErrorCode != "" && errors[0].ErrorCode != "INVALID_SESSION_ID" {
+				return errors
+			}
 		}
 	}
 
