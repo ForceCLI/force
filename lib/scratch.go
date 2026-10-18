@@ -319,6 +319,21 @@ func buildSettingsMetadata(settings []string) ForceMetadataFiles {
 		enableProgramCohorts                               bool
 		enableRecordRollup                                 bool
 		enableVolunteerManagement                          bool
+
+		enableIndManufacturing                    bool
+		enableIndustriesMfgAccountForecast        bool
+		enableIndustriesMfgAdvForecast            bool
+		enableIndustriesMfgTargets                bool
+		enableIndustriesMfgProgram                bool
+		enablePtnrLeadMgmtMappings                bool
+		enableInventoryAllocation                 bool
+		enableSampleManagement                    bool
+		enableInventoryReplenishment              bool
+		enablePurchaseOrderMgt                    bool
+		enableWarrantyLCMgmt                      bool
+		enableMfgServiceConsole                   bool
+		enableIndustriesFieldService              bool
+		enableAutomotiveServiceCampaignManagement bool
 	)
 
 	for _, setting := range settings {
@@ -475,6 +490,34 @@ func buildSettingsMetadata(settings []string) ForceMetadataFiles {
 			enableRecordRollup = true
 		case "enableVolunteerManagement":
 			enableVolunteerManagement = true
+		case "enableIndManufacturing":
+			enableIndManufacturing = true
+		case "enableIndustriesMfgAccountForecast":
+			enableIndustriesMfgAccountForecast = true
+		case "enableIndustriesMfgAdvForecast":
+			enableIndustriesMfgAdvForecast = true
+		case "enableIndustriesMfgTargets":
+			enableIndustriesMfgTargets = true
+		case "enableIndustriesMfgProgram":
+			enableIndustriesMfgProgram = true
+		case "enablePtnrLeadMgmtMappings":
+			enablePtnrLeadMgmtMappings = true
+		case "enableInventoryAllocation":
+			enableInventoryAllocation = true
+		case "enableSampleManagement":
+			enableSampleManagement = true
+		case "enableInventoryReplenishment":
+			enableInventoryReplenishment = true
+		case "enablePurchaseOrderMgt":
+			enablePurchaseOrderMgt = true
+		case "enableWarrantyLCMgmt":
+			enableWarrantyLCMgmt = true
+		case "enableMfgServiceConsole":
+			enableMfgServiceConsole = true
+		case "enableIndustriesFieldService":
+			enableIndustriesFieldService = true
+		case "enableAutomotiveServiceCampaignManagement":
+			enableAutomotiveServiceCampaignManagement = true
 		}
 	}
 
@@ -629,6 +672,36 @@ func buildSettingsMetadata(settings []string) ForceMetadataFiles {
 	})
 	emit("unpackaged/settings/Survey.settings", "SurveySettings", []settingsFlag{
 		{"enableSurvey", enableSurvey},
+	})
+	emit("unpackaged/settings/IndustriesManufacturing.settings", "IndustriesManufacturingSettings", []settingsFlag{
+		{"enableIndManufacturing", enableIndManufacturing},
+		{"enableIndustriesMfgAccountForecast", enableIndustriesMfgAccountForecast},
+		{"enableIndustriesMfgAdvForecast", enableIndustriesMfgAdvForecast},
+		{"enableIndustriesMfgProgram", enableIndustriesMfgProgram},
+		{"enableIndustriesMfgTargets", enableIndustriesMfgTargets},
+		{"enablePtnrLeadMgmtMappings", enablePtnrLeadMgmtMappings},
+	})
+	emit("unpackaged/settings/InventoryAllocation.settings", "InventoryAllocationSettings", []settingsFlag{
+		{"enableInventoryAllocation", enableInventoryAllocation},
+	})
+	emit("unpackaged/settings/IndustriesMfgSampleManagement.settings", "IndustriesMfgSampleManagementSettings", []settingsFlag{
+		{"enableSampleManagement", enableSampleManagement},
+	})
+	emit("unpackaged/settings/InventoryReplenishment.settings", "InventoryReplenishmentSettings", []settingsFlag{
+		{"enableInventoryReplenishment", enableInventoryReplenishment},
+	})
+	emit("unpackaged/settings/PurchaseOrderMgmt.settings", "PurchaseOrderMgmtSettings", []settingsFlag{
+		{"enablePurchaseOrderMgt", enablePurchaseOrderMgt},
+	})
+	emit("unpackaged/settings/WarrantyLifecycleMgmt.settings", "WarrantyLifecycleMgmtSettings", []settingsFlag{
+		{"enableWarrantyLCMgmt", enableWarrantyLCMgmt},
+	})
+	emit("unpackaged/settings/MfgServiceConsole.settings", "MfgServiceConsoleSettings", []settingsFlag{
+		{"enableMfgServiceConsole", enableMfgServiceConsole},
+	})
+	emit("unpackaged/settings/IndustriesFieldService.settings", "IndustriesFieldServiceSettings", []settingsFlag{
+		{"enableAutomotiveServiceCampaignManagement", enableAutomotiveServiceCampaignManagement},
+		{"enableIndustriesFieldService", enableIndustriesFieldService},
 	})
 
 	return files

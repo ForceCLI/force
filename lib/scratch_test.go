@@ -988,3 +988,147 @@ func TestBuildFeaturesParam_skips_repeated_requested_features(t *testing.T) {
 		t.Errorf("Expected Communities to appear once, got: %s", result)
 	}
 }
+
+func TestBuildSettingsMetadata_AddsIndustriesManufacturingSettingsForEnableIndManufacturing(t *testing.T) {
+	files := buildSettingsMetadata([]string{"enableIndManufacturing"})
+	content, ok := files["unpackaged/settings/IndustriesManufacturing.settings"]
+	if !ok {
+		t.Fatalf("IndustriesManufacturing.settings not generated")
+	}
+	if !strings.Contains(string(content), "<IndustriesManufacturingSettings ") {
+		t.Errorf("IndustriesManufacturing.settings missing root element:\n%s", content)
+	}
+	if !strings.Contains(string(content), "<enableIndManufacturing>true</enableIndManufacturing>") {
+		t.Errorf("IndustriesManufacturing.settings missing preference:\n%s", content)
+	}
+}
+
+func TestBuildSettingsMetadata_AddsIndustriesManufacturingSettingsForEnableIndustriesMfgTargets(t *testing.T) {
+	files := buildSettingsMetadata([]string{"enableIndustriesMfgTargets"})
+	content, ok := files["unpackaged/settings/IndustriesManufacturing.settings"]
+	if !ok {
+		t.Fatalf("IndustriesManufacturing.settings not generated")
+	}
+	if !strings.Contains(string(content), "<IndustriesManufacturingSettings ") {
+		t.Errorf("IndustriesManufacturing.settings missing root element:\n%s", content)
+	}
+	if !strings.Contains(string(content), "<enableIndustriesMfgTargets>true</enableIndustriesMfgTargets>") {
+		t.Errorf("IndustriesManufacturing.settings missing preference:\n%s", content)
+	}
+}
+
+func TestBuildSettingsMetadata_AddsInventoryAllocationSettingsForEnableInventoryAllocation(t *testing.T) {
+	files := buildSettingsMetadata([]string{"enableInventoryAllocation"})
+	content, ok := files["unpackaged/settings/InventoryAllocation.settings"]
+	if !ok {
+		t.Fatalf("InventoryAllocation.settings not generated")
+	}
+	if !strings.Contains(string(content), "<InventoryAllocationSettings ") {
+		t.Errorf("InventoryAllocation.settings missing root element:\n%s", content)
+	}
+	if !strings.Contains(string(content), "<enableInventoryAllocation>true</enableInventoryAllocation>") {
+		t.Errorf("InventoryAllocation.settings missing preference:\n%s", content)
+	}
+}
+
+func TestBuildSettingsMetadata_AddsIndustriesMfgSampleManagementSettingsForEnableSampleManagement(t *testing.T) {
+	files := buildSettingsMetadata([]string{"enableSampleManagement"})
+	content, ok := files["unpackaged/settings/IndustriesMfgSampleManagement.settings"]
+	if !ok {
+		t.Fatalf("IndustriesMfgSampleManagement.settings not generated")
+	}
+	if !strings.Contains(string(content), "<IndustriesMfgSampleManagementSettings ") {
+		t.Errorf("IndustriesMfgSampleManagement.settings missing root element:\n%s", content)
+	}
+	if !strings.Contains(string(content), "<enableSampleManagement>true</enableSampleManagement>") {
+		t.Errorf("IndustriesMfgSampleManagement.settings missing preference:\n%s", content)
+	}
+}
+
+func TestBuildSettingsMetadata_AddsInventoryReplenishmentSettingsForEnableInventoryReplenishment(t *testing.T) {
+	files := buildSettingsMetadata([]string{"enableInventoryReplenishment"})
+	content, ok := files["unpackaged/settings/InventoryReplenishment.settings"]
+	if !ok {
+		t.Fatalf("InventoryReplenishment.settings not generated")
+	}
+	if !strings.Contains(string(content), "<InventoryReplenishmentSettings ") {
+		t.Errorf("InventoryReplenishment.settings missing root element:\n%s", content)
+	}
+	if !strings.Contains(string(content), "<enableInventoryReplenishment>true</enableInventoryReplenishment>") {
+		t.Errorf("InventoryReplenishment.settings missing preference:\n%s", content)
+	}
+}
+
+func TestBuildSettingsMetadata_AddsPurchaseOrderMgmtSettingsForEnablePurchaseOrderMgt(t *testing.T) {
+	files := buildSettingsMetadata([]string{"enablePurchaseOrderMgt"})
+	content, ok := files["unpackaged/settings/PurchaseOrderMgmt.settings"]
+	if !ok {
+		t.Fatalf("PurchaseOrderMgmt.settings not generated")
+	}
+	if !strings.Contains(string(content), "<PurchaseOrderMgmtSettings ") {
+		t.Errorf("PurchaseOrderMgmt.settings missing root element:\n%s", content)
+	}
+	if !strings.Contains(string(content), "<enablePurchaseOrderMgt>true</enablePurchaseOrderMgt>") {
+		t.Errorf("PurchaseOrderMgmt.settings missing preference:\n%s", content)
+	}
+}
+
+func TestBuildSettingsMetadata_AddsWarrantyLifecycleMgmtSettingsForEnableWarrantyLCMgmt(t *testing.T) {
+	files := buildSettingsMetadata([]string{"enableWarrantyLCMgmt"})
+	content, ok := files["unpackaged/settings/WarrantyLifecycleMgmt.settings"]
+	if !ok {
+		t.Fatalf("WarrantyLifecycleMgmt.settings not generated")
+	}
+	if !strings.Contains(string(content), "<WarrantyLifecycleMgmtSettings ") {
+		t.Errorf("WarrantyLifecycleMgmt.settings missing root element:\n%s", content)
+	}
+	if !strings.Contains(string(content), "<enableWarrantyLCMgmt>true</enableWarrantyLCMgmt>") {
+		t.Errorf("WarrantyLifecycleMgmt.settings missing preference:\n%s", content)
+	}
+}
+
+func TestBuildSettingsMetadata_AddsMfgServiceConsoleSettingsForEnableMfgServiceConsole(t *testing.T) {
+	files := buildSettingsMetadata([]string{"enableMfgServiceConsole"})
+	content, ok := files["unpackaged/settings/MfgServiceConsole.settings"]
+	if !ok {
+		t.Fatalf("MfgServiceConsole.settings not generated")
+	}
+	if !strings.Contains(string(content), "<MfgServiceConsoleSettings ") {
+		t.Errorf("MfgServiceConsole.settings missing root element:\n%s", content)
+	}
+	if !strings.Contains(string(content), "<enableMfgServiceConsole>true</enableMfgServiceConsole>") {
+		t.Errorf("MfgServiceConsole.settings missing preference:\n%s", content)
+	}
+}
+
+func TestBuildSettingsMetadata_AddsIndustriesFieldServiceSettingsForEnableAutomotiveServiceCampaignManagement(t *testing.T) {
+	files := buildSettingsMetadata([]string{"enableAutomotiveServiceCampaignManagement"})
+	content, ok := files["unpackaged/settings/IndustriesFieldService.settings"]
+	if !ok {
+		t.Fatalf("IndustriesFieldService.settings not generated")
+	}
+	if !strings.Contains(string(content), "<IndustriesFieldServiceSettings ") {
+		t.Errorf("IndustriesFieldService.settings missing root element:\n%s", content)
+	}
+	if !strings.Contains(string(content), "<enableAutomotiveServiceCampaignManagement>true</enableAutomotiveServiceCampaignManagement>") {
+		t.Errorf("IndustriesFieldService.settings missing preference:\n%s", content)
+	}
+}
+
+func TestBuildSettingsMetadata_ExcludesManufacturingSettingsWhenUnused(t *testing.T) {
+	files := buildSettingsMetadata([]string{"enableEnhancedNotes"})
+	for _, path := range []string{
+		"unpackaged/settings/IndustriesManufacturing.settings",
+		"unpackaged/settings/InventoryAllocation.settings",
+		"unpackaged/settings/IndustriesMfgSampleManagement.settings",
+		"unpackaged/settings/InventoryReplenishment.settings",
+		"unpackaged/settings/PurchaseOrderMgmt.settings",
+		"unpackaged/settings/WarrantyLifecycleMgmt.settings",
+		"unpackaged/settings/MfgServiceConsole.settings",
+		"unpackaged/settings/IndustriesFieldService.settings",
+	} {
+		if _, ok := files[path]; ok {
+			t.Errorf("%s generated without a Manufacturing setting", path)
+		}
+	}
+}

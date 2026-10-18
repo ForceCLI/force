@@ -103,6 +103,13 @@ const (
 	InsurancePolicyAdmin
 	BusinessRulesEngine
 	ApexIntegrationTests
+	IndustriesManufacturingCmty
+	IndustriesMfgAccountForecast
+	IndustriesMfgAdvncdAccFrcs
+	IndustriesMfgPartnerVisitMgmt
+	IndustriesMfgProgram
+	IndustriesMfgRebates
+	IndustriesMfgTargets
 )
 
 var ScratchFeatureIds = map[ScratchFeature][]string{
@@ -192,6 +199,13 @@ var ScratchFeatureIds = map[ScratchFeature][]string{
 	InsurancePolicyAdmin:              {"InsurancePolicyAdmin"},
 	BusinessRulesEngine:               {"BusinessRulesEngine"},
 	ApexIntegrationTests:              {"ApexIntegrationTests"},
+	IndustriesManufacturingCmty:       {"IndustriesManufacturingCmty"},
+	IndustriesMfgAccountForecast:      {"IndustriesMfgAccountForecast"},
+	IndustriesMfgAdvncdAccFrcs:        {"IndustriesMfgAdvncdAccFrcs"},
+	IndustriesMfgPartnerVisitMgmt:     {"IndustriesMfgPartnerVisitMgmt"},
+	IndustriesMfgProgram:              {"IndustriesMfgProgram"},
+	IndustriesMfgRebates:              {"IndustriesMfgRebates"},
+	IndustriesMfgTargets:              {"IndustriesMfgTargets"},
 }
 
 type ScratchProduct enumflag.Flag
@@ -209,21 +223,23 @@ const (
 	EducationCloudProduct
 	WorkComProduct
 	NonprofitCloudProduct
+	ManufacturingCloudProduct
 )
 
 var ScratchProductIds = map[ScratchProduct][]string{
-	FSC:                   {"fsc"},
-	CommunitiesProduct:    {"communities"},
-	HealthCloudProduct:    {"healthcloud"},
-	CRMAnalyticsProduct:   {"crmanalytics"},
-	B2BCommerceProduct:    {"b2bcommerce"},
-	LiveAgentProduct:      {"liveagent"},
-	KnowledgeProduct:      {"knowledge"},
-	RevenueCloudProduct:   {"revenuecloud"},
-	MessagingProduct:      {"messaging"},
-	EducationCloudProduct: {"educationcloud"},
-	WorkComProduct:        {"work.com"},
-	NonprofitCloudProduct: {"nonprofitcloud"},
+	FSC:                       {"fsc"},
+	CommunitiesProduct:        {"communities"},
+	HealthCloudProduct:        {"healthcloud"},
+	CRMAnalyticsProduct:       {"crmanalytics"},
+	B2BCommerceProduct:        {"b2bcommerce"},
+	LiveAgentProduct:          {"liveagent"},
+	KnowledgeProduct:          {"knowledge"},
+	RevenueCloudProduct:       {"revenuecloud"},
+	MessagingProduct:          {"messaging"},
+	EducationCloudProduct:     {"educationcloud"},
+	WorkComProduct:            {"work.com"},
+	NonprofitCloudProduct:     {"nonprofitcloud"},
+	ManufacturingCloudProduct: {"manufacturingcloud"},
 }
 
 type ScratchEdition enumflag.Flag
@@ -331,6 +347,20 @@ const (
 	EnableProgramCohorts
 	EnableRecordRollup
 	EnableVolunteerManagement
+	EnableIndManufacturing
+	EnableIndustriesMfgAccountForecast
+	EnableIndustriesMfgAdvForecast
+	EnableIndustriesMfgTargets
+	EnableIndustriesMfgProgram
+	EnablePtnrLeadMgmtMappings
+	EnableInventoryAllocation
+	EnableSampleManagement
+	EnableInventoryReplenishment
+	EnablePurchaseOrderMgt
+	EnableWarrantyLCMgmt
+	EnableMfgServiceConsole
+	EnableIndustriesFieldService
+	EnableAutomotiveServiceCampaignManagement
 )
 
 var ScratchSettingIds = map[ScratchSetting][]string{
@@ -411,6 +441,21 @@ var ScratchSettingIds = map[ScratchSetting][]string{
 	EnableProgramCohorts:                               {"enableProgramCohorts"},
 	EnableRecordRollup:                                 {"enableRecordRollup"},
 	EnableVolunteerManagement:                          {"enableVolunteerManagement"},
+
+	EnableIndManufacturing:                    {"enableIndManufacturing"},
+	EnableIndustriesMfgAccountForecast:        {"enableIndustriesMfgAccountForecast"},
+	EnableIndustriesMfgAdvForecast:            {"enableIndustriesMfgAdvForecast"},
+	EnableIndustriesMfgTargets:                {"enableIndustriesMfgTargets"},
+	EnableIndustriesMfgProgram:                {"enableIndustriesMfgProgram"},
+	EnablePtnrLeadMgmtMappings:                {"enablePtnrLeadMgmtMappings"},
+	EnableInventoryAllocation:                 {"enableInventoryAllocation"},
+	EnableSampleManagement:                    {"enableSampleManagement"},
+	EnableInventoryReplenishment:              {"enableInventoryReplenishment"},
+	EnablePurchaseOrderMgt:                    {"enablePurchaseOrderMgt"},
+	EnableWarrantyLCMgmt:                      {"enableWarrantyLCMgmt"},
+	EnableMfgServiceConsole:                   {"enableMfgServiceConsole"},
+	EnableIndustriesFieldService:              {"enableIndustriesFieldService"},
+	EnableAutomotiveServiceCampaignManagement: {"enableAutomotiveServiceCampaignManagement"},
 }
 
 type ScratchRelease enumflag.Flag
@@ -542,6 +587,13 @@ Available Features:
   IndustriesActionPlan                - Enables Industries Action Plans
   IndustriesSalesExcellenceAddOn      - Enables Industries Sales Excellence Add-On
   IndustriesServiceExcellenceAddOn    - Enables Industries Service Excellence Add-On
+  IndustriesManufacturingCmty         - Enables the Manufacturing Sales Agreement for the Community permission set license and the Manufacturing community template
+  IndustriesMfgAccountForecast        - Enables Account Forecasts (Manufacturing Cloud)
+  IndustriesMfgAdvncdAccFrcs          - Enables Advanced Account Forecasting (Manufacturing Cloud; documented, but rejected by a Dev Hub as not a valid Features value in October 2026, so the manufacturingcloud product leaves it out)
+  IndustriesMfgPartnerVisitMgmt       - Enables Partner Visit Management (Manufacturing Cloud)
+  IndustriesMfgProgram                - Enables Program Based Business (Manufacturing Cloud)
+  IndustriesMfgRebates                - Enables Rebate Management (Manufacturing Cloud)
+  IndustriesMfgTargets                - Enables Sales Agreements (Manufacturing Cloud)
   InsightsPlatform                    - Enables Insights Platform
   InvoiceManagement                   - Enables Invoice Management (Revenue Cloud)
   Knowledge                           - Enables Salesforce Knowledge
@@ -594,6 +646,7 @@ Available Products:
   knowledge        - Salesforce Knowledge (enables Knowledge feature and enableKnowledge, enableLightningKnowledge settings)
   liveagent        - Live Agent (enables LiveAgent feature and enableLiveAgent setting)
   messaging        - Messaging (enables EmbeddedServiceMessaging, LiveMessage, BYOOTT features)
+  manufacturingcloud - Manufacturing Cloud (enables IndustriesMfgTargets, IndustriesMfgAccountForecast, IndustriesMfgProgram, IndustriesMfgPartnerVisitMgmt, IndustriesMfgRebates, IndustriesManufacturingCmty, Communities, PartnerCommunity, OrderManagement, ServiceCloud, Data Processing Engine, Decision Table, OmniStudio, Action Plans and the Industries sales and service excellence add-ons, with the Sales Agreements, Account Forecasts, Advanced Account Forecasting, Account Manager Targets and Manufacturing Programs settings)
   nonprofitcloud   - Nonprofit Cloud (enables Fundraising, Grantmaking, OutcomeManagement, ProgramManagement, VolunteerManagement, NonprofitCloudCaseManagementUser, FinancialServicesUser (for Record Rollups), PersonAccounts, OmniStudio, and other Nonprofit Cloud features with the Nonprofit Cloud industries settings)
   revenuecloud     - Revenue Cloud (enables CoreCpq, BillingAdvanced, UsageManagement, DocGen, Einstein1AIPlatform, InvoiceManagement, OrderManagement, Communities, PartnerCommunity, CustomerCommunityPlus, EnableSetPasswordInApi, OrderSaveLogicEnabled features and a comprehensive set of billing/order/quote/pricing/rating settings)
   work.com         - Work.com (enables Communities, WorkplaceCommandCenterUser, ForceComPlatform features and enableS1DesktopEnabled, enableSurvey, networksEnabled settings)
@@ -677,6 +730,20 @@ Available Settings (deployed after org creation):
   enableRecordRollup                    - Enable Record Rollups (IndustriesSettings)
   enableStudentSuccess                  - Enable Student Success (IndustriesSettings)
   enableVolunteerManagement             - Enable Volunteer Management (IndustriesSettings)
+  enableIndManufacturing                - Enable Sales Agreements (IndustriesManufacturingSettings)
+  enableIndustriesMfgAccountForecast    - Enable Account Forecasts (IndustriesManufacturingSettings)
+  enableIndustriesMfgAdvForecast        - Enable Advanced Account Forecasting (IndustriesManufacturingSettings)
+  enableIndustriesMfgProgram            - Enable Manufacturing Programs (IndustriesManufacturingSettings)
+  enableIndustriesMfgTargets            - Enable Account Manager Targets (IndustriesManufacturingSettings)
+  enablePtnrLeadMgmtMappings            - Enable Partner Lead Management mappings (IndustriesManufacturingSettings)
+  enableInventoryAllocation             - Enable Inventory Allocation (InventoryAllocationSettings)
+  enableSampleManagement                - Enable Sample Management (IndustriesMfgSampleManagementSettings)
+  enableInventoryReplenishment          - Enable Inventory Replenishment (InventoryReplenishmentSettings)
+  enablePurchaseOrderMgt                - Enable Purchase Order Management (PurchaseOrderMgmtSettings)
+  enableWarrantyLCMgmt                  - Enable Warranty Lifecycle Management (WarrantyLifecycleMgmtSettings)
+  enableMfgServiceConsole               - Enable Service Console for Manufacturing (MfgServiceConsoleSettings)
+  enableIndustriesFieldService          - Enable Industries Field Service components (IndustriesFieldServiceSettings)
+  enableAutomotiveServiceCampaignManagement - Enable Product Service Campaign Management components (IndustriesFieldServiceSettings)
   enableInterestTagging                 - Enable Interest Tagging (InterestTaggingSettings)
   enableMiddleName                      - Enable Middle Name (NameSettings)
   enableNameSuffix                      - Enable Name Suffix (NameSettings)
@@ -707,6 +774,7 @@ Examples:
   force login scratch --product liveagent
   force login scratch --product messaging
   force login scratch --product nonprofitcloud
+  force login scratch --product manufacturingcloud
   force login scratch --product revenuecloud
   force login scratch --product work.com
   force login scratch --release preview
@@ -861,6 +929,27 @@ func expandProductsToFeatures(products []ScratchProduct, features []ScratchFeatu
 			StateAndCountryPicklist,
 			VolunteerManagement,
 		},
+		ManufacturingCloudProduct: {
+			Communities,
+			DataProcessingEngine,
+			DecisionTable,
+			EnableSetPasswordInApi,
+			IndustriesActionPlan,
+			IndustriesManufacturingCmty,
+			IndustriesMfgAccountForecast,
+			IndustriesMfgPartnerVisitMgmt,
+			IndustriesMfgProgram,
+			IndustriesMfgRebates,
+			IndustriesMfgTargets,
+			IndustriesSalesExcellenceAddOn,
+			IndustriesServiceExcellenceAddOn,
+			OmniStudioDesigner,
+			OmniStudioRuntime,
+			OrderManagement,
+			PartnerCommunity,
+			ServiceCloud,
+			StateAndCountryPicklist,
+		},
 		EducationCloudProduct: {
 			EducationCloud,
 			AccountingSubledgerGrowthEdition,
@@ -950,6 +1039,19 @@ func expandProductsToSettings(products []ScratchProduct, settings []ScratchSetti
 			EnableRecordRollup,
 		},
 		WorkComProduct: {EnableS1DesktopEnabled, EnableSurvey, NetworksEnabled},
+		ManufacturingCloudProduct: {
+			EnableS1DesktopEnabled,
+			EnableChatter,
+			EnableDisableParallelApexTesting,
+			EnableEnhancedNotes,
+			NetworksEnabled,
+			EnableContextDefinitions,
+			EnableIndManufacturing,
+			EnableIndustriesMfgAccountForecast,
+			EnableIndustriesMfgAdvForecast,
+			EnableIndustriesMfgTargets,
+			EnableIndustriesMfgProgram,
+		},
 		NonprofitCloudProduct: {
 			EnableS1DesktopEnabled,
 			EnableS1EncryptedStoragePref2,

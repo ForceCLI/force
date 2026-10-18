@@ -692,6 +692,72 @@ func TestExpandProductsToSettings_NonprofitCloudProduct(t *testing.T) {
 	}
 }
 
+func TestExpandProductsToFeatures_ManufacturingCloudProduct(t *testing.T) {
+	result := expandProductsToFeatures([]ScratchProduct{ManufacturingCloudProduct}, []ScratchFeature{}, map[string]string{})
+	expected := []string{
+		"Communities",
+		"DataProcessingEngine",
+		"DecisionTable",
+		"EnableSetPasswordInApi",
+		"IndustriesActionPlan",
+		"IndustriesManufacturingCmty",
+		"IndustriesMfgAccountForecast",
+		"IndustriesMfgPartnerVisitMgmt",
+		"IndustriesMfgProgram",
+		"IndustriesMfgRebates",
+		"IndustriesMfgTargets",
+		"IndustriesSalesExcellenceAddOn",
+		"IndustriesServiceExcellenceAddOn",
+		"OmniStudioDesigner",
+		"OmniStudioRuntime",
+		"OrderManagement",
+		"PartnerCommunity",
+		"ServiceCloud",
+		"StateAndCountryPicklist",
+	}
+	if len(result) != len(expected) {
+		t.Fatalf("Expected %d features from manufacturing cloud product, got %d: %v", len(expected), len(result), result)
+	}
+	got := make(map[string]bool)
+	for _, f := range result {
+		got[f] = true
+	}
+	for _, want := range expected {
+		if !got[want] {
+			t.Errorf("Expected %s in manufacturing cloud product, missing", want)
+		}
+	}
+}
+
+func TestExpandProductsToSettings_ManufacturingCloudProduct(t *testing.T) {
+	result := expandProductsToSettings([]ScratchProduct{ManufacturingCloudProduct}, []ScratchSetting{})
+	expected := []string{
+		"enableS1DesktopEnabled",
+		"enableChatter",
+		"enableDisableParallelApexTesting",
+		"enableEnhancedNotes",
+		"networksEnabled",
+		"enableContextDefinitions",
+		"enableIndManufacturing",
+		"enableIndustriesMfgAccountForecast",
+		"enableIndustriesMfgAdvForecast",
+		"enableIndustriesMfgTargets",
+		"enableIndustriesMfgProgram",
+	}
+	if len(result) != len(expected) {
+		t.Fatalf("Expected %d settings from manufacturing cloud product, got %d: %v", len(expected), len(result), result)
+	}
+	got := make(map[string]bool)
+	for _, s := range result {
+		got[s] = true
+	}
+	for _, want := range expected {
+		if !got[want] {
+			t.Errorf("Expected %s in manufacturing cloud product settings, missing", want)
+		}
+	}
+}
+
 func TestConvertSettingsToStrings_EnableSurvey(t *testing.T) {
 	result := convertSettingsToStrings([]ScratchSetting{EnableSurvey})
 	if len(result) != 1 {
@@ -995,6 +1061,13 @@ func TestScratchFeatureIds_AllFeaturesDefined(t *testing.T) {
 		"InsurancePolicyAdmin":              true,
 		"BusinessRulesEngine":               true,
 		"ApexIntegrationTests":              true,
+		"IndustriesManufacturingCmty":       true,
+		"IndustriesMfgAccountForecast":      true,
+		"IndustriesMfgAdvncdAccFrcs":        true,
+		"IndustriesMfgPartnerVisitMgmt":     true,
+		"IndustriesMfgProgram":              true,
+		"IndustriesMfgRebates":              true,
+		"IndustriesMfgTargets":              true,
 	}
 
 	if len(ScratchFeatureIds) != len(expectedFeatures) {
@@ -1169,6 +1242,20 @@ func TestScratchSettingIds_AllSettingsDefined(t *testing.T) {
 		"enableProgramCohorts":                               true,
 		"enableRecordRollup":                                 true,
 		"enableVolunteerManagement":                          true,
+		"enableIndManufacturing":                             true,
+		"enableIndustriesMfgAccountForecast":                 true,
+		"enableIndustriesMfgAdvForecast":                     true,
+		"enableIndustriesMfgTargets":                         true,
+		"enableIndustriesMfgProgram":                         true,
+		"enablePtnrLeadMgmtMappings":                         true,
+		"enableInventoryAllocation":                          true,
+		"enableSampleManagement":                             true,
+		"enableInventoryReplenishment":                       true,
+		"enablePurchaseOrderMgt":                             true,
+		"enableWarrantyLCMgmt":                               true,
+		"enableMfgServiceConsole":                            true,
+		"enableIndustriesFieldService":                       true,
+		"enableAutomotiveServiceCampaignManagement":          true,
 	}
 
 	if len(ScratchSettingIds) != len(expectedSettings) {
