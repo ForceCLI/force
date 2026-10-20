@@ -59,6 +59,7 @@ Available Features:
   IndustriesMfgProgram                - Enables Program Based Business (Manufacturing Cloud)
   IndustriesMfgRebates                - Enables Rebate Management (Manufacturing Cloud)
   IndustriesMfgTargets                - Enables Sales Agreements (Manufacturing Cloud)
+  EnablePRM                           - Enables the partner relationship management permissions for the org
   InsightsPlatform                    - Enables Insights Platform
   InvoiceManagement                   - Enables Invoice Management (Revenue Cloud)
   Knowledge                           - Enables Salesforce Knowledge

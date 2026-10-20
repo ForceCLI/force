@@ -1068,6 +1068,7 @@ func TestScratchFeatureIds_AllFeaturesDefined(t *testing.T) {
 		"IndustriesMfgProgram":              true,
 		"IndustriesMfgRebates":              true,
 		"IndustriesMfgTargets":              true,
+		"EnablePRM":                         true,
 	}
 
 	if len(ScratchFeatureIds) != len(expectedFeatures) {
