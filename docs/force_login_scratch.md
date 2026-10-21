@@ -61,6 +61,7 @@ Available Features:
   IndustriesMfgTargets                - Enables Sales Agreements (Manufacturing Cloud)
   EnablePRM                           - Enables the partner relationship management permissions for the org
   InsightsPlatform                    - Enables Insights Platform
+  LifeSciencesCloudForCustomerEngagement - Enables Life Sciences Cloud for Customer Engagement
   InvoiceManagement                   - Enables Invoice Management (Revenue Cloud)
   Knowledge                           - Enables Salesforce Knowledge
   LightningScheduler                  - Enables Lightning Scheduler
@@ -111,6 +112,7 @@ Available Products:
   healthcloud      - Health Cloud (enables HealthCloudAddOn, HealthCloudUser)
   knowledge        - Salesforce Knowledge (enables Knowledge feature and enableKnowledge, enableLightningKnowledge settings)
   liveagent        - Live Agent (enables LiveAgent feature and enableLiveAgent setting)
+  lifesciences     - Life Sciences Cloud (enables LifeSciencesCloudForCustomerEngagement, HealthCloudAddOn, HealthCloudUser, PersonAccounts, DocumentChecklist, Action Plans and the Industries sales excellence add-on, with the Life Sciences industries settings, Unified Inventory, Account Plans, Surveys, Industries Assessment and Sales Territories; Clinical Trial Management, Research Study Randomization and Visit Planning are left out because a scratch org refuses them)
   messaging        - Messaging (enables EmbeddedServiceMessaging, LiveMessage, BYOOTT features)
   manufacturingcloud - Manufacturing Cloud (enables IndustriesMfgTargets, IndustriesMfgAccountForecast, IndustriesMfgProgram, IndustriesMfgPartnerVisitMgmt, IndustriesMfgRebates, IndustriesManufacturingCmty, Communities, PartnerCommunity, OrderManagement, ServiceCloud, Data Processing Engine, Decision Table, OmniStudio, Action Plans and the Industries sales and service excellence add-ons, with the Sales Agreements, Account Forecasts, Advanced Account Forecasting, Account Manager Targets and Manufacturing Programs settings)
   nonprofitcloud   - Nonprofit Cloud (enables Fundraising, Grantmaking, OutcomeManagement, ProgramManagement, VolunteerManagement, NonprofitCloudCaseManagementUser, FinancialServicesUser (for Record Rollups), PersonAccounts, OmniStudio, and other Nonprofit Cloud features with the Nonprofit Cloud industries settings)
@@ -210,6 +212,33 @@ Available Settings (deployed after org creation):
   enableMfgServiceConsole               - Enable Service Console for Manufacturing (MfgServiceConsoleSettings)
   enableIndustriesFieldService          - Enable Industries Field Service components (IndustriesFieldServiceSettings)
   enableAutomotiveServiceCampaignManagement - Enable Product Service Campaign Management components (IndustriesFieldServiceSettings)
+  enableLifeSciencesCustomerEngagementBase - Enable the Life Sciences Customer Engagement base components (IndustriesSettings)
+  enableLifeSciencesActivityPlan        - Enable Life Sciences activity plans (IndustriesSettings)
+  enableLifeSciencesClinialTrailManagement - Enable Clinical Trial Management and its data model (the documented spelling) (IndustriesSettings)
+  enableLifeSciencesConsent             - Enable Life Sciences consent (IndustriesSettings)
+  enableLifeSciencesMergeManagement     - Enable Life Sciences merge management (IndustriesSettings)
+  enableLifeSciencesProviderEngagementCompliance - Enable provider engagement compliance (IndustriesSettings)
+  enableLifeSciencesSiteManagement      - Enable clinical trial site management (IndustriesSettings)
+  enableLifeSciGenericWorkflow          - Enable the Life Sciences generic workflow engine (IndustriesSettings)
+  enableLifeSciInquiry                  - Enable Life Sciences inquiries (IndustriesSettings)
+  enableLifeSciListsAndFilters          - Enable Life Sciences lists and filters (IndustriesSettings)
+  enableAdverseEvents                   - Enable Adverse Events and its data model (IndustriesSettings)
+  enableTrialManagementRandomization    - Enable Research Study Randomization (IndustriesSettings)
+  enableSampleLimits                    - Enable sample limits (IndustriesSettings)
+  enableVisitInventoryEnabled           - Enable inventory tracking for visits (IndustriesSettings)
+  enableVisitPlanningAndExecutionAction - Enable visit planning and execution actions (IndustriesSettings)
+  enablePATSTerritoryBasedSharing       - Enable territory-based sharing for provider and affiliation tracking (IndustriesSettings)
+  enableBatchManagement                 - Enable batch-based inventory management (IndustriesUnifiedInventorySettings)
+  enableInventoryCount                  - Enable Inventory Count (IndustriesUnifiedInventorySettings)
+  enableProductInventoryOperations      - Enable Product Inventory Operations (IndustriesUnifiedInventorySettings)
+  enableTerritoryManagement2            - Enable Sales Territories (Enterprise Territory Management) (Territory2Settings)
+  enableLSC4CEVisits                    - Enable Life Sciences Customer Engagement visits (ProviderVisit and the sample limit objects) (IndustriesSettings)
+  enableActionableList                  - Enable actionable lists (IndustriesSettings)
+  enableAppAlerts                       - Enable app alerts (IndustriesSettings)
+  enableNextBestAction                  - Enable Next Best Action (TerritoryAcctRcmdAction) (IndustriesSettings)
+  enableNextBestCustomer                - Enable Next Best Customer (TerritoryAccountScore) (IndustriesSettings)
+  enableNextBestMessage                 - Enable Next Best Message (TerritoryAcctProdMsgScore) (IndustriesSettings)
+  enableAccountPlan                     - Enable Account Plans (AccountPlanSettings)
   enableInterestTagging                 - Enable Interest Tagging (InterestTaggingSettings)
   enableMiddleName                      - Enable Middle Name (NameSettings)
   enableNameSuffix                      - Enable Name Suffix (NameSettings)
@@ -240,6 +269,7 @@ Examples:
   force login scratch --product liveagent
   force login scratch --product messaging
   force login scratch --product nonprofitcloud
+  force login scratch --product lifesciences
   force login scratch --product manufacturingcloud
   force login scratch --product revenuecloud
   force login scratch --product work.com

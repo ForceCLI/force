@@ -111,103 +111,105 @@ const (
 	IndustriesMfgRebates
 	IndustriesMfgTargets
 	EnablePRM
+	LifeSciencesCloudForCustomerEngagement
 )
 
 var ScratchFeatureIds = map[ScratchFeature][]string{
-	PersonAccounts:                    {"PersonAccounts"},
-	B2BCommerce:                       {"B2BCommerce"},
-	ContactsToMultipleAccounts:        {"ContactsToMultipleAccounts"},
-	FinancialServicesUser:             {"FinancialServicesUser"},
-	StateAndCountryPicklist:           {"StateAndCountryPicklist"},
-	Communities:                       {"Communities"},
-	HealthCloudAddOn:                  {"HealthCloudAddOn"},
-	HealthCloudUser:                   {"HealthCloudUser"},
-	ApexUserModeWithPermset:           {"ApexUserModeWithPermset"},
-	EventLogFile:                      {"EventLogFile"},
-	AnalyticsAdminPerms:               {"AnalyticsAdminPerms"},
-	WavePlatform:                      {"WavePlatform"},
-	InsightsPlatform:                  {"InsightsPlatform"},
-	EinsteinAnalyticsPlus:             {"EinsteinAnalyticsPlus"},
-	EinsteinBuilderFree:               {"EinsteinBuilderFree"},
-	DevelopmentWave:                   {"DevelopmentWave"},
-	PlatformCache:                     {"PlatformCache"},
-	ServiceCloud:                      {"ServiceCloud"},
-	ScvMultipartyAndConsult:           {"ScvMultipartyAndConsult"},
-	ServiceCloudVoicePartnerTelephony: {"ServiceCloudVoicePartnerTelephony"},
-	OrderManagement:                   {"OrderManagement"},
-	LiveAgent:                         {"LiveAgent"},
-	PlatformEncryption:                {"PlatformEncryption"},
-	RevSubscriptionManagement:         {"RevSubscriptionManagement"},
-	CoreCpq:                           {"CoreCpq"},
-	Knowledge:                         {"Knowledge"},
-	DSARPortability:                   {"DSARPortability"},
-	ProgramManagement:                 {"ProgramManagement"},
-	EnableSetPasswordInApi:            {"EnableSetPasswordInApi"},
-	OrderSaveLogicEnabled:             {"OrderSaveLogicEnabled"},
-	PartnerCommunity:                  {"PartnerCommunity"},
-	CustomerCommunityPlus:             {"CustomerCommunityPlus"},
-	UsageManagement:                   {"UsageManagement"},
-	BillingAdvanced:                   {"BillingAdvanced"},
-	DocGen:                            {"DocGen"},
-	Einstein1AIPlatform:               {"Einstein1AIPlatform"},
-	EmbeddedServiceMessaging:          {"EmbeddedServiceMessaging"},
-	BYOOTT:                            {"BYOOTT"},
-	LiveMessage:                       {"LiveMessage"},
-	Enablement:                        {"Enablement"},
-	SurveyAdvancedFeatures:            {"SurveyAdvancedFeatures"},
-	Slack:                             {"Slack"},
-	EducationCloud:                    {"EducationCloud"},
-	AccountingSubledgerGrowthEdition:  {"AccountingSubledgerGrowthEdition"},
-	AccountingSubledgerUser:           {"AccountingSubledgerUser"},
-	AdmissionsConnectUser:             {"AdmissionsConnectUser"},
-	AdvisorLinkFeature:                {"AdvisorLinkFeature"},
-	AdvisorLinkPathwaysFeature:        {"AdvisorLinkPathwaysFeature"},
-	AnalyticsQueryService:             {"AnalyticsQueryService"},
-	Assessments:                       {"Assessments"},
-	DataProcessingEngine:              {"DataProcessingEngine"},
-	DecisionTable:                     {"DecisionTable"},
-	DocGenDesigner:                    {"DocGenDesigner"},
-	DocGenInd:                         {"DocGenInd"},
-	DocumentChecklist:                 {"DocumentChecklist"},
-	FlowSites:                         {"FlowSites"},
-	Fundraising:                       {"Fundraising"},
-	IndustriesActionPlan:              {"IndustriesActionPlan"},
-	IndustriesSalesExcellenceAddOn:    {"IndustriesSalesExcellenceAddOn"},
-	IndustriesServiceExcellenceAddOn:  {"IndustriesServiceExcellenceAddOn"},
-	LightningScheduler:                {"LightningScheduler"},
-	LightningServiceConsole:           {"LightningServiceConsole"},
-	MarketingUser:                     {"MarketingUser"},
-	OmniStudioDesigner:                {"OmniStudioDesigner"},
-	OmniStudioRuntime:                 {"OmniStudioRuntime"},
-	PublicSectorAccess:                {"PublicSectorAccess"},
-	SharedActivities:                  {"SharedActivities"},
-	HighVelocitySales:                 {"HighVelocitySales"},
-	InvoiceManagement:                 {"InvoiceManagement"},
-	WorkplaceCommandCenterUser:        {"WorkplaceCommandCenterUser"},
-	ForceComPlatform:                  {"ForceComPlatform"},
-	Division:                          {"Division"},
-	Grantmaking:                       {"Grantmaking"},
-	OutcomeManagement:                 {"OutcomeManagement"},
-	NonprofitCloudCaseManagementUser:  {"NonprofitCloudCaseManagementUser"},
-	VolunteerManagement:               {"VolunteerManagement"},
-	FinancialServicesInsuranceUser:    {"FinancialServicesInsuranceUser"},
-	FSCAlertFramework:                 {"FSCAlertFramework"},
-	FSCServiceProcess:                 {"FSCServiceProcess"},
-	IndustriesBranchManagement:        {"IndustriesBranchManagement"},
-	IndustriesCompliantDataSharing:    {"IndustriesCompliantDataSharing"},
-	InsuranceCalculationUser:          {"InsuranceCalculationUser"},
-	InsuranceClaimMgmt:                {"InsuranceClaimMgmt"},
-	InsurancePolicyAdmin:              {"InsurancePolicyAdmin"},
-	BusinessRulesEngine:               {"BusinessRulesEngine"},
-	ApexIntegrationTests:              {"ApexIntegrationTests"},
-	IndustriesManufacturingCmty:       {"IndustriesManufacturingCmty"},
-	IndustriesMfgAccountForecast:      {"IndustriesMfgAccountForecast"},
-	IndustriesMfgAdvncdAccFrcs:        {"IndustriesMfgAdvncdAccFrcs"},
-	IndustriesMfgPartnerVisitMgmt:     {"IndustriesMfgPartnerVisitMgmt"},
-	IndustriesMfgProgram:              {"IndustriesMfgProgram"},
-	IndustriesMfgRebates:              {"IndustriesMfgRebates"},
-	IndustriesMfgTargets:              {"IndustriesMfgTargets"},
-	EnablePRM:                         {"EnablePRM"},
+	PersonAccounts:                         {"PersonAccounts"},
+	B2BCommerce:                            {"B2BCommerce"},
+	ContactsToMultipleAccounts:             {"ContactsToMultipleAccounts"},
+	FinancialServicesUser:                  {"FinancialServicesUser"},
+	StateAndCountryPicklist:                {"StateAndCountryPicklist"},
+	Communities:                            {"Communities"},
+	HealthCloudAddOn:                       {"HealthCloudAddOn"},
+	HealthCloudUser:                        {"HealthCloudUser"},
+	ApexUserModeWithPermset:                {"ApexUserModeWithPermset"},
+	EventLogFile:                           {"EventLogFile"},
+	AnalyticsAdminPerms:                    {"AnalyticsAdminPerms"},
+	WavePlatform:                           {"WavePlatform"},
+	InsightsPlatform:                       {"InsightsPlatform"},
+	EinsteinAnalyticsPlus:                  {"EinsteinAnalyticsPlus"},
+	EinsteinBuilderFree:                    {"EinsteinBuilderFree"},
+	DevelopmentWave:                        {"DevelopmentWave"},
+	PlatformCache:                          {"PlatformCache"},
+	ServiceCloud:                           {"ServiceCloud"},
+	ScvMultipartyAndConsult:                {"ScvMultipartyAndConsult"},
+	ServiceCloudVoicePartnerTelephony:      {"ServiceCloudVoicePartnerTelephony"},
+	OrderManagement:                        {"OrderManagement"},
+	LiveAgent:                              {"LiveAgent"},
+	PlatformEncryption:                     {"PlatformEncryption"},
+	RevSubscriptionManagement:              {"RevSubscriptionManagement"},
+	CoreCpq:                                {"CoreCpq"},
+	Knowledge:                              {"Knowledge"},
+	DSARPortability:                        {"DSARPortability"},
+	ProgramManagement:                      {"ProgramManagement"},
+	EnableSetPasswordInApi:                 {"EnableSetPasswordInApi"},
+	OrderSaveLogicEnabled:                  {"OrderSaveLogicEnabled"},
+	PartnerCommunity:                       {"PartnerCommunity"},
+	CustomerCommunityPlus:                  {"CustomerCommunityPlus"},
+	UsageManagement:                        {"UsageManagement"},
+	BillingAdvanced:                        {"BillingAdvanced"},
+	DocGen:                                 {"DocGen"},
+	Einstein1AIPlatform:                    {"Einstein1AIPlatform"},
+	EmbeddedServiceMessaging:               {"EmbeddedServiceMessaging"},
+	BYOOTT:                                 {"BYOOTT"},
+	LiveMessage:                            {"LiveMessage"},
+	Enablement:                             {"Enablement"},
+	SurveyAdvancedFeatures:                 {"SurveyAdvancedFeatures"},
+	Slack:                                  {"Slack"},
+	EducationCloud:                         {"EducationCloud"},
+	AccountingSubledgerGrowthEdition:       {"AccountingSubledgerGrowthEdition"},
+	AccountingSubledgerUser:                {"AccountingSubledgerUser"},
+	AdmissionsConnectUser:                  {"AdmissionsConnectUser"},
+	AdvisorLinkFeature:                     {"AdvisorLinkFeature"},
+	AdvisorLinkPathwaysFeature:             {"AdvisorLinkPathwaysFeature"},
+	AnalyticsQueryService:                  {"AnalyticsQueryService"},
+	Assessments:                            {"Assessments"},
+	DataProcessingEngine:                   {"DataProcessingEngine"},
+	DecisionTable:                          {"DecisionTable"},
+	DocGenDesigner:                         {"DocGenDesigner"},
+	DocGenInd:                              {"DocGenInd"},
+	DocumentChecklist:                      {"DocumentChecklist"},
+	FlowSites:                              {"FlowSites"},
+	Fundraising:                            {"Fundraising"},
+	IndustriesActionPlan:                   {"IndustriesActionPlan"},
+	IndustriesSalesExcellenceAddOn:         {"IndustriesSalesExcellenceAddOn"},
+	IndustriesServiceExcellenceAddOn:       {"IndustriesServiceExcellenceAddOn"},
+	LightningScheduler:                     {"LightningScheduler"},
+	LightningServiceConsole:                {"LightningServiceConsole"},
+	MarketingUser:                          {"MarketingUser"},
+	OmniStudioDesigner:                     {"OmniStudioDesigner"},
+	OmniStudioRuntime:                      {"OmniStudioRuntime"},
+	PublicSectorAccess:                     {"PublicSectorAccess"},
+	SharedActivities:                       {"SharedActivities"},
+	HighVelocitySales:                      {"HighVelocitySales"},
+	InvoiceManagement:                      {"InvoiceManagement"},
+	WorkplaceCommandCenterUser:             {"WorkplaceCommandCenterUser"},
+	ForceComPlatform:                       {"ForceComPlatform"},
+	Division:                               {"Division"},
+	Grantmaking:                            {"Grantmaking"},
+	OutcomeManagement:                      {"OutcomeManagement"},
+	NonprofitCloudCaseManagementUser:       {"NonprofitCloudCaseManagementUser"},
+	VolunteerManagement:                    {"VolunteerManagement"},
+	FinancialServicesInsuranceUser:         {"FinancialServicesInsuranceUser"},
+	FSCAlertFramework:                      {"FSCAlertFramework"},
+	FSCServiceProcess:                      {"FSCServiceProcess"},
+	IndustriesBranchManagement:             {"IndustriesBranchManagement"},
+	IndustriesCompliantDataSharing:         {"IndustriesCompliantDataSharing"},
+	InsuranceCalculationUser:               {"InsuranceCalculationUser"},
+	InsuranceClaimMgmt:                     {"InsuranceClaimMgmt"},
+	InsurancePolicyAdmin:                   {"InsurancePolicyAdmin"},
+	BusinessRulesEngine:                    {"BusinessRulesEngine"},
+	ApexIntegrationTests:                   {"ApexIntegrationTests"},
+	IndustriesManufacturingCmty:            {"IndustriesManufacturingCmty"},
+	IndustriesMfgAccountForecast:           {"IndustriesMfgAccountForecast"},
+	IndustriesMfgAdvncdAccFrcs:             {"IndustriesMfgAdvncdAccFrcs"},
+	IndustriesMfgPartnerVisitMgmt:          {"IndustriesMfgPartnerVisitMgmt"},
+	IndustriesMfgProgram:                   {"IndustriesMfgProgram"},
+	IndustriesMfgRebates:                   {"IndustriesMfgRebates"},
+	IndustriesMfgTargets:                   {"IndustriesMfgTargets"},
+	LifeSciencesCloudForCustomerEngagement: {"LifeSciencesCloudForCustomerEngagement"},
+	EnablePRM:                              {"EnablePRM"},
 }
 
 type ScratchProduct enumflag.Flag
@@ -226,6 +228,7 @@ const (
 	WorkComProduct
 	NonprofitCloudProduct
 	ManufacturingCloudProduct
+	LifeSciencesProduct
 )
 
 var ScratchProductIds = map[ScratchProduct][]string{
@@ -242,6 +245,7 @@ var ScratchProductIds = map[ScratchProduct][]string{
 	WorkComProduct:            {"work.com"},
 	NonprofitCloudProduct:     {"nonprofitcloud"},
 	ManufacturingCloudProduct: {"manufacturingcloud"},
+	LifeSciencesProduct:       {"lifesciences"},
 }
 
 type ScratchEdition enumflag.Flag
@@ -363,6 +367,33 @@ const (
 	EnableMfgServiceConsole
 	EnableIndustriesFieldService
 	EnableAutomotiveServiceCampaignManagement
+	EnableLifeSciencesCustomerEngagementBase
+	EnableLifeSciencesActivityPlan
+	EnableLifeSciencesClinialTrailManagement
+	EnableLifeSciencesConsent
+	EnableLifeSciencesMergeManagement
+	EnableLifeSciencesProviderEngagementCompliance
+	EnableLifeSciencesSiteManagement
+	EnableLifeSciGenericWorkflow
+	EnableLifeSciInquiry
+	EnableLifeSciListsAndFilters
+	EnableAdverseEvents
+	EnableTrialManagementRandomization
+	EnableSampleLimits
+	EnableVisitInventoryEnabled
+	EnableVisitPlanningAndExecutionAction
+	EnablePATSTerritoryBasedSharing
+	EnableBatchManagement
+	EnableInventoryCount
+	EnableProductInventoryOperations
+	EnableTerritoryManagement2
+	EnableLSC4CEVisits
+	EnableActionableList
+	EnableAppAlerts
+	EnableNextBestAction
+	EnableNextBestCustomer
+	EnableNextBestMessage
+	EnableAccountPlan
 )
 
 var ScratchSettingIds = map[ScratchSetting][]string{
@@ -458,6 +489,34 @@ var ScratchSettingIds = map[ScratchSetting][]string{
 	EnableMfgServiceConsole:                   {"enableMfgServiceConsole"},
 	EnableIndustriesFieldService:              {"enableIndustriesFieldService"},
 	EnableAutomotiveServiceCampaignManagement: {"enableAutomotiveServiceCampaignManagement"},
+
+	EnableLifeSciencesCustomerEngagementBase:       {"enableLifeSciencesCustomerEngagementBase"},
+	EnableLifeSciencesActivityPlan:                 {"enableLifeSciencesActivityPlan"},
+	EnableLifeSciencesClinialTrailManagement:       {"enableLifeSciencesClinialTrailManagement"},
+	EnableLifeSciencesConsent:                      {"enableLifeSciencesConsent"},
+	EnableLifeSciencesMergeManagement:              {"enableLifeSciencesMergeManagement"},
+	EnableLifeSciencesProviderEngagementCompliance: {"enableLifeSciencesProviderEngagementCompliance"},
+	EnableLifeSciencesSiteManagement:               {"enableLifeSciencesSiteManagement"},
+	EnableLifeSciGenericWorkflow:                   {"enableLifeSciGenericWorkflow"},
+	EnableLifeSciInquiry:                           {"enableLifeSciInquiry"},
+	EnableLifeSciListsAndFilters:                   {"enableLifeSciListsAndFilters"},
+	EnableAdverseEvents:                            {"enableAdverseEvents"},
+	EnableTrialManagementRandomization:             {"enableTrialManagementRandomization"},
+	EnableSampleLimits:                             {"enableSampleLimits"},
+	EnableVisitInventoryEnabled:                    {"enableVisitInventoryEnabled"},
+	EnableVisitPlanningAndExecutionAction:          {"enableVisitPlanningAndExecutionAction"},
+	EnablePATSTerritoryBasedSharing:                {"enablePATSTerritoryBasedSharing"},
+	EnableBatchManagement:                          {"enableBatchManagement"},
+	EnableInventoryCount:                           {"enableInventoryCount"},
+	EnableProductInventoryOperations:               {"enableProductInventoryOperations"},
+	EnableTerritoryManagement2:                     {"enableTerritoryManagement2"},
+	EnableLSC4CEVisits:                             {"enableLSC4CEVisits"},
+	EnableActionableList:                           {"enableActionableList"},
+	EnableAppAlerts:                                {"enableAppAlerts"},
+	EnableNextBestAction:                           {"enableNextBestAction"},
+	EnableNextBestCustomer:                         {"enableNextBestCustomer"},
+	EnableNextBestMessage:                          {"enableNextBestMessage"},
+	EnableAccountPlan:                              {"enableAccountPlan"},
 }
 
 type ScratchRelease enumflag.Flag
@@ -598,6 +657,7 @@ Available Features:
   IndustriesMfgTargets                - Enables Sales Agreements (Manufacturing Cloud)
   EnablePRM                           - Enables the partner relationship management permissions for the org
   InsightsPlatform                    - Enables Insights Platform
+  LifeSciencesCloudForCustomerEngagement - Enables Life Sciences Cloud for Customer Engagement
   InvoiceManagement                   - Enables Invoice Management (Revenue Cloud)
   Knowledge                           - Enables Salesforce Knowledge
   LightningScheduler                  - Enables Lightning Scheduler
@@ -648,6 +708,7 @@ Available Products:
   healthcloud      - Health Cloud (enables HealthCloudAddOn, HealthCloudUser)
   knowledge        - Salesforce Knowledge (enables Knowledge feature and enableKnowledge, enableLightningKnowledge settings)
   liveagent        - Live Agent (enables LiveAgent feature and enableLiveAgent setting)
+  lifesciences     - Life Sciences Cloud (enables LifeSciencesCloudForCustomerEngagement, HealthCloudAddOn, HealthCloudUser, PersonAccounts, DocumentChecklist, Action Plans and the Industries sales excellence add-on, with the Life Sciences industries settings, Unified Inventory, Account Plans, Surveys, Industries Assessment and Sales Territories; Clinical Trial Management, Research Study Randomization and Visit Planning are left out because a scratch org refuses them)
   messaging        - Messaging (enables EmbeddedServiceMessaging, LiveMessage, BYOOTT features)
   manufacturingcloud - Manufacturing Cloud (enables IndustriesMfgTargets, IndustriesMfgAccountForecast, IndustriesMfgProgram, IndustriesMfgPartnerVisitMgmt, IndustriesMfgRebates, IndustriesManufacturingCmty, Communities, PartnerCommunity, OrderManagement, ServiceCloud, Data Processing Engine, Decision Table, OmniStudio, Action Plans and the Industries sales and service excellence add-ons, with the Sales Agreements, Account Forecasts, Advanced Account Forecasting, Account Manager Targets and Manufacturing Programs settings)
   nonprofitcloud   - Nonprofit Cloud (enables Fundraising, Grantmaking, OutcomeManagement, ProgramManagement, VolunteerManagement, NonprofitCloudCaseManagementUser, FinancialServicesUser (for Record Rollups), PersonAccounts, OmniStudio, and other Nonprofit Cloud features with the Nonprofit Cloud industries settings)
@@ -747,6 +808,33 @@ Available Settings (deployed after org creation):
   enableMfgServiceConsole               - Enable Service Console for Manufacturing (MfgServiceConsoleSettings)
   enableIndustriesFieldService          - Enable Industries Field Service components (IndustriesFieldServiceSettings)
   enableAutomotiveServiceCampaignManagement - Enable Product Service Campaign Management components (IndustriesFieldServiceSettings)
+  enableLifeSciencesCustomerEngagementBase - Enable the Life Sciences Customer Engagement base components (IndustriesSettings)
+  enableLifeSciencesActivityPlan        - Enable Life Sciences activity plans (IndustriesSettings)
+  enableLifeSciencesClinialTrailManagement - Enable Clinical Trial Management and its data model (the documented spelling) (IndustriesSettings)
+  enableLifeSciencesConsent             - Enable Life Sciences consent (IndustriesSettings)
+  enableLifeSciencesMergeManagement     - Enable Life Sciences merge management (IndustriesSettings)
+  enableLifeSciencesProviderEngagementCompliance - Enable provider engagement compliance (IndustriesSettings)
+  enableLifeSciencesSiteManagement      - Enable clinical trial site management (IndustriesSettings)
+  enableLifeSciGenericWorkflow          - Enable the Life Sciences generic workflow engine (IndustriesSettings)
+  enableLifeSciInquiry                  - Enable Life Sciences inquiries (IndustriesSettings)
+  enableLifeSciListsAndFilters          - Enable Life Sciences lists and filters (IndustriesSettings)
+  enableAdverseEvents                   - Enable Adverse Events and its data model (IndustriesSettings)
+  enableTrialManagementRandomization    - Enable Research Study Randomization (IndustriesSettings)
+  enableSampleLimits                    - Enable sample limits (IndustriesSettings)
+  enableVisitInventoryEnabled           - Enable inventory tracking for visits (IndustriesSettings)
+  enableVisitPlanningAndExecutionAction - Enable visit planning and execution actions (IndustriesSettings)
+  enablePATSTerritoryBasedSharing       - Enable territory-based sharing for provider and affiliation tracking (IndustriesSettings)
+  enableBatchManagement                 - Enable batch-based inventory management (IndustriesUnifiedInventorySettings)
+  enableInventoryCount                  - Enable Inventory Count (IndustriesUnifiedInventorySettings)
+  enableProductInventoryOperations      - Enable Product Inventory Operations (IndustriesUnifiedInventorySettings)
+  enableTerritoryManagement2            - Enable Sales Territories (Enterprise Territory Management) (Territory2Settings)
+  enableLSC4CEVisits                    - Enable Life Sciences Customer Engagement visits (ProviderVisit and the sample limit objects) (IndustriesSettings)
+  enableActionableList                  - Enable actionable lists (IndustriesSettings)
+  enableAppAlerts                       - Enable app alerts (IndustriesSettings)
+  enableNextBestAction                  - Enable Next Best Action (TerritoryAcctRcmdAction) (IndustriesSettings)
+  enableNextBestCustomer                - Enable Next Best Customer (TerritoryAccountScore) (IndustriesSettings)
+  enableNextBestMessage                 - Enable Next Best Message (TerritoryAcctProdMsgScore) (IndustriesSettings)
+  enableAccountPlan                     - Enable Account Plans (AccountPlanSettings)
   enableInterestTagging                 - Enable Interest Tagging (InterestTaggingSettings)
   enableMiddleName                      - Enable Middle Name (NameSettings)
   enableNameSuffix                      - Enable Name Suffix (NameSettings)
@@ -777,6 +865,7 @@ Examples:
   force login scratch --product liveagent
   force login scratch --product messaging
   force login scratch --product nonprofitcloud
+  force login scratch --product lifesciences
   force login scratch --product manufacturingcloud
   force login scratch --product revenuecloud
   force login scratch --product work.com
@@ -932,6 +1021,15 @@ func expandProductsToFeatures(products []ScratchProduct, features []ScratchFeatu
 			StateAndCountryPicklist,
 			VolunteerManagement,
 		},
+		LifeSciencesProduct: {
+			DocumentChecklist,
+			HealthCloudAddOn,
+			HealthCloudUser,
+			IndustriesActionPlan,
+			IndustriesSalesExcellenceAddOn,
+			LifeSciencesCloudForCustomerEngagement,
+			PersonAccounts,
+		},
 		ManufacturingCloudProduct: {
 			Communities,
 			DataProcessingEngine,
@@ -1042,6 +1140,40 @@ func expandProductsToSettings(products []ScratchProduct, settings []ScratchSetti
 			EnableRecordRollup,
 		},
 		WorkComProduct: {EnableS1DesktopEnabled, EnableSurvey, NetworksEnabled},
+		LifeSciencesProduct: {
+			EnableS1DesktopEnabled,
+			EnableChatter,
+			EnableDisableParallelApexTesting,
+			EnableEnhancedNotes,
+			EnableContextDefinitions,
+			EnableQuote,
+			EnableLifeSciencesCustomerEngagementBase,
+			EnableLifeSciencesActivityPlan,
+			EnableLifeSciencesConsent,
+			EnableLifeSciencesMergeManagement,
+			EnableLifeSciencesProviderEngagementCompliance,
+			EnableLifeSciencesSiteManagement,
+			EnableLifeSciGenericWorkflow,
+			EnableLifeSciInquiry,
+			EnableLifeSciListsAndFilters,
+			EnableAdverseEvents,
+			EnableSampleLimits,
+			EnableVisitInventoryEnabled,
+			EnablePATSTerritoryBasedSharing,
+			EnableBatchManagement,
+			EnableInventoryCount,
+			EnableProductInventoryOperations,
+			EnableTerritoryManagement2,
+			EnableLSC4CEVisits,
+			EnableActionableList,
+			EnableAppAlerts,
+			EnableNextBestAction,
+			EnableNextBestCustomer,
+			EnableNextBestMessage,
+			EnableAccountPlan,
+			EnableIndustriesAssessment,
+			EnableSurvey,
+		},
 		ManufacturingCloudProduct: {
 			EnableS1DesktopEnabled,
 			EnableChatter,

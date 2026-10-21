@@ -1132,3 +1132,91 @@ func TestBuildSettingsMetadata_ExcludesManufacturingSettingsWhenUnused(t *testin
 		}
 	}
 }
+
+func TestBuildSettingsMetadata_AddsLifeSciencesIndustriesSettings(t *testing.T) {
+	flags := []string{
+		"enableLifeSciencesCustomerEngagementBase",
+		"enableLifeSciencesActivityPlan",
+		"enableLifeSciencesClinialTrailManagement",
+		"enableLifeSciencesConsent",
+		"enableLifeSciencesMergeManagement",
+		"enableLifeSciencesProviderEngagementCompliance",
+		"enableLifeSciencesSiteManagement",
+		"enableLifeSciGenericWorkflow",
+		"enableLifeSciInquiry",
+		"enableLifeSciListsAndFilters",
+		"enableAdverseEvents",
+		"enableTrialManagementRandomization",
+		"enableSampleLimits",
+		"enableVisitInventoryEnabled",
+		"enableVisitPlanningAndExecutionAction",
+		"enablePATSTerritoryBasedSharing",
+		"enableLSC4CEVisits",
+		"enableActionableList",
+		"enableAppAlerts",
+		"enableNextBestAction",
+		"enableNextBestCustomer",
+		"enableNextBestMessage",
+	}
+	files := buildSettingsMetadata(flags)
+
+	content, ok := files["unpackaged/settings/Industries.settings"]
+	if !ok {
+		t.Fatalf("Expected Industries.settings to be generated")
+	}
+	s := string(content)
+	for _, flag := range flags {
+		if !strings.Contains(s, "<"+flag+">true</"+flag+">") {
+			t.Errorf("Expected %s in Industries.settings, got: %s", flag, s)
+		}
+	}
+}
+
+func TestBuildSettingsMetadata_AddsIndustriesUnifiedInventorySettings(t *testing.T) {
+	flags := []string{"enableBatchManagement", "enableInventoryCount", "enableProductInventoryOperations"}
+	files := buildSettingsMetadata(flags)
+	content, ok := files["unpackaged/settings/IndustriesUnifiedInventory.settings"]
+	if !ok {
+		t.Fatalf("IndustriesUnifiedInventory.settings not generated")
+	}
+	s := string(content)
+	if !strings.Contains(s, "<IndustriesUnifiedInventorySettings ") {
+		t.Errorf("IndustriesUnifiedInventory.settings missing root element:\n%s", s)
+	}
+	for _, flag := range flags {
+		if !strings.Contains(s, "<"+flag+">true</"+flag+">") {
+			t.Errorf("Expected %s in IndustriesUnifiedInventory.settings, got: %s", flag, s)
+		}
+	}
+	if _, ok := files["unpackaged/settings/Industries.settings"]; ok {
+		t.Errorf("Unified inventory settings should not generate Industries.settings")
+	}
+}
+
+func TestBuildSettingsMetadata_AddsTerritory2SettingsForEnableTerritoryManagement2(t *testing.T) {
+	files := buildSettingsMetadata([]string{"enableTerritoryManagement2"})
+	content, ok := files["unpackaged/settings/Territory2.settings"]
+	if !ok {
+		t.Fatalf("Territory2.settings not generated")
+	}
+	if !strings.Contains(string(content), "<Territory2Settings ") {
+		t.Errorf("Territory2.settings missing root element:\n%s", content)
+	}
+	if !strings.Contains(string(content), "<enableTerritoryManagement2>true</enableTerritoryManagement2>") {
+		t.Errorf("Territory2.settings missing preference:\n%s", content)
+	}
+}
+
+func TestBuildSettingsMetadata_AddsAccountPlanSettingsForEnableAccountPlan(t *testing.T) {
+	files := buildSettingsMetadata([]string{"enableAccountPlan"})
+	content, ok := files["unpackaged/settings/AccountPlan.settings"]
+	if !ok {
+		t.Fatalf("AccountPlan.settings not generated")
+	}
+	if !strings.Contains(string(content), "<AccountPlanSettings ") {
+		t.Errorf("AccountPlan.settings missing root element:\n%s", content)
+	}
+	if !strings.Contains(string(content), "<enableAccountPlan>true</enableAccountPlan>") {
+		t.Errorf("AccountPlan.settings missing preference:\n%s", content)
+	}
+}

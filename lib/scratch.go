@@ -334,6 +334,34 @@ func buildSettingsMetadata(settings []string) ForceMetadataFiles {
 		enableMfgServiceConsole                   bool
 		enableIndustriesFieldService              bool
 		enableAutomotiveServiceCampaignManagement bool
+
+		enableLifeSciencesCustomerEngagementBase       bool
+		enableLifeSciencesActivityPlan                 bool
+		enableLifeSciencesClinialTrailManagement       bool
+		enableLifeSciencesConsent                      bool
+		enableLifeSciencesMergeManagement              bool
+		enableLifeSciencesProviderEngagementCompliance bool
+		enableLifeSciencesSiteManagement               bool
+		enableLifeSciGenericWorkflow                   bool
+		enableLifeSciInquiry                           bool
+		enableLifeSciListsAndFilters                   bool
+		enableAdverseEvents                            bool
+		enableTrialManagementRandomization             bool
+		enableSampleLimits                             bool
+		enableVisitInventoryEnabled                    bool
+		enableVisitPlanningAndExecutionAction          bool
+		enablePATSTerritoryBasedSharing                bool
+		enableBatchManagement                          bool
+		enableInventoryCount                           bool
+		enableProductInventoryOperations               bool
+		enableLSC4CEVisits                             bool
+		enableActionableList                           bool
+		enableAppAlerts                                bool
+		enableNextBestAction                           bool
+		enableNextBestCustomer                         bool
+		enableNextBestMessage                          bool
+		enableAccountPlan                              bool
+		enableTerritoryManagement2                     bool
 	)
 
 	for _, setting := range settings {
@@ -518,6 +546,60 @@ func buildSettingsMetadata(settings []string) ForceMetadataFiles {
 			enableIndustriesFieldService = true
 		case "enableAutomotiveServiceCampaignManagement":
 			enableAutomotiveServiceCampaignManagement = true
+		case "enableLifeSciencesCustomerEngagementBase":
+			enableLifeSciencesCustomerEngagementBase = true
+		case "enableLifeSciencesActivityPlan":
+			enableLifeSciencesActivityPlan = true
+		case "enableLifeSciencesClinialTrailManagement":
+			enableLifeSciencesClinialTrailManagement = true
+		case "enableLifeSciencesConsent":
+			enableLifeSciencesConsent = true
+		case "enableLifeSciencesMergeManagement":
+			enableLifeSciencesMergeManagement = true
+		case "enableLifeSciencesProviderEngagementCompliance":
+			enableLifeSciencesProviderEngagementCompliance = true
+		case "enableLifeSciencesSiteManagement":
+			enableLifeSciencesSiteManagement = true
+		case "enableLifeSciGenericWorkflow":
+			enableLifeSciGenericWorkflow = true
+		case "enableLifeSciInquiry":
+			enableLifeSciInquiry = true
+		case "enableLifeSciListsAndFilters":
+			enableLifeSciListsAndFilters = true
+		case "enableAdverseEvents":
+			enableAdverseEvents = true
+		case "enableTrialManagementRandomization":
+			enableTrialManagementRandomization = true
+		case "enableSampleLimits":
+			enableSampleLimits = true
+		case "enableVisitInventoryEnabled":
+			enableVisitInventoryEnabled = true
+		case "enableVisitPlanningAndExecutionAction":
+			enableVisitPlanningAndExecutionAction = true
+		case "enablePATSTerritoryBasedSharing":
+			enablePATSTerritoryBasedSharing = true
+		case "enableBatchManagement":
+			enableBatchManagement = true
+		case "enableInventoryCount":
+			enableInventoryCount = true
+		case "enableProductInventoryOperations":
+			enableProductInventoryOperations = true
+		case "enableTerritoryManagement2":
+			enableTerritoryManagement2 = true
+		case "enableLSC4CEVisits":
+			enableLSC4CEVisits = true
+		case "enableActionableList":
+			enableActionableList = true
+		case "enableAppAlerts":
+			enableAppAlerts = true
+		case "enableNextBestAction":
+			enableNextBestAction = true
+		case "enableNextBestCustomer":
+			enableNextBestCustomer = true
+		case "enableNextBestMessage":
+			enableNextBestMessage = true
+		case "enableAccountPlan":
+			enableAccountPlan = true
 		}
 	}
 
@@ -659,6 +741,28 @@ func buildSettingsMetadata(settings []string) ForceMetadataFiles {
 		{"enableRecordRollup", enableRecordRollup},
 		{"enableStudentSuccess", enableStudentSuccess},
 		{"enableVolunteerManagement", enableVolunteerManagement},
+		{"enableLifeSciencesCustomerEngagementBase", enableLifeSciencesCustomerEngagementBase},
+		{"enableLifeSciencesActivityPlan", enableLifeSciencesActivityPlan},
+		{"enableLifeSciencesClinialTrailManagement", enableLifeSciencesClinialTrailManagement},
+		{"enableLifeSciencesConsent", enableLifeSciencesConsent},
+		{"enableLifeSciencesMergeManagement", enableLifeSciencesMergeManagement},
+		{"enableLifeSciencesProviderEngagementCompliance", enableLifeSciencesProviderEngagementCompliance},
+		{"enableLifeSciencesSiteManagement", enableLifeSciencesSiteManagement},
+		{"enableLifeSciGenericWorkflow", enableLifeSciGenericWorkflow},
+		{"enableLifeSciInquiry", enableLifeSciInquiry},
+		{"enableLifeSciListsAndFilters", enableLifeSciListsAndFilters},
+		{"enableAdverseEvents", enableAdverseEvents},
+		{"enableTrialManagementRandomization", enableTrialManagementRandomization},
+		{"enableSampleLimits", enableSampleLimits},
+		{"enableVisitInventoryEnabled", enableVisitInventoryEnabled},
+		{"enableVisitPlanningAndExecutionAction", enableVisitPlanningAndExecutionAction},
+		{"enablePATSTerritoryBasedSharing", enablePATSTerritoryBasedSharing},
+		{"enableLSC4CEVisits", enableLSC4CEVisits},
+		{"enableActionableList", enableActionableList},
+		{"enableAppAlerts", enableAppAlerts},
+		{"enableNextBestAction", enableNextBestAction},
+		{"enableNextBestCustomer", enableNextBestCustomer},
+		{"enableNextBestMessage", enableNextBestMessage},
 	})
 	emit("unpackaged/settings/InterestTagging.settings", "InterestTaggingSettings", []settingsFlag{
 		{"enableInterestTagging", enableInterestTagging},
@@ -698,6 +802,17 @@ func buildSettingsMetadata(settings []string) ForceMetadataFiles {
 	})
 	emit("unpackaged/settings/MfgServiceConsole.settings", "MfgServiceConsoleSettings", []settingsFlag{
 		{"enableMfgServiceConsole", enableMfgServiceConsole},
+	})
+	emit("unpackaged/settings/IndustriesUnifiedInventory.settings", "IndustriesUnifiedInventorySettings", []settingsFlag{
+		{"enableBatchManagement", enableBatchManagement},
+		{"enableInventoryCount", enableInventoryCount},
+		{"enableProductInventoryOperations", enableProductInventoryOperations},
+	})
+	emit("unpackaged/settings/AccountPlan.settings", "AccountPlanSettings", []settingsFlag{
+		{"enableAccountPlan", enableAccountPlan},
+	})
+	emit("unpackaged/settings/Territory2.settings", "Territory2Settings", []settingsFlag{
+		{"enableTerritoryManagement2", enableTerritoryManagement2},
 	})
 	emit("unpackaged/settings/IndustriesFieldService.settings", "IndustriesFieldServiceSettings", []settingsFlag{
 		{"enableAutomotiveServiceCampaignManagement", enableAutomotiveServiceCampaignManagement},
