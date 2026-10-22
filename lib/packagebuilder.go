@@ -157,6 +157,7 @@ var metapaths = []metapath{
 	{path: "staticresources", name: "StaticResource", contentFile: true},
 	{path: "synonymDictionaries", name: "SynonymDictionary"},
 	{path: "tabs", name: "CustomTab"},
+	{path: "territory2Types", name: "Territory2Type", extension: ".territory2Type"},
 	{path: "translations", name: "Translations"},
 	{path: "triggers", name: "ApexTrigger", contentFile: true},
 	{path: "uiFormatSpecificationSets", name: "UiFormatSpecificationSet", extension: ".uiFormatSpecificationSet"},

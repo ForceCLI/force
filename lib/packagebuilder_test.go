@@ -180,6 +180,23 @@ var _ = Describe("Packagebuilder", func() {
 			})
 		})
 
+		Context("when adding a Territory2Type file", func() {
+			var typePath string
+
+			BeforeEach(func() {
+				os.MkdirAll(tempDir+"/src/territory2Types", 0755)
+				typePath = tempDir + "/src/territory2Types/State.territory2Type"
+				ioutil.WriteFile(typePath, []byte(`<?xml version="1.0" encoding="UTF-8"?>`), 0644)
+			})
+
+			It("should add the file to the package.xml under Territory2Type", func() {
+				err := pb.AddFile(typePath)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(pb.Metadata).To(HaveKey("Territory2Type"))
+				Expect(pb.Metadata["Territory2Type"].Members[0]).To(Equal("State"))
+			})
+		})
+
 		Context("when adding a FundraisingConfig file", func() {
 			var configPath string
 
@@ -671,6 +688,13 @@ var _ = Describe("Packagebuilder", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(metadataType).To(Equal("UiFormatSpecificationSet"))
 				Expect(metadataName).To(Equal("Access_Packages"))
+			})
+
+			It("should handle Territory2Type files", func() {
+				metadataType, metadataName, err := pb.GetMetaForAbsolutePath("/path/to/src/territory2Types/State.territory2Type")
+				Expect(err).ToNot(HaveOccurred())
+				Expect(metadataType).To(Equal("Territory2Type"))
+				Expect(metadataName).To(Equal("State"))
 			})
 
 			It("should handle FundraisingConfig files", func() {

@@ -193,6 +193,7 @@ func runExport(root string, excludeMetadataNames []string, showWarnings bool) {
 		"SlackApp",
 		"StaticResource",
 		"Territory",
+		"Territory2Type",
 		"Translations",
 		"UiFormatSpecificationSet",
 		"ValidationRule",
