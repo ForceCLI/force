@@ -69,7 +69,22 @@ func (partner *ForcePartner) ExecuteAnonymous(apex string) (output string, err e
 }
 
 func (partner *ForcePartner) ExecuteAnonymousTest(apex string) (output string, err error) {
-	soap := fmt.Sprintf(`<CompileAndTestRequest>
+	body, err := partner.soapExecute("compileAndTest", compileAndTestRequest(apex, partner.Force.Credentials.UserInfo.OrgNamespace))
+	if err != nil {
+		return
+	}
+	return parseCompileAndTestResponse(body)
+}
+
+// compileAndTestRequest wraps apex in a test class and runs it. In an org with
+// a namespace the class compiles into that namespace, and a runTestsRequest
+// that names the class without it runs no tests.
+func compileAndTestRequest(apex, namespace string) string {
+	namespaceElement := ""
+	if namespace != "" {
+		namespaceElement = fmt.Sprintf("<namespace>%s</namespace>", namespace)
+	}
+	return fmt.Sprintf(`<CompileAndTestRequest>
 		<classes><![CDATA[
 		@IsTest(seeAllData=true)
 		class AnonymousTestClass {
@@ -80,28 +95,38 @@ func (partner *ForcePartner) ExecuteAnonymousTest(apex string) (output string, e
 		}
 		]]></classes>
 		<checkOnly>true</checkOnly>
-		<runTestsRequest><classes>AnonymousTestClass</classes></runTestsRequest>
+		<runTestsRequest><classes>AnonymousTestClass</classes>%s</runTestsRequest>
 		</CompileAndTestRequest>
-		`, apex)
-	body, err := partner.soapExecute("compileAndTest", soap)
-	if err != nil {
-		return
-	}
+		`, apex, namespaceElement)
+}
+
+// parseCompileAndTestResponse returns the debug log of a compileAndTest call
+// that ran the test and passed. Salesforce reports success when the request
+// names a test it cannot find, so a run of no tests is an error.
+func parseCompileAndTestResponse(body []byte) (output string, err error) {
 	var result struct {
 		Log             string   `xml:"Header>DebuggingInfo>debugLog"`
 		Success         bool     `xml:"Body>compileAndTestResponse>result>success"`
 		CompileProblems []string `xml:"Body>compileAndTestResponse>result>classes>problem"`
 		TestFailures    []string `xml:"Body>compileAndTestResponse>result>runTestsResult>failures>message"`
+		NumTestsRun     int      `xml:"Body>compileAndTestResponse>result>runTestsResult>numTestsRun"`
 	}
 	if err = xml.Unmarshal(body, &result); err != nil {
 		return
 	}
 	if !result.Success {
-		if len(result.CompileProblems) > 0 {
+		switch {
+		case len(result.CompileProblems) > 0:
 			err = errors.New(result.CompileProblems[0])
-		} else {
+		case len(result.TestFailures) > 0:
 			err = errors.New(result.TestFailures[0])
+		default:
+			err = errors.New("compileAndTest failed without a compile problem or test failure")
 		}
+		return
+	}
+	if result.NumTestsRun == 0 {
+		err = errors.New("compileAndTest ran no tests")
 		return
 	}
 	output = result.Log
