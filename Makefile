@@ -11,7 +11,7 @@ LINUX_ARM64=$(EXECUTABLE)_linux_arm64
 OSX_AMD64=$(EXECUTABLE)_osx_amd64
 OSX_ARM64=$(EXECUTABLE)_osx_arm64
 ALL=$(WINDOWS) $(WINDOWS_ARM64) $(LINUX) $(LINUX_ARM64) $(OSX_AMD64) $(OSX_ARM64)
-ZIPS=$(addsuffix .zip,$(basename $(ALL)))
+ZIPS=$(addsuffix _$(VERSION).zip,$(basename $(ALL)))
 RELEASE_ASSETS=$(ZIPS) SHA256SUMS-$(VERSION)
 
 default:
@@ -43,29 +43,29 @@ $(OSX_ARM64):
 	env CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -v -o $(OSX_ARM64) ${LDFLAGS}
 	rcodesign sign --for-notarization --pem-file <(pass OctoberSwimmer/codesign/combined) $@
 
-$(basename $(WINDOWS)).zip: $(WINDOWS)
+$(basename $(WINDOWS))_$(VERSION).zip: $(WINDOWS)
 	@rm -f $@
 	zip $@ $<
 	7za rn $@ $< $(EXECUTABLE)$(suffix $<)
 
-$(basename $(WINDOWS_ARM64)).zip: $(WINDOWS_ARM64)
+$(basename $(WINDOWS_ARM64))_$(VERSION).zip: $(WINDOWS_ARM64)
 	@rm -f $@
 	zip $@ $<
 	7za rn $@ $< $(EXECUTABLE)$(suffix $<)
 
-$(basename $(OSX_AMD64)).zip: $(OSX_AMD64)
+$(basename $(OSX_AMD64))_$(VERSION).zip: $(OSX_AMD64)
 	@rm -f $@
 	zip $@ $<
 	7za rn $@ $< $(EXECUTABLE)
 	rcodesign notary-submit --api-key-file <(pass OctoberSwimmer/codesign/api-key) $@
 
-$(basename $(OSX_ARM64)).zip: $(OSX_ARM64)
+$(basename $(OSX_ARM64))_$(VERSION).zip: $(OSX_ARM64)
 	@rm -f $@
 	zip $@ $<
 	7za rn $@ $< $(EXECUTABLE)
 	rcodesign notary-submit --api-key-file <(pass OctoberSwimmer/codesign/api-key) $@
 
-%.zip: %
+%_$(VERSION).zip: %
 	@rm -f $@
 	zip $@ $<
 	7za rn $@ $< $(EXECUTABLE)
@@ -106,7 +106,7 @@ test:
 clean:
 	-rm -f $(EXECUTABLE) $(EXECUTABLE)_* *.zip SHA256SUMS-*
 
-.PHONY: default dist clean docs checksum release tag
+.PHONY: default dist clean docs checksum release tag $(ALL)
 
 tag:
 	@echo "Creating next tag..."
