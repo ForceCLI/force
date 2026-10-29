@@ -67,6 +67,47 @@ func TestForceSaveLoginLogsOnce(t *testing.T) {
 	}
 }
 
+func TestForceSaveLoginWithoutActivatingKeepsTheActiveLoginAndReturnsTheSavedSession(t *testing.T) {
+	cleanup := setupTestConfig(t)
+	defer cleanup()
+
+	originalGetUserInfo := getUserInfoFn
+	getUserInfoFn = stubUserInfo("scratch@example.com")
+	defer func() { getUserInfoFn = originalGetUserInfo }()
+
+	if err := SetActiveLogin("hub@example.com"); err != nil {
+		t.Fatal(err)
+	}
+	session := ForceSession{
+		AccessToken: "token",
+		InstanceUrl: "https://example.com",
+	}
+	saved, err := ForceSaveLoginWithoutActivating(session)
+	if err != nil {
+		t.Fatalf("ForceSaveLoginWithoutActivating returned error: %v", err)
+	}
+	if saved.UserInfo == nil || saved.UserInfo.UserName != "scratch@example.com" {
+		t.Errorf("returned session has UserInfo %+v", saved.UserInfo)
+	}
+	if saved.SessionOptions == nil || saved.SessionOptions.ApiVersion != ApiVersionNumber() {
+		t.Errorf("returned session has SessionOptions %+v", saved.SessionOptions)
+	}
+	if session.UserInfo != nil {
+		t.Errorf("the session passed in was modified")
+	}
+	stored, err := forceConfig.Config.Load("accounts", "scratch@example.com")
+	if err != nil || stored == "" {
+		t.Fatalf("login was not saved: %q, %v", stored, err)
+	}
+	active, err := forceConfig.Config.Load("current", "account")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if active != "hub@example.com" {
+		t.Errorf("active login = %q, want hub@example.com", active)
+	}
+}
+
 func TestUpdateCredentialsDoesNotLog(t *testing.T) {
 	cleanup := setupTestConfig(t)
 	defer cleanup()

@@ -72,10 +72,21 @@ func (f *Force) getOrgNamespace() (namespace string, err error) {
 // Save the credentials as the active session with the UserInfo and with the
 // default current API version.
 func ForceSaveLogin(creds ForceSession, output *os.File) (string, error) {
-	return forceSaveLogin(creds, output, true)
+	saved, err := forceSaveLogin(creds, true, true)
+	if err != nil {
+		return "", err
+	}
+	return saved.SessionName(), nil
 }
 
-func forceSaveLogin(creds ForceSession, output *os.File, log bool) (sessionName string, err error) {
+// ForceSaveLoginWithoutActivating saves a login like ForceSaveLogin but leaves
+// the active login unchanged. It returns the saved session, which carries the
+// UserInfo and API version that SOAP calls need.
+func ForceSaveLoginWithoutActivating(creds ForceSession) (ForceSession, error) {
+	return forceSaveLogin(creds, false, false)
+}
+
+func forceSaveLogin(creds ForceSession, log bool, activate bool) (saved ForceSession, err error) {
 	userinfo, err := getUserInfoFn(&creds)
 	if err != nil {
 		return
@@ -93,8 +104,12 @@ func forceSaveLogin(creds ForceSession, output *os.File, log bool) (sessionName 
 	if err = SaveLogin(creds); err != nil {
 		return
 	}
-	sessionName = creds.SessionName()
-	err = SetActiveLogin(sessionName)
+	if activate {
+		if err = SetActiveLogin(creds.SessionName()); err != nil {
+			return
+		}
+	}
+	saved = creds
 	return
 }
 
@@ -217,7 +232,7 @@ func ForceLoginAtEndpointWithPromptAndSaveWithPort(endpoint string, output *os.F
 // UpdateCredentials calls CopyCredentialAuthFields and persists the new credentials in config.
 func (f *Force) UpdateCredentials(creds ForceSession) {
 	f.CopyCredentialAuthFields(&creds)
-	forceSaveLogin(*f.Credentials, os.Stderr, false)
+	forceSaveLogin(*f.Credentials, false, true)
 }
 
 // CopyCredentialAuthFields copies auth fields from creds into the receiver's Credentials.

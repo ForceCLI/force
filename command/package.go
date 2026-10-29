@@ -1,17 +1,8 @@
 package command
 
 import (
-	"archive/zip"
-	"bytes"
-	"encoding/json"
-	"encoding/xml"
 	"fmt"
-	"io"
-	"mime/multipart"
-	"net/textproto"
 	"os"
-	"path/filepath"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -217,37 +208,12 @@ var packageVersionListCmd = &cobra.Command{
 }
 
 func runCreatePackage(name string, packageType string, namespace string, description string) {
-	if name == "" {
-		ErrorAndExit("Package name is required")
-	}
-	if packageType == "" {
-		ErrorAndExit("Package type is required")
-	}
-	if namespace == "" {
-		ErrorAndExit("Package namespace is required")
-	}
-	if packageType != "Managed" && packageType != "Unlocked" {
-		ErrorAndExit("Package type must be either 'Managed' or 'Unlocked'")
-	}
-
-	attrs := map[string]string{
-		"Name":             name,
-		"ContainerOptions": packageType,
-		"NamespacePrefix":  namespace,
-	}
-
-	if description != "" {
-		attrs["Description"] = description
-	}
-
-	result, err := force.CreateToolingRecord("Package2", attrs)
+	packageId, err := force.CreatePackage(name, packageType, namespace, description)
 	if err != nil {
-		ErrorAndExit("Failed to create package: " + err.Error())
+		ErrorAndExit(err.Error())
 	}
-
-	fmt.Printf("Package created successfully: %s\n", result.Id)
+	fmt.Printf("Package created successfully: %s\n", packageId)
 }
-
 func runListPackages() {
 	query := "SELECT Id, Name, NamespacePrefix FROM Package2 ORDER BY Name"
 
@@ -369,109 +335,11 @@ func runInstallPackage(packageNamespace string, version string, password string,
 }
 
 func runInstallPackageById(packageVersionId string, password string, activateRSS bool) {
-	// Validate that the ID starts with 04t (SubscriberPackageVersion prefix)
-	if !strings.HasPrefix(packageVersionId, "04t") {
-		ErrorAndExit("Invalid package version ID. Must be a Subscriber Package Version ID (04t)")
+	if err := force.InstallPackageVersion(packageVersionId, password, activateRSS, os.Stdout); err != nil {
+		ErrorAndExit(err.Error())
 	}
-
-	// Create the PackageInstallRequest using Tooling API
-	attrs := map[string]string{
-		"SubscriberPackageVersionKey": packageVersionId,
-		"EnableRss":                   fmt.Sprintf("%t", activateRSS),
-		"NameConflictResolution":      "Block",
-		"SecurityType":                "None",
-	}
-
-	if password != "" {
-		attrs["Password"] = password
-	}
-
-	fmt.Printf("Installing package version: %s\n", packageVersionId)
-
-	result, err := force.CreateToolingRecord("PackageInstallRequest", attrs)
-	if err != nil {
-		ErrorAndExit("Failed to create package install request: " + err.Error())
-	}
-
-	requestId := result.Id
-	if requestId == "" {
-		ErrorAndExit("Failed to get request ID from response")
-	}
-
-	fmt.Printf("Package install request submitted: %s\n", requestId)
-
-	// Poll for completion
-	pollPackageInstallStatus(requestId)
+	fmt.Println("Package installed successfully")
 }
-
-func pollPackageInstallStatus(requestId string) {
-	query := fmt.Sprintf("SELECT Id, Status, Errors, CreatedDate FROM PackageInstallRequest WHERE Id = '%s'", requestId)
-
-	for i := 0; i < 240; i++ { // Poll for up to 20 minutes (5 seconds * 240)
-		time.Sleep(5 * time.Second)
-
-		result, err := force.Query(query, func(options *lib.QueryOptions) {
-			options.IsTooling = true
-		})
-		if err != nil {
-			fmt.Printf("Error querying status: %s\n", err.Error())
-			continue
-		}
-
-		if len(result.Records) == 0 {
-			fmt.Println("No records found")
-			continue
-		}
-
-		record := result.Records[0]
-		status := record["Status"].(string)
-
-		fmt.Printf("Status: %s\n", status)
-
-		if status == "SUCCESS" {
-			fmt.Println("Package installed successfully")
-			return
-		} else if status == "ERROR" {
-			var errorMessages []string
-			if errors, ok := record["Errors"]; ok && errors != nil {
-				// Errors field is typically a JSON array within the response
-				if errorsMap, ok := errors.(map[string]interface{}); ok {
-					if errorArray, ok := errorsMap["errors"].([]interface{}); ok {
-						for _, err := range errorArray {
-							if errMap, ok := err.(map[string]interface{}); ok {
-								if message, ok := errMap["message"].(string); ok {
-									errorMessages = append(errorMessages, message)
-								}
-							}
-						}
-					}
-				} else if errorsArray, ok := errors.([]interface{}); ok {
-					for _, err := range errorsArray {
-						if errMap, ok := err.(map[string]interface{}); ok {
-							if message, ok := errMap["message"].(string); ok {
-								errorMessages = append(errorMessages, message)
-							}
-						}
-					}
-				}
-			}
-
-			if len(errorMessages) > 0 {
-				ErrorAndExit("Package installation failed with errors:\n" + strings.Join(errorMessages, "\n"))
-			} else {
-				ErrorAndExit("Package installation failed with status: ERROR")
-			}
-		} else if status == "IN_PROGRESS" {
-			// Continue polling
-		} else {
-			// Handle other statuses if any
-			fmt.Printf("Unexpected status: %s. Continuing to poll...\n", status)
-		}
-	}
-
-	ErrorAndExit("Package installation timed out after 20 minutes")
-}
-
 func runUninstallPackage(packageVersionId string) {
 	// Validate that the ID starts with 04t (SubscriberPackageVersion prefix)
 	if !strings.HasPrefix(packageVersionId, "04t") {
@@ -580,14 +448,6 @@ func runCreatePackageVersion(path string, packageId string, namespace string, ve
 	versionName string, versionDescription string, ancestorId string, noAncestor bool, dependencies []string, tag string,
 	skipValidation bool, asyncValidation bool, codeCoverage bool) {
 
-	// Use version-number as default for version-name and version-description if not provided
-	if versionName == "" {
-		versionName = versionNumber
-	}
-	if versionDescription == "" {
-		versionDescription = versionNumber
-	}
-
 	// Validate that either package-id or namespace is provided
 	if packageId == "" && namespace == "" {
 		ErrorAndExit("Either --package-id or --namespace must be provided")
@@ -640,369 +500,24 @@ func runCreatePackageVersion(path string, packageId string, namespace string, ve
 		}
 	}
 
-	// The descriptor's ancestorId must be a Package2Version (05i) ID. If a
-	// Subscriber Package Version (04t) ID was provided, convert it.
-	if strings.HasPrefix(ancestorId, "04t") {
-		query := fmt.Sprintf("SELECT Id FROM Package2Version WHERE SubscriberPackageVersionId = '%s'", ancestorId)
-		result, err := force.Query(query, func(options *lib.QueryOptions) {
-			options.IsTooling = true
-		})
-		if err != nil {
-			ErrorAndExit("Failed to resolve ancestor version: " + err.Error())
-		}
-		if len(result.Records) == 0 {
-			ErrorAndExit(fmt.Sprintf("No Package2Version found for ancestor: %s", ancestorId))
-		}
-		if id, ok := result.Records[0]["Id"].(string); ok {
-			fmt.Printf("Resolved ancestor %s to Package2Version %s\n", ancestorId, id)
-			ancestorId = id
-		} else {
-			ErrorAndExit("Failed to resolve ancestor Package2Version ID")
-		}
-	}
-
-	for _, dependency := range dependencies {
-		if !strings.HasPrefix(dependency, "04t") {
-			ErrorAndExit(fmt.Sprintf("Invalid dependency ID: %s. Must be a Subscriber Package Version ID (04t)", dependency))
-		}
-	}
-
-	// Create package2-descriptor.json
-	descriptor := buildPackageVersionDescriptor(versionName, versionNumber, versionDescription, packageId, ancestorId, dependencies)
-
-	descriptorJson, err := json.Marshal(descriptor)
+	version, err := force.CreatePackageVersion(lib.PackageVersionRequest{
+		Path:               path,
+		PackageId:          packageId,
+		VersionNumber:      versionNumber,
+		VersionName:        versionName,
+		VersionDescription: versionDescription,
+		AncestorId:         ancestorId,
+		Dependencies:       dependencies,
+		Tag:                tag,
+		SkipValidation:     skipValidation,
+		AsyncValidation:    asyncValidation,
+		CodeCoverage:       codeCoverage,
+	}, os.Stdout)
 	if err != nil {
-		ErrorAndExit("Failed to create descriptor JSON: " + err.Error())
+		ErrorAndExit(err.Error())
 	}
-
-	// Create package.zip from the path
-	absPath, err := filepath.Abs(path)
-	if err != nil {
-		ErrorAndExit("Failed to get absolute path: " + err.Error())
-	}
-
-	// Validate that the path is a directory
-	fileInfo, err := os.Stat(absPath)
-	if err != nil {
-		ErrorAndExit("Failed to access path: " + err.Error())
-	}
-	if !fileInfo.IsDir() {
-		ErrorAndExit("Path must be a directory, not a file: " + path)
-	}
-
-	pb := lib.NewPushBuilder()
-	pb.Root = absPath
-
-	// Add all subdirectories and files from the path
-	files, err := filepath.Glob(filepath.Join(absPath, "*"))
-	if err != nil {
-		ErrorAndExit("Failed to list directory contents: " + err.Error())
-	}
-
-	for _, file := range files {
-		err = pb.Add(file)
-		if err != nil {
-			fmt.Printf("Warning: Could not add %s: %s\n", file, err.Error())
-			continue
-		}
-	}
-
-	// ForceMetadataFiles() adds package.xml automatically
-	packageFiles := pb.ForceMetadataFiles()
-
-	// The Salesforce CLI always includes an (often empty) Profile type in the
-	// manifest so that profile settings are recalculated for the package's
-	// components. Add it when no profiles are present.
-	if manifest, ok := packageFiles["package.xml"]; ok {
-		updated, err := addProfileTypeToManifest(manifest)
-		if err != nil {
-			ErrorAndExit(err.Error())
-		}
-		packageFiles["package.xml"] = updated
-	}
-
-	packageZipBuffer := new(bytes.Buffer)
-	packageZipWriter := zip.NewWriter(packageZipBuffer)
-
-	// Set a proper timestamp (current time)
-	modTime := time.Now()
-
-	// Collect directory entries so the zip matches the layout the Salesforce
-	// CLI produces (each directory is written as its own zero-length entry).
-	dirs := collectZipDirectories(packageFiles)
-
-	for _, dir := range dirs {
-		header := &zip.FileHeader{
-			Name:           dir,
-			Method:         zip.Store,
-			Modified:       modTime,
-			CreatorVersion: 0x14, // Version 2.0 made by (FAT filesystem)
-			ReaderVersion:  0x0A, // Version 1.0 needed to extract
-			ExternalAttrs:  0,    // FAT attributes
-		}
-		header.SetMode(os.ModeDir | 0755)
-		if _, err := packageZipWriter.CreateHeader(header); err != nil {
-			ErrorAndExit("Failed to create zip directory entry: " + err.Error())
-		}
-	}
-
-	for filePath, fileData := range packageFiles {
-		// Create a zip header with proper settings
-		header := &zip.FileHeader{
-			Name:           filePath,
-			Method:         zip.Deflate,
-			Modified:       modTime,
-			CreatorVersion: 0x14, // Version 2.0 made by (FAT filesystem)
-			ReaderVersion:  0x0A, // Version 1.0 needed to extract
-			ExternalAttrs:  0,    // FAT attributes
-		}
-
-		w, err := packageZipWriter.CreateHeader(header)
-		if err != nil {
-			ErrorAndExit("Failed to create zip entry: " + err.Error())
-		}
-		_, err = w.Write(fileData)
-		if err != nil {
-			ErrorAndExit("Failed to write zip entry: " + err.Error())
-		}
-	}
-	err = packageZipWriter.Close()
-	if err != nil {
-		ErrorAndExit("Failed to close package zip: " + err.Error())
-	}
-
-	// Create the final package2.zip containing package.zip and package2-descriptor.json
-	finalZipBuffer := new(bytes.Buffer)
-	finalZipWriter := zip.NewWriter(finalZipBuffer)
-
-	// Add package.zip with proper header
-	packageHeader := &zip.FileHeader{
-		Name:           "package.zip",
-		Method:         zip.Deflate,
-		Modified:       modTime,
-		CreatorVersion: 0x14, // Version 2.0 made by (FAT filesystem)
-		ReaderVersion:  0x0A, // Version 1.0 needed to extract
-		ExternalAttrs:  0,    // FAT attributes
-	}
-
-	packageEntry, err := finalZipWriter.CreateHeader(packageHeader)
-	if err != nil {
-		ErrorAndExit("Failed to create package.zip entry: " + err.Error())
-	}
-	_, err = packageEntry.Write(packageZipBuffer.Bytes())
-	if err != nil {
-		ErrorAndExit("Failed to write package.zip: " + err.Error())
-	}
-
-	// Add package2-descriptor.json with proper header
-	descriptorHeader := &zip.FileHeader{
-		Name:           "package2-descriptor.json",
-		Method:         zip.Deflate,
-		Modified:       modTime,
-		CreatorVersion: 0x14, // Version 2.0 made by (FAT filesystem)
-		ReaderVersion:  0x0A, // Version 1.0 needed to extract
-		ExternalAttrs:  0,    // FAT attributes
-	}
-
-	descriptorEntry, err := finalZipWriter.CreateHeader(descriptorHeader)
-	if err != nil {
-		ErrorAndExit("Failed to create descriptor entry: " + err.Error())
-	}
-	_, err = descriptorEntry.Write(descriptorJson)
-	if err != nil {
-		ErrorAndExit("Failed to write descriptor: " + err.Error())
-	}
-
-	err = finalZipWriter.Close()
-	if err != nil {
-		ErrorAndExit("Failed to close final zip: " + err.Error())
-	}
-
-	// Create multipart form data
-	body := new(bytes.Buffer)
-	writer := multipart.NewWriter(body)
-
-	// Add VersionInfo file field (first part)
-	h := make(textproto.MIMEHeader)
-	h.Set("Content-Disposition", `form-data; name="VersionInfo"; filename="package-version-info.zip"`)
-	h.Set("Content-Type", "application/zip")
-	part, err := writer.CreatePart(h)
-	if err != nil {
-		ErrorAndExit("Failed to create form file: " + err.Error())
-	}
-	_, err = io.Copy(part, bytes.NewReader(finalZipBuffer.Bytes()))
-	if err != nil {
-		ErrorAndExit("Failed to copy zip data: " + err.Error())
-	}
-
-	// Add Package2VersionCreateRequest field (second part)
-	request := map[string]interface{}{
-		"Package2Id":                 packageId,
-		"CalculateCodeCoverage":      codeCoverage,
-		"SkipValidation":             skipValidation,
-		"AsyncValidation":            asyncValidation,
-		"CalcTransitiveDependencies": false,
-		"IsDevUsePkgZipRequested":    false,
-	}
-	if tag != "" {
-		request["Tag"] = tag
-	}
-	requestJson, _ := json.Marshal(request)
-
-	h = make(textproto.MIMEHeader)
-	h.Set("Content-Disposition", `form-data; name="Package2VersionCreateRequest"`)
-	h.Set("Content-Type", "application/json")
-	part, err = writer.CreatePart(h)
-	if err != nil {
-		ErrorAndExit("Failed to create request part: " + err.Error())
-	}
-	_, err = part.Write(requestJson)
-	if err != nil {
-		ErrorAndExit("Failed to write request data: " + err.Error())
-	}
-
-	err = writer.Close()
-	if err != nil {
-		ErrorAndExit("Failed to close multipart writer: " + err.Error())
-	}
-
-	// Post to /tooling/sobjects/Package2VersionCreateRequest
-	result, err := force.CreateToolingRecordMultipart("Package2VersionCreateRequest", body.Bytes(), writer.FormDataContentType())
-	if err != nil {
-		ErrorAndExit("Failed to upload package version: " + err.Error())
-	}
-
-	requestId := result.Id
-	if requestId == "" {
-		ErrorAndExit("Failed to get request ID from response")
-	}
-
-	fmt.Printf("Package version creation request submitted: %s\n", requestId)
-
-	// Poll for completion
-	packageVersionId := pollPackageVersionStatus(requestId)
-	if packageVersionId != "" {
-		fmt.Printf("Package version created successfully: %s\n", packageVersionId)
-	}
-}
-
-// addProfileTypeToManifest ensures the package.xml manifest includes a Profile
-// type, matching the Salesforce CLI which always adds one (often empty) so that
-// profile settings are recalculated for the package's components. The manifest
-// is re-marshaled so the Profile <types> element is correctly ordered before
-// <version>. If a Profile type is already present the manifest is returned
-// unchanged.
-func addProfileTypeToManifest(manifest []byte) ([]byte, error) {
-	var p lib.Package
-	if err := xml.Unmarshal(manifest, &p); err != nil {
-		return nil, fmt.Errorf("Failed to parse package.xml: %w", err)
-	}
-	for _, t := range p.Types {
-		if t.Name == "Profile" {
-			return manifest, nil
-		}
-	}
-	p.Types = append(p.Types, lib.MetaType{Name: "Profile"})
-	byteXml, err := xml.MarshalIndent(p, "", "    ")
-	if err != nil {
-		return nil, fmt.Errorf("Failed to marshal package.xml: %w", err)
-	}
-	return append([]byte(xml.Header), byteXml...), nil
-}
-
-// collectZipDirectories returns the sorted set of directory entries (each with a
-// trailing slash) implied by the file paths, so the package zip mirrors the
-// layout the Salesforce CLI produces, which writes each directory as its own
-// zero-length entry.
-func collectZipDirectories(files lib.ForceMetadataFiles) []string {
-	dirSet := make(map[string]bool)
-	for filePath := range files {
-		parts := strings.Split(filePath, "/")
-		for i := 1; i < len(parts); i++ {
-			dirSet[strings.Join(parts[:i], "/")+"/"] = true
-		}
-	}
-	dirs := make([]string, 0, len(dirSet))
-	for dir := range dirSet {
-		dirs = append(dirs, dir)
-	}
-	sort.Strings(dirs)
-	return dirs
-}
-
-func buildPackageVersionDescriptor(versionName string, versionNumber string, versionDescription string, packageId string, ancestorId string, dependencies []string) map[string]interface{} {
-	descriptor := map[string]interface{}{
-		"versionName":        versionName,
-		"versionNumber":      versionNumber,
-		"path":               "salesforce",
-		"versionDescription": versionDescription,
-		"id":                 packageId,
-		"ancestorId":         ancestorId,
-	}
-
-	if len(dependencies) > 0 {
-		descriptorDependencies := make([]map[string]string, 0, len(dependencies))
-		for _, dependency := range dependencies {
-			descriptorDependencies = append(descriptorDependencies, map[string]string{
-				"subscriberPackageVersionId": dependency,
-			})
-		}
-		descriptor["dependencies"] = descriptorDependencies
-	}
-
-	return descriptor
-}
-
-func pollPackageVersionStatus(requestId string) string {
-	query := fmt.Sprintf("SELECT Id, Status, Package2VersionId FROM Package2VersionCreateRequest WHERE Id = '%s'", requestId)
-
-	for i := 0; i < 360; i++ { // Poll for up to 30 minutes (5 seconds * 360)
-		time.Sleep(5 * time.Second)
-
-		result, err := force.Query(query, func(options *lib.QueryOptions) {
-			options.IsTooling = true
-		})
-		if err != nil {
-			fmt.Printf("Error querying status: %s\n", err.Error())
-			continue
-		}
-
-		if len(result.Records) == 0 {
-			fmt.Println("No records found")
-			continue
-		}
-
-		record := result.Records[0]
-		status := record["Status"].(string)
-
-		fmt.Printf("Status: %s\n", status)
-
-		if status == "Success" {
-			if versionId, ok := record["Package2VersionId"].(string); ok {
-				return versionId
-			}
-		} else if status == "Error" {
-			errorQuery := fmt.Sprintf("SELECT Message FROM Package2VersionCreateRequestError WHERE ParentRequest.Id = '%s'", requestId)
-			errorResult, err := force.Query(errorQuery, func(options *lib.QueryOptions) {
-				options.IsTooling = true
-			})
-			if err == nil && len(errorResult.Records) > 0 {
-				var errorMessages []string
-				for _, errorRecord := range errorResult.Records {
-					if message, ok := errorRecord["Message"].(string); ok {
-						errorMessages = append(errorMessages, message)
-					}
-				}
-				if len(errorMessages) > 0 {
-					ErrorAndExit("Package version creation failed with errors:\n" + strings.Join(errorMessages, "\n"))
-				}
-			}
-			ErrorAndExit("Package version creation failed with status: Error")
-		}
-	}
-
-	ErrorAndExit("Package version creation timed out after 30 minutes")
-	return ""
+	fmt.Printf("Package version created successfully: %s\n", version.Id)
+	fmt.Printf("Subscriber package version: %s\n", version.SubscriberPackageVersionId)
 }
 
 func runReleasePackageVersion(versionId string) {
