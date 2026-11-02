@@ -158,6 +158,7 @@ func runExport(root string, excludeMetadataNames []string, showWarnings bool) {
 		"MobileSettings",
 		"NamedCredential",
 		"NamedFilter",
+		"NavigationMenu",
 		"Network",
 		"NotificationTypeConfig",
 		"OmniDataTransform",

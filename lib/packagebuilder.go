@@ -117,6 +117,7 @@ var metapaths = []metapath{
 	{path: "matchingRules", name: "MatchingRule"},
 	{path: "messageChannels", name: "LightningMessageChannel"},
 	{path: "namedCredentials", name: "NamedCredential"},
+	{path: "navigationMenus", name: "NavigationMenu"},
 	{path: "notificationTypeConfig", name: "NotificationTypeConfig"},
 	{path: "networks", name: "Network"},
 	{path: "objects", name: "CustomObject"},

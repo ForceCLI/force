@@ -530,6 +530,16 @@ var _ = Describe("Packagebuilder", func() {
 			Expect(pb.Metadata["CustomField"].Members).To(ConsistOf("Widget__c.Score__c"))
 		})
 
+		It("records a fetch of a navigation menu by its source format path", func() {
+			pb = NewFetchBuilder()
+			pb.Root = tempDir + "/src"
+			mustMkdir(tempDir + "/src/navigationMenus")
+			mustWrite(tempDir+"/src/navigationMenus/SFDC_Default_Navigation_Site.navigationMenu-meta.xml", "<NavigationMenu/>")
+			Expect(pb.AddFile(tempDir + "/src/navigationMenus/SFDC_Default_Navigation_Site.navigationMenu-meta.xml")).To(Succeed())
+			Expect(pb.SourceFormat).To(BeTrue())
+			Expect(pb.Metadata["NavigationMenu"].Members).To(ConsistOf("SFDC_Default_Navigation_Site"))
+		})
+
 		It("composes an object translation from its components", func() {
 			translationDir := tempDir + "/src/objectTranslations/Widget__c-es"
 			mustMkdir(translationDir + "/fields")
