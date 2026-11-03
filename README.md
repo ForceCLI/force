@@ -195,6 +195,19 @@ component. Fetching a field writes only the field's file; the object's
 `Account.object-meta.xml` file is written only when the object itself is
 fetched.
 
+A source format project can organize a type's files into subdirectories. Fetch
+and push identify these components by file name, and fetch writes them back to
+the path given:
+
+    force fetch force-app/main/default/classes/service/__tests__/WidgetTest.cls
+
+For a path in a package directory listed in `sfdx-project.json`, fetch and push
+take the first directory below the package directory that names a metadata type
+as the type's directory, so `classes/triggers/WidgetHandler.cls` is an Apex class
+and `lwc/settings/settings.js` is a Lightning web component. For other paths, they
+use the directory nearest the file that names a metadata type, unless the second
+path component names one, as in `src/classes/triggers/WidgetHandler.cls`.
+
 ### export
 Export allows you to fetch all codes from your org to local machine. This command will export all the codes to a local folder called `src`
 

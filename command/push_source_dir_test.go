@@ -18,6 +18,7 @@ func TestMetadataRootForPath(t *testing.T) {
 		{"testdata/everything/cachePartitions/aerreg.cachePartition-meta.xml", "testdata/everything"},
 		{"testdata/life-sciences-cloud/territory2Types/State.territory2Type", "testdata/life-sciences-cloud"},
 		{"force-app/main/default/classes/MyClass.cls", "force-app/main/default"},
+		{"./force-app/main/default/classes/service/__tests__/MyClassTest.cls", "force-app/main/default"},
 		{"force-app/core/main/default/objects/Account/fields/Email_ID__c.field-meta.xml", "force-app/core/main/default"},
 		{"/home/user/project/src/classes/MyClass.cls", "/home/user/project/src"},
 		{"classes/MyClass.cls", "."},

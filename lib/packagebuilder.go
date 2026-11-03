@@ -3,6 +3,7 @@ package lib
 import (
 	"encoding/xml"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -180,6 +181,10 @@ type PackageBuilder struct {
 	// SourceFormat reports whether any file added was in source (sfdx)
 	// format and had to be converted to metadata format.
 	SourceFormat bool
+	// nestedPaths maps the metadata format path of a file added from a
+	// subdirectory of its type's directory to the path it was added from,
+	// both relative to Root and slash-separated.
+	nestedPaths map[string]string
 }
 
 func NewPushBuilder() PackageBuilder {
@@ -268,6 +273,8 @@ func (pb *PackageBuilder) AddFile(fpath string) error {
 	if err != nil {
 		return err
 	}
+	pb.recordNestedPath(spath)
+	pb.recordNestedPath(spath + "-meta.xml")
 	if isFolderMetadata {
 		pb.AddMetaToPackage(metaName, fname)
 	} else if !strings.HasSuffix(spath, "-meta.xml") {
@@ -334,9 +341,9 @@ func (pb *PackageBuilder) addSourceFormatFile(fpath string) (bool, error) {
 		// objects/Account/fields/Name__c.field-meta.xml
 		return true, pb.addDecomposedComponent(mp.name, parts, fpath)
 	default:
-		metadataPath := strings.TrimSuffix(relativePath, "-meta.xml")
-		memberPath := filepath.Join(parts[1:]...)
-		memberPath = strings.TrimSuffix(memberPath, "-meta.xml")
+		pb.recordNestedPath(withoutMetaSuffix)
+		metadataPath := metadataFormatPath(strings.TrimSuffix(relativePath, "-meta.xml"))
+		memberPath := filepath.Join(strings.Split(metadataPath, string(os.PathSeparator))[1:]...)
 		pb.AddMetaToPackage(mp.name, strings.TrimSuffix(memberPath, filepath.Ext(memberPath)))
 		return true, pb.addConvertedFile(metadataPath, fpath)
 	}
@@ -406,6 +413,59 @@ func (pb *PackageBuilder) addConvertedFile(metadataPath string, fpath string) er
 	}
 	pb.Files[metadataPath] = fdata
 	return nil
+}
+
+// metadataFormatPath returns the path, relative to the root, that a file has
+// in a metadata format zip. Source format projects can organize a type's files
+// into subdirectories (classes/service/Foo.cls), but the Metadata API names
+// those components without the subdirectories and expects them directly in the
+// type's directory (classes/Foo.cls). Types whose subdirectories are part of
+// the component are returned unchanged: foldered types and bundles, the
+// decomposed files of objects and object translations, and the expanded
+// contents of static resources.
+func metadataFormatPath(relativePath string) string {
+	parts := strings.Split(relativePath, string(os.PathSeparator))
+	if len(parts) <= 2 {
+		return relativePath
+	}
+	mp, ok := metapathForDirectory(parts[0])
+	if !ok || mp.hasFolder || mp.onlyFolder {
+		return relativePath
+	}
+	switch mp.name {
+	case "CustomObject", "CustomObjectTranslation", "StaticResource":
+		return relativePath
+	}
+	return filepath.Join(parts[0], parts[len(parts)-1])
+}
+
+// recordNestedPath remembers where a file in a subdirectory of its type's
+// directory came from, so a retrieved copy can be written back to that path.
+func (pb *PackageBuilder) recordNestedPath(fpath string) {
+	relativePath, err := filepath.Rel(pb.Root, fpath)
+	if err != nil {
+		return
+	}
+	metadataPath := metadataFormatPath(relativePath)
+	if metadataPath == relativePath {
+		return
+	}
+	if pb.nestedPaths == nil {
+		pb.nestedPaths = make(map[string]string)
+	}
+	pb.nestedPaths[filepath.ToSlash(metadataPath)] = filepath.ToSlash(relativePath)
+}
+
+// RestoreNestedPaths returns a RetrieveEntryHandler that passes each retrieved
+// entry to write under the path it was requested by, so a class requested as
+// classes/service/Foo.cls is written there rather than to classes/Foo.cls.
+func (pb *PackageBuilder) RestoreNestedPaths(write RetrieveEntryHandler) RetrieveEntryHandler {
+	return func(name string, r io.Reader) error {
+		if nested, ok := pb.nestedPaths[name]; ok {
+			name = nested
+		}
+		return write(name, r)
+	}
 }
 
 func metapathForDirectory(directory string) (metapath, bool) {
@@ -495,11 +555,13 @@ func (pb *PackageBuilder) AddDirectory(fpath string) error {
 		}
 
 		if f.IsDir() {
-			if lwcJsTestDir.MatchString(dirOrFilePath) {
+			if pb.isComponent(dirOrFilePath) && lwcJsTestDir.MatchString(dirOrFilePath) {
 				// Normally malformed paths would indicate invalid metadata,
 				// but LWC tests should never be deployed. We may want to consider this logic/behavior,
 				// such that we don't call `addFile` on directories in some cases; if we could
 				// avoid the addFile call on the __tests__ dir, we could avoid this check.
+				// A __tests__ directory of another type, such as classes, holds
+				// components that are deployed like any other.
 				continue
 			}
 			err := pb.AddDirectory(dirOrFilePath)
@@ -592,7 +654,7 @@ func (pb *PackageBuilder) addFileAndMetaXml(fpath string) error {
 	if err != nil {
 		return err
 	}
-	pb.Files[frel] = fdata
+	pb.Files[metadataFormatPath(frel)] = fdata
 
 	// Try to find meta file
 	fmeta := fpath + "-meta.xml"
@@ -609,7 +671,7 @@ func (pb *PackageBuilder) addFileAndMetaXml(fpath string) error {
 	if err != nil {
 		return err
 	}
-	pb.Files[fmetarel] = fdata
+	pb.Files[metadataFormatPath(fmetarel)] = fdata
 
 	return nil
 }
@@ -719,7 +781,8 @@ func (pb *PackageBuilder) GetMetaForAbsolutePath(path string) (metaName string, 
 	metadataRoot := parts[0]
 	objectName = ""
 	if len(parts) > 1 {
-		objectName = strings.TrimSuffix(strings.Join(parts[1:], string(os.PathSeparator)), filepath.Ext(path))
+		metadataParts := strings.Split(metadataFormatPath(relativePath), string(os.PathSeparator))
+		objectName = strings.TrimSuffix(strings.Join(metadataParts[1:], string(os.PathSeparator)), filepath.Ext(path))
 		if pb.isComponent(path) {
 			objectName = parts[1]
 			// Bundle metadata files (e.g. ExperienceBundle's

@@ -133,6 +133,7 @@ func runFetch() {
 	if len(metadataTypes) == 1 && strings.ToLower(metadataTypes[0]) == "package" {
 		root := fetchRoot()
 		unpacker := newFetchUnpacker(root, EntryDiskWriter(root))
+		unpacker.notFound = notFoundMessage(ForceMetadataQuery{{Name: []string{"package"}, Members: metadataName}}, "Is the package name correct?")
 		var problems []string
 		for names := range metadataName {
 			packageProblems, err := force.Metadata.RetrievePackageStream(metadataName[names], unpacker.handle)
@@ -168,16 +169,42 @@ func runFetch() {
 
 func runFetchQuery(query ForceMetadataQuery) {
 	root := fetchRoot()
-	fetchQueryTo(root, query, MergingEntryDiskWriter(root, query))
+	fetchQueryTo(root, query, MergingEntryDiskWriter(root, query), "Is the metadata type correct?")
 }
 
-func fetchQueryTo(root string, query ForceMetadataQuery, write RetrieveEntryHandler) {
+func fetchQueryTo(root string, query ForceMetadataQuery, write RetrieveEntryHandler, hint string) {
 	unpacker := newFetchUnpacker(root, write)
+	unpacker.notFound = notFoundMessage(query, hint)
 	problems, err := force.Metadata.RetrieveStream(query, unpacker.handle)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
 	unpacker.finish(problems)
+}
+
+// maxNamedMembers is the most members of one metadata type that notFoundMessage
+// names; a larger number is reported as a count.
+const maxNamedMembers = 5
+
+// notFoundMessage describes a retrieve that returned no files, naming the
+// requested metadata types and members. Wildcard members are omitted.
+func notFoundMessage(query ForceMetadataQuery, hint string) string {
+	var requested []string
+	for _, element := range query {
+		description := strings.Join(element.Name, ", ")
+		switch {
+		case len(element.Members) == 0 || (len(element.Members) == 1 && element.Members[0] == "*"):
+		case len(element.Members) > maxNamedMembers:
+			description += fmt.Sprintf(" (%d components)", len(element.Members))
+		default:
+			description += " " + strings.Join(element.Members, ", ")
+		}
+		requested = append(requested, description)
+	}
+	if len(requested) == 0 {
+		return "Could not find any objects. (" + hint + ")"
+	}
+	return "Could not find any objects for " + strings.Join(requested, "; ") + ". (" + hint + ")"
 }
 
 func fetchRoot() string {
@@ -202,6 +229,7 @@ type fetchUnpacker struct {
 	write           RetrieveEntryHandler
 	count           int
 	resourceMetas   []string
+	notFound        string
 }
 
 func newFetchUnpacker(root string, write RetrieveEntryHandler) *fetchUnpacker {
@@ -235,7 +263,7 @@ func (u *fetchUnpacker) finish(problems []string) {
 		fmt.Fprintln(os.Stderr, problem)
 	}
 	if u.count == 0 {
-		ErrorAndExit("Could not find any objects for " + strings.Join(metadataTypes, ", ") + ". (Is the metadata type correct?)")
+		ErrorAndExit("%s", u.notFound)
 	}
 	u.expandResources()
 	fmt.Printf("Exported to %s\n", u.root)
@@ -332,7 +360,7 @@ func buildPackageAndFetch(paths []string) {
 	if pb.SourceFormat {
 		write = SourceFormatEntryWriter(root, query)
 	}
-	fetchQueryTo(root, query, write)
+	fetchQueryTo(root, query, pb.RestoreNestedPaths(write), "Does it exist in the org?")
 }
 
 func unpackResources(resourceMap map[string]string) {

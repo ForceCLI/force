@@ -153,3 +153,48 @@ func TestFetchUnpacker_NoResourceCollectionWithoutUnpackFlag(t *testing.T) {
 		t.Errorf("resourceMetas = %v, want none without --unpack", unpacker.resourceMetas)
 	}
 }
+
+func TestNotFoundMessage(t *testing.T) {
+	const hint = "Does it exist in the org?"
+	cases := []struct {
+		name  string
+		query ForceMetadataQuery
+		want  string
+	}{
+		{
+			name:  "named member",
+			query: ForceMetadataQuery{{Name: []string{"ApexClass"}, Members: []string{"FooTest"}}},
+			want:  "Could not find any objects for ApexClass FooTest. (Does it exist in the org?)",
+		},
+		{
+			name: "several types",
+			query: ForceMetadataQuery{
+				{Name: []string{"ApexClass"}, Members: []string{"Foo", "Bar"}},
+				{Name: []string{"Layout"}, Members: []string{"Account-Sales"}},
+			},
+			want: "Could not find any objects for ApexClass Foo, Bar; Layout Account-Sales. (Does it exist in the org?)",
+		},
+		{
+			name:  "wildcard",
+			query: ForceMetadataQuery{{Name: []string{"ApexClass"}, Members: []string{"*"}}},
+			want:  "Could not find any objects for ApexClass. (Does it exist in the org?)",
+		},
+		{
+			name:  "more members than are named",
+			query: ForceMetadataQuery{{Name: []string{"ApexClass"}, Members: []string{"A", "B", "C", "D", "E", "F"}}},
+			want:  "Could not find any objects for ApexClass (6 components). (Does it exist in the org?)",
+		},
+		{
+			name:  "empty query",
+			query: nil,
+			want:  "Could not find any objects. (Does it exist in the org?)",
+		},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			if got := notFoundMessage(c.query, hint); got != c.want {
+				t.Errorf("notFoundMessage = %q, want %q", got, c.want)
+			}
+		})
+	}
+}

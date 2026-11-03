@@ -1,8 +1,10 @@
 package lib_test
 
 import (
+	"io"
 	"io/ioutil"
 	"os"
+	"strings"
 
 	. "github.com/ForceCLI/force/lib"
 
@@ -596,6 +598,87 @@ var _ = Describe("Packagebuilder", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(pb.Files).To(HaveKey("email/Notices-meta.xml"))
 			Expect(pb.Metadata["EmailTemplate"].Members).To(ConsistOf("Notices"))
+		})
+
+		Describe("a file in a subdirectory of its type's directory", func() {
+			BeforeEach(func() {
+				mustMkdir(tempDir + "/src/classes/service/__tests__")
+				mustWrite(tempDir+"/src/classes/service/__tests__/WidgetTest.cls", "public class WidgetTest {}")
+				mustWrite(tempDir+"/src/classes/service/__tests__/WidgetTest.cls-meta.xml", "<ApexClass/>")
+			})
+
+			retrieve := func(builder *PackageBuilder, entries ...string) []string {
+				var written []string
+				write := builder.RestoreNestedPaths(func(name string, r io.Reader) error {
+					written = append(written, name)
+					return nil
+				})
+				for _, entry := range entries {
+					Expect(write(entry, strings.NewReader(""))).To(Succeed())
+				}
+				return written
+			}
+
+			It("deploys an Apex class under its name without the subdirectories", func() {
+				Expect(pb.AddFile(tempDir + "/src/classes/service/__tests__/WidgetTest.cls")).To(Succeed())
+				Expect(pb.Metadata["ApexClass"].Members).To(ConsistOf("WidgetTest"))
+				Expect(pb.Files).To(HaveKey("classes/WidgetTest.cls"))
+				Expect(pb.Files).To(HaveKey("classes/WidgetTest.cls-meta.xml"))
+				Expect(pb.Files).To(HaveLen(2))
+			})
+
+			It("fetches an Apex class by its name and writes it back to the same subdirectory", func() {
+				pb = NewFetchBuilder()
+				pb.Root = tempDir + "/src"
+				Expect(pb.AddFile(tempDir + "/src/classes/service/__tests__/WidgetTest.cls")).To(Succeed())
+				Expect(pb.Metadata["ApexClass"].Members).To(ConsistOf("WidgetTest"))
+				Expect(retrieve(&pb, "classes/WidgetTest.cls", "classes/WidgetTest.cls-meta.xml", "package.xml")).To(Equal([]string{
+					"classes/service/__tests__/WidgetTest.cls",
+					"classes/service/__tests__/WidgetTest.cls-meta.xml",
+					"package.xml",
+				}))
+			})
+
+			It("includes a class in a __tests__ directory when adding a directory", func() {
+				pb = NewFetchBuilder()
+				pb.Root = tempDir + "/src"
+				Expect(pb.AddDirectory(tempDir + "/src/classes")).To(Succeed())
+				Expect(pb.Metadata["ApexClass"].Members).To(ConsistOf("WidgetTest"))
+			})
+
+			It("converts a source format file and writes it back to the same subdirectory", func() {
+				mustMkdir(tempDir + "/src/layouts/sales")
+				mustWrite(tempDir+"/src/layouts/sales/Account-Sales.layout-meta.xml", "<Layout/>")
+				Expect(pb.AddFile(tempDir + "/src/layouts/sales/Account-Sales.layout-meta.xml")).To(Succeed())
+				Expect(pb.Metadata["Layout"].Members).To(ConsistOf("Account-Sales"))
+				Expect(pb.Files).To(HaveKey("layouts/Account-Sales.layout"))
+				Expect(retrieve(&pb, "layouts/Account-Sales.layout")).To(Equal([]string{"layouts/sales/Account-Sales.layout"}))
+			})
+
+			It("writes a retrieved source format file to its subdirectory on disk", func() {
+				mustMkdir(tempDir + "/src/layouts/sales")
+				mustWrite(tempDir+"/src/layouts/sales/Account-Sales.layout-meta.xml", "<Layout/>")
+				pb = NewFetchBuilder()
+				pb.Root = tempDir + "/src"
+				Expect(pb.AddFile(tempDir + "/src/layouts/sales/Account-Sales.layout-meta.xml")).To(Succeed())
+				Expect(pb.SourceFormat).To(BeTrue())
+
+				write := pb.RestoreNestedPaths(SourceFormatEntryWriter(pb.Root, nil))
+				Expect(write("layouts/Account-Sales.layout", strings.NewReader("<Layout>retrieved</Layout>"))).To(Succeed())
+
+				written, err := ioutil.ReadFile(tempDir + "/src/layouts/sales/Account-Sales.layout-meta.xml")
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(written)).To(Equal("<Layout>retrieved</Layout>"))
+				Expect(tempDir + "/src/layouts/Account-Sales.layout-meta.xml").ToNot(BeAnExistingFile())
+			})
+
+			It("keeps the folder in the name of a report", func() {
+				mustMkdir(tempDir + "/src/reports/Sales/Quarterly")
+				mustWrite(tempDir+"/src/reports/Sales/Quarterly/Pipeline.report", "<Report/>")
+				Expect(pb.AddFile(tempDir + "/src/reports/Sales/Quarterly/Pipeline.report")).To(Succeed())
+				Expect(pb.Metadata["Report"].Members).To(ConsistOf("Sales/Quarterly/Pipeline"))
+				Expect(pb.Files).To(HaveKey("reports/Sales/Quarterly/Pipeline.report"))
+			})
 		})
 
 		It("leaves an Apex class, which has the same layout in both formats, unchanged", func() {

@@ -2,6 +2,7 @@ package command
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -143,16 +144,25 @@ func runPush(metadataTypes []string, metadataNames []string, resourcePaths []str
 }
 
 // sourceDirFromPaths finds the directory that holds the metadata type
-// directories of the pushed paths. The first path component is that
-// directory when the component after it names a metadata type
-// (src/classes/MyClass.cls). Otherwise it is the parent of the nearest
-// enclosing metadata type directory, so a path deeper in a project
+// directories of the pushed paths. A path in a package directory of an sfdx
+// project resolves as described by projectMetadataRoot. For any other path, the
+// first path component is that directory when the component after it names a
+// metadata type (src/classes/MyClass.cls). Otherwise it is the parent of the
+// nearest enclosing metadata type directory, so a path deeper in a project
 // (testdata/everything/cachePartitions/aerreg.cachePartition-meta.xml) finds
 // testdata/everything. Every path must resolve to the same directory.
 func sourceDirFromPaths(resourcePaths []string) string {
 	p := ""
 	for _, path := range resourcePaths {
-		root := metadataRootForPath(path)
+		root, ok := projectMetadataRoot(path)
+		if !ok {
+			root = metadataRootForPath(path)
+		}
+		root, err := filepath.Abs(root)
+		if err != nil {
+			fmt.Println("could not detect sourceDir from paths:", err.Error())
+			return ""
+		}
 		if p == "" {
 			p = root
 		} else if p != root {
@@ -166,6 +176,76 @@ func sourceDirFromPaths(resourcePaths []string) string {
 		return ""
 	}
 	return p
+}
+
+// projectMetadataRoot returns the directory holding the metadata type directory
+// that path is in, for a path in a package directory listed in the nearest
+// sfdx-project.json above it. Directories below a type's directory can have the
+// name of another metadata type (classes/triggers, lwc/settings), so the type's
+// directory is the first component below the package directory that names a
+// metadata type. It reports false when path is not in a package directory or no
+// component below the package directory names a metadata type.
+func projectMetadataRoot(path string) (string, bool) {
+	absolutePath, err := filepath.Abs(path)
+	if err != nil {
+		return "", false
+	}
+	projectDir, packageDirectories, ok := findSfdxProject(filepath.Dir(absolutePath))
+	if !ok {
+		return "", false
+	}
+	packageDir := ""
+	for _, directory := range packageDirectories {
+		candidate := filepath.Join(projectDir, filepath.FromSlash(directory))
+		relativePath, err := filepath.Rel(candidate, absolutePath)
+		if err == nil && filepath.IsLocal(relativePath) && len(candidate) > len(packageDir) {
+			packageDir = candidate
+		}
+	}
+	if packageDir == "" {
+		return "", false
+	}
+	relativePath, err := filepath.Rel(packageDir, absolutePath)
+	if err != nil {
+		return "", false
+	}
+	parts := strings.Split(relativePath, string(os.PathSeparator))
+	for i, part := range parts {
+		if IsMetadataDirectory(part) {
+			return filepath.Join(append([]string{packageDir}, parts[:i]...)...), true
+		}
+	}
+	return "", false
+}
+
+// findSfdxProject looks in dir and its parents for the nearest
+// sfdx-project.json, returning the directory holding it and the paths of its
+// package directories. It reports false when there is no readable project file.
+func findSfdxProject(dir string) (string, []string, bool) {
+	for {
+		data, err := os.ReadFile(filepath.Join(dir, "sfdx-project.json"))
+		if err == nil {
+			var project struct {
+				PackageDirectories []struct {
+					Path string `json:"path"`
+				} `json:"packageDirectories"`
+			}
+			if err := json.Unmarshal(data, &project); err != nil {
+				Log.Info("Could not read", filepath.Join(dir, "sfdx-project.json"), err.Error())
+				return "", nil, false
+			}
+			paths := make([]string, 0, len(project.PackageDirectories))
+			for _, packageDirectory := range project.PackageDirectories {
+				paths = append(paths, packageDirectory.Path)
+			}
+			return dir, paths, true
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return "", nil, false
+		}
+		dir = parent
+	}
 }
 
 // metadataRootForPath returns the directory holding the metadata type
