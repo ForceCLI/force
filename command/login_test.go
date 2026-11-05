@@ -1,8 +1,13 @@
 package command
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
+
+	forceConfig "github.com/ForceCLI/force/config"
+	. "github.com/ForceCLI/force/lib"
 )
 
 func TestExpandProductsToFeatures_NoFeaturesOrProducts(t *testing.T) {
@@ -1542,5 +1547,114 @@ func TestExpandProductsToSettings_LifeSciencesProduct(t *testing.T) {
 		if !got[want] {
 			t.Errorf("Expected %s in life sciences product settings, missing", want)
 		}
+	}
+}
+
+func TestSaveNewLoginApiVersion(t *testing.T) {
+	cases := []struct {
+		name         string
+		versions     string
+		requested    string
+		wantVersion  string
+		wantVersions bool
+	}{
+		{
+			name:         "uses_highest_version_above_the_default",
+			versions:     `[{"version":"68.0"},{"version":"70.0"},{"version":"69.0"}]`,
+			wantVersion:  "70.0",
+			wantVersions: true,
+		},
+		{
+			name:         "uses_highest_version_below_the_default",
+			versions:     `[{"version":"66.0"},{"version":"67.0"}]`,
+			wantVersion:  "67.0",
+			wantVersions: true,
+		},
+		{
+			name:         "keeps_the_default_when_the_org_lists_no_versions",
+			versions:     `[]`,
+			wantVersion:  DefaultApiVersionNumber,
+			wantVersions: true,
+		},
+		{
+			name:         "keeps_the_default_when_the_version_list_is_invalid",
+			versions:     `not json`,
+			wantVersion:  DefaultApiVersionNumber,
+			wantVersions: true,
+		},
+		{
+			name:        "keeps_a_requested_version_without_listing_versions",
+			versions:    `[{"version":"70.0"}]`,
+			requested:   "60.0",
+			wantVersion: "60.0",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			origConfig := forceConfig.Config
+			if err := forceConfig.UseConfigDirectory(t.TempDir()); err != nil {
+				t.Fatalf("failed to set config directory: %v", err)
+			}
+			origVersion := ApiVersionNumber()
+			t.Cleanup(func() {
+				forceConfig.Config = origConfig
+				if err := SetApiVersion(origVersion); err != nil {
+					t.Error(err)
+				}
+			})
+
+			startVersion := DefaultApiVersionNumber
+			if tc.requested != "" {
+				startVersion = tc.requested
+			}
+			if err := SetApiVersion(startVersion); err != nil {
+				t.Fatal(err)
+			}
+
+			listedVersions := false
+			mux := http.NewServeMux()
+			mux.HandleFunc("/services/data", func(w http.ResponseWriter, r *http.Request) {
+				listedVersions = true
+				w.Write([]byte(tc.versions))
+			})
+			mux.HandleFunc("/services/oauth2/userinfo", func(w http.ResponseWriter, r *http.Request) {
+				w.Write([]byte(`{"preferred_username":"user@example.com","organization_id":"00D","user_id":"005"}`))
+			})
+			mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+				w.Write([]byte(`{"done":true,"totalSize":0,"records":[]}`))
+			})
+			server := httptest.NewServer(mux)
+			defer server.Close()
+
+			session := ForceSession{
+				AccessToken: "token",
+				InstanceUrl: server.URL,
+				EndpointUrl: server.URL,
+			}
+			if err := saveNewLogin(session, tc.requested != ""); err != nil {
+				t.Fatalf("saveNewLogin returned error: %v", err)
+			}
+
+			if listedVersions != tc.wantVersions {
+				t.Errorf("listed versions = %v, want %v", listedVersions, tc.wantVersions)
+			}
+			if ApiVersionNumber() != tc.wantVersion {
+				t.Errorf("ApiVersionNumber() = %s, want %s", ApiVersionNumber(), tc.wantVersion)
+			}
+			saved, err := GetAccountCredentials("user@example.com")
+			if err != nil {
+				t.Fatalf("failed to load saved session: %v", err)
+			}
+			if saved.SessionOptions.ApiVersion != tc.wantVersion {
+				t.Errorf("saved ApiVersion = %s, want %s", saved.SessionOptions.ApiVersion, tc.wantVersion)
+			}
+			active, err := ActiveLogin()
+			if err != nil {
+				t.Fatalf("failed to load active login: %v", err)
+			}
+			if active != "user@example.com" {
+				t.Errorf("active login = %s, want user@example.com", active)
+			}
+		})
 	}
 }

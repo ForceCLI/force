@@ -287,6 +287,11 @@ The list is limited to those exposed by the REST API.
        
 ### apiversion
 Set the API version to be used when interacting with the Salesforce org.
+
+`force login` stores the highest API version that the org supports, unless a
+version is passed with `--api-version`. If the org's versions can't be read,
+the login uses the default version, 68.0. Use `force apiversion` to change the
+version of a stored session.
         
       force apiversion nn.0
 

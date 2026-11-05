@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	DefaultApiVersionNumber = "55.0"
+	DefaultApiVersionNumber = "68.0"
 	apiVersionNumber        = DefaultApiVersionNumber
 	apiVersion              = fmt.Sprintf("v%s", apiVersionNumber)
 )
@@ -62,6 +62,27 @@ func (f *Force) LatestApiVersion() (string, error) {
 		return "", errors.New("no API versions returned by org")
 	}
 	return latest, nil
+}
+
+// UseLatestApiVersion makes the org's highest supported API version the current
+// version for this process and for f's session. On error the current version is
+// unchanged.
+func (f *Force) UseLatestApiVersion() error {
+	latest, err := f.LatestApiVersion()
+	if err != nil {
+		return err
+	}
+	if err := SetApiVersion(latest); err != nil {
+		return err
+	}
+	if f.Metadata != nil {
+		f.Metadata.ApiVersion = latest
+	}
+	if f.Credentials.SessionOptions == nil {
+		f.Credentials.SessionOptions = &SessionOptions{}
+	}
+	f.Credentials.SessionOptions.ApiVersion = latest
+	return nil
 }
 
 func SetApiVersion(version string) error {

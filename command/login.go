@@ -557,7 +557,7 @@ const defaultFeatureQuantity = "10"
 func init() {
 	loginCmd.Flags().StringP("user", "u", "", "username for SOAP or OAuth Username-Password login")
 	loginCmd.Flags().StringP("password", "p", "", "password for SOAP or OAuth Username-Password login")
-	loginCmd.Flags().StringP("api-version", "v", "", "API version to use")
+	loginCmd.Flags().StringP("api-version", "v", "", "API version to use (default: the highest version the org supports)")
 	loginCmd.Flags().String("connected-app-client-id", "", "Client Id (aka Consumer Key) to use instead of default")
 	loginCmd.Flags().StringP("key", "k", "", "JWT signing key filename")
 	loginCmd.Flags().String("connected-app-client-secret", "", "Client Secret (aka Consumer Secret) for Client Credentials flow")
@@ -890,7 +890,10 @@ var loginCmd = &cobra.Command{
 	Short: "Log into Salesforce and store a session token",
 	Long: `Log into Salesforce and store a session token.  By default, OAuth is
 used and a refresh token will be stored as well.  The refresh token is used
-to get a new session token automatically when needed.`,
+to get a new session token automatically when needed.
+
+The session uses the highest API version that the org supports, unless
+--api-version is passed.`,
 	Example: `
     force login
     force login -i test
@@ -912,13 +915,14 @@ to get a new session token automatically when needed.`,
 			ClientId = connectedAppClientId
 		}
 		endpoint := getEndpoint(cmd)
-		selectApiVersion(cmd)
+		apiVersionRequested := selectApiVersion(cmd)
 		username, _ := cmd.Flags().GetString("user")
 		keyFile, _ := cmd.Flags().GetString("key")
 		clientSecret, _ := cmd.Flags().GetString("connected-app-client-secret")
+		var session ForceSession
 		switch {
 		case username == "" && clientSecret != "":
-			clientCredentialsLogin(endpoint, ClientId, clientSecret)
+			session = clientCredentialsLogin(endpoint, ClientId, clientSecret)
 		case username == "":
 			deviceFlow, _ := cmd.Flags().GetBool("device-flow")
 			skipLogin, _ := cmd.Flags().GetBool("skip")
@@ -927,18 +931,21 @@ to get a new session token automatically when needed.`,
 				if err := validateDeviceFlowClientId(connectedAppClientId); err != nil {
 					ErrorAndExit(err.Error())
 				}
-				oauthDeviceFlowLogin(endpoint, skipLogin, port)
+				session = oauthDeviceFlowLogin(endpoint, skipLogin)
 			} else {
-				oauthLogin(endpoint, skipLogin, port)
+				session = oauthLogin(endpoint, skipLogin, port)
 			}
 		case keyFile != "":
-			jwtLogin(endpoint, username, keyFile)
+			session = jwtLogin(endpoint, username, keyFile)
 		case clientSecret != "":
 			password, _ := cmd.Flags().GetString("password")
-			passwordLogin(endpoint, ClientId, clientSecret, username, password)
+			session = passwordLogin(endpoint, ClientId, clientSecret, username, password)
 		default:
 			password, _ := cmd.Flags().GetString("password")
-			soapLogin(endpoint, username, password)
+			session = soapLogin(endpoint, username, password)
+		}
+		if err := saveNewLogin(session, apiVersionRequested); err != nil {
+			ErrorAndExit(err.Error())
 		}
 	},
 }
@@ -1313,15 +1320,10 @@ func scratchLogin(scratchUser string, features []string, edition string, setting
 		ErrorAndExit(err.Error())
 	}
 	scratchForce := NewForce(&session)
-	// Use the scratch org's latest supported API version for subsequent
-	// operations. Settings deployment in particular relies on metadata fields
-	// that don't exist in older API versions.
-	if latest, err := scratchForce.LatestApiVersion(); err != nil {
+	// Settings deployment relies on metadata fields that don't exist in older
+	// API versions.
+	if err := scratchForce.UseLatestApiVersion(); err != nil {
 		fmt.Fprintf(os.Stderr, "Warning: unable to determine scratch org API version: %s\n", err)
-	} else {
-		SetApiVersion(latest)
-		scratchForce.Metadata.ApiVersion = latest
-		session.SessionOptions.ApiVersion = latest
 	}
 	_, err = ForceSaveLogin(session, os.Stderr)
 	if err != nil {
@@ -1336,16 +1338,30 @@ func scratchLogin(scratchUser string, features []string, edition string, setting
 	}
 }
 
-func oauthLogin(endpoint string, skipLogin bool, port int) {
-	var err error
-	if skipLogin {
-		_, err = ForceLoginAtEndpointWithPromptAndSaveWithPort(endpoint, os.Stdout, "consent", port)
-	} else {
-		_, err = ForceLoginAtEndpointAndSaveWithPort(endpoint, os.Stdout, port)
+// saveNewLogin saves the session from a new login and makes it active. Unless
+// a version was requested, the session uses the highest API version the org
+// supports. The login has already succeeded by this point, so a failed version
+// lookup leaves the current version in place instead of failing the login.
+func saveNewLogin(session ForceSession, apiVersionRequested bool) error {
+	if !apiVersionRequested {
+		if err := NewForce(&session).UseLatestApiVersion(); err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: unable to determine the org's latest API version, using %s: %s\n", ApiVersionNumber(), err)
+		}
 	}
+	_, err := ForceSaveLogin(session, os.Stdout)
+	return err
+}
+
+func oauthLogin(endpoint string, skipLogin bool, port int) ForceSession {
+	prompt := "login"
+	if skipLogin {
+		prompt = "consent"
+	}
+	session, err := ForceLoginAtEndpointWithPromptAndPort(endpoint, prompt, port)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
+	return session
 }
 
 var errDeviceFlowRequiresClientId = errors.New("--device-flow requires --connected-app-client-id: Salesforce allows the device flow only with a local external client app. Create one in the org with the device flow enabled, and pass its consumer key")
@@ -1360,37 +1376,39 @@ func validateDeviceFlowClientId(clientId string) error {
 	return nil
 }
 
-func oauthDeviceFlowLogin(endpoint string, skipLogin bool, port int) {
-	var err error
+func oauthDeviceFlowLogin(endpoint string, skipLogin bool) ForceSession {
+	prompt := "login"
 	if skipLogin {
-		_, err = ForceLoginAtEndpointAndSaveDeviceFlow(endpoint, os.Stdout, "consent")
-	} else {
-		_, err = ForceLoginAtEndpointAndSaveDeviceFlow(endpoint, os.Stdout, "login")
+		prompt = "consent"
 	}
+	session, err := ForceLoginAtEndpointDeviceFlow(endpoint, prompt)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
+	return session
 }
 
-func jwtLogin(endpoint, username, keyfile string) {
+func jwtLogin(endpoint, username, keyfile string) ForceSession {
 	assertion, err := JwtAssertionForEndpoint(endpoint, username, keyfile, ClientId)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
-	_, err = ForceLoginAtEndpointAndSaveJWT(endpoint, assertion, os.Stdout)
+	session, err := JWTLoginAtEndpoint(endpoint, assertion)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
+	return session
 }
 
-func clientCredentialsLogin(endpoint, clientId, clientSecret string) {
-	_, err := ForceLoginAtEndpointAndSaveClientCredentials(endpoint, clientId, clientSecret, os.Stdout)
+func clientCredentialsLogin(endpoint, clientId, clientSecret string) ForceSession {
+	session, err := ClientCredentialsLoginAtEndpoint(endpoint, clientId, clientSecret)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
+	return session
 }
 
-func passwordLogin(endpoint, clientId, clientSecret, username, password string) {
+func passwordLogin(endpoint, clientId, clientSecret, username, password string) ForceSession {
 	if len(password) == 0 {
 		var err error
 		password, err = speakeasy.Ask("Password: ")
@@ -1398,13 +1416,14 @@ func passwordLogin(endpoint, clientId, clientSecret, username, password string) 
 			ErrorAndExit(err.Error())
 		}
 	}
-	_, err := ForceLoginAtEndpointAndSavePasswordFlow(endpoint, clientId, clientSecret, username, password, os.Stdout)
+	session, err := PasswordFlowLoginAtEndpoint(endpoint, clientId, clientSecret, username, password)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
+	return session
 }
 
-func soapLogin(endpoint, username, password string) {
+func soapLogin(endpoint, username, password string) ForceSession {
 	if len(password) == 0 {
 		var err error
 		password, err = speakeasy.Ask("Password: ")
@@ -1413,10 +1432,11 @@ func soapLogin(endpoint, username, password string) {
 		}
 	}
 	fmt.Fprintln(os.Stderr, "Warning: SOAP login will no longer be supported after Summer '27. Pass --connected-app-client-id and --connected-app-client-secret to use the OAuth Username/Password flow instead.")
-	_, err := ForceLoginAtEndpointAndSaveSoap(endpoint, username, password, os.Stdout)
+	session, err := ForceSoapLoginAtEndpoint(endpoint, username, password)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
+	return session
 }
 
 func getEndpoint(cmd *cobra.Command) string {
@@ -1480,12 +1500,15 @@ func currentEndpointUrl() (endpoint string, err error) {
 	return creds.EndpointUrl, nil
 }
 
-func selectApiVersion(cmd *cobra.Command) {
+// selectApiVersion sets the API version to use during login and returns whether
+// the version was requested with --api-version.
+func selectApiVersion(cmd *cobra.Command) bool {
 	if apiVersion, _ := cmd.Flags().GetString("api-version"); apiVersion != "" {
 		// Todo verify format of version is 30.0
 		SetApiVersion(apiVersion)
-	} else {
-		//override api version in case of a new login
-		SetApiVersion(DefaultApiVersionNumber)
+		return true
 	}
+	//override api version in case of a new login
+	SetApiVersion(DefaultApiVersionNumber)
+	return false
 }

@@ -97,7 +97,7 @@ func TestRunIntegrationTest_EndToEnd(t *testing.T) {
 
 	handler := http.NewServeMux()
 
-	handler.HandleFunc("/services/data/v55.0/tooling/runTestsAsynchronous", func(w http.ResponseWriter, r *http.Request) {
+	handler.HandleFunc("/services/data/"+ApiVersion()+"/tooling/runTestsAsynchronous", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			t.Fatalf("expected POST, got %s", r.Method)
 		}
@@ -112,7 +112,7 @@ func TestRunIntegrationTest_EndToEnd(t *testing.T) {
 		_, _ = w.Write([]byte(`{"root":"707aer000000001AAA"}`))
 	})
 
-	handler.HandleFunc("/services/data/v55.0/tooling/query", func(w http.ResponseWriter, r *http.Request) {
+	handler.HandleFunc("/services/data/"+ApiVersion()+"/tooling/query", func(w http.ResponseWriter, r *http.Request) {
 		q := r.URL.Query().Get("q")
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
@@ -206,11 +206,11 @@ func TestRunIntegrationTest_EndToEnd(t *testing.T) {
 func TestRunIntegrationTest_ClassDotMethod(t *testing.T) {
 	var postBody []byte
 	handler := http.NewServeMux()
-	handler.HandleFunc("/services/data/v55.0/tooling/runTestsAsynchronous", func(w http.ResponseWriter, r *http.Request) {
+	handler.HandleFunc("/services/data/"+ApiVersion()+"/tooling/runTestsAsynchronous", func(w http.ResponseWriter, r *http.Request) {
 		postBody, _ = io.ReadAll(r.Body)
 		_, _ = w.Write([]byte(`{"root":"707aer000000001AAA"}`))
 	})
-	handler.HandleFunc("/services/data/v55.0/tooling/query", func(w http.ResponseWriter, r *http.Request) {
+	handler.HandleFunc("/services/data/"+ApiVersion()+"/tooling/query", func(w http.ResponseWriter, r *http.Request) {
 		q := r.URL.Query().Get("q")
 		w.Header().Set("Content-Type", "application/json")
 		if strings.Contains(q, "FROM ApexTestRunResult") {
@@ -244,10 +244,10 @@ func TestRunIntegrationTest_ClassDotMethod(t *testing.T) {
 
 func TestRunIntegrationTest_Timeout(t *testing.T) {
 	handler := http.NewServeMux()
-	handler.HandleFunc("/services/data/v55.0/tooling/runTestsAsynchronous", func(w http.ResponseWriter, r *http.Request) {
+	handler.HandleFunc("/services/data/"+ApiVersion()+"/tooling/runTestsAsynchronous", func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(`{"root":"707aer000000001AAA"}`))
 	})
-	handler.HandleFunc("/services/data/v55.0/tooling/query", func(w http.ResponseWriter, r *http.Request) {
+	handler.HandleFunc("/services/data/"+ApiVersion()+"/tooling/query", func(w http.ResponseWriter, r *http.Request) {
 		// Always return a Queued status so the poll loop never completes.
 		_, _ = w.Write([]byte(`{"records":[{"AsyncApexJobId":"707aer000000001AAA","Status":"Queued"}]}`))
 	})
@@ -276,11 +276,11 @@ func TestRunIntegrationTest_EmptyClass(t *testing.T) {
 func TestRunIntegrationTest_URLIncludesApiVersion(t *testing.T) {
 	var gotPath string
 	handler := http.NewServeMux()
-	handler.HandleFunc("/services/data/v55.0/tooling/runTestsAsynchronous", func(w http.ResponseWriter, r *http.Request) {
+	handler.HandleFunc("/services/data/"+ApiVersion()+"/tooling/runTestsAsynchronous", func(w http.ResponseWriter, r *http.Request) {
 		gotPath = r.URL.Path
 		_, _ = w.Write([]byte(`{"root":"707aer000000001AAA"}`))
 	})
-	handler.HandleFunc("/services/data/v55.0/tooling/query", func(w http.ResponseWriter, r *http.Request) {
+	handler.HandleFunc("/services/data/"+ApiVersion()+"/tooling/query", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"records":[{"AsyncApexJobId":"707aer000000001AAA","Status":"Completed"}]}`))
 	})
@@ -290,7 +290,7 @@ func TestRunIntegrationTest_URLIncludesApiVersion(t *testing.T) {
 	if _, err := f.RunIntegrationTest("Sample", 10*time.Millisecond, 2*time.Second); err != nil {
 		t.Fatalf("RunIntegrationTest failed: %v", err)
 	}
-	wantSuffix := "/services/data/v55.0/tooling/runTestsAsynchronous"
+	wantSuffix := "/services/data/" + ApiVersion() + "/tooling/runTestsAsynchronous"
 	if !strings.HasSuffix(gotPath, wantSuffix) {
 		t.Errorf("expected path ending in %q, got %q", wantSuffix, gotPath)
 	}

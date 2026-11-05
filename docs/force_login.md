@@ -8,6 +8,9 @@ Log into Salesforce and store a session token.  By default, OAuth is
 used and a refresh token will be stored as well.  The refresh token is used
 to get a new session token automatically when needed.
 
+The session uses the highest API version that the org supports, unless
+--api-version is passed.
+
 ```
 force login [flags]
 ```
@@ -34,7 +37,7 @@ force login [flags]
 ### Options
 
 ```
-  -v, --api-version string                   API version to use
+  -v, --api-version string                   API version to use (default: the highest version the org supports)
       --connected-app-client-id string       Client Id (aka Consumer Key) to use instead of default
       --connected-app-client-secret string   Client Secret (aka Consumer Secret) for Client Credentials flow
       --device-flow                          use OAuth Device Flow (for headless environments); requires --connected-app-client-id

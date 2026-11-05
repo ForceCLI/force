@@ -9,7 +9,7 @@ force datapipe update [flags]
 ### Options
 
 ```
-  -v, --apiversion string      script content (default "55.0")
+  -v, --apiversion string      script content (default "68.0")
   -h, --help                   help for update
   -l, --masterlabel string     master label
   -n, --name string            data pipeline name
