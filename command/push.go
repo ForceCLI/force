@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -144,21 +145,12 @@ func runPush(metadataTypes []string, metadataNames []string, resourcePaths []str
 }
 
 // sourceDirFromPaths finds the directory that holds the metadata type
-// directories of the pushed paths. A path in a package directory of an sfdx
-// project resolves as described by projectMetadataRoot. For any other path, the
-// first path component is that directory when the component after it names a
-// metadata type (src/classes/MyClass.cls). Otherwise it is the parent of the
-// nearest enclosing metadata type directory, so a path deeper in a project
-// (testdata/everything/cachePartitions/aerreg.cachePartition-meta.xml) finds
-// testdata/everything. Every path must resolve to the same directory.
+// directories of the pushed paths, which is the parent of the directory of each
+// path's metadata type. Every path must resolve to the same directory.
 func sourceDirFromPaths(resourcePaths []string) string {
 	p := ""
 	for _, path := range resourcePaths {
-		root, ok := projectMetadataRoot(path)
-		if !ok {
-			root = metadataRootForPath(path)
-		}
-		root, err := filepath.Abs(root)
+		root, err := filepath.Abs(sourceRootForPath(path))
 		if err != nil {
 			fmt.Println("could not detect sourceDir from paths:", err.Error())
 			return ""
@@ -178,12 +170,78 @@ func sourceDirFromPaths(resourcePaths []string) string {
 	return p
 }
 
+// sourceRootForPath returns the directory holding the metadata type directory
+// that path is in. A file's suffix can identify its type from any directory in
+// the project, so the suffix is checked against the absolute path, where
+// classes/triggers/Foo.cls is found even when run from the classes directory.
+func sourceRootForPath(path string) string {
+	path = pathIdentifyingType(path)
+	if root, ok := projectMetadataRoot(path); ok {
+		return root
+	}
+	if absolutePath, err := filepath.Abs(path); err == nil {
+		parts := strings.Split(absolutePath, string(os.PathSeparator))
+		if i := MetadataDirectoryIndexBySuffix(parts); i >= 0 {
+			root := absolutePath
+			for range parts[i:] {
+				root = filepath.Dir(root)
+			}
+			return root
+		}
+	}
+	return metadataRootForPath(path)
+}
+
+// pathIdentifyingType returns the path to use for finding the metadata type of
+// path. When path is a directory with more than one component that names a
+// metadata type, such as classes/triggers, its name does not identify the type,
+// so this returns a file in it whose suffix does, provided that type's directory
+// contains path. Otherwise it returns path.
+func pathIdentifyingType(path string) string {
+	info, err := os.Stat(path)
+	if err != nil || !info.IsDir() {
+		return path
+	}
+	absolutePath, err := filepath.Abs(path)
+	if err != nil {
+		return path
+	}
+	parts := strings.Split(absolutePath, string(os.PathSeparator))
+	metadataDirectories := 0
+	for _, part := range parts {
+		if IsMetadataDirectory(part) {
+			metadataDirectories++
+		}
+	}
+	if metadataDirectories < 2 {
+		return path
+	}
+	identifying := path
+	filepath.WalkDir(absolutePath, func(file string, entry fs.DirEntry, err error) error {
+		if err != nil {
+			return nil
+		}
+		if entry.IsDir() {
+			if file != absolutePath && strings.HasPrefix(entry.Name(), ".") {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		i := MetadataDirectoryIndexBySuffix(strings.Split(file, string(os.PathSeparator)))
+		if i >= 0 && i < len(parts) {
+			identifying = file
+			return filepath.SkipAll
+		}
+		return nil
+	})
+	return identifying
+}
+
 // projectMetadataRoot returns the directory holding the metadata type directory
 // that path is in, for a path in a package directory listed in the nearest
-// sfdx-project.json above it. Directories below a type's directory can have the
-// name of another metadata type (classes/triggers, lwc/settings), so the type's
-// directory is the first component below the package directory that names a
-// metadata type. It reports false when path is not in a package directory or no
+// sfdx-project.json above it. Only components below the package directory are
+// considered, so directories above the project cannot be mistaken for a type's
+// directory. It reports false when path is not in a package directory or no
 // component below the package directory names a metadata type.
 func projectMetadataRoot(path string) (string, bool) {
 	absolutePath, err := filepath.Abs(path)
@@ -210,12 +268,11 @@ func projectMetadataRoot(path string) (string, bool) {
 		return "", false
 	}
 	parts := strings.Split(relativePath, string(os.PathSeparator))
-	for i, part := range parts {
-		if IsMetadataDirectory(part) {
-			return filepath.Join(append([]string{packageDir}, parts[:i]...)...), true
-		}
+	i := MetadataDirectoryIndex(parts)
+	if i < 0 {
+		return "", false
 	}
-	return "", false
+	return filepath.Join(append([]string{packageDir}, parts[:i]...)...), true
 }
 
 // findSfdxProject looks in dir and its parents for the nearest
@@ -254,18 +311,14 @@ func findSfdxProject(dir string) (string, []string, bool) {
 // component.
 func metadataRootForPath(path string) string {
 	parts := strings.Split(filepath.Clean(filepath.FromSlash(path)), string(os.PathSeparator))
-	if len(parts) > 1 && IsMetadataDirectory(parts[1]) {
+	switch i := MetadataDirectoryIndex(parts); {
+	case i < 0:
 		return parts[0]
+	case i == 0:
+		return "."
+	default:
+		return strings.Join(parts[:i], string(os.PathSeparator))
 	}
-	for i := len(parts) - 1; i >= 0; i-- {
-		if IsMetadataDirectory(parts[i]) {
-			if i == 0 {
-				return "."
-			}
-			return strings.Join(parts[:i], string(os.PathSeparator))
-		}
-	}
-	return parts[0]
 }
 
 // pushByPaths deploys components by explicit paths, with optional smart flow versioning

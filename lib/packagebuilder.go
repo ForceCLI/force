@@ -41,7 +41,9 @@ type metapath struct {
 	name       string
 	hasFolder  bool
 	onlyFolder bool
-	extension  string
+	// extension is the suffix of the type's file names. Bundles and documents
+	// have none: their files keep the extensions of their content.
+	extension string
 	// contentFile marks types that keep a content file beside the -meta.xml
 	// file in both source and metadata format (Apex classes, static
 	// resources). Every other type is a single file, which source format
@@ -50,123 +52,123 @@ type metapath struct {
 }
 
 var metapaths = []metapath{
-	{path: "actionLinkGroupTemplates", name: "ActionLinkGroupTemplate"},
-	{path: "analyticSnapshots", name: "AnalyticSnapshot"},
-	{path: "apexEmailNotifications", name: "ApexEmailNotifications"},
-	{path: "applications", name: "CustomApplication"},
-	{path: "appMenus", name: "AppMenu"},
-	{path: "approvalProcesses", name: "ApprovalProcess"},
-	{path: "assignmentRules", name: "AssignmentRules"},
-	{path: "audience", name: "Audience"},
-	{path: "authproviders", name: "AuthProvider"},
+	{path: "actionLinkGroupTemplates", name: "ActionLinkGroupTemplate", extension: ".actionLinkGroupTemplate"},
+	{path: "analyticSnapshots", name: "AnalyticSnapshot", extension: ".snapshot"},
+	{path: "apexEmailNotifications", name: "ApexEmailNotifications", extension: ".notifications"},
+	{path: "applications", name: "CustomApplication", extension: ".app"},
+	{path: "appMenus", name: "AppMenu", extension: ".appMenu"},
+	{path: "approvalProcesses", name: "ApprovalProcess", extension: ".approvalProcess"},
+	{path: "assignmentRules", name: "AssignmentRules", extension: ".assignmentRules"},
+	{path: "audience", name: "Audience", extension: ".audience"},
+	{path: "authproviders", name: "AuthProvider", extension: ".authprovider"},
 	{path: "aura", name: "AuraDefinitionBundle", hasFolder: true, onlyFolder: true},
-	{path: "autoResponseRules", name: "AutoResponseRules"},
+	{path: "autoResponseRules", name: "AutoResponseRules", extension: ".autoResponseRules"},
 	{path: "brandingSets", name: "BrandingSet", extension: ".brandingSet"},
-	{path: "callCenters", name: "CallCenter"},
-	{path: "cachePartitions", name: "PlatformCachePartition"},
-	{path: "certs", name: "Certificate", contentFile: true},
-	{path: "channelLayouts", name: "ChannelLayout"},
-	{path: "classes", name: "ApexClass", contentFile: true},
-	{path: "cleanDataServices", name: "CleanDataService"},
-	{path: "communities", name: "Community"},
-	{path: "components", name: "ApexComponent", contentFile: true},
-	{path: "connectedApps", name: "ConnectedApp"},
-	{path: "contentassets", name: "ContentAsset", contentFile: true},
-	{path: "corsWhitelistOrigins", name: "CorsWhitelistOrigin"},
-	{path: "customApplicationComponents", name: "CustomApplicationComponent"},
-	{path: "customMetadata", name: "CustomMetadata"},
-	{path: "notificationtypes", name: "CustomNotificationType"},
-	{path: "customHelpMenuSections", name: "CustomHelpMenuSection"},
-	{path: "customPermissions", name: "CustomPermission"},
-	{path: "dashboards", name: "Dashboard", hasFolder: true},
-	{path: "dataSources", name: "ExternalDataSource"},
-	{path: "datacategorygroups", name: "DataCategoryGroup"},
-	{path: "delegateGroups", name: "DelegateGroup"},
+	{path: "callCenters", name: "CallCenter", extension: ".callCenter"},
+	{path: "cachePartitions", name: "PlatformCachePartition", extension: ".cachePartition"},
+	{path: "certs", name: "Certificate", extension: ".crt", contentFile: true},
+	{path: "channelLayouts", name: "ChannelLayout", extension: ".channelLayout"},
+	{path: "classes", name: "ApexClass", extension: ".cls", contentFile: true},
+	{path: "cleanDataServices", name: "CleanDataService", extension: ".cleanDataService"},
+	{path: "communities", name: "Community", extension: ".community"},
+	{path: "components", name: "ApexComponent", extension: ".component", contentFile: true},
+	{path: "connectedApps", name: "ConnectedApp", extension: ".connectedApp"},
+	{path: "contentassets", name: "ContentAsset", extension: ".asset", contentFile: true},
+	{path: "corsWhitelistOrigins", name: "CorsWhitelistOrigin", extension: ".corsWhitelistOrigin"},
+	{path: "customApplicationComponents", name: "CustomApplicationComponent", extension: ".customApplicationComponent"},
+	{path: "customMetadata", name: "CustomMetadata", extension: ".md"},
+	{path: "notificationtypes", name: "CustomNotificationType", extension: ".notiftype"},
+	{path: "customHelpMenuSections", name: "CustomHelpMenuSection", extension: ".customHelpMenuSection"},
+	{path: "customPermissions", name: "CustomPermission", extension: ".customPermission"},
+	{path: "dashboards", name: "Dashboard", extension: ".dashboard", hasFolder: true},
+	{path: "dataSources", name: "ExternalDataSource", extension: ".dataSource"},
+	{path: "datacategorygroups", name: "DataCategoryGroup", extension: ".datacategorygroup"},
+	{path: "delegateGroups", name: "DelegateGroup", extension: ".delegateGroup"},
 	{path: "documents", name: "Document", hasFolder: true, contentFile: true},
-	{path: "duplicateRules", name: "DuplicateRule"},
-	{path: "dw", name: "DataWeaveResource", contentFile: true},
-	{path: "EmbeddedServiceConfig", name: "EmbeddedServiceConfig"},
-	{path: "email", name: "EmailTemplate", hasFolder: true, contentFile: true},
-	{path: "escalationRules", name: "EscalationRules"},
+	{path: "duplicateRules", name: "DuplicateRule", extension: ".duplicateRule"},
+	{path: "dw", name: "DataWeaveResource", extension: ".dwl", contentFile: true},
+	{path: "EmbeddedServiceConfig", name: "EmbeddedServiceConfig", extension: ".EmbeddedServiceConfig"},
+	{path: "email", name: "EmailTemplate", extension: ".email", hasFolder: true, contentFile: true},
+	{path: "escalationRules", name: "EscalationRules", extension: ".escalationRules"},
 	{path: "experiences", name: "ExperienceBundle", hasFolder: true, onlyFolder: true},
-	{path: "externalClientApps", name: "ExternalClientApplication"},
-	{path: "extlClntAppConfigurablePolicies", name: "ExtlClntAppConfigurablePolicies"},
-	{path: "extlClntAppGlobalOauthSets", name: "ExtlClntAppGlobalOauthSettings"},
-	{path: "extlClntAppOauthPolicies", name: "ExtlClntAppOauthConfigurablePolicies"},
-	{path: "extlClntAppOauthSettings", name: "ExtlClntAppOauthSettings"},
-	{path: "externalCredentials", name: "ExternalCredential"},
-	{path: "externalServiceRegistrations", name: "ExternalServiceRegistration"},
-	{path: "feedFilters", name: "CustomFeedFilter"},
-	{path: "flexipages", name: "FlexiPage"},
-	{path: "flowDefinitions", name: "FlowDefinition"},
-	{path: "flows", name: "Flow"},
-	{path: "flowtests", name: "FlowTest"},
+	{path: "externalClientApps", name: "ExternalClientApplication", extension: ".eca"},
+	{path: "extlClntAppConfigurablePolicies", name: "ExtlClntAppConfigurablePolicies", extension: ".ecaCnfgPlcy"},
+	{path: "extlClntAppGlobalOauthSets", name: "ExtlClntAppGlobalOauthSettings", extension: ".ecaGlblOauth"},
+	{path: "extlClntAppOauthPolicies", name: "ExtlClntAppOauthConfigurablePolicies", extension: ".ecaOauthPlcy"},
+	{path: "extlClntAppOauthSettings", name: "ExtlClntAppOauthSettings", extension: ".ecaOauth"},
+	{path: "externalCredentials", name: "ExternalCredential", extension: ".externalCredential"},
+	{path: "externalServiceRegistrations", name: "ExternalServiceRegistration", extension: ".externalServiceRegistration"},
+	{path: "feedFilters", name: "CustomFeedFilter", extension: ".feedFilter"},
+	{path: "flexipages", name: "FlexiPage", extension: ".flexipage"},
+	{path: "flowDefinitions", name: "FlowDefinition", extension: ".flowDefinition"},
+	{path: "flows", name: "Flow", extension: ".flow"},
+	{path: "flowtests", name: "FlowTest", extension: ".flowtest"},
 	{path: "fundraisingConfigs", name: "FundraisingConfig", extension: ".fundraisingConfig"},
-	{path: "globalPicklists", name: "GlobalPicklist"},
-	{path: "globalValueSets", name: "GlobalValueSet"},
-	{path: "globalValueSetTranslations", name: "GlobalValueSetTranslation"},
-	{path: "groups", name: "Group"},
-	{path: "homePageComponents", name: "HomePageComponent"},
-	{path: "homePageLayouts", name: "HomePageLayout"},
-	{path: "installedPackages", name: "InstalledPackage"},
-	{path: "labels", name: "CustomLabels"},
-	{path: "layouts", name: "Layout"},
-	{path: "LeadConvertSettings", name: "LeadConvertSettings"},
-	{path: "letterhead", name: "Letterhead"},
+	{path: "globalPicklists", name: "GlobalPicklist", extension: ".globalPicklist"},
+	{path: "globalValueSets", name: "GlobalValueSet", extension: ".globalValueSet"},
+	{path: "globalValueSetTranslations", name: "GlobalValueSetTranslation", extension: ".globalValueSetTranslation"},
+	{path: "groups", name: "Group", extension: ".group"},
+	{path: "homePageComponents", name: "HomePageComponent", extension: ".homePageComponent"},
+	{path: "homePageLayouts", name: "HomePageLayout", extension: ".homePageLayout"},
+	{path: "installedPackages", name: "InstalledPackage", extension: ".installedPackage"},
+	{path: "labels", name: "CustomLabels", extension: ".labels"},
+	{path: "layouts", name: "Layout", extension: ".layout"},
+	{path: "LeadConvertSettings", name: "LeadConvertSettings", extension: ".LeadConvertSetting"},
+	{path: "letterhead", name: "Letterhead", extension: ".letter"},
 	{path: "lwc", name: "LightningComponentBundle", hasFolder: true, onlyFolder: true},
-	{path: "matchingRules", name: "MatchingRules"},
-	{path: "matchingRules", name: "MatchingRule"},
-	{path: "messageChannels", name: "LightningMessageChannel"},
-	{path: "namedCredentials", name: "NamedCredential"},
-	{path: "navigationMenus", name: "NavigationMenu"},
-	{path: "notificationTypeConfig", name: "NotificationTypeConfig"},
-	{path: "networks", name: "Network"},
-	{path: "objects", name: "CustomObject"},
-	{path: "objectTranslations", name: "CustomObjectTranslation"},
-	{path: "omniDataTransforms", name: "OmniDataTransform"},
-	{path: "omniIntegrationProcedures", name: "OmniIntegrationProcedure"},
-	{path: "omniScripts", name: "OmniScript"},
-	{path: "omniUiCard", name: "OmniUiCard"},
-	{path: "pages", name: "ApexPage", contentFile: true},
-	{path: "pathAssistants", name: "PathAssistant"},
-	{path: "permissionsets", name: "PermissionSet"},
-	{path: "permissionsetgroups", name: "PermissionSetGroup"},
-	{path: "platformEventChannels", name: "PlatformEventChannel"},
-	{path: "platformEventChannelMembers", name: "PlatformEventChannelMember"},
-	{path: "PlatformEventSubscriberConfigs", name: "PlatformEventSubscriberConfig"},
-	{path: "postTemplates", name: "PostTemplate"},
+	{path: "matchingRules", name: "MatchingRules", extension: ".matchingRule"},
+	{path: "matchingRules", name: "MatchingRule", extension: ".matchingRule"},
+	{path: "messageChannels", name: "LightningMessageChannel", extension: ".messageChannel"},
+	{path: "namedCredentials", name: "NamedCredential", extension: ".namedCredential"},
+	{path: "navigationMenus", name: "NavigationMenu", extension: ".navigationMenu"},
+	{path: "notificationTypeConfig", name: "NotificationTypeConfig", extension: ".config"},
+	{path: "networks", name: "Network", extension: ".network"},
+	{path: "objects", name: "CustomObject", extension: ".object"},
+	{path: "objectTranslations", name: "CustomObjectTranslation", extension: ".objectTranslation"},
+	{path: "omniDataTransforms", name: "OmniDataTransform", extension: ".rpt"},
+	{path: "omniIntegrationProcedures", name: "OmniIntegrationProcedure", extension: ".oip"},
+	{path: "omniScripts", name: "OmniScript", extension: ".os"},
+	{path: "omniUiCard", name: "OmniUiCard", extension: ".ouc"},
+	{path: "pages", name: "ApexPage", extension: ".page", contentFile: true},
+	{path: "pathAssistants", name: "PathAssistant", extension: ".pathAssistant"},
+	{path: "permissionsets", name: "PermissionSet", extension: ".permissionset"},
+	{path: "permissionsetgroups", name: "PermissionSetGroup", extension: ".permissionsetgroup"},
+	{path: "platformEventChannels", name: "PlatformEventChannel", extension: ".platformEventChannel"},
+	{path: "platformEventChannelMembers", name: "PlatformEventChannelMember", extension: ".platformEventChannelMember"},
+	{path: "PlatformEventSubscriberConfigs", name: "PlatformEventSubscriberConfig", extension: ".platformEventSubscriberConfig"},
+	{path: "postTemplates", name: "PostTemplate", extension: ".postTemplate"},
 	{path: "profiles", name: "Profile", extension: ".profile"},
-	{path: "postTemplates", name: "PostTemplate"},
-	{path: "postTemplates", name: "PostTemplate"},
-	{path: "profiles", name: "Profile"},
-	{path: "profileSessionSettings", name: "ProfileSessionSetting"},
-	{path: "queues", name: "Queue"},
-	{path: "quickActions", name: "QuickAction"},
+	{path: "postTemplates", name: "PostTemplate", extension: ".postTemplate"},
+	{path: "postTemplates", name: "PostTemplate", extension: ".postTemplate"},
+	{path: "profiles", name: "Profile", extension: ".profile"},
+	{path: "profileSessionSettings", name: "ProfileSessionSetting", extension: ".profileSessionSetting"},
+	{path: "queues", name: "Queue", extension: ".queue"},
+	{path: "quickActions", name: "QuickAction", extension: ".quickAction"},
 	{path: "RecordAggregationDefinitions", name: "RecordAggregationDefinition", extension: ".RecordAggregationDefinition"},
-	{path: "restrictionRules", name: "RestrictionRule"},
-	{path: "remoteSiteSettings", name: "RemoteSiteSetting"},
-	{path: "reports", name: "Report", hasFolder: true},
-	{path: "reportTypes", name: "ReportType"},
-	{path: "roles", name: "Role"},
-	{path: "scontrols", name: "Scontrol", contentFile: true},
-	{path: "settings", name: "Settings"},
-	{path: "sharingRules", name: "SharingRules"},
-	{path: "sharingSets", name: "SharingSet"},
-	{path: "siteDotComSites", name: "SiteDotCom", contentFile: true},
-	{path: "sites", name: "CustomSite"},
+	{path: "restrictionRules", name: "RestrictionRule", extension: ".rule"},
+	{path: "remoteSiteSettings", name: "RemoteSiteSetting", extension: ".remoteSite"},
+	{path: "reports", name: "Report", extension: ".report", hasFolder: true},
+	{path: "reportTypes", name: "ReportType", extension: ".reportType"},
+	{path: "roles", name: "Role", extension: ".role"},
+	{path: "scontrols", name: "Scontrol", extension: ".scf", contentFile: true},
+	{path: "settings", name: "Settings", extension: ".settings"},
+	{path: "sharingRules", name: "SharingRules", extension: ".sharingRules"},
+	{path: "sharingSets", name: "SharingSet", extension: ".sharingSet"},
+	{path: "siteDotComSites", name: "SiteDotCom", extension: ".site", contentFile: true},
+	{path: "sites", name: "CustomSite", extension: ".site"},
 	{path: "slackapps", name: "SlackApp", extension: ".slackapp", contentFile: true},
-	{path: "standardValueSets", name: "StandardValueSet"},
-	{path: "staticresources", name: "StaticResource", contentFile: true},
-	{path: "synonymDictionaries", name: "SynonymDictionary"},
-	{path: "tabs", name: "CustomTab"},
+	{path: "standardValueSets", name: "StandardValueSet", extension: ".standardValueSet"},
+	{path: "staticresources", name: "StaticResource", extension: ".resource", contentFile: true},
+	{path: "synonymDictionaries", name: "SynonymDictionary", extension: ".synonymDictionary"},
+	{path: "tabs", name: "CustomTab", extension: ".tab"},
 	{path: "territory2Types", name: "Territory2Type", extension: ".territory2Type"},
-	{path: "translations", name: "Translations"},
-	{path: "triggers", name: "ApexTrigger", contentFile: true},
+	{path: "translations", name: "Translations", extension: ".translation"},
+	{path: "triggers", name: "ApexTrigger", extension: ".trigger", contentFile: true},
 	{path: "uiFormatSpecificationSets", name: "UiFormatSpecificationSet", extension: ".uiFormatSpecificationSet"},
 	{path: "viewdefinitions", name: "ViewDefinition", extension: ".view", contentFile: true},
-	{path: "weblinks", name: "CustomPageWebLink"},
-	{path: "workflows", name: "Workflow"},
-	{path: "cspTrustedSites", name: "CspTrustedSite"},
+	{path: "weblinks", name: "CustomPageWebLink", extension: ".weblink"},
+	{path: "workflows", name: "Workflow", extension: ".workflow"},
+	{path: "cspTrustedSites", name: "CspTrustedSite", extension: ".cspTrustedSite"},
 }
 
 type PackageBuilder struct {
@@ -742,6 +744,57 @@ func IsMetadataDirectory(name string) bool {
 		}
 	}
 	return false
+}
+
+// MetadataDirectoryIndexBySuffix returns the index in parts, the components of
+// a file's path, of the nearest directory whose metadata type has the file's
+// suffix, or -1 if there is none. It finds classes in
+// classes/triggers/Foo.cls-meta.xml and in reports/main/default/classes/Foo.cls.
+func MetadataDirectoryIndexBySuffix(parts []string) int {
+	if len(parts) == 0 {
+		return -1
+	}
+	suffix := filepath.Ext(strings.TrimSuffix(parts[len(parts)-1], "-meta.xml"))
+	if suffix == "" {
+		return -1
+	}
+	for i := len(parts) - 2; i >= 0; i-- {
+		mp, ok := metapathForDirectory(parts[i])
+		if ok && (suffix == mp.extension || suffix == folderSuffixes[mp.path]) {
+			return i
+		}
+	}
+	return -1
+}
+
+// MetadataDirectoryIndex returns the index in parts, the components of a path,
+// of the directory of the metadata type the path belongs to, or -1 if no
+// component names a metadata type. Directories can have the name of another
+// metadata type above or below the type's directory, so it uses the first of
+// these that applies:
+//
+//  1. The nearest directory whose type has the path's file suffix.
+//  2. The outermost directory of a type whose files have arbitrary names:
+//     lwc/settings/settings.js is in lwc, and
+//     staticresources/app/pages/index.html is in staticresources.
+//  3. The nearest directory that names a metadata type, which is objects in
+//     objects/Account/fields/Name__c.field-meta.xml.
+func MetadataDirectoryIndex(parts []string) int {
+	if i := MetadataDirectoryIndexBySuffix(parts); i >= 0 {
+		return i
+	}
+	nearest := -1
+	for i, part := range parts {
+		mp, ok := metapathForDirectory(part)
+		if !ok {
+			continue
+		}
+		if mp.onlyFolder || mp.name == "StaticResource" || mp.name == "Document" {
+			return i
+		}
+		nearest = i
+	}
+	return nearest
 }
 
 func FindMetapathForFile(file string) (string, error) {

@@ -161,3 +161,88 @@ func TestSourceDirFromPathsComparesProjectAndRelativeRoots(t *testing.T) {
 		t.Errorf("expected no source dir for two package directories, got %q", got)
 	}
 }
+
+func TestSourceDirFromPathsUsesFileSuffix(t *testing.T) {
+	tempDir, err := filepath.EvalSymlinks(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	src := filepath.Join(tempDir, "myproject", "src")
+	writeTestFile(t, filepath.Join(src, "classes", "triggers", "FooHandler.cls"), "public class FooHandler {}")
+	writeTestFile(t, filepath.Join(src, "lwc", "settings", "settings.js"), "")
+
+	cases := []struct {
+		name       string
+		dir        string
+		path       string
+		wantType   string
+		wantMember string
+	}{
+		{"file below the project's parent", tempDir, "myproject/src/classes/triggers/FooHandler.cls", "ApexClass", "FooHandler"},
+		{"file from the source directory", src, "classes/triggers/FooHandler.cls", "ApexClass", "FooHandler"},
+		{"file from its own directory", filepath.Join(src, "classes", "triggers"), "FooHandler.cls", "ApexClass", "FooHandler"},
+		{"absolute file", tempDir, filepath.Join(src, "classes", "triggers", "FooHandler.cls"), "ApexClass", "FooHandler"},
+		{"directory", tempDir, "myproject/src/classes/triggers", "ApexClass", "FooHandler"},
+		{"directory from itself", filepath.Join(src, "classes", "triggers"), ".", "ApexClass", "FooHandler"},
+		{"bundle file", tempDir, "myproject/src/lwc/settings/settings.js", "LightningComponentBundle", "settings"},
+		{"bundle directory", tempDir, "myproject/src/lwc/settings", "LightningComponentBundle", "settings"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			chdir(t, c.dir)
+			root := sourceDirFromPaths([]string{c.path})
+			if root != src {
+				t.Fatalf("sourceDirFromPaths(%q) = %q, want %q", c.path, root, src)
+			}
+			pb := NewFetchBuilder()
+			pb.Root = root
+			if err := pb.Add(c.path); err != nil {
+				t.Fatal(err)
+			}
+			if len(pb.Metadata) != 1 {
+				t.Fatalf("metadata = %v, want only %s", pb.Metadata, c.wantType)
+			}
+			members := pb.Metadata[c.wantType].Members
+			if len(members) != 1 || members[0] != c.wantMember {
+				t.Errorf("%s members = %v, want %s", c.wantType, members, c.wantMember)
+			}
+		})
+	}
+}
+
+func TestSourceDirFromPathsWithGroupingDirectoryNamedForAType(t *testing.T) {
+	project := sfdxProjectDir(t)
+	root := filepath.Join(project, "force-app", "reports", "main", "default")
+	writeTestFile(t, filepath.Join(root, "classes", "Foo.cls"), "public class Foo {}")
+	writeTestFile(t, filepath.Join(root, "lwc", "widget", "widget.js"), "")
+	writeTestFile(t, filepath.Join(root, "objects", "Account", "fields", "Name__c.field-meta.xml"), "<CustomField/>")
+	chdir(t, project)
+
+	for _, path := range []string{
+		"force-app/reports/main/default/classes/Foo.cls",
+		"force-app/reports/main/default/classes",
+		"force-app/reports/main/default/lwc/widget/widget.js",
+		"force-app/reports/main/default/objects/Account/fields/Name__c.field-meta.xml",
+	} {
+		if got := sourceDirFromPaths([]string{path}); got != root {
+			t.Errorf("sourceDirFromPaths(%q) = %q, want %q", path, got, root)
+		}
+	}
+}
+
+func TestMetadataRootForPathIgnoresDirectoriesNamedForOtherTypes(t *testing.T) {
+	cases := []struct {
+		path string
+		want string
+	}{
+		{"myproject/src/classes/triggers/Foo.cls", "myproject/src"},
+		{"src/classes/triggers/Foo.cls", "src"},
+		{"classes/triggers/Foo.cls", "."},
+		{"myproject/src/lwc/settings/settings.js", "myproject/src"},
+	}
+	for _, c := range cases {
+		if got := metadataRootForPath(c.path); got != c.want {
+			t.Errorf("metadataRootForPath(%q) = %q, want %q", c.path, got, c.want)
+		}
+	}
+}

@@ -201,12 +201,17 @@ the path given:
 
     force fetch force-app/main/default/classes/service/__tests__/WidgetTest.cls
 
-For a path in a package directory listed in `sfdx-project.json`, fetch and push
-take the first directory below the package directory that names a metadata type
-as the type's directory, so `classes/triggers/WidgetHandler.cls` is an Apex class
-and `lwc/settings/settings.js` is a Lightning web component. For other paths, they
-use the directory nearest the file that names a metadata type, unless the second
-path component names one, as in `src/classes/triggers/WidgetHandler.cls`.
+Directories in a project can have the name of a metadata type without being
+that type's directory, so fetch and push find a path's type from the file's
+suffix first: `classes/triggers/WidgetHandler.cls` and
+`force-app/reports/main/default/classes/Widget.cls` are both Apex classes. A
+directory is resolved the same way from a file inside it. A file whose suffix
+does not identify its type, such as `lwc/settings/settings.js`, belongs to the
+outermost directory of a type whose files have arbitrary names (`lwc`, `aura`,
+`experiences`, `staticresources`, `documents`), and otherwise to the nearest
+directory that names a metadata type. For a path in a package directory listed
+in `sfdx-project.json`, directories above the package directory are not
+considered.
 
 ### export
 Export allows you to fetch all codes from your org to local machine. This command will export all the codes to a local folder called `src`
