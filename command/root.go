@@ -128,9 +128,9 @@ func envSession() *Force {
 func initializeSession() {
 	var err error
 	if account != "" {
-		force, err = GetForce(account)
+		force, err = GetForceLazy(account)
 	} else if force = envSession(); force == nil {
-		force, err = ActiveForce()
+		force, err = ActiveForceLazy()
 	}
 	if err != nil {
 		ErrorAndExit(err.Error())

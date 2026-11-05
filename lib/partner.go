@@ -69,6 +69,9 @@ func (partner *ForcePartner) ExecuteAnonymous(apex string) (output string, err e
 }
 
 func (partner *ForcePartner) ExecuteAnonymousTest(apex string) (output string, err error) {
+	if err = partner.Force.EnsureUserInfo(); err != nil {
+		return
+	}
 	body, err := partner.soapExecute("compileAndTest", compileAndTestRequest(apex, partner.Force.Credentials.UserInfo.OrgNamespace))
 	if err != nil {
 		return

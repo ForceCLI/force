@@ -33,7 +33,7 @@ By default, the active account is used.
 	Run: func(cmd *cobra.Command, args []string) {
 		var err error
 		if len(args) != 0 {
-			force, err = GetForce(args[0])
+			force, err = GetForceLazy(args[0])
 			if err != nil {
 				ErrorAndExit(err.Error())
 			}

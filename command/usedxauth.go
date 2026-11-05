@@ -86,7 +86,8 @@ func runUseDXAuth(filter string) {
 	fmt.Println("...")
 
 	session := SFDXAuthToForceSession(*selected)
-	if err := CompleteSFDXSession(&session, alias); err != nil {
+	// ForceSaveLogin fetches the user info itself.
+	if err := CompleteSFDXSessionLazy(&session, alias); err != nil {
 		ErrorAndExit(err.Error())
 	}
 

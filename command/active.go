@@ -47,6 +47,11 @@ func printCurrentAccount(cmd *cobra.Command) {
 	}
 	sessionId, _ := cmd.Flags().GetBool("session")
 	tojson, _ := cmd.Flags().GetBool("json")
+	// Besides loading the org namespace, the API calls this makes for an SFDX
+	// session with no user id replace an expired token before --session prints it.
+	if err := force.EnsureUserInfo(); err != nil {
+		ErrorAndExit(err.Error())
+	}
 	if sessionId {
 		fmt.Println(creds.AccessToken)
 	} else if tojson {

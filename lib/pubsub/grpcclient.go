@@ -347,6 +347,9 @@ func (c *PubSubClient) Publish(channel string, message map[string]any) error {
 		message["CreatedDate"] = time.Now().Unix()
 	}
 	if message["CreatedById"] == nil {
+		if err := EnsureSessionUserInfo(c.session); err != nil {
+			return err
+		}
 		message["CreatedById"] = c.session.UserInfo.UserId
 	}
 	switch message["CreatedDate"].(type) {

@@ -142,7 +142,7 @@ func updateFromSFDXSession(f *Force, refreshed ForceSession) {
 	}
 
 	if refreshed.UserInfo != nil {
-		f.Credentials.UserInfo = refreshed.UserInfo
+		f.Credentials.UserInfo = mergeRefreshedUserInfo(f.Credentials.UserInfo, refreshed.UserInfo)
 	}
 	if f.Credentials.SessionOptions == nil {
 		f.Credentials.SessionOptions = &SessionOptions{}
@@ -158,6 +158,20 @@ func updateFromSFDXSession(f *Force, refreshed ForceSession) {
 	if f.Credentials.SessionOptions.RefreshMethod == RefreshUnavailable {
 		f.Credentials.SessionOptions.RefreshMethod = RefreshSFDX
 	}
+}
+
+// mergeRefreshedUserInfo keeps the fields an SFDX auth file can lack. An alias
+// can be pointed at another login between refreshes, so the fields are only
+// kept when the refreshed session is for the same user in the same org.
+func mergeRefreshedUserInfo(current, refreshed *UserInfo) *UserInfo {
+	if current == nil || current.OrgId != refreshed.OrgId || !strings.EqualFold(current.UserName, refreshed.UserName) {
+		return refreshed
+	}
+	merged := *refreshed
+	merged.UserId = firstNonEmpty(refreshed.UserId, current.UserId)
+	merged.ProfileId = firstNonEmpty(refreshed.ProfileId, current.ProfileId)
+	merged.OrgNamespace = firstNonEmpty(refreshed.OrgNamespace, current.OrgNamespace)
+	return &merged
 }
 
 func (f *Force) RefreshSessionOrExit() {

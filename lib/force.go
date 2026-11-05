@@ -1055,6 +1055,13 @@ func (f *Force) CreateRecord(sobject string, attrs map[string]string, requestOpt
 }
 
 func (f *Force) QueryProfile(fields ...string) (results ForceQueryResult, err error) {
+	// EnsureUserInfo isn't enough here: an SFDX auth file can have a userId,
+	// but it never has a profile id.
+	if f.Credentials.UserInfo == nil || f.Credentials.UserInfo.ProfileId == "" {
+		if err = loadSessionUserInfo(f.Credentials); err != nil {
+			return
+		}
+	}
 
 	url := fmt.Sprintf("%s/services/data/%s/tooling/query?q=Select+%s+From+Profile+Where+Id='%s'",
 		f.Credentials.InstanceUrl,
@@ -1141,6 +1148,9 @@ func (f *Force) StartTrace(userId ...string) (result ForceCreateRecordResult, er
 		attrs["TracedEntityId"] = userId[0]
 		attrs["LogType"] = "USER_DEBUG"
 	} else {
+		if err = f.EnsureUserInfo(); err != nil {
+			return
+		}
 		attrs["TracedEntityId"] = f.Credentials.UserInfo.UserId
 		attrs["LogType"] = "DEVELOPER_LOG"
 	}
@@ -1385,13 +1395,15 @@ func (f *Force) DeleteRecord(sobject string, id string) (err error) {
 	return
 }
 
+// EnsureUserInfo loads the user id, profile id and org namespace if the
+// session doesn't have them yet. See EnsureSessionUserInfo.
+func (f *Force) EnsureUserInfo() error {
+	return EnsureSessionUserInfo(f.Credentials)
+}
+
 func (f *Force) Whoami() (me ForceRecord, err error) {
-	if f.Credentials.UserInfo == nil {
-		userInfo, err := f.UserInfo()
-		if err != nil {
-			return nil, err
-		}
-		f.Credentials.UserInfo = &userInfo
+	if err = f.EnsureUserInfo(); err != nil {
+		return nil, err
 	}
 	me, err = f.GetRecord("User", f.Credentials.UserInfo.UserId)
 	return

@@ -154,6 +154,9 @@ func runFieldCreate(args []string) {
 
 func updateFLSOnProfile(force *Force, objectName string, fieldName string) (err error) {
 	res, err := force.QueryProfile("Id", "Name", "FullName")
+	if err != nil {
+		return err
+	}
 	profileFullName := fmt.Sprintf("%s", res.Records[0]["FullName"])
 
 	soap := getFLSUpdateXML(objectName, fieldName)

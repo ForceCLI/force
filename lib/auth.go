@@ -252,8 +252,35 @@ func ActiveForce() (force *Force, err error) {
 	return
 }
 
+// ActiveForceLazy is ActiveForce for callers that don't need UserInfo to be
+// complete. See GetForceLazy.
+func ActiveForceLazy() (force *Force, err error) {
+	account, err := ActiveLogin()
+	if err != nil || strings.TrimSpace(account) == "" {
+		ErrorAndExit("Please login before running this command.")
+	}
+	creds, err := getAccountCredentials(strings.TrimSpace(account), CompleteSFDXSessionLazy)
+	if err != nil {
+		ErrorAndExit("Failed to load credentials. %v", err)
+	}
+	force = NewForce(&creds)
+	return
+}
+
 func GetForce(accountName string) (force *Force, err error) {
 	creds, err := GetAccountCredentials(accountName)
+	if err != nil {
+		return
+	}
+	force = NewForce(&creds)
+	return
+}
+
+// GetForceLazy is GetForce without the three API calls for the user id, profile
+// id and org namespace of an SFDX session whose auth file has no userId. Call
+// EnsureUserInfo on the result before reading those fields from Credentials.
+func GetForceLazy(accountName string) (force *Force, err error) {
+	creds, err := getAccountCredentials(accountName, CompleteSFDXSessionLazy)
 	if err != nil {
 		return
 	}
@@ -305,6 +332,10 @@ func upgradeCredentials(creds *ForceSession) (err error) {
 }
 
 func GetAccountCredentials(accountName string) (creds ForceSession, err error) {
+	return getAccountCredentials(accountName, CompleteSFDXSession)
+}
+
+func getAccountCredentials(accountName string, completeSFDX func(*ForceSession, string) error) (creds ForceSession, err error) {
 	data, err := Config.Load("accounts", accountName)
 	if err != nil {
 		var sfdxAuth SFDXAuth
@@ -314,7 +345,7 @@ func GetAccountCredentials(accountName string) (creds ForceSession, err error) {
 			}
 			creds = SFDXAuthToForceSession(sfdxAuth)
 			aliasHint := firstNonEmpty(sfdxAuth.Alias, accountName)
-			if err = CompleteSFDXSession(&creds, aliasHint); err != nil {
+			if err = completeSFDX(&creds, aliasHint); err != nil {
 				return creds, err
 			}
 			if creds.SessionOptions != nil && creds.SessionOptions.ApiVersion != "" && creds.SessionOptions.ApiVersion != ApiVersionNumber() {
