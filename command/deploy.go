@@ -42,7 +42,7 @@ func monitorDeploy(deployId string) (ForceCheckDeploymentStatusResult, error) {
 	var result ForceCheckDeploymentStatusResult
 	var err error
 	retrying := false
-	for {
+	for waits := 0; ; waits++ {
 		result, err = force.Metadata.CheckDeployStatus(deployId)
 		if err != nil {
 			if retrying {
@@ -60,7 +60,7 @@ func monitorDeploy(deployId string) (ForceCheckDeploymentStatusResult, error) {
 		if !retrying {
 			Log.Info(result)
 		}
-		time.Sleep(5000 * time.Millisecond)
+		time.Sleep(DeployPollInterval(waits))
 	}
 	return result, err
 }
