@@ -38,42 +38,14 @@ func defaultDeployOutputOptions() *deployOutputOptions {
 
 var testFailureError = errors.New("Apex tests failed")
 
-// deploySleep waits between deploy status checks. Tests replace it.
-var deploySleep = time.Sleep
-
 func monitorDeploy(deployId string) (ForceCheckDeploymentStatusResult, error) {
-	return monitorDeployStatus(func() (ForceCheckDeploymentStatusResult, error) {
+	result, err := PollDeployStatus(func() (ForceCheckDeploymentStatusResult, error) {
 		return force.Metadata.CheckDeployStatus(deployId)
-	})
-}
-
-// monitorDeployStatus calls check until the deploy is done, retrying once
-// after an error, and waits DeployPollInterval between calls.
-func monitorDeployStatus(check func() (ForceCheckDeploymentStatusResult, error)) (ForceCheckDeploymentStatusResult, error) {
-	var result ForceCheckDeploymentStatusResult
-	var err error
-	retrying := false
-	for waits := 0; ; waits++ {
-		result, err = check()
-		if err != nil {
-			if retrying {
-				return result, fmt.Errorf("Error getting deploy status: %w", err)
-			} else {
-				retrying = true
-				Log.Info(fmt.Sprintf("Received error checking deploy status: %s.  Will retry once before aborting.", err.Error()))
-			}
-		} else {
-			retrying = false
-		}
-		if result.Done {
-			break
-		}
-		if !retrying {
-			Log.Info(result)
-		}
-		deploySleep(DeployPollInterval(waits))
+	}, 1)
+	if err != nil {
+		return result, fmt.Errorf("Error getting deploy status: %w", err)
 	}
-	return result, err
+	return result, nil
 }
 
 func deploy(force *Force, files ForceMetadataFiles, deployOptions *ForceDeployOptions, outputOptions *deployOutputOptions) error {

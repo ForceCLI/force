@@ -730,14 +730,14 @@ func (fm *ForceMetadata) GetStatus(id string) (status MetadataDeployStatus, err 
 // Status checks for deploys and retrieves start deployPollInitial apart and
 // double after each check, up to deployPollMax. A deploy that finishes in
 // about a second is noticed after about a second instead of after five.
-var (
+const (
 	deployPollInitial = 1 * time.Second
 	deployPollMax     = 5 * time.Second
 )
 
-// DeployPollInterval returns how long to wait before the next status check,
+// deployPollInterval returns how long to wait before the next status check,
 // given how many waits have already happened (0 before the second check).
-func DeployPollInterval(waits int) time.Duration {
+func deployPollInterval(waits int) time.Duration {
 	d := deployPollInitial
 	for i := 0; i < waits && d < deployPollMax; i++ {
 		d *= 2
@@ -751,21 +751,35 @@ func DeployPollInterval(waits int) time.Duration {
 // deploySleep waits between status checks. Tests replace it.
 var deploySleep = time.Sleep
 
-// waitForDeploy calls check until the deploy is done or check fails,
-// waiting DeployPollInterval between calls.
-func waitForDeploy(check func() (ForceCheckDeploymentStatusResult, error)) (results ForceCheckDeploymentStatusResult, err error) {
+// PollDeployStatus calls check until the deploy is done, waiting
+// deployPollInterval between calls. After an error it waits deployPollMax and
+// calls check again, and it returns the error once check has failed more than
+// retries times in a row. The full wait gives a transient failure time to
+// clear even on the first check, when deployPollInterval is shortest.
+func PollDeployStatus(check func() (ForceCheckDeploymentStatusResult, error), retries int) (results ForceCheckDeploymentStatusResult, err error) {
+	failures := 0
 	for waits := 0; ; waits++ {
 		results, err = check()
-		if err != nil || results.Done {
+		if err != nil {
+			if failures >= retries {
+				return
+			}
+			failures++
+			Log.Info(fmt.Sprintf("Received error checking deploy status: %s.  Retrying in %s.", err.Error(), deployPollMax))
+			deploySleep(deployPollMax)
+			continue
+		}
+		failures = 0
+		if results.Done {
 			return
 		}
 		Log.Info(results)
-		deploySleep(DeployPollInterval(waits))
+		deploySleep(deployPollInterval(waits))
 	}
 }
 
 // waitForStatus calls get until the asynchronous operation is done or get
-// fails, waiting DeployPollInterval between calls.
+// fails, waiting deployPollInterval between calls.
 func waitForStatus(get func() (MetadataDeployStatus, error)) error {
 	for waits := 0; ; waits++ {
 		status, err := get()
@@ -773,7 +787,7 @@ func waitForStatus(get func() (MetadataDeployStatus, error)) error {
 		case err != nil:
 			return err
 		case !status.Done:
-			wait := DeployPollInterval(waits)
+			wait := deployPollInterval(waits)
 			Log.Info(fmt.Sprintf("Not done yet: %s  Will check again in %s.", status.State, wait))
 			deploySleep(wait)
 		case status.State == "Error":
@@ -1345,9 +1359,9 @@ func (fm *ForceMetadata) DeployZipFile(zipfile []byte, options ForceDeployOption
 	if err != nil {
 		return results, err
 	}
-	return waitForDeploy(func() (ForceCheckDeploymentStatusResult, error) {
+	return PollDeployStatus(func() (ForceCheckDeploymentStatusResult, error) {
 		return fm.CheckDeployStatus(deployId)
-	})
+	}, 0)
 }
 
 func deploySoapBody(zipfile []byte, options ForceDeployOptions) string {
@@ -1390,9 +1404,9 @@ func (fm *ForceMetadata) DeployRecentValidation(validationId string) (results Fo
 	if err = xml.Unmarshal(body, &status); err != nil {
 		return
 	}
-	return waitForDeploy(func() (ForceCheckDeploymentStatusResult, error) {
+	return PollDeployStatus(func() (ForceCheckDeploymentStatusResult, error) {
 		return fm.CheckDeployStatus(status.Id)
-	})
+	}, 0)
 }
 
 func (fm *ForceMetadata) RetrieveByPackageXml(package_xml string) (ForceMetadataFiles, []string, error) {
