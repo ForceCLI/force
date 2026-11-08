@@ -39,30 +39,13 @@ func defaultDeployOutputOptions() *deployOutputOptions {
 var testFailureError = errors.New("Apex tests failed")
 
 func monitorDeploy(deployId string) (ForceCheckDeploymentStatusResult, error) {
-	var result ForceCheckDeploymentStatusResult
-	var err error
-	retrying := false
-	for {
-		result, err = force.Metadata.CheckDeployStatus(deployId)
-		if err != nil {
-			if retrying {
-				return result, fmt.Errorf("Error getting deploy status: %w", err)
-			} else {
-				retrying = true
-				Log.Info(fmt.Sprintf("Received error checking deploy status: %s.  Will retry once before aborting.", err.Error()))
-			}
-		} else {
-			retrying = false
-		}
-		if result.Done {
-			break
-		}
-		if !retrying {
-			Log.Info(result)
-		}
-		time.Sleep(5000 * time.Millisecond)
+	result, err := PollDeployStatus(func() (ForceCheckDeploymentStatusResult, error) {
+		return force.Metadata.CheckDeployStatus(deployId)
+	}, 1)
+	if err != nil {
+		return result, fmt.Errorf("Error getting deploy status: %w", err)
 	}
-	return result, err
+	return result, nil
 }
 
 func deploy(force *Force, files ForceMetadataFiles, deployOptions *ForceDeployOptions, outputOptions *deployOutputOptions) error {
