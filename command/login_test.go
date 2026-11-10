@@ -1011,6 +1011,7 @@ func TestScratchFeatureIds_AllFeaturesDefined(t *testing.T) {
 		"EnableSetPasswordInApi":                 true,
 		"OrderSaveLogicEnabled":                  true,
 		"PartnerCommunity":                       true,
+		"CustomerCommunity":                      true,
 		"CustomerCommunityPlus":                  true,
 		"UsageManagement":                        true,
 		"BillingAdvanced":                        true,

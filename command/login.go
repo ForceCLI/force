@@ -48,6 +48,7 @@ const (
 	EnableSetPasswordInApi
 	OrderSaveLogicEnabled
 	PartnerCommunity
+	CustomerCommunity
 	CustomerCommunityPlus
 	UsageManagement
 	BillingAdvanced
@@ -146,6 +147,7 @@ var ScratchFeatureIds = map[ScratchFeature][]string{
 	EnableSetPasswordInApi:                 {"EnableSetPasswordInApi"},
 	OrderSaveLogicEnabled:                  {"OrderSaveLogicEnabled"},
 	PartnerCommunity:                       {"PartnerCommunity"},
+	CustomerCommunity:                      {"CustomerCommunity"},
 	CustomerCommunityPlus:                  {"CustomerCommunityPlus"},
 	UsageManagement:                        {"UsageManagement"},
 	BillingAdvanced:                        {"BillingAdvanced"},
@@ -619,6 +621,7 @@ Available Features:
   Communities                         - Enables Experience Cloud (Communities)
   ContactsToMultipleAccounts          - Allows a single Contact to be associated with multiple Accounts
   CoreCpq                             - Enables Revenue Cloud / Salesforce CPQ Core
+  CustomerCommunity                   - Enables Customer Community user licenses
   CustomerCommunityPlus               - Enables Customer Community Plus user licenses
   DataProcessingEngine                - Enables Data Processing Engine
   DecisionTable                       - Enables Decision Table
