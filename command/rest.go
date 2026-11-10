@@ -15,6 +15,7 @@ func init() {
 	restCmd.AddCommand(restPostCmd)
 	restCmd.AddCommand(restPatchCmd)
 	restCmd.AddCommand(restPutCmd)
+	restCmd.AddCommand(restDeleteCmd)
 	restCmd.PersistentFlags().BoolP("absolute", "A", false, "use URL as-is (do not prepend /services/data/vXX.0)")
 	RootCmd.AddCommand(restCmd)
 }
@@ -28,6 +29,7 @@ var restCmd = &cobra.Command{
   force rest get -a /services/data/
   force rest post "/tooling/sobjects/CustomField/00D9A0000000TgcUAE" path/to/definition.json
   force rest put "/tooling/sobjects/CustomField/00D9A0000000TgcUAE" path/to/definition.json
+  force rest delete "/sobjects/Account/001D000000INjVe"
 `,
 }
 
@@ -76,6 +78,20 @@ var restPutCmd = &cobra.Command{
 	},
 }
 
+var restDeleteCmd = &cobra.Command{
+	Use:   "delete <url>",
+	Short: "Execute a REST DELETE request",
+	Args:  cobra.ExactArgs(1),
+	Example: `
+  force rest delete "/sobjects/Account/001D000000INjVe"
+  force rest delete /connect/referral-management/assignment-rules/My_Rule
+`,
+	Run: func(cmd *cobra.Command, args []string) {
+		absolute, _ := cmd.Flags().GetBool("absolute")
+		runDelete(args[0], absolute)
+	},
+}
+
 type postPatchPutFn func(url string, input []byte, absolute bool)
 
 func runPostPatchPut(fn postPatchPutFn, cmd *cobra.Command, args []string) {
@@ -105,6 +121,22 @@ func runGet(url string, absolute bool) {
 		ErrorAndExit(err.Error())
 	}
 	fmt.Println(data)
+}
+
+func runDelete(url string, absolute bool) {
+	var (
+		data string
+		err  error
+	)
+	if absolute {
+		data, err = force.DeleteAbsolute(url)
+	} else {
+		data, err = force.DeleteREST(url)
+	}
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
+	fmt.Printf("DELETE %s\n%s\n", url, data)
 }
 
 func makePostPatchPut(action string) postPatchPutFn {

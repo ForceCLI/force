@@ -1442,6 +1442,20 @@ func (f *Force) GetREST(url string) (result string, err error) {
 	return string(body), err
 }
 
+// DeleteREST sends a DELETE request to a URL relative to the REST API root
+// (/services/data/vXX.0) and returns the response body.
+func (f *Force) DeleteREST(url string) (result string, err error) {
+	body, err := f.makeHttpRequestSync(NewRequest("DELETE").RestUrl(url))
+	return string(body), err
+}
+
+// DeleteAbsolute sends a DELETE request to a URL relative to the instance
+// and returns the response body.
+func (f *Force) DeleteAbsolute(url string) (result string, err error) {
+	body, err := f.makeHttpRequestSync(NewRequest("DELETE").RootUrl(url))
+	return string(body), err
+}
+
 func (f *Force) PostPatchAbsolute(url string, content string, method string) (result string, err error) {
 	if method == "POST" {
 		return f.PostAbsolute(url, content)

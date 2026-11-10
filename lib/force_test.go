@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -314,6 +315,86 @@ func TestDeleteRecord(t *testing.T) {
 
 	if err != nil {
 		t.Fatalf("DeleteRecord returned error: %v", err)
+	}
+}
+
+func TestDeleteREST(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "DELETE" {
+			t.Errorf("Expected DELETE request, got %s", r.Method)
+		}
+		expectedPath := "/services/data/" + ApiVersion() + "/connect/referral-management/assignment-rules/My_Rule"
+		if r.URL.Path != expectedPath {
+			t.Errorf("Expected path %s, got %s", expectedPath, r.URL.Path)
+		}
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer server.Close()
+
+	force := &Force{
+		Credentials: &ForceSession{
+			InstanceUrl: server.URL,
+			AccessToken: "test-token",
+		},
+	}
+
+	body, err := force.DeleteREST("/connect/referral-management/assignment-rules/My_Rule")
+	if err != nil {
+		t.Fatalf("DeleteREST returned error: %v", err)
+	}
+	if body != "" {
+		t.Errorf("Expected an empty body, got %q", body)
+	}
+}
+
+func TestDeleteAbsolute(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "DELETE" {
+			t.Errorf("Expected DELETE request, got %s", r.Method)
+		}
+		if r.URL.Path != "/services/apexrest/widgets/1" {
+			t.Errorf("Expected path /services/apexrest/widgets/1, got %s", r.URL.Path)
+		}
+		w.Write([]byte(`{"deleted":true}`))
+	}))
+	defer server.Close()
+
+	force := &Force{
+		Credentials: &ForceSession{
+			InstanceUrl: server.URL,
+			AccessToken: "test-token",
+		},
+	}
+
+	body, err := force.DeleteAbsolute("/services/apexrest/widgets/1")
+	if err != nil {
+		t.Fatalf("DeleteAbsolute returned error: %v", err)
+	}
+	if body != `{"deleted":true}` {
+		t.Errorf("Expected the response body, got %q", body)
+	}
+}
+
+func TestDeleteRESTReportsTheErrorMessage(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte(`[{"errorCode":"NOT_FOUND","message":"The requested resource does not exist"}]`))
+	}))
+	defer server.Close()
+
+	force := &Force{
+		Credentials: &ForceSession{
+			InstanceUrl: server.URL,
+			AccessToken: "test-token",
+		},
+	}
+
+	_, err := force.DeleteREST("/sobjects/Account/001xx000003DGbYAAW")
+	if err == nil {
+		t.Fatal("DeleteREST returned no error for a 404")
+	}
+	if !strings.Contains(err.Error(), "The requested resource does not exist") {
+		t.Errorf("Expected the response message in the error, got %v", err)
 	}
 }
 
