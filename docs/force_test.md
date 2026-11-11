@@ -16,6 +16,13 @@ Examples:
   force test -class=Test1 method1 method2
   force test -v Test1
   force test --integration MyIntegrationTest
+  force test --debug Test1.method1
+
+With --debug, the tests run while your DEVELOPER_LOG trace flag uses the
+Force_CLI_Replay debug level, which logs APEX_CODE at FINEST. After the
+results are shown, the debug log of the run opens in the replay debugger
+described in "force log debug". All of the tests in the run share one log.
+The trace flag is restored when the tests finish.
 
 
 ```
@@ -26,6 +33,7 @@ force test (all | classname... | classname.method...) [flags]
 
 ```
   -c, --class string        class to run tests from
+      --debug               replay the test run in the debugger after showing the results (see force log debug)
   -h, --help                help for test
       --integration         run an @IntegrationTest class asynchronously via the Tooling API
   -n, --namespace string    namespace to run tests in

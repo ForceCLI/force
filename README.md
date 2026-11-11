@@ -295,6 +295,51 @@ version of a stored session.
         
       force apiversion nn.0
 
+### log debug
+Replay an Apex debug log in a terminal debugger. The debugger steps through
+the statements recorded in the log, showing the call stack, local and static
+variables, and `System.debug` output at each statement. Breakpoints can be
+set on any line of a class or trigger that ran in the log.
+
+      force log debug 07L5g00000AbCdEFG    # replay a log from the org
+      force log debug --file apex.log      # replay a log saved to a file
+      force apex --debug script.apex       # run anonymous Apex, then replay it
+      force test --debug CalcTest.addsTwo  # run tests, show results, then replay them
+
+The log must have been captured with `APEX_CODE` at `FINEST`. `force apex
+--debug` and `force test --debug` capture such a log: while the code or tests
+run, your `DEVELOPER_LOG` trace flag uses the `Force_CLI_Replay` debug level
+(created if needed), and afterwards the trace flag gets its previous debug
+level and expiration date back. A trace flag that had already expired is set
+to expire one minute later, because Salesforce does not accept an expiration
+date in the past. All of the tests in a `force test --debug` run share one
+log, fetched by the log ID in the `runTests` result. `--debug` cannot be
+combined with `force apex --test` or `force test --integration`.
+
+Class and
+trigger source is fetched from the org by the ID recorded in the log, so a
+class changed after the log was captured will show lines that do not match
+the code that ran. Classes in managed packages have no source to show.
+
+Keys: `n` step over, `s` step in, `o` step out, `c` continue, `b` set or
+remove a breakpoint, `f` open a class or trigger, `r` restart, `tab` move
+between panes, `enter` expand a variable, `q` quit.
+
+The numbers of lines on which a statement ran in the log are shown brighter
+than the others. A breakpoint can stop only on those lines; a breakpoint on
+any other line, such as a comment or a constant declared with its value, is
+shown as `○`. Stepping does not stop in the static initialization of a class
+(the assignments to its static variables before the class is first used),
+though a breakpoint there does. Statements that the log records inside
+Salesforce's own methods, such as the `Database.DMLOptions` constructor, are
+skipped, because their line numbers refer to Salesforce's code.
+
+The log records a variable's value only when the variable is assigned. A
+list, set, or map changed by a method such as `add` or `put` keeps the value
+of its last assignment, so collections are shown with the line of that
+assignment (`accounts = []  as of line 109`). Collections above a size limit
+are logged as `List of size 50 too large to display`, without their contents.
+
 
 ### Hacking
 

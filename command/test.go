@@ -1,7 +1,9 @@
 package command
 
 import (
+	"errors"
 	"fmt"
+	"os"
 	"time"
 
 	"strings"
@@ -17,6 +19,7 @@ var (
 	classFlag           string
 	verboselogging      bool
 	integrationTestFlag bool
+	debugTestFlag       bool
 )
 
 func init() {
@@ -25,6 +28,7 @@ func init() {
 	testCmd.Flags().StringP("reporttype", "f", "text", "report type format (text or junit)")
 	testCmd.Flags().StringVarP(&classFlag, "class", "c", "", "class to run tests from")
 	testCmd.Flags().BoolVar(&integrationTestFlag, "integration", false, "run an @IntegrationTest class asynchronously via the Tooling API")
+	testCmd.Flags().BoolVar(&debugTestFlag, "debug", false, "replay the test run in the debugger after showing the results (see force log debug)")
 	RootCmd.AddCommand(testCmd)
 }
 
@@ -43,7 +47,20 @@ Examples:
   force test -class=Test1 method1 method2
   force test -v Test1
   force test --integration MyIntegrationTest
+  force test --debug Test1.method1
+
+With --debug, the tests run while your DEVELOPER_LOG trace flag uses the
+Force_CLI_Replay debug level, which logs APEX_CODE at FINEST. After the
+results are shown, the debug log of the run opens in the replay debugger
+described in "force log debug". All of the tests in the run share one log.
+The trace flag is restored when the tests finish.
 `,
+	Args: func(cmd *cobra.Command, args []string) error {
+		if debugTestFlag && integrationTestFlag {
+			return errors.New("--debug cannot be used with --integration")
+		}
+		return nil
+	},
 
 	Run: func(cmd *cobra.Command, args []string) {
 		reportFormat, _ := cmd.Flags().GetString("reporttype")
@@ -124,7 +141,13 @@ func runTests(reportFormat string, args []string) {
 	for i, t := range args {
 		args[i] = strings.Replace(t, "::", ".", 1)
 	}
-	result, err := RunTests(force.Partner, args, namespaceTestFlag)
+	var result TestCoverage
+	var err error
+	if debugTestFlag {
+		result, err = runTestsForReplay(args)
+	} else {
+		result, err = RunTests(force.Partner, args, namespaceTestFlag)
+	}
 
 	if err != nil {
 		ErrorAndExit(err.Error())
@@ -142,6 +165,7 @@ func runTests(reportFormat string, args []string) {
 			ErrorAndExit(err.Error())
 		}
 		fmt.Println(output)
+		replayTestLog(result)
 		return
 	default:
 		results := GenerateResults(result)
@@ -150,9 +174,47 @@ func runTests(reportFormat string, args []string) {
 		success := len(result.FMethodNames) == 0
 		// Handle notifications
 		notify.NotifySuccess("test", success)
+		replayTestLog(result)
 		if !success {
 			ErrorAndExit("Tests Failed")
 		}
+	}
+}
+
+// runTestsForReplay runs tests while the user's trace flag logs Apex at
+// FINEST, and returns the results with the debug log of the run, fetched by
+// the log ID in the runTests result.
+func runTestsForReplay(tests []string) (TestCoverage, error) {
+	restore, err := force.EnableReplayTraceFlag()
+	if err != nil {
+		return TestCoverage{}, err
+	}
+	result, err := RunTests(force.Partner, tests, namespaceTestFlag)
+	restoreTraceFlag(restore)
+	if err != nil {
+		return result, err
+	}
+	if result.ApexLogId == "" {
+		return result, errors.New("the test run did not return a debug log ID")
+	}
+	result.Log, err = force.RetrieveLog(result.ApexLogId)
+	return result, err
+}
+
+// restoreTraceFlag puts back the trace flag changed for the replay
+// debugger. A failure is reported without stopping the command.
+func restoreTraceFlag(restore func() error) {
+	if err := restore(); err != nil {
+		fmt.Fprintf(os.Stderr, "WARNING: %v\n", err)
+	}
+}
+
+func replayTestLog(result TestCoverage) {
+	if !debugTestFlag {
+		return
+	}
+	if err := replayLog(result.Log); err != nil {
+		ErrorAndExit(err.Error())
 	}
 }
 

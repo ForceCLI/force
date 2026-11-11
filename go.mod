@@ -16,6 +16,7 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.2.3
 	github.com/hamba/avro/v2 v2.16.0
 	github.com/linkedin/goavro/v2 v2.12.0
+	github.com/mattn/go-runewidth v0.0.15
 	github.com/obeattie/ohmyglob v0.0.0-20150811221449-290764208a0d
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/onsi/ginkgo v1.12.0
@@ -57,7 +58,6 @@ require (
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/mattn/go-isatty v0.0.18 // indirect
 	github.com/mattn/go-localereader v0.0.1 // indirect
-	github.com/mattn/go-runewidth v0.0.15 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect

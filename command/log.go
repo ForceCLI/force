@@ -2,17 +2,25 @@ package command
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"os"
+	"strings"
 
+	"github.com/ForceCLI/force/bubbles"
 	. "github.com/ForceCLI/force/error"
 	. "github.com/ForceCLI/force/lib"
+	"github.com/ForceCLI/force/lib/apexlog"
 	"github.com/ForceCLI/force/lib/bayeux"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
 )
 
 func init() {
+	debugLogCmd.Flags().StringP("file", "f", "", "read the log from a file instead of fetching it from the org")
 	logCmd.AddCommand(deleteLogCmd)
 	logCmd.AddCommand(tailLogCmd)
+	logCmd.AddCommand(debugLogCmd)
 	RootCmd.AddCommand(logCmd)
 }
 
@@ -24,6 +32,7 @@ var logCmd = &cobra.Command{
   force log <id>
   force log delete <id>
   force log tail
+  force log debug <id>
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 || args[0] == "list" {
@@ -60,6 +69,147 @@ var tailLogCmd = &cobra.Command{
 	},
 	Args:                  cobra.ExactArgs(0),
 	DisableFlagsInUseLine: true,
+}
+
+var debugLogCmd = &cobra.Command{
+	Use:   "debug [logId]",
+	Short: "Replay a debug log in a terminal debugger",
+	Long: `Replay a debug log in a terminal debugger.
+
+The log must have been captured with APEX_CODE at FINEST; at lower levels
+the log does not record each statement or variable assignment.
+"force apex --debug" and "force test --debug" set your trace flag to this
+level while they run, then open the log of the run in the debugger.
+
+The source of each class and trigger is fetched from the org by the ID
+recorded in the log. If a class has been changed since the log was
+captured, the lines shown will not match the code that ran. The source of
+anonymous Apex is read from the log.
+
+Keys:
+  n          step over
+  s          step in
+  o          step out
+  c          continue to the next breakpoint
+  b          set or remove a breakpoint on the line under the cursor
+  f          open a class or trigger from the log
+  r          restart from the beginning of the log
+  tab        move between the source, call stack, and variables panes
+  up/down    move within the focused pane
+  enter      expand or collapse a variable
+  q          quit
+`,
+	Example: `
+  force log debug 07L5g00000AbCdEFG
+  force log debug --file apex.log
+`,
+	Args: func(cmd *cobra.Command, args []string) error {
+		file, _ := cmd.Flags().GetString("file")
+		switch {
+		case file != "" && len(args) > 0:
+			return errors.New("specify a log ID or --file, not both")
+		case file == "" && len(args) != 1:
+			return errors.New("specify a log ID or --file")
+		}
+		return nil
+	},
+	Run: func(cmd *cobra.Command, args []string) {
+		file, _ := cmd.Flags().GetString("file")
+		logId := ""
+		if len(args) > 0 {
+			logId = args[0]
+		}
+		debugLog(logId, file)
+	},
+}
+
+func debugLog(logId string, file string) {
+	var content string
+	if file != "" {
+		b, err := os.ReadFile(file)
+		if err != nil {
+			ErrorAndExit(err.Error())
+		}
+		content = string(b)
+	} else {
+		var err error
+		content, err = force.RetrieveLog(logId)
+		if err != nil {
+			ErrorAndExit(err.Error())
+		}
+	}
+	if err := replayLog(content); err != nil {
+		ErrorAndExit(err.Error())
+	}
+}
+
+// replayLog opens a debug log in the terminal debugger. Keys are read from
+// the terminal rather than stdin, so the debugger also works after Apex code
+// has been read from stdin.
+func replayLog(content string) error {
+	if strings.TrimSpace(content) == "" {
+		return errors.New("no debug log to replay")
+	}
+	log, err := apexlog.Parse(strings.NewReader(content))
+	if err != nil {
+		return err
+	}
+	session, err := apexlog.NewSession(log)
+	if err != nil {
+		return err
+	}
+	sources, err := debugSources(session)
+	if err != nil {
+		return err
+	}
+	p := tea.NewProgram(bubbles.NewLogDebugModel(session, sources), tea.WithAltScreen(), tea.WithInputTTY())
+	_, err = p.Run()
+	return err
+}
+
+// debugSources returns the source of the anonymous Apex, classes, and
+// triggers that ran in a log. Class and trigger source is fetched from the
+// org.
+func debugSources(session *apexlog.Session) (map[string]bubbles.DebugSource, error) {
+	sources := map[string]bubbles.DebugSource{}
+	var ids []string
+	names := map[string]string{}
+	for _, ref := range session.Sources() {
+		if ref.Key == apexlog.AnonymousKey {
+			sources[ref.Key] = bubbles.DebugSource{Name: ref.Name, Lines: session.Log().Header.AnonymousSource}
+			continue
+		}
+		ids = append(ids, ref.Key)
+		names[ref.Key] = ref.Name
+	}
+	if len(ids) == 0 {
+		return sources, nil
+	}
+	found, err := force.ApexSourceByID(ids)
+	if err != nil {
+		return nil, err
+	}
+	for _, id := range ids {
+		name := names[id]
+		source, ok := found[id]
+		switch {
+		case !ok:
+			sources[id] = bubbles.DebugSource{Name: name, Missing: fmt.Sprintf("Source for %s (%s) was not found in the org.", name, id)}
+		case source.Hidden:
+			sources[id] = bubbles.DebugSource{Name: qualifiedApexName(source), Missing: "Source is hidden because the class is in a managed package."}
+		default:
+			body := strings.ReplaceAll(source.Body, "\r\n", "\n")
+			sources[id] = bubbles.DebugSource{Name: qualifiedApexName(source), Lines: strings.Split(body, "\n")}
+		}
+	}
+	return sources, nil
+}
+
+func qualifiedApexName(source ApexSource) string {
+	if source.NamespacePrefix != "" {
+		return source.NamespacePrefix + "." + source.Name
+	}
+	return source.Name
 }
 
 func getAllLogs() {

@@ -14,6 +14,7 @@ force log
   force log <id>
   force log delete <id>
   force log tail
+  force log debug <id>
 
 ```
 
@@ -34,6 +35,7 @@ force log
 ### SEE ALSO
 
 * [force](force.md)	 - force CLI
+* [force log debug](force_log_debug.md)	 - Replay a debug log in a terminal debugger
 * [force log delete](force_log_delete.md)	 - Delete debug logs
 * [force log tail](force_log_tail.md)	 - Stream debug logs
 

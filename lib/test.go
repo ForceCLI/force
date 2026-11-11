@@ -18,6 +18,7 @@ type TestRunner interface {
 
 type TestCoverage struct {
 	Log                       string   `xml:"Header>DebuggingInfo>debugLog"`
+	ApexLogId                 string   `xml:"Body>runTestsResponse>result>apexLogId"`
 	NumberRun                 int      `xml:"Body>runTestsResponse>result>numTestsRun"`
 	NumberFailures            int      `xml:"Body>runTestsResponse>result>numFailures"`
 	NumberLocations           []int    `xml:"Body>runTestsResponse>result>codeCoverage>numLocations"`

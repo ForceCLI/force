@@ -9,11 +9,33 @@ import (
 
 type ForcePartner struct {
 	Force *Force
+	// debuggingHeader replaces debugOnlyHeader in Apex API calls when set.
+	debuggingHeader string
 }
+
+const debugOnlyHeader = "<apex:DebuggingHeader><apex:debugLevel>DEBUGONLY</apex:debugLevel></apex:DebuggingHeader>"
+
+// replayDebuggingHeader asks for Apex_code at Finest, which logs each
+// statement and variable assignment that the replay debugger steps through.
+// Apex_profiling at Info adds the cumulative limit usage.
+const replayDebuggingHeader = "<apex:DebuggingHeader>" +
+	"<apex:categories><apex:category>Apex_code</apex:category><apex:level>Finest</apex:level></apex:categories>" +
+	"<apex:categories><apex:category>Visualforce</apex:category><apex:level>Finer</apex:level></apex:categories>" +
+	"<apex:categories><apex:category>Apex_profiling</apex:category><apex:level>Info</apex:level></apex:categories>" +
+	"</apex:DebuggingHeader>"
 
 func NewForcePartner(force *Force) (partner *ForcePartner) {
 	partner = &ForcePartner{Force: force}
 	return
+}
+
+// WithReplayDebugging returns a copy of partner whose Apex API calls, such as
+// executeAnonymous and runTests, return a debug log that can be replayed in
+// the debugger. No trace flag is needed; the log comes back in the response.
+func (partner *ForcePartner) WithReplayDebugging() *ForcePartner {
+	p := *partner
+	p.debuggingHeader = replayDebuggingHeader
+	return &p
 }
 
 func (partner *ForcePartner) CheckStatus(id string) (err error) {
@@ -139,7 +161,7 @@ func parseCompileAndTestResponse(body []byte) (output string, err error) {
 func (partner *ForcePartner) SoapExecuteCore(action, query string) (response []byte, err error) {
 	url := fmt.Sprintf("%s/services/Soap/u/%s/%s", partner.Force.Credentials.InstanceUrl, partner.Force.Credentials.SessionOptions.ApiVersion, partner.Force.Credentials.UserInfo.OrgId)
 	soap := NewSoap(url, "urn:partner.soap.sforce.com", partner.Force.Credentials.AccessToken)
-	soap.Header = "<apex:DebuggingHeader><apex:debugLevel>DEBUGONLY</apex:debugLevel></apex:DebuggingHeader>"
+	soap.Header = debugOnlyHeader
 	response, err = soap.Execute(action, query)
 	if err == SessionExpiredError {
 		partner.Force.RefreshSessionOrExit()
@@ -151,7 +173,10 @@ func (partner *ForcePartner) SoapExecuteCore(action, query string) (response []b
 func (partner *ForcePartner) soapExecute(action, query string) (response []byte, err error) {
 	url := fmt.Sprintf("%s/services/Soap/s/%s/%s", partner.Force.Credentials.InstanceUrl, partner.Force.Credentials.SessionOptions.ApiVersion, partner.Force.Credentials.UserInfo.OrgId)
 	soap := NewSoap(url, "http://soap.sforce.com/2006/08/apex", partner.Force.Credentials.AccessToken)
-	soap.Header = "<apex:DebuggingHeader><apex:debugLevel>DEBUGONLY</apex:debugLevel></apex:DebuggingHeader>"
+	soap.Header = debugOnlyHeader
+	if partner.debuggingHeader != "" {
+		soap.Header = partner.debuggingHeader
+	}
 	response, err = soap.Execute(action, query)
 	if err == SessionExpiredError {
 		partner.Force.RefreshSessionOrExit()
