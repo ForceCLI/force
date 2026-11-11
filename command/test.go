@@ -20,6 +20,8 @@ var (
 	verboselogging      bool
 	integrationTestFlag bool
 	debugTestFlag       bool
+	checkpointFlag      []string
+	webTestFlag         bool
 )
 
 func init() {
@@ -29,6 +31,8 @@ func init() {
 	testCmd.Flags().StringVarP(&classFlag, "class", "c", "", "class to run tests from")
 	testCmd.Flags().BoolVar(&integrationTestFlag, "integration", false, "run an @IntegrationTest class asynchronously via the Tooling API")
 	testCmd.Flags().BoolVar(&debugTestFlag, "debug", false, "replay the test run in the debugger after showing the results (see force log debug)")
+	testCmd.Flags().StringArrayVar(&checkpointFlag, "checkpoint", nil, "with --debug, "+checkpointFlagUsage)
+	testCmd.Flags().BoolVar(&webTestFlag, "web", false, "with --debug, "+webFlagUsage)
 	RootCmd.AddCommand(testCmd)
 }
 
@@ -48,6 +52,7 @@ Examples:
   force test -v Test1
   force test --integration MyIntegrationTest
   force test --debug Test1.method1
+  force test --debug --checkpoint MyClass:42 Test1.method1
 
 With --debug, the tests run while your DEVELOPER_LOG trace flag uses the
 Force_CLI_Replay debug level, which logs APEX_CODE at FINEST. After the
@@ -58,6 +63,15 @@ The trace flag is restored when the tests finish.
 	Args: func(cmd *cobra.Command, args []string) error {
 		if debugTestFlag && integrationTestFlag {
 			return errors.New("--debug cannot be used with --integration")
+		}
+		if len(checkpointFlag) > 0 && !debugTestFlag {
+			return errors.New("--checkpoint requires --debug")
+		}
+		if webTestFlag && !debugTestFlag {
+			return errors.New("--web requires --debug")
+		}
+		if _, err := parseCheckpoints(checkpointFlag); err != nil {
+			return err
 		}
 		return nil
 	},
@@ -185,6 +199,15 @@ func runTests(reportFormat string, args []string) {
 // FINEST, and returns the results with the debug log of the run, fetched by
 // the log ID in the runTests result.
 func runTestsForReplay(tests []string) (TestCoverage, error) {
+	checkpoints, err := parseCheckpoints(checkpointFlag)
+	if err != nil {
+		return TestCoverage{}, err
+	}
+	removeCheckpoints, err := createCheckpoints(checkpoints)
+	if err != nil {
+		return TestCoverage{}, err
+	}
+	defer removeCheckpoints()
 	restore, err := force.EnableReplayTraceFlag()
 	if err != nil {
 		return TestCoverage{}, err
@@ -213,7 +236,7 @@ func replayTestLog(result TestCoverage) {
 	if !debugTestFlag {
 		return
 	}
-	if err := replayLog(result.Log); err != nil {
+	if err := replayLog(result.Log, webTestFlag); err != nil {
 		ErrorAndExit(err.Error())
 	}
 }

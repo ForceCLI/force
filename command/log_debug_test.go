@@ -70,13 +70,13 @@ func TestDebugSourcesCombinesLogAndOrgSource(t *testing.T) {
 }
 
 func TestReplayLogRejectsAnEmptyLog(t *testing.T) {
-	if err := replayLog("  \n"); err == nil || err.Error() != "no debug log to replay" {
+	if err := replayLog("  \n", false); err == nil || err.Error() != "no debug log to replay" {
 		t.Errorf("err = %v", err)
 	}
 }
 
 func TestReplayLogRejectsALogWithoutFinestApexCode(t *testing.T) {
-	err := replayLog("62.0 APEX_CODE,DEBUG\n12:00:00.1 (1)|CODE_UNIT_STARTED|[EXTERNAL]|execute_anonymous_apex\n")
+	err := replayLog("62.0 APEX_CODE,DEBUG\n12:00:00.1 (1)|CODE_UNIT_STARTED|[EXTERNAL]|execute_anonymous_apex\n", false)
 	var levelErr apexlog.ErrLogLevel
 	if !errors.As(err, &levelErr) || levelErr.Level != "DEBUG" {
 		t.Errorf("err = %v", err)
@@ -161,5 +161,50 @@ func TestRunTestsForReplaySetsTraceFlagAndFetchesTheLog(t *testing.T) {
 		!strings.Contains(events[2], `"DebugLevelId":"7dl000000000USR"`) ||
 		events[3] != "log" {
 		t.Errorf("events = %q", events)
+	}
+}
+
+func TestParseCheckpoints(t *testing.T) {
+	checkpoints, err := parseCheckpoints([]string{"Calc:9", "CalcTest:120"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(checkpoints) != 2 || checkpoints[0] != (Checkpoint{Name: "Calc", Line: 9}) || checkpoints[1] != (Checkpoint{Name: "CalcTest", Line: 120}) {
+		t.Errorf("checkpoints = %+v", checkpoints)
+	}
+	for _, bad := range [][]string{{"Calc"}, {"Calc:"}, {":9"}, {"Calc:0"}, {"Calc:x"}, {"A:1", "B:2", "C:3", "D:4", "E:5", "F:6"}} {
+		if _, err := parseCheckpoints(bad); err == nil {
+			t.Errorf("%v: expected an error", bad)
+		}
+	}
+}
+
+func TestCheckpointRequiresDebug(t *testing.T) {
+	origDebug, origCheckpoints := debugTestFlag, checkpointFlag
+	t.Cleanup(func() { debugTestFlag, checkpointFlag = origDebug, origCheckpoints })
+	debugTestFlag, checkpointFlag = false, []string{"Calc:9"}
+	if err := testCmd.Args(testCmd, []string{"CalcTest"}); err == nil {
+		t.Error("expected an error for force test --checkpoint without --debug")
+	}
+	debugTestFlag = true
+	if err := testCmd.Args(testCmd, []string{"CalcTest"}); err != nil {
+		t.Errorf("force test --debug --checkpoint: %v", err)
+	}
+	checkpointFlag = []string{"Calc"}
+	if err := testCmd.Args(testCmd, []string{"CalcTest"}); err == nil {
+		t.Error("expected an error for a malformed checkpoint")
+	}
+
+	t.Cleanup(func() {
+		apexCmd.Flags().Set("debug", "false")
+		apexCmd.Flags().Lookup("checkpoint").Value.(interface{ Replace([]string) error }).Replace(nil)
+	})
+	apexCmd.Flags().Set("checkpoint", "Calc:9")
+	if err := apexCmd.Args(apexCmd, nil); err == nil {
+		t.Error("expected an error for force apex --checkpoint without --debug")
+	}
+	apexCmd.Flags().Set("debug", "true")
+	if err := apexCmd.Args(apexCmd, nil); err != nil {
+		t.Errorf("force apex --debug --checkpoint: %v", err)
 	}
 }

@@ -7,6 +7,7 @@ Manage trace flags
 ```
 
   force trace start [user id]
+  force trace start --replay
   force trace list
   force trace delete <id>
 

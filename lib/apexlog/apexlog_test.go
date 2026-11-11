@@ -557,3 +557,224 @@ func TestCollectionsRecordTheLineOfTheirLastAssignment(t *testing.T) {
 		t.Errorf("big = %+v", big)
 	}
 }
+
+func TestStepBackIsTheReverseOfStepOver(t *testing.T) {
+	s := newSession(t)
+	position := func() string { return fmt.Sprintf("%s:%d", s.Top().SourceKey(), s.Top().Line) }
+	var forward []string
+	for s.Resume(StepIn) != StoppedAtEnd {
+		forward = append(forward, position())
+	}
+	want := []string{"anonymous:1", calcID + ":5", calcID + ":6", calcID + ":15", calcID + ":8", "anonymous:2"}
+	if fmt.Sprint(forward) != fmt.Sprint(want) {
+		t.Fatalf("forward = %v", forward)
+	}
+
+	// From the end, back to the last statement, then over the call to
+	// Calc.add back to line 1.
+	for _, w := range []string{"anonymous:2", "anonymous:1"} {
+		if reason := s.StepBack(); reason != StoppedOnStep || position() != w {
+			t.Errorf("reason=%v at %s, want %s", reason, position(), w)
+		}
+	}
+	if reason := s.StepBack(); reason != StoppedAtStart || position() != "anonymous:1" {
+		t.Errorf("at first statement: reason=%v at %s", reason, position())
+	}
+
+	// From line 8, back over the constructor's line 15 to line 6.
+	s.SetBreakpoint(Breakpoint{Source: calcID, Line: 8}, true)
+	s.Restart()
+	s.Resume(Continue)
+	s.StepBack()
+	if position() != calcID+":6" || s.Statement() != 3 {
+		t.Errorf("at %s (statement %d), want %s:6", position(), s.Statement(), calcID)
+	}
+	// From the first statement of a method, back to the caller.
+	s.StepBack()
+	s.StepBack()
+	if position() != "anonymous:1" {
+		t.Errorf("at %s, want anonymous:1", position())
+	}
+}
+
+func TestStepBackRestoresVariablesAndOutput(t *testing.T) {
+	s := newSession(t)
+	for s.Resume(StepIn) != StoppedAtEnd {
+	}
+	output := len(s.Output())
+	s.StepBack()
+	s.StepBack()
+	if len(s.Output()) >= output {
+		t.Errorf("output after stepping back = %d, at end = %d", len(s.Output()), output)
+	}
+	s.SetBreakpoint(Breakpoint{Source: calcID, Line: 6}, true)
+	s.Restart()
+	s.Resume(Continue)
+	s.Resume(StepIn)
+	s.StepBack()
+	if s.Top().Line != 6 || !s.HasBreakpoint(Breakpoint{Source: calcID, Line: 6}) {
+		t.Errorf("line = %d", s.Top().Line)
+	}
+	if _, ok := s.Top().Locals.Get("a"); !ok {
+		t.Error("locals not restored")
+	}
+}
+
+func TestVisualforceControllerCallsAreFrames(t *testing.T) {
+	s := newTestSession(t, strings.Join([]string{
+		"62.0 APEX_CODE,FINEST",
+		"12:00:00.1 (1)|CODE_UNIT_STARTED|[EXTERNAL]|066000000000001|VF: /apex/MyPage",
+		"12:00:00.1 (2)|VF_APEX_CALL_START|[EXTERNAL]|MyController <init>|MyController",
+		"12:00:00.1 (3)|CONSTRUCTOR_ENTRY|[1]|01p5g00000ABCDE|<init>()|MyController",
+		"12:00:00.1 (4)|STATEMENT_EXECUTE|[3]",
+		"12:00:00.1 (5)|CONSTRUCTOR_EXIT|[1]|01p5g00000ABCDE|<init>()|MyController",
+		"12:00:00.1 (6)|VF_APEX_CALL_END|MyController <init>|MyController",
+		"12:00:00.1 (7)|VF_APEX_CALL_START|[EXTERNAL]|MyController get(message)|MyController",
+		"12:00:00.1 (8)|VF_APEX_CALL_START|[EXTERNAL]|MyController invoke(getmessage)|MyController",
+		"12:00:00.1 (9)|STATEMENT_EXECUTE|[5]",
+		"12:00:00.1 (10)|VF_APEX_CALL_END|MyController invoke(getmessage)|MyController",
+		"12:00:00.1 (11)|VF_APEX_CALL_END|MyController get(message)|MyController",
+		"12:00:00.1 (12)|VF_APEX_CALL_START|[EXTERNAL]|MyController invoke(save)|MyController",
+		"12:00:00.1 (13)|STATEMENT_EXECUTE|[8]",
+		"12:00:00.1 (14)|VF_APEX_CALL_END|MyController invoke(save)|MyController",
+		"12:00:00.1 (15)|CODE_UNIT_FINISHED|VF: /apex/MyPage",
+	}, "\n"))
+	var stops []string
+	for s.Resume(StepIn) != StoppedAtEnd {
+		var names []string
+		for _, f := range s.Frames() {
+			names = append(names, f.Name)
+		}
+		top := s.Top()
+		stops = append(stops, fmt.Sprintf("%s:%d %s", top.SourceKey(), top.Line, strings.Join(names, " < ")))
+	}
+	want := []string{
+		"01p5g00000ABCDE:3 VF: /apex/MyPage < MyController <init> < new MyController()",
+		"01p5g00000ABCDE:5 VF: /apex/MyPage < MyController.getmessage()",
+		"01p5g00000ABCDE:8 VF: /apex/MyPage < MyController.save()",
+	}
+	if strings.Join(stops, "\n") != strings.Join(want, "\n") {
+		t.Errorf("stops:\n%s\nwant:\n%s", strings.Join(stops, "\n"), strings.Join(want, "\n"))
+	}
+}
+
+// testHeapDump has the structure of the HeapDump field of an
+// ApexExecutionOverlayResult.
+const testHeapDump = `{
+  "className": "Calc",
+  "namespace": "none",
+  "heapDumpDate": "2026-11-11T21:57:43.685+0000",
+  "extents": [
+    {"typeName": "Account", "collectionType": null, "count": 2, "definition": [], "totalSize": 0, "extent": [
+      {"address": "0x71ecde6d", "isStatic": false, "symbols": null, "size": 0, "value": {"entry": [
+        {"keyDisplayValue": "Name", "value": {"value": "Acme 0"}},
+        {"keyDisplayValue": "NumberOfEmployees", "value": {"value": 10}}
+      ]}},
+      {"address": "0x6c313b45", "isStatic": false, "symbols": null, "size": 0, "value": {"entry": [
+        {"keyDisplayValue": "Name", "value": {"value": "Acme 1"}},
+        {"keyDisplayValue": "NumberOfEmployees", "value": {"value": null}}
+      ]}}
+    ]},
+    {"typeName": "List<Account>", "collectionType": "Account", "count": 1, "definition": [], "totalSize": 0, "extent": [
+      {"address": "0x6c3d5e81", "isStatic": false, "symbols": ["accounts"], "size": 0, "value": {"value": [{"value": "0x71ecde6d"}, {"value": "0x6c313b45"}]}}
+    ]},
+    {"typeName": "List<String>", "collectionType": "String", "count": 1, "definition": [], "totalSize": 0, "extent": [
+      {"address": "0x11111111", "isStatic": false, "symbols": ["names"], "size": 0, "value": {"value": [{"value": "0x22222222"}]}}
+    ]},
+    {"typeName": "Integer", "collectionType": null, "count": 1, "definition": [{"name": "value", "type": "Double"}], "totalSize": 0, "extent": [
+      {"address": "0x7428ab", "isStatic": false, "symbols": ["count", "Calc.LIMIT"], "size": 0, "value": {"value": 2}}
+    ]},
+    {"typeName": "String", "collectionType": null, "count": 2, "definition": [{"name": "stringValue", "type": "char[]"}], "totalSize": 0, "extent": [
+      {"address": "0x22222222", "isStatic": false, "symbols": null, "size": 0, "value": {"value": "x|y"}},
+      {"address": "0x33333333", "isStatic": true, "symbols": ["Calc.label"], "size": 0, "value": {"value": "sum"}}
+    ]}
+  ]
+}`
+
+func heapDumpSession(t *testing.T) *Session {
+	t.Helper()
+	s := newTestSession(t, strings.Join([]string{
+		"62.0 APEX_CODE,FINEST",
+		"12:00:00.1 (1)|CODE_UNIT_STARTED|[EXTERNAL]|01p5g00000ABCDE|Calc.run()",
+		"12:00:00.1 (2)|VARIABLE_SCOPE_BEGIN|[3]|accounts|List<Account>|true|false",
+		"12:00:00.1 (3)|VARIABLE_ASSIGNMENT|[3]|accounts|[]|0x6c3d5e81",
+		"12:00:00.1 (4)|STATEMENT_EXECUTE|[3]",
+		"12:00:00.1 (5)|VARIABLE_ASSIGNMENT|[4]|this.Name|\"Acme 0\"|0x71ecde6d",
+		"12:00:00.1 (6)|HEAP_DUMP|[9]|07n000000000001|Calc|none|9",
+		"12:00:00.1 (7)|STATEMENT_EXECUTE|[9]",
+		"12:00:00.1 (8)|STATEMENT_EXECUTE|[10]",
+		"12:00:00.1 (9)|CODE_UNIT_FINISHED|Calc.run()",
+	}, "\n"))
+	if ids := HeapDumpIDs(s.Log()); fmt.Sprint(ids) != "[07n000000000001]" {
+		t.Fatalf("ids = %v", ids)
+	}
+	dump, err := ParseHeapDump([]byte(testHeapDump))
+	if err != nil {
+		t.Fatal(err)
+	}
+	s.AddHeapDump("07n000000000001", dump)
+	return s
+}
+
+func TestHeapDumpReplacesVariablesAtItsStatement(t *testing.T) {
+	s := heapDumpSession(t)
+	s.Resume(StepIn)
+	accounts, _ := s.Top().Locals.Get("accounts")
+	if s.AtHeapDump() || len(s.Children(accounts)) != 0 {
+		t.Fatalf("before the dump: at=%v children=%d", s.AtHeapDump(), len(s.Children(accounts)))
+	}
+
+	s.Resume(StepIn)
+	if !s.AtHeapDump() || s.Top().Line != 9 {
+		t.Fatalf("at=%v line=%d", s.AtHeapDump(), s.Top().Line)
+	}
+	locals := s.Top().Locals
+	accounts, _ = locals.Get("accounts")
+	if accounts.Ref != "0x6c3d5e81" || accounts.Line != 9 || s.ObjectType(accounts.Ref) != "List<Account>" {
+		t.Errorf("accounts = %+v", accounts)
+	}
+	elements := s.Children(accounts)
+	if len(elements) != 2 || elements[0].Name != "[0]" || elements[0].Ref != "0x71ecde6d" {
+		t.Fatalf("elements = %+v", elements)
+	}
+	fields := s.Children(elements[1])
+	if len(fields) != 2 || fields[0].Name != "Name" || fields[0].Value != "'Acme 1'" || fields[1].Value != "null" {
+		t.Errorf("fields = %+v", fields)
+	}
+	names, _ := locals.Get("names")
+	if c := s.Children(names); len(c) != 1 || c[0].Value != "'x|y'" || c[0].Ref != "" {
+		t.Errorf("names = %+v", c)
+	}
+	if count, _ := locals.Get("count"); count.Value != "2" || count.Type != "Integer" {
+		t.Errorf("count = %+v", count)
+	}
+	statics := s.Statics(s.Top())
+	if v, _ := statics.Get("label"); v == nil || v.Value != "'sum'" {
+		t.Errorf("label = %+v", v)
+	}
+	if v, _ := statics.Get("LIMIT"); v == nil || v.Value != "2" {
+		t.Errorf("LIMIT = %+v", v)
+	}
+
+	s.Resume(StepIn)
+	if s.AtHeapDump() {
+		t.Error("AtHeapDump after the next statement")
+	}
+	if accounts, _ := s.Top().Locals.Get("accounts"); len(s.Children(accounts)) != 2 {
+		t.Error("dump contents not kept after the dump's statement")
+	}
+}
+
+func TestHeapDumpIsIgnoredWithoutItsContents(t *testing.T) {
+	s := newTestSession(t, strings.Join([]string{
+		"62.0 APEX_CODE,FINEST",
+		"12:00:00.1 (1)|CODE_UNIT_STARTED|[EXTERNAL]|01p5g00000ABCDE|Calc.run()",
+		"12:00:00.1 (2)|HEAP_DUMP|[9]|07n000000000001|Calc|none|9",
+		"12:00:00.1 (3)|STATEMENT_EXECUTE|[9]",
+		"12:00:00.1 (4)|CODE_UNIT_FINISHED|Calc.run()",
+	}, "\n"))
+	s.Resume(StepIn)
+	if s.AtHeapDump() || s.Top().Locals.Len() != 0 {
+		t.Errorf("at=%v locals=%d", s.AtHeapDump(), s.Top().Locals.Len())
+	}
+}

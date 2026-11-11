@@ -27,15 +27,18 @@ force apex [file] [flags]
   >> Start typing Apex code; press CTRL-D(for Mac/Linux) / Ctrl-Z (for Windows) when finished
 
   force apex --debug ~/test.apex
+  force apex --debug --checkpoint MyClass:42 ~/test.apex
   
 ```
 
 ### Options
 
 ```
-      --debug   replay the execution in the debugger (see force log debug)
-  -h, --help    help for apex
-  -t, --test    run in test context
+      --checkpoint stringArray   with --debug, save a heap dump when execution first reaches a line, given as Class:line; repeat for up to 5 lines
+      --debug                    replay the execution in the debugger (see force log debug)
+  -h, --help                     help for apex
+  -t, --test                     run in test context
+      --web                      with --debug, open the debugger in a browser instead of the terminal
 ```
 
 ### Options inherited from parent commands

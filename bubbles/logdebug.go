@@ -119,6 +119,13 @@ func (m LogDebugModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.afterStop(m.session.Resume(apexlog.StepOut))
 	case "c":
 		m.afterStop(m.session.Resume(apexlog.Continue))
+	case "p":
+		if m.session.StepBack() == apexlog.StoppedAtStart {
+			m.status = "At the first statement"
+			return m, nil
+		}
+		m.afterStop(apexlog.StoppedOnStep)
+		m.status = fmt.Sprintf("Stepped back to statement %d", m.session.Statement())
 	case "r":
 		m.session.Restart()
 		m.afterStop(m.session.Resume(apexlog.StepIn))
@@ -246,6 +253,9 @@ func (m *LogDebugModel) afterStop(reason apexlog.StopReason) {
 		m.status = fmt.Sprintf("Breakpoint at %s line %d", m.sourceName(top.SourceKey(), top.Name), top.Line)
 	default:
 		m.status = "Paused"
+	}
+	if m.session.AtHeapDump() {
+		m.status += "; variables are from the heap dump taken before this line"
 	}
 	m.showSource(top.SourceKey(), top.Line)
 }
@@ -390,7 +400,7 @@ func (m LogDebugModel) View() string {
 		top,
 		m.renderOutput(m.width, l.outputHeight),
 		fit(m.statusLine(), m.width),
-		helpStyle.Render(fit("n next  s step in  o step out  c continue  b breakpoint  f open class  r restart  tab pane  q quit", m.width)),
+		helpStyle.Render(fit("n next  s step in  o step out  c continue  p back  b breakpoint  f open class  r restart  tab pane  q quit", m.width)),
 	)
 }
 
@@ -573,7 +583,14 @@ func (m LogDebugModel) appendVariable(rows []variableRow, path string, v *apexlo
 // rather than from the value written in the log.
 func (m LogDebugModel) displayValue(v *apexlog.Variable, children []*apexlog.Variable) string {
 	if v.Ref != "" && (v.Value == v.Ref || v.Value == "{}") && len(children) > 0 {
-		return fmt.Sprintf("{%d fields}", len(children))
+		summary := fmt.Sprintf("{%d fields}", len(children))
+		if strings.HasPrefix(children[0].Name, "[") {
+			summary = fmt.Sprintf("[%d elements]", len(children))
+		}
+		if t := m.session.ObjectType(v.Ref); t != "" {
+			summary = t + " " + summary
+		}
+		return summary
 	}
 	return strings.ReplaceAll(v.Value, "\n", "\\n")
 }

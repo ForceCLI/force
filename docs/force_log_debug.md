@@ -16,11 +16,16 @@ recorded in the log. If a class has been changed since the log was
 captured, the lines shown will not match the code that ran. The source of
 anonymous Apex is read from the log.
 
+With --web, the debugger opens in a browser instead of the terminal. It is
+served on 127.0.0.1 until the page's Quit button is pressed or force is
+stopped with Ctrl-C. Click a line number to set or remove a breakpoint.
+
 Keys:
   n          step over
   s          step in
   o          step out
   c          continue to the next breakpoint
+  p          step back to the previous statement in this method or a caller
   b          set or remove a breakpoint on the line under the cursor
   f          open a class or trigger from the log
   r          restart from the beginning of the log
@@ -40,6 +45,7 @@ force log debug [logId] [flags]
 
   force log debug 07L5g00000AbCdEFG
   force log debug --file apex.log
+  force log debug --web 07L5g00000AbCdEFG
 
 ```
 
@@ -48,6 +54,7 @@ force log debug [logId] [flags]
 ```
   -f, --file string   read the log from a file instead of fetching it from the org
   -h, --help          help for debug
+      --web           open the debugger in a browser instead of the terminal
 ```
 
 ### Options inherited from parent commands

@@ -8,6 +8,7 @@ import (
 )
 
 func init() {
+	traceStartCmd.Flags().Bool("replay", false, "log Apex at FINEST, so that logs can be opened with force log debug")
 	traceCmd.AddCommand(traceStartCmd)
 	traceCmd.AddCommand(traceListCmd)
 	traceCmd.AddCommand(traceDeleteCmd)
@@ -17,9 +18,17 @@ func init() {
 var traceStartCmd = &cobra.Command{
 	Use:   "start [user id]",
 	Short: "Set trace flag",
-	Args:  cobra.MaximumNArgs(1),
+	Long: `Set trace flag
+
+Without a user id, the trace flag is for the current user. The trace flag
+uses the Force_CLI debug level, which logs Apex at FINE. With --replay, it uses
+the Force_CLI_Replay debug level, which logs Apex at FINEST, the level that
+force log debug needs to step through a log.
+`,
+	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		runStartTrace(args...)
+		replay, _ := cmd.Flags().GetBool("replay")
+		runStartTrace(replay, args...)
 	},
 }
 
@@ -46,6 +55,7 @@ var traceCmd = &cobra.Command{
 	Short: "Manage trace flags",
 	Example: `
   force trace start [user id]
+  force trace start --replay
   force trace list
   force trace delete <id>
 `,
@@ -59,8 +69,12 @@ func runQueryTrace() {
 	force.DisplayAllForceRecordsf(result, "json-pretty")
 }
 
-func runStartTrace(userId ...string) {
-	_, err, _ := force.StartTrace(userId...)
+func runStartTrace(replay bool, userId ...string) {
+	start := force.StartTrace
+	if replay {
+		start = force.StartReplayTrace
+	}
+	_, err, _ := start(userId...)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}

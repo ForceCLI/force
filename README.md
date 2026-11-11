@@ -303,6 +303,8 @@ set on any line of a class or trigger that ran in the log.
 
       force log debug 07L5g00000AbCdEFG    # replay a log from the org
       force log debug --file apex.log      # replay a log saved to a file
+      force trace start --replay           # log Apex at FINEST for later replay
+      force log debug --web 07L5g00000AbCdEFG  # replay a log in a browser
       force apex --debug script.apex       # run anonymous Apex, then replay it
       force test --debug CalcTest.addsTwo  # run tests, show results, then replay them
 
@@ -314,14 +316,16 @@ level and expiration date back. A trace flag that had already expired is set
 to expire one minute later, because Salesforce does not accept an expiration
 date in the past. All of the tests in a `force test --debug` run share one
 log, fetched by the log ID in the `runTests` result. `--debug` cannot be
-combined with `force apex --test` or `force test --integration`.
+combined with `force apex --test`, whose test run Salesforce does not log, or
+with `force test --integration`.
 
 Class and
 trigger source is fetched from the org by the ID recorded in the log, so a
 class changed after the log was captured will show lines that do not match
 the code that ran. Classes in managed packages have no source to show.
 
-Keys: `n` step over, `s` step in, `o` step out, `c` continue, `b` set or
+Keys: `n` step over, `s` step in, `o` step out, `c` continue, `p` step back
+to the previous statement in the current method or a caller, `b` set or
 remove a breakpoint, `f` open a class or trigger, `r` restart, `tab` move
 between panes, `enter` expand a variable, `q` quit.
 
@@ -339,6 +343,27 @@ list, set, or map changed by a method such as `add` or `put` keeps the value
 of its last assignment, so collections are shown with the line of that
 assignment (`accounts = []  as of line 109`). Collections above a size limit
 are logged as `List of size 50 too large to display`, without their contents.
+
+`--web`, on `force log debug` and with `--debug` on `force apex` and `force
+test`, opens the debugger in a browser instead of the terminal. It is served
+on 127.0.0.1, with a random token in the URL that the page sends with each
+request, until the page's Quit button is pressed or force is stopped with
+Ctrl-C. Clicking a line number sets or removes a breakpoint, and the keys are
+the same as in the terminal.
+
+To see the full contents of variables at a line, set a checkpoint there.
+Salesforce saves a heap dump the first time execution reaches the line, and
+the debugger shows the variables, objects, and collections from the dump at
+that statement:
+
+      force test --debug --checkpoint AccountService:42 AccountServiceTest
+      force apex --debug --checkpoint AccountService:42 script.apex
+
+A checkpoint is given as `Class:line`, and up to 5 can be set; Salesforce
+allows a user 5 checkpoints, including any set in VS Code. The checkpoints
+are deleted after the run. `force log debug` also fetches the heap dumps of a
+log captured with checkpoints set elsewhere, for as long as Salesforce keeps
+them.
 
 
 ### Hacking

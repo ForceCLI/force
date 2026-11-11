@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Apex Replay Debugger</title>
+<style>
+:root {
+	--bg: #ffffff;
+	--panel: #f6f7f9;
+	--border: #d5d9e0;
+	--text: #1d2330;
+	--muted: #6b7380;
+	--executed: #1d2330;
+	--not-executed: #9aa1ac;
+	--current-bg: #fff3c4;
+	--current-marker: #b07d00;
+	--breakpoint: #d0393e;
+	--selected: #dde7fb;
+	--button: #ffffff;
+	--button-hover: #eef1f5;
+	--value: #0b6e66;
+	--note: #8a919c;
+	--error: #b3261e;
+	--mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+}
+@media (prefers-color-scheme: dark) {
+	:root {
+		--bg: #15181d;
+		--panel: #1c2027;
+		--border: #333a45;
+		--text: #e3e6eb;
+		--muted: #8d95a1;
+		--executed: #e3e6eb;
+		--not-executed: #6a717c;
+		--current-bg: #3b3415;
+		--current-marker: #ffdd57;
+		--breakpoint: #e88388;
+		--selected: #263450;
+		--button: #232832;
+		--button-hover: #2c3340;
+		--value: #89d5c9;
+		--note: #7b838f;
+		--error: #f2b8b5;
+	}
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+	background: var(--bg);
+	color: var(--text);
+	font: 14px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+	display: grid;
+	grid-template-rows: auto auto 1fr;
+}
+header {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	align-items: center;
+	padding: 8px 12px;
+	border-bottom: 1px solid var(--border);
+	background: var(--panel);
+}
+header h1 { font-size: 15px; margin: 0 12px 0 0; font-weight: 600; }
+button, select {
+	font: inherit;
+	color: var(--text);
+	background: var(--button);
+	border: 1px solid var(--border);
+	border-radius: 6px;
+	padding: 4px 10px;
+	cursor: pointer;
+}
+button:hover { background: var(--button-hover); }
+button kbd { font-family: var(--mono); color: var(--muted); margin-left: 4px; font-size: 12px; }
+.spacer { flex: 1; }
+#status {
+	padding: 6px 12px;
+	border-bottom: 1px solid var(--border);
+	font-size: 13px;
+	min-height: 2.2em;
+}
+#status.error { color: var(--error); }
+main {
+	display: grid;
+	grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+	grid-template-rows: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 0.7fr);
+	grid-template-areas: "source stack" "source vars" "output output";
+	min-height: 0;
+}
+section { display: flex; flex-direction: column; min-height: 0; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+section > h2 {
+	font-size: 12px;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: var(--muted);
+	margin: 0;
+	padding: 6px 10px;
+	background: var(--panel);
+	border-bottom: 1px solid var(--border);
+	display: flex;
+	gap: 8px;
+	align-items: center;
+}
+section > h2 .title { color: var(--text); text-transform: none; letter-spacing: 0; font-size: 13px; }
+.scroll { overflow: auto; flex: 1; min-height: 0; }
+#source { grid-area: source; }
+#stack { grid-area: stack; }
+#vars { grid-area: vars; }
+#output { grid-area: output; }
+#code { font-family: var(--mono); font-size: 13px; }
+.line { display: flex; white-space: pre; }
+.line.current { background: var(--current-bg); }
+.gutter {
+	flex: none;
+	width: 5.5em;
+	display: flex;
+	justify-content: flex-end;
+	gap: 4px;
+	padding-right: 8px;
+	color: var(--not-executed);
+	cursor: pointer;
+	user-select: none;
+}
+.line.executed .gutter { color: var(--executed); }
+.gutter .bp { width: 1em; text-align: center; color: var(--breakpoint); }
+.gutter .cur { width: 1em; text-align: center; color: var(--current-marker); }
+.text { padding-right: 12px; }
+.missing { padding: 12px; color: var(--muted); }
+.frame { padding: 3px 10px; cursor: pointer; font-family: var(--mono); font-size: 13px; white-space: nowrap; }
+.frame.selected { background: var(--selected); }
+.group { padding: 4px 10px 2px; color: var(--muted); font-size: 12px; }
+.var { font-family: var(--mono); font-size: 13px; white-space: nowrap; padding: 1px 10px; }
+.var .toggle { display: inline-block; width: 1.2em; cursor: pointer; color: var(--muted); }
+.var .name { color: var(--text); }
+.var .value { color: var(--value); }
+.var .note { color: var(--note); margin-left: 1em; }
+.out { font-family: var(--mono); font-size: 13px; padding: 2px 10px; white-space: pre-wrap; }
+.out .kind { color: var(--muted); }
+.out.EXCEPTION .kind, .out.FATAL_ERROR .kind { color: var(--error); }
+#stopped { padding: 40px; text-align: center; color: var(--muted); }
+@media (max-width: 800px) {
+	main {
+		grid-template-columns: minmax(0, 1fr);
+		grid-template-rows: 50vh auto auto auto;
+		grid-template-areas: "source" "stack" "vars" "output";
+	}
+	body { grid-template-rows: auto auto auto; }
+	section { max-height: none; }
+}
+</style>
+</head>
+<body>
+<header>
+	<h1>Apex Replay Debugger</h1>
+	<button data-step="over" title="Step over">Next<kbd>n</kbd></button>
+	<button data-step="in" title="Step in">Step in<kbd>s</kbd></button>
+	<button data-step="out" title="Step out">Step out<kbd>o</kbd></button>
+	<button data-step="continue" title="Continue to the next breakpoint">Continue<kbd>c</kbd></button>
+	<button data-step="back" title="Step back to the previous statement">Back<kbd>p</kbd></button>
+	<button data-step="restart" title="Restart from the beginning of the log">Restart<kbd>r</kbd></button>
+	<span class="spacer"></span>
+	<label>Open <select id="picker"></select></label>
+	<button id="quit" title="Stop the debugger">Quit</button>
+</header>
+<div id="status"></div>
+<main>
+	<section id="source">
+		<h2>Source <span class="title" id="source-title"></span></h2>
+		<div class="scroll" id="code"></div>
+	</section>
+	<section id="stack">
+		<h2>Call Stack</h2>
+		<div class="scroll" id="frames"></div>
+	</section>
+	<section id="vars">
+		<h2>Variables</h2>
+		<div class="scroll" id="variables"></div>
+	</section>
+	<section id="output">
+		<h2>Output</h2>
+		<div class="scroll" id="outputs"></div>
+	</section>
+</main>
+<script>
+"use strict";
+const token = new URLSearchParams(location.search).get("token") || "";
+const sources = new Map();
+const expanded = new Set();
+let state = null;
+let frameIndex = -1;
+let viewKey = "";
+
+async function api(method, path, body) {
+	const response = await fetch(path, {
+		method,
+		headers: { "X-Debug-Token": token, "Content-Type": "application/json" },
+		body: body === undefined ? undefined : JSON.stringify(body),
+	});
+	const data = await response.json().catch(() => ({ error: response.statusText }));
+	if (!response.ok) {
+		throw new Error(data.error || response.statusText);
+	}
+	return data;
+}
+
+function el(tag, className, text) {
+	const node = document.createElement(tag);
+	if (className) node.className = className;
+	if (text !== undefined) node.textContent = text;
+	return node;
+}
+
+function setStatus(text, isError) {
+	const status = document.getElementById("status");
+	status.textContent = text;
+	status.classList.toggle("error", !!isError);
+}
+
+async function loadSource(key) {
+	if (!sources.has(key)) {
+		sources.set(key, await api("GET", "/api/source?key=" + encodeURIComponent(key)));
+	}
+	return sources.get(key);
+}
+
+function selectedFrame() {
+	return state.frames.find(f => f.index === frameIndex);
+}
+
+async function update(newState) {
+	state = newState;
+	frameIndex = state.frames.length ? state.frames[0].index : -1;
+	setStatus(state.status + (state.done ? ". Press r to restart." : ""));
+	renderPicker();
+	renderFrames();
+	renderOutput();
+	const frame = selectedFrame();
+	if (frame) {
+		await showSource(frame.source, frame.line);
+	} else {
+		await showSource(viewKey, 0);
+	}
+	await renderVariables();
+}
+
+function renderPicker() {
+	const picker = document.getElementById("picker");
+	picker.replaceChildren(...state.sources.map(s => {
+		const option = el("option", "", s.name);
+		option.value = s.key;
+		return option;
+	}));
+	picker.value = viewKey;
+}
+
+function renderFrames() {
+	const frames = document.getElementById("frames");
+	frames.replaceChildren(...state.frames.map(f => {
+		const row = el("div", "frame" + (f.index === frameIndex ? " selected" : ""), f.line > 0 ? f.name + ":" + f.line : f.name);
+		row.addEventListener("click", async () => {
+			frameIndex = f.index;
+			renderFrames();
+			await showSource(f.source, f.line);
+			await renderVariables();
+		});
+		return row;
+	}));
+	if (!state.frames.length) {
+		frames.append(el("div", "group", state.done ? "End of log" : ""));
+	}
+}
+
+function currentLineFor(key) {
+	const frame = selectedFrame();
+	return frame && frame.source === key ? frame.line : 0;
+}
+
+async function showSource(key, line) {
+	viewKey = key;
+	document.getElementById("picker").value = key;
+	const code = document.getElementById("code");
+	if (!key) {
+		code.replaceChildren();
+		return;
+	}
+	const source = await loadSource(key);
+	document.getElementById("source-title").textContent = source.name + (line > 0 ? "  line " + line : "");
+	if (!source.lines.length) {
+		code.replaceChildren(el("div", "missing", source.missing || "No source."));
+		return;
+	}
+	const executed = new Set(source.executed);
+	const breakpoints = new Set(state.breakpoints.filter(b => b.source === key).map(b => b.line));
+	const current = currentLineFor(key);
+	const rows = source.lines.map((text, i) => {
+		const n = i + 1;
+		const row = el("div", "line" + (executed.has(n) ? " executed" : "") + (n === current ? " current" : ""));
+		row.id = "line-" + n;
+		const gutter = el("span", "gutter");
+		gutter.title = executed.has(n) ? "Set or remove a breakpoint" : "No statement on this line ran in the log";
+		gutter.append(
+			el("span", "bp", breakpoints.has(n) ? (executed.has(n) ? "●" : "○") : ""),
+			el("span", "cur", n === current ? "▶" : ""),
+			el("span", "num", String(n)),
+		);
+		gutter.addEventListener("click", () => toggleBreakpoint(key, n));
+		row.append(gutter, el("span", "text", text || " "));
+		return row;
+	});
+	code.replaceChildren(...rows);
+	const target = document.getElementById("line-" + (line || current));
+	if (target) target.scrollIntoView({ block: "center" });
+}
+
+async function toggleBreakpoint(key, line) {
+	try {
+		const scroll = document.getElementById("code").scrollTop;
+		state = await api("POST", "/api/breakpoint", { source: key, line });
+		setStatus(state.status);
+		await showSource(key, 0);
+		document.getElementById("code").scrollTop = scroll;
+	} catch (e) {
+		setStatus(e.message, true);
+	}
+}
+
+async function renderVariables() {
+	const container = document.getElementById("variables");
+	if (frameIndex < 0) {
+		container.replaceChildren();
+		return;
+	}
+	const data = await api("GET", "/api/variables?frame=" + frameIndex);
+	const nodes = [];
+	for (const group of data.groups) {
+		nodes.push(el("div", "group", group.title));
+		for (const v of group.variables) {
+			nodes.push(await variableNode(v, 1));
+		}
+	}
+	container.replaceChildren(...nodes);
+}
+
+async function variableNode(v, depth) {
+	const wrapper = el("div");
+	const row = el("div", "var");
+	row.style.paddingLeft = (depth * 14) + "px";
+	const key = frameIndex + ":" + JSON.stringify(v.path);
+	const toggle = el("span", "toggle", v.expandable ? (expanded.has(key) ? "▾" : "▸") : "");
+	row.append(toggle, el("span", "name", v.name), el("span", "", " = "), el("span", "value", v.value));
+	if (v.note) row.append(el("span", "note", v.note));
+	if (v.type) row.title = v.type;
+	wrapper.append(row);
+	if (v.expandable) {
+		const children = el("div");
+		wrapper.append(children);
+		const load = async () => {
+			const data = await api("GET", "/api/variables?frame=" + frameIndex + "&path=" + encodeURIComponent(JSON.stringify(v.path)));
+			const nodes = [];
+			for (const c of data.variables) nodes.push(await variableNode(c, depth + 1));
+			children.replaceChildren(...nodes);
+		};
+		const flip = async () => {
+			if (expanded.has(key)) {
+				expanded.delete(key);
+				children.replaceChildren();
+				toggle.textContent = "▸";
+			} else {
+				expanded.add(key);
+				toggle.textContent = "▾";
+				await load();
+			}
+		};
+		toggle.addEventListener("click", flip);
+		row.addEventListener("dblclick", flip);
+		if (expanded.has(key)) await load();
+	}
+	return wrapper;
+}
+
+function renderOutput() {
+	const outputs = document.getElementById("outputs");
+	outputs.replaceChildren(...state.output.map(o => {
+		const row = el("div", "out " + o.kind);
+		const label = o.kind === "DEBUG" ? (o.level || "DEBUG") : o.kind;
+		row.append(el("span", "kind", "[" + o.line + "] " + label + " "), el("span", "", o.message));
+		return row;
+	}));
+	outputs.scrollTop = outputs.scrollHeight;
+}
+
+async function step(kind) {
+	try {
+		await update(await api("POST", "/api/step?kind=" + kind));
+	} catch (e) {
+		setStatus(e.message, true);
+	}
+}
+
+document.querySelectorAll("button[data-step]").forEach(button => {
+	button.addEventListener("click", () => step(button.dataset.step));
+});
+
+document.getElementById("picker").addEventListener("change", event => {
+	showSource(event.target.value, 0).catch(e => setStatus(e.message, true));
+});
+
+document.getElementById("quit").addEventListener("click", async () => {
+	try {
+		await api("POST", "/api/quit");
+	} catch (e) {
+		// The server may close the connection before responding.
+	}
+	const stopped = el("div", "", "Debugger stopped. You can close this tab.");
+	stopped.id = "stopped";
+	document.body.replaceChildren(stopped);
+});
+
+const keys = { n: "over", s: "in", o: "out", c: "continue", p: "back", r: "restart" };
+document.addEventListener("keydown", event => {
+	if (event.ctrlKey || event.metaKey || event.altKey) return;
+	if (event.target instanceof HTMLSelectElement || event.target instanceof HTMLInputElement) return;
+	const kind = keys[event.key];
+	if (kind) {
+		event.preventDefault();
+		step(kind);
+	}
+});
+
+api("GET", "/api/state").then(update).catch(e => setStatus(e.message, true));
+</script>
+</body>
+</html>

@@ -17,6 +17,9 @@ const (
 	CodeUnitFrame FrameKind = iota
 	MethodFrame
 	ConstructorFrame
+	// VisualforceFrame is a call from a Visualforce page into its
+	// controller (VF_APEX_CALL_START).
+	VisualforceFrame
 )
 
 // Frame is one entry in the replayed call stack.
@@ -161,8 +164,8 @@ type Output struct {
 // Breakpoint is a line in a source.
 type Breakpoint struct {
 	// Source is AnonymousKey or a 15-character entity ID.
-	Source string
-	Line   int
+	Source string `json:"source"`
+	Line   int    `json:"line"`
 }
 
 // StepKind is how far Resume runs.
@@ -188,6 +191,8 @@ const (
 	StoppedOnBreakpoint
 	// StoppedAtEnd means the log has no more statements.
 	StoppedAtEnd
+	// StoppedAtStart means StepBack was called at the first statement.
+	StoppedAtStart
 )
 
 // SourceRef identifies an Apex class or trigger that ran in the log.
@@ -212,10 +217,13 @@ func (e ErrLogLevel) Error() string {
 
 // Session replays a log.
 type Session struct {
-	log         *Log
-	pos         int
-	paused      bool
-	done        bool
+	log    *Log
+	pos    int
+	paused bool
+	done   bool
+	// statement is the number of statements reached since the start of the
+	// log; the current statement's number while paused.
+	statement   int
 	frames      []*Frame
 	statics     map[string]*Scope
 	objects     map[string]*Scope
@@ -223,6 +231,18 @@ type Session struct {
 	breakpoints map[Breakpoint]bool
 	sources     []SourceRef
 	executed    map[string]map[int]bool
+	// classIDs maps a top-level class name to its ID, for frames whose entry
+	// event names the class without giving its ID.
+	classIDs map[string]string
+	// heapDumps holds the heap dumps added with AddHeapDump, by the ID that
+	// HEAP_DUMP events give.
+	heapDumps map[string]*HeapDump
+	// objectTypes holds the type of each object in an applied heap dump.
+	objectTypes map[string]string
+	// dumpPending is set by a HEAP_DUMP event and moved to atHeapDump at the
+	// next statement, which is the statement the dump was taken before.
+	dumpPending bool
+	atHeapDump  bool
 }
 
 // NewSession returns a session positioned before the first event. It
@@ -231,17 +251,57 @@ func NewSession(log *Log) (*Session, error) {
 	if level := log.Header.Level("APEX_CODE"); level != "FINEST" {
 		return nil, ErrLogLevel{Level: level}
 	}
-	s := &Session{log: log, breakpoints: map[Breakpoint]bool{}}
+	s := &Session{log: log, breakpoints: map[Breakpoint]bool{}, classIDs: classIDs(log)}
 	s.Restart()
 	s.sources = findSources(log)
-	s.executed = executedLines(log)
+	s.executed = executedLines(log, s.classIDs)
 	return s, nil
+}
+
+// StepBack is the reverse of StepOver: it returns to the most recent
+// earlier statement in the current frame or a caller, skipping the
+// statements of methods the current frame called. At the first statement of
+// a method, that is the caller's statement. If the log has ended, it returns
+// to the last statement. The log is replayed from the beginning up to that
+// statement, so variables and output are as they were then.
+func (s *Session) StepBack() StopReason {
+	current := s.statement
+	if s.done {
+		s.replayTo(current)
+		return StoppedOnStep
+	}
+	if current <= 1 {
+		return StoppedAtStart
+	}
+	depth := len(s.frames)
+	target := current - 1
+	s.Restart()
+	for s.statement < current-1 && s.advance() {
+		if len(s.frames) <= depth {
+			target = s.statement
+		}
+	}
+	s.replayTo(target)
+	return StoppedOnStep
+}
+
+// replayTo replays the log from the beginning to a statement.
+func (s *Session) replayTo(statement int) {
+	s.Restart()
+	for s.statement < statement && s.advance() {
+	}
+}
+
+// Statement returns the number of the current statement, counting from 1
+// at the first statement in the log.
+func (s *Session) Statement() int {
+	return s.statement
 }
 
 // executedLines replays the whole log and records the lines of each source
 // on which a statement ran.
-func executedLines(log *Log) map[string]map[int]bool {
-	replay := &Session{log: log, breakpoints: map[Breakpoint]bool{}}
+func executedLines(log *Log, classIDs map[string]string) map[string]map[int]bool {
+	replay := &Session{log: log, breakpoints: map[Breakpoint]bool{}, classIDs: classIDs}
 	replay.Restart()
 	executed := map[string]map[int]bool{}
 	for replay.advance() {
@@ -267,10 +327,14 @@ func (s *Session) Restart() {
 	s.pos = 0
 	s.paused = false
 	s.done = false
+	s.statement = 0
 	s.frames = nil
 	s.statics = map[string]*Scope{}
 	s.objects = map[string]*Scope{}
 	s.output = nil
+	s.objectTypes = map[string]string{}
+	s.dumpPending = false
+	s.atHeapDump = false
 }
 
 // Log returns the log being replayed.
@@ -395,6 +459,7 @@ func (s *Session) advance() bool {
 		s.paused = false
 		s.handle(e)
 		if s.paused {
+			s.statement++
 			return true
 		}
 	}
@@ -410,6 +475,14 @@ func (s *Session) handle(e Event) {
 		s.push(methodFrame(e))
 	case "CONSTRUCTOR_ENTRY":
 		s.push(constructorFrame(e))
+	case "VF_APEX_CALL_START":
+		if !isPropertyAccess(e) {
+			s.push(visualforceFrame(e))
+		}
+	case "VF_APEX_CALL_END":
+		if !isPropertyAccess(e) {
+			s.pop(VisualforceFrame, lastField(e))
+		}
 	case "CODE_UNIT_FINISHED":
 		s.pop(CodeUnitFrame, lastField(e))
 	case "METHOD_EXIT":
@@ -428,6 +501,15 @@ func (s *Session) handle(e Event) {
 		if top := s.Top(); top != nil && e.SourceLine > 0 && top.systemDepth == 0 {
 			top.Line = e.SourceLine
 			s.paused = true
+			s.atHeapDump = s.dumpPending
+			s.dumpPending = false
+		}
+	case "HEAP_DUMP":
+		if len(e.Fields) >= 2 {
+			if d, ok := s.heapDumps[e.Fields[1]]; ok {
+				s.applyHeapDump(d, e.SourceLine)
+				s.dumpPending = true
+			}
 		}
 	case "VARIABLE_SCOPE_BEGIN":
 		s.declare(e)
@@ -462,6 +544,10 @@ func (s *Session) handle(e Event) {
 }
 
 func (s *Session) push(f *Frame) {
+	if f.EntityID == "" && f.Class != "" {
+		outer, _, _ := strings.Cut(f.Class, ".")
+		f.EntityID = s.classIDs[outer]
+	}
 	f.Locals = newScope()
 	s.frames = append(s.frames, f)
 }
@@ -736,6 +822,66 @@ func constructorFrame(e Event) *Frame {
 		EntityID:  entityID(e),
 		Class:     class,
 	}
+}
+
+// visualforceFrame handles VF_APEX_CALL_START|[EXTERNAL]|MyController invoke(save)|MyController.
+// The event gives the controller's name but not its ID.
+func visualforceFrame(e Event) *Frame {
+	class := lastField(e)
+	name := class
+	if len(e.Fields) >= 2 {
+		action := e.Fields[len(e.Fields)-2]
+		if m := invokePattern.FindStringSubmatch(action); m != nil {
+			name = class + "." + m[1]
+			if !strings.HasSuffix(name, ")") {
+				name += "()"
+			}
+		} else if action != "" && !strings.HasPrefix(action, "[") {
+			name = action
+		}
+	}
+	return &Frame{
+		Kind:      VisualforceFrame,
+		Signature: class,
+		Name:      name,
+		EntityID:  entityID(e),
+		Class:     class,
+	}
+}
+
+var (
+	invokePattern         = regexp.MustCompile(` invoke\((.*)\)`)
+	propertyAccessPattern = regexp.MustCompile(` (get|set)\(.*\)`)
+)
+
+// isPropertyAccess reports whether a Visualforce call event is the first of
+// the two events logged for a property's getter or setter
+// ("MyController get(message)"); the second ("invoke(getmessage)") gets the
+// frame.
+func isPropertyAccess(e Event) bool {
+	return len(e.Fields) >= 2 && propertyAccessPattern.MatchString(e.Fields[len(e.Fields)-2])
+}
+
+// classIDs returns the IDs of the top-level classes named in a log's frame
+// entry events.
+func classIDs(log *Log) map[string]string {
+	ids := map[string]string{}
+	for _, e := range log.Events {
+		switch e.Type {
+		case "CODE_UNIT_STARTED", "METHOD_ENTRY", "CONSTRUCTOR_ENTRY":
+		default:
+			continue
+		}
+		id := entityID(e)
+		if id == "" || !strings.HasPrefix(id, "01p") {
+			continue
+		}
+		name := sourceName(e)
+		if _, ok := ids[name]; !ok {
+			ids[name] = id
+		}
+	}
+	return ids
 }
 
 // methodClass returns the class of a method signature: "Calc.Result" for

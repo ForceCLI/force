@@ -264,3 +264,56 @@ func TestLogDebugModelShowsWhenACollectionWasAssigned(t *testing.T) {
 		t.Errorf("assignment line not shown:\n%s", view)
 	}
 }
+
+func TestLogDebugModelStepsBack(t *testing.T) {
+	m := newDebugModel(t)
+	m = press(m, "p")
+	if m.status != "At the first statement" {
+		t.Errorf("status = %q", m.status)
+	}
+	m = press(m, "s", "n", "p")
+	if m.viewKey != debugTestClassID || m.cursor != 3 || m.status != "Stepped back to statement 2" {
+		t.Errorf("viewKey=%q cursor=%d status=%q", m.viewKey, m.cursor, m.status)
+	}
+	if !strings.Contains(m.View(), "p back") {
+		t.Error("help line does not list p")
+	}
+}
+
+func TestLogDebugModelShowsHeapDumpContents(t *testing.T) {
+	log, err := apexlog.Parse(strings.NewReader(strings.Join([]string{
+		"62.0 APEX_CODE,FINEST",
+		"Execute Anonymous: List<Integer> items = new List<Integer>{1, 2};",
+		"Execute Anonymous: System.debug(items);",
+		"12:00:00.1 (1)|CODE_UNIT_STARTED|[EXTERNAL]|execute_anonymous_apex",
+		"12:00:00.1 (2)|STATEMENT_EXECUTE|[1]",
+		"12:00:00.1 (3)|HEAP_DUMP|[2]|07n000000000001|anonymous|none|2",
+		"12:00:00.1 (4)|STATEMENT_EXECUTE|[2]",
+		"12:00:00.1 (5)|CODE_UNIT_FINISHED|execute_anonymous_apex",
+	}, "\n")))
+	if err != nil {
+		t.Fatal(err)
+	}
+	session, err := apexlog.NewSession(log)
+	if err != nil {
+		t.Fatal(err)
+	}
+	dump, err := apexlog.ParseHeapDump([]byte(`{"className":"anonymous","namespace":"none","extents":[
+		{"typeName":"List<Integer>","collectionType":"Integer","extent":[{"address":"0x10","isStatic":false,"symbols":["items"],"value":{"value":[{"value":1},{"value":2}]}}]}
+	]}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	session.AddHeapDump("07n000000000001", dump)
+	m := NewLogDebugModel(session, map[string]DebugSource{
+		apexlog.AnonymousKey: {Name: "anonymous Apex", Lines: log.Header.AnonymousSource},
+	})
+	m = update(m, tea.WindowSizeMsg{Width: 120, Height: 30})
+	m = press(m, "n")
+	if !strings.Contains(m.status, "heap dump") {
+		t.Errorf("status = %q", m.status)
+	}
+	if view := m.View(); !strings.Contains(view, "items = List<Integer> [2 elements]") {
+		t.Errorf("heap dump list not shown:\n%s", view)
+	}
+}

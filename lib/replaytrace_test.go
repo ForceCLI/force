@@ -21,11 +21,13 @@ type toolingRequest struct {
 // fakeTooling answers Tooling API requests for DebugLevel and TraceFlag
 // records and records each request.
 type fakeTooling struct {
-	debugLevels string
-	traceFlags  string
-	patchStatus func(n int) int
-	patches     int
-	requests    []toolingRequest
+	debugLevels      string
+	traceFlags       string
+	patchStatus      func(n int) int
+	patches          int
+	overlayFailAfter int
+	overlays         int
+	requests         []toolingRequest
 }
 
 func (f *fakeTooling) handler(w http.ResponseWriter, r *http.Request) {
@@ -45,6 +47,19 @@ func (f *fakeTooling) handler(w http.ResponseWriter, r *http.Request) {
 	case r.Method == "POST" && strings.HasSuffix(r.URL.Path, "/sobjects/TraceFlag"):
 		w.WriteHeader(201)
 		fmt.Fprint(w, `{"id":"7tf000000000NEW","success":true,"errors":[]}`)
+	case r.Method == "POST" && strings.HasSuffix(r.URL.Path, "/sobjects/ApexExecutionOverlayAction"):
+		f.overlays++
+		if f.overlayFailAfter > 0 && f.overlays > f.overlayFailAfter {
+			w.WriteHeader(400)
+			fmt.Fprint(w, `[{"message":"Maximum number of checkpoints reached","errorCode":"FIELD_INTEGRITY_EXCEPTION"}]`)
+			return
+		}
+		w.WriteHeader(201)
+		fmt.Fprintf(w, `{"id":"1do00000000000%d","success":true,"errors":[]}`, f.overlays)
+	case r.Method == "GET" && strings.Contains(r.URL.Path, "/sobjects/ApexExecutionOverlayResult/07n000000000001"):
+		fmt.Fprint(w, `{"Id":"07n000000000001AAA","HeapDump":{"className":"Calc","namespace":"none","extents":[]}}`)
+	case r.Method == "GET" && strings.Contains(r.URL.Path, "/sobjects/ApexExecutionOverlayResult/"):
+		fmt.Fprint(w, `{"Id":"07n000000000002AAA","HeapDump":null}`)
 	case r.Method == "PATCH":
 		f.patches++
 		status := 204
@@ -193,5 +208,73 @@ func TestEnableReplayTraceFlagExpiresAnExpiredTraceFlagAgain(t *testing.T) {
 	}
 	if last["DebugLevelId"] != "7dl000000000USR" || time.Until(expires) > 2*time.Minute || time.Until(expires) < 0 {
 		t.Errorf("last patch = %+v", last)
+	}
+}
+
+func TestStartReplayTraceUsesTheReplayDebugLevel(t *testing.T) {
+	fake := &fakeTooling{debugLevels: `{"Id":"7dl000000000RPL"}`}
+	force := newToolingForce(t, fake)
+	result, err, _ := force.StartReplayTrace()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Id != "7tf000000000NEW" {
+		t.Errorf("result = %+v", result)
+	}
+	posts := fake.only("POST")
+	if len(posts) != 1 || posts[0].Body["DebugLevelId"] != "7dl000000000RPL" || posts[0].Body["TracedEntityId"] != "005000000000001" || posts[0].Body["LogType"] != "DEVELOPER_LOG" {
+		t.Errorf("posts = %+v", posts)
+	}
+}
+
+func TestCreateCheckpointsCreatesAndDeletesOverlayActions(t *testing.T) {
+	fake := &fakeTooling{}
+	force := newToolingForce(t, fake)
+	remove, err := force.CreateCheckpoints([]Checkpoint{{Name: "Calc", Line: 9}, {Name: "CalcTest", Line: 12}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	posts := fake.only("POST")
+	if len(posts) != 2 || posts[0].Body["ExecutableEntityName"] != "Calc" || posts[0].Body["Line"] != float64(9) ||
+		posts[0].Body["IsDumpingHeap"] != true || posts[0].Body["Iteration"] != float64(1) || posts[0].Body["ActionScriptType"] != "None" {
+		t.Fatalf("posts = %+v", posts)
+	}
+	if err := remove(); err != nil {
+		t.Fatal(err)
+	}
+	deletes := fake.only("DELETE")
+	if len(deletes) != 2 || !strings.HasSuffix(deletes[0].Path, "/ApexExecutionOverlayAction/1do000000000001") {
+		t.Errorf("deletes = %+v", deletes)
+	}
+}
+
+func TestCreateCheckpointsDeletesCreatedOnesWhenOneFails(t *testing.T) {
+	fake := &fakeTooling{overlayFailAfter: 1}
+	force := newToolingForce(t, fake)
+	_, err := force.CreateCheckpoints([]Checkpoint{{Name: "Calc", Line: 9}, {Name: "CalcTest", Line: 12}})
+	if err == nil || !strings.Contains(err.Error(), "CalcTest:12") {
+		t.Fatalf("err = %v", err)
+	}
+	deletes := fake.only("DELETE")
+	if len(deletes) != 1 || !strings.HasSuffix(deletes[0].Path, "/ApexExecutionOverlayAction/1do000000000001") {
+		t.Errorf("deletes = %+v", deletes)
+	}
+}
+
+func TestHeapDumpReturnsTheHeapDumpField(t *testing.T) {
+	fake := &fakeTooling{}
+	force := newToolingForce(t, fake)
+	raw, err := force.HeapDump("07n000000000001")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(raw), `"className":"Calc"`) {
+		t.Errorf("raw = %s", raw)
+	}
+	if !strings.Contains(fake.requests[0].Path, "ApexExecutionOverlayResult/07n000000000001") {
+		t.Errorf("request = %+v", fake.requests[0])
+	}
+	if _, err := force.HeapDump("07n000000000002"); err == nil || !strings.Contains(err.Error(), "empty") {
+		t.Errorf("err for empty heap dump = %v", err)
 	}
 }

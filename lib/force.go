@@ -1140,6 +1140,21 @@ func (f *Force) StartTrace(userId ...string) (result ForceCreateRecordResult, er
 	if err != nil {
 		return
 	}
+	return f.startTrace(debugLevel, userId...)
+}
+
+// StartReplayTrace creates a trace flag that uses the Force_CLI_Replay debug
+// level, which logs Apex at FINEST, so that the logs it produces can be
+// opened with force log debug.
+func (f *Force) StartReplayTrace(userId ...string) (result ForceCreateRecordResult, err error, emessages []ForceError) {
+	debugLevel, err := f.ReplayDebugLevel()
+	if err != nil {
+		return
+	}
+	return f.startTrace(debugLevel, userId...)
+}
+
+func (f *Force) startTrace(debugLevel string, userId ...string) (result ForceCreateRecordResult, err error, emessages []ForceError) {
 	url := fmt.Sprintf("%s/services/data/%s/tooling/sobjects/TraceFlag", f.Credentials.InstanceUrl, apiVersion)
 
 	attrs := make(map[string]string)

@@ -1,23 +1,28 @@
 package command
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
+	"os/signal"
 	"strings"
 
 	"github.com/ForceCLI/force/bubbles"
+	"github.com/ForceCLI/force/desktop"
 	. "github.com/ForceCLI/force/error"
 	. "github.com/ForceCLI/force/lib"
 	"github.com/ForceCLI/force/lib/apexlog"
 	"github.com/ForceCLI/force/lib/bayeux"
+	"github.com/ForceCLI/force/webdebug"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
 )
 
 func init() {
 	debugLogCmd.Flags().StringP("file", "f", "", "read the log from a file instead of fetching it from the org")
+	debugLogCmd.Flags().Bool("web", false, webFlagUsage)
 	logCmd.AddCommand(deleteLogCmd)
 	logCmd.AddCommand(tailLogCmd)
 	logCmd.AddCommand(debugLogCmd)
@@ -86,11 +91,16 @@ recorded in the log. If a class has been changed since the log was
 captured, the lines shown will not match the code that ran. The source of
 anonymous Apex is read from the log.
 
+With --web, the debugger opens in a browser instead of the terminal. It is
+served on 127.0.0.1 until the page's Quit button is pressed or force is
+stopped with Ctrl-C. Click a line number to set or remove a breakpoint.
+
 Keys:
   n          step over
   s          step in
   o          step out
   c          continue to the next breakpoint
+  p          step back to the previous statement in this method or a caller
   b          set or remove a breakpoint on the line under the cursor
   f          open a class or trigger from the log
   r          restart from the beginning of the log
@@ -102,6 +112,7 @@ Keys:
 	Example: `
   force log debug 07L5g00000AbCdEFG
   force log debug --file apex.log
+  force log debug --web 07L5g00000AbCdEFG
 `,
 	Args: func(cmd *cobra.Command, args []string) error {
 		file, _ := cmd.Flags().GetString("file")
@@ -115,15 +126,16 @@ Keys:
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		file, _ := cmd.Flags().GetString("file")
+		web, _ := cmd.Flags().GetBool("web")
 		logId := ""
 		if len(args) > 0 {
 			logId = args[0]
 		}
-		debugLog(logId, file)
+		debugLog(logId, file, web)
 	},
 }
 
-func debugLog(logId string, file string) {
+func debugLog(logId string, file string, web bool) {
 	var content string
 	if file != "" {
 		b, err := os.ReadFile(file)
@@ -138,7 +150,7 @@ func debugLog(logId string, file string) {
 			ErrorAndExit(err.Error())
 		}
 	}
-	if err := replayLog(content); err != nil {
+	if err := replayLog(content, web); err != nil {
 		ErrorAndExit(err.Error())
 	}
 }
@@ -146,7 +158,7 @@ func debugLog(logId string, file string) {
 // replayLog opens a debug log in the terminal debugger. Keys are read from
 // the terminal rather than stdin, so the debugger also works after Apex code
 // has been read from stdin.
-func replayLog(content string) error {
+func replayLog(content string, web bool) error {
 	if strings.TrimSpace(content) == "" {
 		return errors.New("no debug log to replay")
 	}
@@ -158,13 +170,40 @@ func replayLog(content string) error {
 	if err != nil {
 		return err
 	}
+	addHeapDumps(session)
 	sources, err := debugSources(session)
 	if err != nil {
 		return err
 	}
+	if web {
+		return replayInBrowser(session, sources)
+	}
 	p := tea.NewProgram(bubbles.NewLogDebugModel(session, sources), tea.WithAltScreen(), tea.WithInputTTY())
 	_, err = p.Run()
 	return err
+}
+
+const webFlagUsage = "open the debugger in a browser instead of the terminal"
+
+// replayInBrowser serves the debugger on 127.0.0.1 and opens it in a
+// browser. It returns when the page's Quit button is pressed or on Ctrl-C.
+func replayInBrowser(session *apexlog.Session, sources map[string]bubbles.DebugSource) error {
+	webSources := map[string]webdebug.Source{}
+	for key, s := range sources {
+		webSources[key] = webdebug.Source{Name: s.Name, Lines: s.Lines, Missing: s.Missing}
+	}
+	server, err := webdebug.NewServer(session, webSources)
+	if err != nil {
+		return err
+	}
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
+	return server.Run(ctx, func(url string) {
+		fmt.Fprintf(os.Stderr, "Debugger running at %s\nPress Ctrl-C or the Quit button to stop.\n", url)
+		if err := desktop.Open(url); err != nil {
+			fmt.Fprintf(os.Stderr, "Could not open a browser: %v\n", err)
+		}
+	})
 }
 
 // debugSources returns the source of the anonymous Apex, classes, and
