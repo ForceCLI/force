@@ -1637,7 +1637,7 @@ func (f *Force) _coerceHttpError(res *http.Response, body []byte) error {
 			return APIDisabledForUser
 		} else if len(errors) > 0 && errors[0].ErrorCode == "INVALID_OPERATION_WITH_EXPIRED_PASSWORD" {
 			return PasswordExpiredError
-		} else if len(errors) > 0 {
+		} else if len(errors) > 0 && errors.namesAnError() {
 			fallbackErr = errors
 			if res.StatusCode == 403 && errors[0].ErrorCode != "" && errors[0].ErrorCode != "INVALID_SESSION_ID" {
 				return errors
@@ -1654,30 +1654,31 @@ func (f *Force) _coerceHttpError(res *http.Response, body []byte) error {
 	return fallbackErr
 }
 
+// namesAnError reports whether any entry of a parsed error list carries an
+// error code or a message. A JSON array of other objects, such as the
+// results of a failed invocable action, parses as entries with neither, and
+// its body is reported instead.
+func (errors ForceErrors) namesAnError() bool {
+	for _, e := range errors {
+		if e.ErrorCode != "" || e.Message != "" {
+			return true
+		}
+	}
+	return false
+}
+
+// summarizeErrorBody returns the body of an error response for the error's
+// message: an HTML page, such as a login or gateway page, as its size, and
+// any other body in full, since an API's error body (a Connect resource's
+// failed records, for example) can carry its message after the input it
+// echoes.
 func summarizeErrorBody(body []byte) string {
 	trimmed := strings.TrimSpace(string(body))
-	if trimmed == "" {
-		return ""
-	}
-
 	lower := strings.ToLower(trimmed)
 	if strings.HasPrefix(lower, "<!doctype") || strings.HasPrefix(lower, "<html") {
 		return fmt.Sprintf("html response (%d bytes)", len(trimmed))
 	}
-
-	if len(trimmed) > 200 {
-		trimmed = trimmed[:200]
-	}
-
-	fields := strings.Fields(trimmed)
-	if len(fields) == 0 {
-		return ""
-	}
-	result := strings.Join(fields, " ")
-	if len(result) > 200 {
-		result = result[:200]
-	}
-	return result
+	return trimmed
 }
 
 func (f *Force) httpPostPatchWithRetry(url string, rbody string, contenttype ContentType, method HttpMethod, requestOptions ...func(*http.Request)) ([]byte, error) {

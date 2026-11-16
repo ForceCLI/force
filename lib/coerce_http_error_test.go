@@ -66,3 +66,12 @@ func TestCoerceHttpErrorKeepsTheRequestLimitErrorOfA403(t *testing.T) {
 		t.Fatalf("expected APILimitExceededError, got %v", err)
 	}
 }
+
+func TestCoerceHttpErrorReportsTheBodyOfAnArrayOfActionResults(t *testing.T) {
+	body := `[{"actionName":"cloneActvtyPlanTerritories","errors":[{"statusCode":"REQUIRED_FIELD_MISSING","message":"Missing required input parameter: activityPlanNamePrefix","fields":[]}],"isSuccess":false,"outputValues":null}]`
+	err := coerceTestError(t, http.StatusBadRequest, "application/json", body)
+
+	if err == nil || !strings.Contains(err.Error(), "Missing required input parameter: activityPlanNamePrefix") {
+		t.Fatalf("expected the response body, got %v", err)
+	}
+}
