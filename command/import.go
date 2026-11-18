@@ -3,7 +3,6 @@ package command
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -45,6 +44,16 @@ func init() {
 var importCmd = &cobra.Command{
 	Use:   "import",
 	Short: "Import metadata from a local directory",
+	Long: `Deploy the metadata in a directory that holds a package.xml.
+
+The directory may be in metadata format or in source (sfdx) format. Source
+format files are converted before they are deployed: the field, record type
+and other component files under objects/<Object>/ are composed into the
+object's file, a folder file such as reports/Sales.reportFolder-meta.xml is
+deployed as reports/Sales-meta.xml, and a -meta.xml file of a type with no
+content file (tabs/Project__c.tab-meta.xml) is deployed without the suffix.
+The directory's package.xml is deployed as it is.
+`,
 	Example: `
   force import
   force import -directory=my_metadata -c -r -v
@@ -96,24 +105,11 @@ func sourceDir(cmd *cobra.Command) string {
 }
 
 func runImport(root string, options ForceDeployOptions, displayOptions *deployOutputOptions, smartFlowVersion bool) {
-	_ = smartFlowVersion
-	files := make(ForceMetadataFiles)
 	if _, err := os.Stat(filepath.Join(root, "package.xml")); os.IsNotExist(err) {
 		ErrorAndExit(" \n" + filepath.Join(root, "package.xml") + "\ndoes not exist")
 	}
 
-	err := filepath.Walk(root, func(path string, f os.FileInfo, err error) error {
-		if f.Mode().IsRegular() {
-			if f.Name() != ".DS_Store" {
-				data, err := ioutil.ReadFile(path)
-				if err != nil {
-					ErrorAndExit(err.Error())
-				}
-				files[strings.Replace(path, fmt.Sprintf("%s%s", root, string(os.PathSeparator)), "", -1)] = data
-			}
-		}
-		return nil
-	})
+	files, err := importFiles(root)
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
@@ -139,4 +135,80 @@ func runImport(root string, options ForceDeployOptions, displayOptions *deployOu
 	if err != nil && (!errors.Is(err, testFailureError) || displayOptions.errorOnTestFailure) {
 		ErrorAndExit(err.Error())
 	}
+}
+
+// importFiles reads the metadata under root, keyed by the path each file has
+// in the deployment. A directory in metadata format is read as it is. A
+// directory holding source (sfdx) format files is converted to metadata
+// format: an object's field, record type and other component files are
+// composed into the object's file, a folder's
+// reports/Sales.reportFolder-meta.xml becomes reports/Sales-meta.xml, and a
+// -meta.xml file of a type with no content file loses the suffix. The
+// directory's own package.xml and destructive changes manifests are deployed
+// as they are.
+func importFiles(root string) (ForceMetadataFiles, error) {
+	sourceFormat, err := HasSourceFormatFiles(root)
+	if err != nil {
+		return nil, err
+	}
+	if !sourceFormat {
+		return readImportFiles(root, func(string) bool { return true })
+	}
+
+	// The manifests, and any file outside a metadata type's directory, are
+	// deployed as they are.
+	files, err := readImportFiles(root, func(relativePath string) bool {
+		topLevel := strings.Split(relativePath, string(os.PathSeparator))[0]
+		return !IsMetadataDirectory(topLevel)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	pb := NewPushBuilder()
+	pb.Root = root
+	entries, err := os.ReadDir(root)
+	if err != nil {
+		return nil, err
+	}
+	for _, entry := range entries {
+		if !entry.IsDir() || !IsMetadataDirectory(entry.Name()) {
+			continue
+		}
+		if err := pb.AddDirectory(filepath.Join(root, entry.Name())); err != nil {
+			return nil, err
+		}
+	}
+	for path, data := range pb.Files {
+		files[path] = data
+	}
+	return files, nil
+}
+
+// readImportFiles reads the regular files under root that include accepts,
+// keyed by path relative to root.
+func readImportFiles(root string, include func(relativePath string) bool) (ForceMetadataFiles, error) {
+	files := make(ForceMetadataFiles)
+	err := filepath.Walk(root, func(path string, f os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !f.Mode().IsRegular() || f.Name() == ".DS_Store" {
+			return nil
+		}
+		relativePath, err := filepath.Rel(root, path)
+		if err != nil {
+			return err
+		}
+		if !include(relativePath) {
+			return nil
+		}
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		files[relativePath] = data
+		return nil
+	})
+	return files, err
 }

@@ -308,23 +308,13 @@ func (pb *PackageBuilder) AddFile(fpath string) error {
 // metadata record's Type.Record.md-meta.xml is Type.Record.md in metadata
 // format.
 func (pb *PackageBuilder) addSourceFormatFile(fpath string) (bool, error) {
-	if !strings.HasSuffix(fpath, "-meta.xml") {
+	mp, parts, ok := sourceFormatFile(pb.Root, fpath)
+	if !ok {
 		return false, nil
 	}
 	withoutMetaSuffix := strings.TrimSuffix(fpath, "-meta.xml")
-	if _, err := os.Stat(withoutMetaSuffix); err == nil {
-		return false, nil
-	}
 	relativePath, err := filepath.Rel(pb.Root, fpath)
-	if err != nil || !filepath.IsLocal(relativePath) {
-		return false, nil
-	}
-	parts := strings.Split(relativePath, string(os.PathSeparator))
-	if len(parts) < 2 {
-		return false, nil
-	}
-	mp, ok := metapathForDirectory(parts[0])
-	if !ok || mp.onlyFolder {
+	if err != nil {
 		return false, nil
 	}
 
@@ -336,8 +326,6 @@ func (pb *PackageBuilder) addSourceFormatFile(fpath string) (bool, error) {
 		folderName := strings.TrimSuffix(base, filepath.Ext(base))
 		pb.AddMetaToPackage(mp.name, folderName)
 		return true, pb.addConvertedFile(filepath.Join(parts[0], folderName+"-meta.xml"), fpath)
-	case mp.contentFile:
-		return false, nil
 	case (mp.name == "CustomObject" || mp.name == "CustomObjectTranslation") && len(parts) >= 3:
 		// objects/Account/Account.object-meta.xml or
 		// objects/Account/fields/Name__c.field-meta.xml
@@ -349,6 +337,57 @@ func (pb *PackageBuilder) addSourceFormatFile(fpath string) (bool, error) {
 		pb.AddMetaToPackage(mp.name, strings.TrimSuffix(memberPath, filepath.Ext(memberPath)))
 		return true, pb.addConvertedFile(metadataPath, fpath)
 	}
+}
+
+// sourceFormatFile reports whether the file at fpath, under root, is written
+// in source (sfdx) format, and returns the metapath of its type and its path
+// relative to root split into parts.
+func sourceFormatFile(root string, fpath string) (metapath, []string, bool) {
+	if !strings.HasSuffix(fpath, "-meta.xml") {
+		return metapath{}, nil, false
+	}
+	withoutMetaSuffix := strings.TrimSuffix(fpath, "-meta.xml")
+	if _, err := os.Stat(withoutMetaSuffix); err == nil {
+		return metapath{}, nil, false
+	}
+	relativePath, err := filepath.Rel(root, fpath)
+	if err != nil || !filepath.IsLocal(relativePath) {
+		return metapath{}, nil, false
+	}
+	parts := strings.Split(relativePath, string(os.PathSeparator))
+	if len(parts) < 2 {
+		return metapath{}, nil, false
+	}
+	mp, ok := metapathForDirectory(parts[0])
+	if !ok || mp.onlyFolder {
+		return metapath{}, nil, false
+	}
+	// A folder file (reports/Sales.reportFolder-meta.xml) is in source
+	// format whatever its type; any other file of a type that keeps a
+	// content file beside its -meta.xml is the same in both formats.
+	if mp.contentFile && !(mp.hasFolder && len(parts) == 2) {
+		return metapath{}, nil, false
+	}
+	return mp, parts, true
+}
+
+// HasSourceFormatFiles reports whether the metadata directory at root holds
+// a file written in source (sfdx) format.
+func HasSourceFormatFiles(root string) (bool, error) {
+	found := false
+	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if found {
+			return filepath.SkipAll
+		}
+		if info.Mode().IsRegular() {
+			_, _, found = sourceFormatFile(root, path)
+		}
+		return nil
+	})
+	return found, err
 }
 
 // addDecomposedComponent adds one component of a source-format object or

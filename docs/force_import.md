@@ -2,6 +2,18 @@
 
 Import metadata from a local directory
 
+### Synopsis
+
+Deploy the metadata in a directory that holds a package.xml.
+
+The directory may be in metadata format or in source (sfdx) format. Source
+format files are converted before they are deployed: the field, record type
+and other component files under objects/<Object>/ are composed into the
+object's file, a folder file such as reports/Sales.reportFolder-meta.xml is
+deployed as reports/Sales-meta.xml, and a -meta.xml file of a type with no
+content file (tabs/Project__c.tab-meta.xml) is deployed without the suffix.
+The directory's package.xml is deployed as it is.
+
 ```
 force import [flags]
 ```
