@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/url"
 	"os"
@@ -55,6 +56,10 @@ func (f *Force) getScratchOrg(scratchOrgId string) (scratchOrg ScratchOrg, err e
 	return
 }
 
+// ScratchOrgProgress receives the progress messages of the creation of a
+// scratch org.
+var ScratchOrgProgress io.Writer = os.Stderr
+
 var scratchOrgPollInterval = 5 * time.Second
 var scratchOrgMaxWait = 10 * time.Minute
 
@@ -84,26 +89,44 @@ func (f *Force) waitForScratchOrgReady(scratchOrgId string) (org ForceRecord, er
 				err = errors.New("Timed out waiting for scratch org to become ready")
 				return
 			}
-			fmt.Fprintf(os.Stderr, "Waiting for scratch org to be ready (status: %s)...\n", status)
+			fmt.Fprintf(ScratchOrgProgress, "Waiting for scratch org to be ready (status: %s)...\n", status)
 			time.Sleep(scratchOrgPollInterval)
 		default:
 			if time.Since(start) > scratchOrgMaxWait {
 				err = fmt.Errorf("Timed out waiting for scratch org (status: %s)", status)
 				return
 			}
-			fmt.Fprintf(os.Stderr, "Waiting for scratch org to be ready (status: %s)...\n", status)
+			fmt.Fprintf(ScratchOrgProgress, "Waiting for scratch org to be ready (status: %s)...\n", status)
 			time.Sleep(scratchOrgPollInterval)
 		}
 	}
 }
 
+// ScratchOrgClient is the connected app a scratch org was requested with:
+// the authorization code of the scratch org is exchanged with its consumer
+// key, its secret when it has one, and its callback URL.
+type ScratchOrgClient struct {
+	ClientId     string
+	ClientSecret string
+	RedirectURI  string
+}
+
+// DefaultScratchOrgClient is the connected app of the Salesforce CLI.
+var DefaultScratchOrgClient = ScratchOrgClient{ClientId: "PlatformCLI", RedirectURI: "http://localhost:1717/OauthRedirect"}
+
 // Log into a Scratch Org
 func (f *Force) ForceLoginNewScratch(scratchOrgId string) (session ForceSession, err error) {
+	return f.ForceLoginNewScratchWithClient(scratchOrgId, DefaultScratchOrgClient)
+}
+
+// ForceLoginNewScratchWithClient logs into a scratch org that was requested
+// with a connected app other than the default one.
+func (f *Force) ForceLoginNewScratchWithClient(scratchOrgId string, client ScratchOrgClient) (session ForceSession, err error) {
 	scratchOrg, err := f.getScratchOrg(scratchOrgId)
 	if err != nil {
 		return
 	}
-	session, err = scratchOrg.getSession()
+	session, err = scratchOrg.getSession(client)
 	if err != nil {
 		return
 	}
@@ -111,18 +134,21 @@ func (f *Force) ForceLoginNewScratch(scratchOrgId string) (session ForceSession,
 		RefreshMethod: RefreshOauth,
 	}
 	session.ForceEndpoint = EndpointTest
-	session.ClientId = "PlatformCLI"
+	session.ClientId = client.ClientId
 	return
 }
 
 // Use the AuthCode for a new Scratch Org from the Dev Hub to get a new
 // ForceSession
-func (s *ScratchOrg) getSession() (session ForceSession, err error) {
+func (s *ScratchOrg) getSession(client ScratchOrgClient) (session ForceSession, err error) {
 	attrs := url.Values{}
 	attrs.Set("grant_type", "authorization_code")
 	attrs.Set("code", s.AuthCode)
-	attrs.Set("client_id", "PlatformCLI")
-	attrs.Set("redirect_uri", "http://localhost:1717/OauthRedirect")
+	attrs.Set("client_id", client.ClientId)
+	if client.ClientSecret != "" {
+		attrs.Set("client_secret", client.ClientSecret)
+	}
+	attrs.Set("redirect_uri", client.RedirectURI)
 
 	postVars := attrs.Encode()
 	req, err := httpRequest("POST", s.tokenURL(), bytes.NewReader([]byte(postVars)))
@@ -130,7 +156,7 @@ func (s *ScratchOrg) getSession() (session ForceSession, err error) {
 		return
 	}
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	fmt.Fprintln(os.Stderr, "Logging into scratch org")
+	fmt.Fprintln(ScratchOrgProgress, "Logging into scratch org")
 	res, err := doRequest(req)
 	if err != nil {
 		fmt.Println(err.Error())
@@ -904,4 +930,45 @@ func (f *Force) CreateScratchOrgWithDuration(username string, features []string,
 		return
 	}
 	return
+}
+
+// SessionFromAuthCode exchanges an authorization code that Salesforce
+// issued for a new sandbox for a session.  The code is sent to the token
+// endpoint of loginURL with the client Id and the redirect URI the code was
+// requested with.
+func SessionFromAuthCode(loginURL, authCode, clientId, redirectURI string) (session ForceSession, err error) {
+	attrs := url.Values{}
+	attrs.Set("grant_type", "authorization_code")
+	attrs.Set("code", authCode)
+	attrs.Set("client_id", clientId)
+	attrs.Set("redirect_uri", redirectURI)
+	req, err := httpRequest("POST", tokenURL(strings.TrimRight(loginURL, "/")), bytes.NewReader([]byte(attrs.Encode())))
+	if err != nil {
+		return
+	}
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	res, err := doRequest(req)
+	if err != nil {
+		return
+	}
+	defer res.Body.Close()
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return
+	}
+	if res.StatusCode != 200 {
+		var oauthError OAuthError
+		json.Unmarshal(body, &oauthError)
+		err = errors.New("Unable to exchange the authorization code: " + oauthError.ErrorDescription)
+		return
+	}
+	var authSession AuthCodeSession
+	if err = json.Unmarshal(body, &authSession); err != nil {
+		return
+	}
+	session = authSession.ForceSession
+	session.RefreshToken = authSession.RefreshToken
+	session.ClientId = clientId
+	session.SessionOptions = &SessionOptions{RefreshMethod: RefreshOauth}
+	return session, nil
 }

@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/ForceCLI/force/desktop"
 	"io"
 	"net"
 	"net/http"
@@ -61,6 +62,17 @@ func pkceCodeChallenge(verifier string) string {
 // dpopJKT is not empty, it is sent as dpop_jkt, the JWK thumbprint of the DPoP
 // public key, so that Salesforce binds the authorization code to that key and
 // accepts it only with a proof signed by the same key.
+// LoginScope is the OAuth scope requested by the web login flow.  When it
+// is empty no scope is requested and the connected app decides.
+var LoginScope string
+
+// LoginBrowserRequired makes the web login flow fail when the browser cannot
+// be opened, instead of printing the URL and waiting.
+var LoginBrowserRequired bool
+
+// OpenLoginBrowser opens the authorization URL of the web login flow.
+var OpenLoginBrowser = desktop.Open
+
 func authorizationCodeURL(endpoint, clientId, redirectURI, state, prompt, codeChallenge, dpopJKT string) string {
 	params := url.Values{}
 	params.Set("response_type", "code")
@@ -72,6 +84,9 @@ func authorizationCodeURL(endpoint, clientId, redirectURI, state, prompt, codeCh
 	params.Set("code_challenge_method", "S256")
 	if dpopJKT != "" {
 		params.Set("dpop_jkt", dpopJKT)
+	}
+	if LoginScope != "" {
+		params.Set("scope", LoginScope)
 	}
 	return fmt.Sprintf("%s/services/oauth2/authorize?%s", endpoint, params.Encode())
 }

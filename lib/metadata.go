@@ -8,6 +8,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"html"
 	"io"
 	"io/ioutil"
 	"os"
@@ -232,6 +233,9 @@ type ForceMetadataFiles map[string][]byte
 type ForceMetadata struct {
 	ApiVersion string
 	Force      *Force
+	// RetrieveStatusHook, when set, receives the SOAP response of each
+	// completed retrieve, without the content of the zip file.
+	RetrieveStatusHook func(body []byte)
 }
 
 type ForceDeployOptions struct {
@@ -842,7 +846,14 @@ func (fm *ForceMetadata) CancelDeploy(id string) (ForceCancelDeployResult, error
 }
 
 func (fm *ForceMetadata) CheckDeployStatus(id string) (results ForceCheckDeploymentStatusResult, err error) {
-	body, err := fm.soapExecute("checkDeployStatus", fmt.Sprintf("<id>%s</id><includeDetails>true</includeDetails>", id))
+	results, _, err = fm.CheckDeployStatusXML(id)
+	return
+}
+
+// CheckDeployStatusXML is CheckDeployStatus and also returns the SOAP
+// response, for callers that report fields the result struct leaves out.
+func (fm *ForceMetadata) CheckDeployStatusXML(id string) (results ForceCheckDeploymentStatusResult, body []byte, err error) {
+	body, err = fm.soapExecute("checkDeployStatus", fmt.Sprintf("<id>%s</id><includeDetails>true</includeDetails>", id))
 	if err != nil {
 		return
 	}
@@ -853,7 +864,7 @@ func (fm *ForceMetadata) CheckDeployStatus(id string) (results ForceCheckDeploym
 
 	if err = xml.Unmarshal(body, &deployResult); err != nil {
 		err = errors.New("Error decoding SOAP body: " + err.Error())
-		return results, err
+		return results, body, err
 	}
 
 	results = deployResult.Results
@@ -934,6 +945,9 @@ func (fm *ForceMetadata) checkRetrieveStatusTo(id string, zipOut io.Writer) (pro
 		return
 	}
 	problems = status.Problems
+	if fm.RetrieveStatusHook != nil {
+		fm.RetrieveStatusHook(body)
+	}
 	return
 }
 
@@ -1724,6 +1738,27 @@ func (fm *ForceMetadata) ListMetadata(query string) (res []byte, err error) {
 	}
 }
 
+// ListMetadataQuery names a metadata type and, for a type whose components
+// are in folders, a folder.
+type ListMetadataQuery struct {
+	Type   string
+	Folder string
+}
+
+// ListMetadataQueries sends one listMetadata request with up to three
+// queries, which is the most the Metadata API accepts in a request.
+func (fm *ForceMetadata) ListMetadataQueries(queries []ListMetadataQuery) (res []byte, err error) {
+	var body strings.Builder
+	for _, query := range queries {
+		body.WriteString("<queries>")
+		if query.Folder != "" {
+			fmt.Fprintf(&body, "<folder>%s</folder>", html.EscapeString(query.Folder))
+		}
+		fmt.Fprintf(&body, "<type>%s</type></queries>", html.EscapeString(query.Type))
+	}
+	return fm.soapExecute("listMetadata", body.String())
+}
+
 func (fm *ForceMetadata) ListAllMetadata() (describe MetadataDescribeResult, err error) {
 	describe, err = fm.DescribeMetadata()
 	return
@@ -1745,6 +1780,14 @@ func (fm *ForceMetadata) ListConnectedApps() (apps ForceConnectedApps, err error
 	}
 	apps = res.ConnectedApps
 	return
+}
+
+// ReadMetadataXML calls readMetadata for one component and returns the
+// SOAP response.
+func (fm *ForceMetadata) ReadMetadataXML(metadataType, fullName string) ([]byte, error) {
+	var name bytes.Buffer
+	xml.EscapeText(&name, []byte(fullName))
+	return fm.soapExecute("readMetadata", fmt.Sprintf("<type>%s</type><fullNames>%s</fullNames>", metadataType, name.String()))
 }
 
 func (fm *ForceMetadata) soapExecute(action, query string) (response []byte, err error) {

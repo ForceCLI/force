@@ -23,6 +23,41 @@ Can be downloaded from the [Current Release Page](https://github.com/ForceCLI/fo
 
 See [docs/force.md](docs/force.md) for all supported commands.
 
+### sf-Compatible Mode
+
+When the binary is invoked under the name `sf`, or as `force --sf`, it accepts the command names
+and flags of the Salesforce `sf` CLI, uses the logins, aliases and config
+values of `sf` (`~/.sfdx` and `~/.sf`), and prints output in the format of
+`sf`, including the `--json` envelope.
+
+    make install-sf     # installs force and an sf symlink next to it
+    sf org login web --alias dev --set-default
+    sf data query -q "SELECT Id, Name FROM Account" --json
+    sf project deploy start --source-dir force-app
+    force --sf org list # the same mode without the symlink
+
+Commands that the mode suggests in its messages are written the way the program was started:
+`sf ...` for `sf` on the PATH, `/tmp/sf ...` for that path, and `force --sf ...` with the flag.
+
+158 `sf` commands are implemented.
+[docs/sf-compatibility.md](docs/sf-compatibility.md) lists them with the
+`force` command each corresponds to, the flags that are not supported, and the
+`sf` commands that are not implemented. [docs/sf/sf.md](docs/sf/sf.md) has the
+generated help for each command.
+
+The file templates of the `sf template generate` commands come from
+[salesforcedx-templates](https://github.com/forcedotcom/salesforcedx-templates)
+(BSD-3-Clause) and are compiled into the binary.
+`make update-sf-templates SF_TEMPLATES_VERSION=<tag>`
+rebuilds them from a tag of that repository.
+
+The names of the metadata types, their folder and child types, and the
+standard value sets in `sf/registry_data.go` come from the metadata registry of
+[source-deploy-retrieve](https://github.com/forcedotcom/source-deploy-retrieve)
+(Apache-2.0).
+`make update-sf-registry SF_REGISTRY_DIR=<checkout>`
+regenerates the file from a checkout of that repository.
+
 Tab completion simplifies use of the force CLI.
 Enable bash completion or see `force completion --help` for other options.
 
@@ -417,3 +452,15 @@ Starting from Windows 10 Creator Update (version 1703), you now can use force cl
 For ease of use you can add the following simple alias
 
       alias force=force.exe
+
+## Licenses
+
+force is released under the MIT license in [LICENSE](LICENSE).
+[third-party-licenses.txt](third-party-licenses.txt) holds the license of each
+Go module compiled into the binary, followed by the attributions in
+`licenses/` for third-party material that is not a Go module. Both files are
+included in every release zip.
+
+`make third-party-licenses.txt` regenerates the file with
+[go-licenses](https://github.com/google/go-licenses) after a dependency
+changes.

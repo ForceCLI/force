@@ -13,12 +13,26 @@ OSX_ARM64=$(EXECUTABLE)_osx_arm64
 ALL=$(WINDOWS) $(WINDOWS_ARM64) $(LINUX) $(LINUX_ARM64) $(OSX_AMD64) $(OSX_ARM64)
 ZIPS=$(addsuffix _$(VERSION).zip,$(basename $(ALL)))
 RELEASE_ASSETS=$(ZIPS) SHA256SUMS-$(VERSION)
+# The license of force and the notices that the licenses of third-party
+# material in the binary require to accompany it.  Every release zip includes
+# these files.
+LICENSES := LICENSE third-party-licenses.txt
+# Source of the file templates in sf/templates.
+SF_TEMPLATES_REPO=https://github.com/forcedotcom/salesforcedx-templates
+SF_TEMPLATES_VERSION=66.9.1
+# Checkout of https://github.com/forcedotcom/source-deploy-retrieve that
+# sf/registry_data.go is generated from.
+SF_REGISTRY_DIR=../source-deploy-retrieve
 
 default:
 	go build ${LDFLAGS}
 
 install:
 	go install ${LDFLAGS}
+
+# Install force and create an sf symlink next to it.
+install-sf: install
+	ln -s -f force "$(shell go env GOPATH)/bin/sf"
 
 install-debug:
 	go install ${LDFLAGS} ${GCFLAGS}
@@ -43,35 +57,59 @@ $(OSX_ARM64):
 	env CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -v -o $(OSX_ARM64) ${LDFLAGS}
 	rcodesign sign --for-notarization --pem-file <(pass OctoberSwimmer/codesign/combined) $@
 
-$(basename $(WINDOWS))_$(VERSION).zip: $(WINDOWS)
+$(basename $(WINDOWS))_$(VERSION).zip: $(WINDOWS) $(LICENSES)
 	@rm -f $@
-	zip $@ $<
+	zip $@ $< $(LICENSES)
 	7za rn $@ $< $(EXECUTABLE)$(suffix $<)
 
-$(basename $(WINDOWS_ARM64))_$(VERSION).zip: $(WINDOWS_ARM64)
+$(basename $(WINDOWS_ARM64))_$(VERSION).zip: $(WINDOWS_ARM64) $(LICENSES)
 	@rm -f $@
-	zip $@ $<
+	zip $@ $< $(LICENSES)
 	7za rn $@ $< $(EXECUTABLE)$(suffix $<)
 
-$(basename $(OSX_AMD64))_$(VERSION).zip: $(OSX_AMD64)
+$(basename $(OSX_AMD64))_$(VERSION).zip: $(OSX_AMD64) $(LICENSES)
 	@rm -f $@
-	zip $@ $<
+	zip $@ $< $(LICENSES)
 	7za rn $@ $< $(EXECUTABLE)
 	rcodesign notary-submit --api-key-file <(pass OctoberSwimmer/codesign/api-key) $@
 
-$(basename $(OSX_ARM64))_$(VERSION).zip: $(OSX_ARM64)
+$(basename $(OSX_ARM64))_$(VERSION).zip: $(OSX_ARM64) $(LICENSES)
 	@rm -f $@
-	zip $@ $<
+	zip $@ $< $(LICENSES)
 	7za rn $@ $< $(EXECUTABLE)
 	rcodesign notary-submit --api-key-file <(pass OctoberSwimmer/codesign/api-key) $@
 
-%_$(VERSION).zip: %
+%_$(VERSION).zip: % $(LICENSES)
 	@rm -f $@
-	zip $@ $<
+	zip $@ $< $(LICENSES)
 	7za rn $@ $< $(EXECUTABLE)
 
 docs:
 	go run docs/mkdocs.go
+
+# Rebuild the template archives in sf/templates and their attribution in
+# licenses/ from a tag of the source repository, then the license report:
+#   make update-sf-templates SF_TEMPLATES_VERSION=66.9.3
+update-sf-templates:
+	go run sf/templates/update.go $(SF_TEMPLATES_REPO) $(SF_TEMPLATES_VERSION) .
+	$(MAKE) third-party-licenses.txt
+	go test ./sf/...
+
+# Regenerate sf/registry_data.go and its attribution in licenses/ from the
+# metadata registry in a checkout of source-deploy-retrieve, then the license
+# report:
+#   make update-sf-registry SF_REGISTRY_DIR=~/git/source-deploy-retrieve
+update-sf-registry:
+	go run sf/registry/update.go $(SF_REGISTRY_DIR) .
+	$(MAKE) third-party-licenses.txt
+	go test ./sf/...
+
+# Attributions for the Go modules compiled into the binary, followed by the
+# attributions in licenses/ for third-party material that is not a Go module
+# dependency, so go-licenses cannot find it by walking the module graph.
+third-party-licenses.txt: go.mod licenses.tpl $(wildcard licenses/*.txt)
+	go run github.com/google/go-licenses@v1.6.0 report ./... --ignore github.com/ForceCLI/force --template licenses.tpl > $@
+	@if ls licenses/*.txt >/dev/null 2>&1; then cat licenses/*.txt >> $@; fi
 
 dist: test $(ZIPS)
 
@@ -107,7 +145,7 @@ test:
 clean:
 	-rm -f $(EXECUTABLE) $(EXECUTABLE)_* *.zip SHA256SUMS-*
 
-.PHONY: default dist clean docs checksum release tag $(ALL)
+.PHONY: default dist clean docs checksum release tag install-sf update-sf-templates update-sf-registry $(ALL)
 
 tag:
 	@echo "Creating next tag..."

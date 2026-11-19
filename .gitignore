@@ -9,6 +9,7 @@ test
 *.json
 
 *.xml
+!sf/testdata/*.xml
 *.exe
 *.sh
 

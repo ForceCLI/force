@@ -13,6 +13,7 @@ force
   -V, --apiversion string   API version to use
       --config string       config directory to use (default: .force)
   -h, --help                help for force
+      --sf                  run the rest of the command line as the Salesforce sf CLI would (see docs/sf-compatibility.md)
 ```
 
 ### SEE ALSO

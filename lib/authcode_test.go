@@ -251,3 +251,18 @@ func TestOAuthCallbackURL_UsesPort(t *testing.T) {
 		t.Errorf("Expected http://localhost:3835/oauth/callback, got %s", got)
 	}
 }
+
+func TestAuthorizationCodeURLRequestsTheLoginScope(t *testing.T) {
+	previous := LoginScope
+	LoginScope = "api web refresh_token"
+	defer func() { LoginScope = previous }()
+	got, _ := url.Parse(authorizationCodeURL("https://example.my.salesforce.com", "client", "http://localhost:3835/oauth/callback", "state", "login", "challenge", ""))
+	if scope := got.Query().Get("scope"); scope != "api web refresh_token" {
+		t.Errorf("scope = %q", scope)
+	}
+	LoginScope = ""
+	got, _ = url.Parse(authorizationCodeURL("https://example.my.salesforce.com", "client", "http://localhost:3835/oauth/callback", "state", "login", "challenge", ""))
+	if got.Query().Has("scope") {
+		t.Errorf("scope sent without LoginScope: %s", got)
+	}
+}

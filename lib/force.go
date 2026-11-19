@@ -18,7 +18,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ForceCLI/force/desktop"
 	. "github.com/ForceCLI/force/error"
 	"github.com/ForceCLI/force/lib/internal"
 	"github.com/ForceCLI/force/lib/query"
@@ -142,6 +141,8 @@ type GenericForceError struct {
 type ForceError struct {
 	Message   string
 	ErrorCode string
+	// Fields names the fields of the record that the error is about.
+	Fields []string
 }
 
 type ForceErrors []ForceError
@@ -441,7 +442,11 @@ func ForceLoginAtEndpointWithPromptAndPort(endpoint string, prompt string, targe
 
 	redirectURI := OAuthCallbackURL(callback.port)
 	authURL := authorizationCodeURL(endpoint, ClientId, redirectURI, state, prompt, pkceCodeChallenge(codeVerifier), dpopJKT)
-	if openErr := desktop.Open(authURL); openErr != nil {
+	if openErr := OpenLoginBrowser(authURL); openErr != nil {
+		if LoginBrowserRequired {
+			err = openErr
+			return
+		}
 		fmt.Fprintf(os.Stderr, "Unable to open browser: %s\nOpen this URL to log in:\n%s\n", openErr, authURL)
 	}
 

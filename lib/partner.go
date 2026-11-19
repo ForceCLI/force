@@ -60,21 +60,56 @@ func (partner *ForcePartner) CheckStatus(id string) (err error) {
 	return
 }
 
-func (partner *ForcePartner) ExecuteAnonymous(apex string) (output string, err error) {
+// AnonymousApexResult is the result of executing anonymous Apex through the
+// SOAP API, including the debug log.
+type AnonymousApexResult struct {
+	Compiled            bool
+	Success             bool
+	CompileProblem      string
+	ExceptionMessage    string
+	ExceptionStackTrace string
+	Line                int
+	Column              int
+	Log                 string
+}
+
+// ExecuteAnonymousResult executes anonymous Apex and returns the full
+// result.  A compile or runtime failure is reported in the result, not as an
+// error.
+func (partner *ForcePartner) ExecuteAnonymousResult(apex string) (AnonymousApexResult, error) {
 	soap := "<apexcode><![CDATA[%s]]></apexcode>"
 	body, err := partner.soapExecute("executeAnonymous", fmt.Sprintf(soap, apex))
 	if err != nil {
-		return
+		return AnonymousApexResult{}, err
 	}
 	var result struct {
 		Compiled         bool   `xml:"Body>executeAnonymousResponse>result>compiled"`
 		CompileProblem   string `xml:"Body>executeAnonymousResponse>result>compileProblem"`
 		ExceptionMessage string `xml:"Body>executeAnonymousResponse>result>exceptionMessage"`
 		ExceptionTrace   string `xml:"Body>executeAnonymousResponse>result>exceptionStackTrace"`
+		Line             int    `xml:"Body>executeAnonymousResponse>result>line"`
+		Column           int    `xml:"Body>executeAnonymousResponse>result>column"`
 		Log              string `xml:"Header>DebuggingInfo>debugLog"`
 		Success          bool   `xml:"Body>executeAnonymousResponse>result>success"`
 	}
-	if err = xml.Unmarshal(body, &result); err != nil {
+	if err := xml.Unmarshal(body, &result); err != nil {
+		return AnonymousApexResult{}, err
+	}
+	return AnonymousApexResult{
+		Compiled:            result.Compiled,
+		Success:             result.Success,
+		CompileProblem:      result.CompileProblem,
+		ExceptionMessage:    result.ExceptionMessage,
+		ExceptionStackTrace: result.ExceptionTrace,
+		Line:                result.Line,
+		Column:              result.Column,
+		Log:                 result.Log,
+	}, nil
+}
+
+func (partner *ForcePartner) ExecuteAnonymous(apex string) (output string, err error) {
+	result, err := partner.ExecuteAnonymousResult(apex)
+	if err != nil {
 		return
 	}
 	if !result.Compiled {

@@ -11,6 +11,7 @@ import (
 	"net/textproto"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -41,6 +42,34 @@ type PackageVersionRequest struct {
 	SkipValidation  bool
 	AsyncValidation bool
 	CodeCoverage    bool
+	// TransitiveDependencies asks the org to add the dependencies of the
+	// dependencies.
+	TransitiveDependencies bool
+	// KeepEmptyDescription sends an empty VersionDescription as it is.
+	KeepEmptyDescription bool
+	// SourceApiVersion is the API version of the manifest of the package
+	// contents, such as "66.0".  It defaults to the API version of the
+	// session.
+	SourceApiVersion string
+	// ExtraDescriptor holds more properties of the descriptor of the
+	// version, such as features and orgPreferences.
+	ExtraDescriptor map[string]interface{}
+	// ExtraFiles are more files of the version, by name, such as
+	// scratch-org-definition.json and settings.zip.
+	ExtraFiles map[string][]byte
+	// Branch is the source control branch the version is based on.
+	Branch string
+	// InstallationKey protects the installation of the version.
+	InstallationKey string
+	// Language is the language of the package version.
+	Language string
+	// GeneratePackageZip asks for a package zip that can be downloaded.
+	GeneratePackageZip bool
+	// ReleaseNotesURL, PostInstallURL and PostInstallScript go into the
+	// descriptor of the version.
+	ReleaseNotesURL   string
+	PostInstallURL    string
+	PostInstallScript string
 }
 
 // PackageVersion identifies a created package version.
@@ -87,62 +116,11 @@ func (f *Force) CreatePackageVersion(req PackageVersionRequest, progress io.Writ
 	if progress == nil {
 		progress = io.Discard
 	}
-	if req.PackageId == "" {
-		return PackageVersion{}, fmt.Errorf("Package ID is required")
-	}
-	if req.VersionNumber == "" {
-		return PackageVersion{}, fmt.Errorf("Version number is required")
-	}
-	if req.VersionName == "" {
-		req.VersionName = req.VersionNumber
-	}
-	if req.VersionDescription == "" {
-		req.VersionDescription = req.VersionNumber
-	}
-	for _, dependency := range req.Dependencies {
-		if !strings.HasPrefix(dependency, "04t") {
-			return PackageVersion{}, fmt.Errorf("Invalid dependency ID: %s. Must be a Subscriber Package Version ID (04t)", dependency)
-		}
-	}
-
-	// The descriptor's ancestorId must be a Package2Version (05i) Id.
-	ancestorId := req.AncestorId
-	if strings.HasPrefix(ancestorId, "04t") {
-		id, err := f.queryToolingId(fmt.Sprintf("SELECT Id FROM Package2Version WHERE SubscriberPackageVersionId = '%s'", ancestorId))
-		if err != nil {
-			return PackageVersion{}, fmt.Errorf("Failed to resolve ancestor version: %w", err)
-		}
-		if id == "" {
-			return PackageVersion{}, fmt.Errorf("No Package2Version found for ancestor: %s", ancestorId)
-		}
-		fmt.Fprintf(progress, "Resolved ancestor %s to Package2Version %s\n", ancestorId, id)
-		ancestorId = id
-	}
-
-	descriptor := buildPackageVersionDescriptor(req.VersionName, req.VersionNumber, req.VersionDescription, req.PackageId, ancestorId, req.Dependencies)
-	descriptorJson, err := json.Marshal(descriptor)
-	if err != nil {
-		return PackageVersion{}, fmt.Errorf("Failed to create descriptor JSON: %w", err)
-	}
-	packageZip, err := buildPackageZip(req.Path, progress)
+	requestId, err := f.SubmitPackageVersion(req, progress)
 	if err != nil {
 		return PackageVersion{}, err
 	}
-	body, contentType, err := packageVersionCreateBody(packageZip, descriptorJson, req)
-	if err != nil {
-		return PackageVersion{}, err
-	}
-
-	result, err := f.CreateToolingRecordMultipart("Package2VersionCreateRequest", body, contentType)
-	if err != nil {
-		return PackageVersion{}, fmt.Errorf("Failed to upload package version: %w", err)
-	}
-	if result.Id == "" {
-		return PackageVersion{}, fmt.Errorf("Failed to get request ID from response")
-	}
-	fmt.Fprintf(progress, "Package version creation request submitted: %s\n", result.Id)
-
-	versionId, err := f.pollPackageVersionCreateRequest(result.Id, progress)
+	versionId, err := f.pollPackageVersionCreateRequest(requestId, progress)
 	if err != nil {
 		return PackageVersion{}, err
 	}
@@ -156,6 +134,80 @@ func (f *Force) CreatePackageVersion(req PackageVersionRequest, progress io.Writ
 		return PackageVersion{}, fmt.Errorf("No SubscriberPackageVersionId for Package2Version %s", versionId)
 	}
 	return PackageVersion{Id: versionId, SubscriberPackageVersionId: subscriberVersionId}, nil
+}
+
+// SubmitPackageVersion uploads the contents of a package version and returns
+// the Id of the Package2VersionCreateRequest, without waiting for the
+// version to be created.
+func (f *Force) SubmitPackageVersion(req PackageVersionRequest, progress io.Writer) (string, error) {
+	if progress == nil {
+		progress = io.Discard
+	}
+	if req.PackageId == "" {
+		return "", fmt.Errorf("Package ID is required")
+	}
+	if req.VersionNumber == "" {
+		return "", fmt.Errorf("Version number is required")
+	}
+	if req.VersionName == "" {
+		req.VersionName = req.VersionNumber
+	}
+	if req.VersionDescription == "" && !req.KeepEmptyDescription {
+		req.VersionDescription = req.VersionNumber
+	}
+	for _, dependency := range req.Dependencies {
+		if !strings.HasPrefix(dependency, "04t") {
+			return "", fmt.Errorf("Invalid dependency ID: %s. Must be a Subscriber Package Version ID (04t)", dependency)
+		}
+	}
+
+	// The descriptor's ancestorId must be a Package2Version (05i) Id.
+	ancestorId := req.AncestorId
+	if strings.HasPrefix(ancestorId, "04t") {
+		id, err := f.queryToolingId(fmt.Sprintf("SELECT Id FROM Package2Version WHERE SubscriberPackageVersionId = '%s'", ancestorId))
+		if err != nil {
+			return "", fmt.Errorf("Failed to resolve ancestor version: %w", err)
+		}
+		if id == "" {
+			return "", fmt.Errorf("No Package2Version found for ancestor: %s", ancestorId)
+		}
+		fmt.Fprintf(progress, "Resolved ancestor %s to Package2Version %s\n", ancestorId, id)
+		ancestorId = id
+	}
+
+	descriptor := buildPackageVersionDescriptor(req.VersionName, req.VersionNumber, req.VersionDescription, req.PackageId, ancestorId, req.Dependencies)
+	for key, value := range req.ExtraDescriptor {
+		if _, set := descriptor[key]; !set {
+			descriptor[key] = value
+		}
+	}
+	for key, value := range map[string]string{"releaseNotesUrl": req.ReleaseNotesURL, "postInstallUrl": req.PostInstallURL, "postInstallScript": req.PostInstallScript} {
+		if value != "" {
+			descriptor[key] = value
+		}
+	}
+	descriptorJson, err := json.Marshal(descriptor)
+	if err != nil {
+		return "", fmt.Errorf("Failed to create descriptor JSON: %w", err)
+	}
+	packageZip, err := buildPackageZip(req.Path, req.SourceApiVersion, progress)
+	if err != nil {
+		return "", err
+	}
+	body, contentType, err := packageVersionCreateBody(packageZip, descriptorJson, req)
+	if err != nil {
+		return "", err
+	}
+
+	result, err := f.CreateToolingRecordMultipart("Package2VersionCreateRequest", body, contentType)
+	if err != nil {
+		return "", fmt.Errorf("Failed to upload package version: %w", err)
+	}
+	if result.Id == "" {
+		return "", fmt.Errorf("Failed to get request ID from response")
+	}
+	fmt.Fprintf(progress, "Package version creation request submitted: %s\n", result.Id)
+	return result.Id, nil
 }
 
 // InstallPackageVersion installs a package version (04t) and waits for the
@@ -315,7 +367,9 @@ func (f *Force) queryToolingField(query string, field string) (string, error) {
 
 // buildPackageZip builds the package.zip of a package version from the
 // contents of path.
-func buildPackageZip(path string, progress io.Writer) ([]byte, error) {
+var manifestVersion = regexp.MustCompile(`<version>[^<]*</version>`)
+
+func buildPackageZip(path string, apiVersion string, progress io.Writer) ([]byte, error) {
 	absPath, err := filepath.Abs(path)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to get absolute path: %w", err)
@@ -350,6 +404,13 @@ func buildPackageZip(path string, progress io.Writer) ([]byte, error) {
 		updated, err := addProfileTypeToManifest(manifest)
 		if err != nil {
 			return nil, err
+		}
+		if apiVersion != "" {
+			updated = manifestVersion.ReplaceAll(updated, []byte("<version>"+apiVersion+"</version>"))
+		}
+		// The Salesforce CLI ends the manifest with a line break.
+		if !bytes.HasSuffix(updated, []byte("\n")) {
+			updated = append(updated, '\n')
 		}
 		packageFiles["package.xml"] = updated
 	}
@@ -400,13 +461,23 @@ func packageVersionCreateBody(packageZip []byte, descriptorJson []byte, req Pack
 	modTime := time.Now()
 	finalZipBuffer := new(bytes.Buffer)
 	finalZipWriter := zip.NewWriter(finalZipBuffer)
-	for _, entry := range []struct {
+	type versionFile struct {
 		name string
 		data []byte
-	}{
+	}
+	entries := []versionFile{
 		{"package.zip", packageZip},
 		{"package2-descriptor.json", descriptorJson},
-	} {
+	}
+	extraNames := make([]string, 0, len(req.ExtraFiles))
+	for name := range req.ExtraFiles {
+		extraNames = append(extraNames, name)
+	}
+	sort.Strings(extraNames)
+	for _, name := range extraNames {
+		entries = append(entries, versionFile{name, req.ExtraFiles[name]})
+	}
+	for _, entry := range entries {
 		w, err := finalZipWriter.CreateHeader(fatZipHeader(entry.name, zip.Deflate, modTime))
 		if err != nil {
 			return nil, "", fmt.Errorf("Failed to create %s entry: %w", entry.name, err)
@@ -438,11 +509,13 @@ func packageVersionCreateBody(packageZip []byte, descriptorJson []byte, req Pack
 		"CalculateCodeCoverage":      req.CodeCoverage,
 		"SkipValidation":             req.SkipValidation,
 		"AsyncValidation":            req.AsyncValidation,
-		"CalcTransitiveDependencies": false,
-		"IsDevUsePkgZipRequested":    false,
+		"CalcTransitiveDependencies": req.TransitiveDependencies,
+		"IsDevUsePkgZipRequested":    req.GeneratePackageZip,
 	}
-	if req.Tag != "" {
-		request["Tag"] = req.Tag
+	for key, value := range map[string]string{"Tag": req.Tag, "Branch": req.Branch, "InstallKey": req.InstallationKey, "Language": req.Language} {
+		if value != "" {
+			request[key] = value
+		}
 	}
 	requestJson, err := json.Marshal(request)
 	if err != nil {

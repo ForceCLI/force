@@ -28,6 +28,10 @@ type BatchInfo struct {
 	SystemModstamp         string `xml:"systemModstamp" json:"systemModstamp"`
 	NumberRecordsProcessed int    `xml:"numberRecordsProcessed" json:"numberRecordsProcessed"`
 	NumberRecordsFailed    int    `xml:"numberRecordsFailed" json:"numberRecordsFailed"`
+	// Processing times in milliseconds, as the Bulk API reports them.
+	TotalProcessingTime     int `xml:"totalProcessingTime" json:"totalProcessingTime"`
+	ApiActiveProcessingTime int `xml:"apiActiveProcessingTime" json:"apiActiveProcessingTime"`
+	ApexProcessingTime      int `xml:"apexProcessingTime" json:"apexProcessingTime"`
 }
 
 type JobInfo struct {

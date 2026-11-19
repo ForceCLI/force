@@ -121,6 +121,12 @@ func (s *Soap) ExecuteExtract(action, query, element string, w io.Writer) (respo
 	return
 }
 
+// SoapClientName is sent as the client of the CallOptions header of every
+// SOAP request when it is not empty.  An org with source tracking records a
+// SourceMember change for a Metadata API deploy only when the client is the
+// one the Salesforce CLI sends, "sfdx toolbelt:".
+var SoapClientName string
+
 func (s *Soap) execute(action, query string) (res *http.Response, err error) {
 	soap := `
 		<env:Envelope xmlns:xsd="http://www.w3.org/2001/XMLSchema"
@@ -146,8 +152,12 @@ func (s *Soap) execute(action, query string) (res *http.Response, err error) {
 	if err != nil {
 		return
 	}
+	header := s.Header
+	if SoapClientName != "" {
+		header += fmt.Sprintf("<cmd:CallOptions><cmd:client>%s</cmd:client></cmd:CallOptions>", SoapClientName)
+	}
 	rbody := fmt.Sprintf(soap, s.Namespace,
-		s.AccessToken, dpopHeader, s.Header, action, s.Namespace, query, action)
+		s.AccessToken, dpopHeader, header, action, s.Namespace, query, action)
 	req, err := httpRequest("POST", s.Endpoint, strings.NewReader(rbody))
 	if err != nil {
 		return

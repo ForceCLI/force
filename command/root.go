@@ -33,6 +33,9 @@ func init() {
 	RootCmd.PersistentFlags().StringVarP(&account, "account", "a", "", "account `username` to use")
 	RootCmd.PersistentFlags().StringVar(&configName, "config", "", "config directory to use (default: .force)")
 	RootCmd.PersistentFlags().StringVarP(&_apiVersion, "apiversion", "V", "", "API version to use")
+	// main handles --sf before this command tree runs.  The flag is defined
+	// here so that it is listed in the help.
+	RootCmd.Flags().Bool("sf", false, "run the rest of the command line as the Salesforce sf CLI would (see docs/sf-compatibility.md)")
 
 	RootCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
 		initializeConfig()

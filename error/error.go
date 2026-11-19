@@ -9,7 +9,19 @@ const (
 	LF = 10
 )
 
+// ExitHandler, when set, receives the formatted message from ErrorAndExit in
+// place of the default "ERROR: " line on stderr.  The process exits with
+// status 1 after the handler returns.
+var ExitHandler func(message string)
+
 func ErrorAndExit(format string, args ...interface{}) {
+	if ExitHandler != nil {
+		if len(format) > 0 && format[0] == LF {
+			format = format[1:]
+		}
+		ExitHandler(fmt.Sprintf(format, args...))
+		os.Exit(1)
+	}
 	if format[0] == LF {
 		fmt.Fprintf(os.Stderr, format[1:]+"\n", args...)
 	} else {
@@ -20,7 +32,7 @@ func ErrorAndExit(format string, args ...interface{}) {
 
 func ExitIfError(err error, format string, args ...interface{}) {
 	if err != nil {
-		ErrorAndExit(format, args)
+		ErrorAndExit(format, args...)
 	}
 }
 

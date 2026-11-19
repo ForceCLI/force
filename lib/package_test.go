@@ -379,3 +379,53 @@ func Test_InstallPackageVersion_rejects_an_id_that_is_not_a_subscriber_package_v
 		t.Fatal("expected an error for a 05i Id")
 	}
 }
+
+func TestPackageVersionCreateBodySendsTheOptionsOfTheRequest(t *testing.T) {
+	body, _, err := packageVersionCreateBody([]byte("zip"), []byte("{}"), PackageVersionRequest{
+		PackageId: "0Ho000000000001", Tag: "v1", Branch: "main", InstallationKey: "secret", Language: "en_US", GeneratePackageZip: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{`"Tag":"v1"`, `"Branch":"main"`, `"InstallKey":"secret"`, `"Language":"en_US"`, `"IsDevUsePkgZipRequested":true`} {
+		if !strings.Contains(string(body), want) {
+			t.Errorf("request lacks %s:\n%s", want, body)
+		}
+	}
+	body, _, err = packageVersionCreateBody([]byte("zip"), []byte("{}"), PackageVersionRequest{PackageId: "0Ho000000000001"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, absent := range []string{`"Branch"`, `"InstallKey"`, `"Language"`, `"Tag"`} {
+		if strings.Contains(string(body), absent) {
+			t.Errorf("request without options has %s:\n%s", absent, body)
+		}
+	}
+}
+
+func TestBuildPackageZipWritesTheSourceApiVersionAndAFinalLineBreak(t *testing.T) {
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, "classes"), 0o755)
+	os.WriteFile(filepath.Join(dir, "classes", "A.cls"), []byte("public class A {}"), 0o644)
+	os.WriteFile(filepath.Join(dir, "classes", "A.cls-meta.xml"), []byte(`<?xml version="1.0" encoding="UTF-8"?><ApexClass xmlns="http://soap.sforce.com/2006/04/metadata"><apiVersion>66.0</apiVersion><status>Active</status></ApexClass>`), 0o644)
+	data, err := buildPackageZip(dir, "66.0", io.Discard)
+	if err != nil {
+		t.Fatal(err)
+	}
+	reader, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, file := range reader.File {
+		if file.Name != "package.xml" {
+			continue
+		}
+		content, _ := file.Open()
+		manifest, _ := io.ReadAll(content)
+		if !strings.HasSuffix(string(manifest), "    <version>66.0</version>\n</Package>\n") {
+			t.Errorf("manifest = %q", manifest)
+		}
+		return
+	}
+	t.Error("no package.xml in the zip")
+}
