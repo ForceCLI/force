@@ -93,6 +93,7 @@ release: checksum
 	fi
 	git push force "$(VERSION)"
 	gh release create "$(VERSION)" --title "force $(VERSION)" --notes-from-tag --verify-tag $(RELEASE_ASSETS)
+	brew bump-cask-pr octoberswimmer/tap/force --version $(VERSION:v%=%)
 
 fmt:
 	go fmt ./...

@@ -5,6 +5,12 @@ A command-line interface to force.com
 
 ### Installation
 
+##### Homebrew
+
+On macOS or Linux:
+
+    $ brew install octoberswimmer/tap/force
+
 ##### Precompiled Binaries
 
 Can be downloaded from the [Current Release Page](https://github.com/ForceCLI/force/releases/latest) or by visiting the [CLI Home Page](http://force-cli.herokuapp.com/).
