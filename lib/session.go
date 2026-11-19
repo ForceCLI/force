@@ -1,11 +1,9 @@
 package lib
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/url"
 	"strings"
 
@@ -16,39 +14,43 @@ var SessionRefreshError = errors.New("Failed to refresh session.  Please run `fo
 var SessionRefreshUnavailable = errors.New("Unable to refresh.  Please run `force login`.")
 
 func (f *Force) refreshOauth() (err error) {
+	// A refresh token issued with a DPoP-bound token is bound to the same
+	// key, so the refresh request needs a proof signed with it.
+	key, err := f.Credentials.dpopPrivateKey()
+	if err != nil {
+		return
+	}
+
 	attrs := url.Values{}
 	attrs.Set("grant_type", "refresh_token")
+	if key != nil {
+		// The hybrid_refresh grant also returns ui_sid, the unbound session
+		// ID for the web UI, which a DPoP-bound access token can't be used
+		// for.
+		attrs.Set("grant_type", "hybrid_refresh")
+	}
 	attrs.Set("refresh_token", f.Credentials.RefreshToken)
 	attrs.Set("client_id", ClientId)
 	if f.Credentials.ClientId != "" {
 		attrs.Set("client_id", f.Credentials.ClientId)
 	}
 	attrs.Set("format", "json")
-
-	postVars := attrs.Encode()
-	req, err := httpRequest("POST", f.refreshTokenURL(), bytes.NewReader([]byte(postVars)))
-	if err != nil {
-		return
-	}
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	Log.Info("Refreshing Session Token")
-	// Follow Redirects and re-POST upon a 302 response.
-	res, err := doRequest(req, redirectPostOn302)
+	res, body, nonce, err := postTokenRequest(f.refreshTokenURL(), attrs, key, f.Credentials.dpopNonce())
 	if err != nil {
 		return
 	}
-	defer res.Body.Close()
-	body, err := ioutil.ReadAll(res.Body)
 	if res.StatusCode != 200 {
 		err = SessionRefreshError
-		return
-	}
-	if err != nil {
 		return
 	}
 
 	var result ForceSession
 	json.Unmarshal(body, &result)
+	if key != nil {
+		result.DPoPNonce = nonce
+		f.Credentials.rememberDPoPNonce(nonce)
+	}
 	f.UpdateCredentials(result)
 	return
 }

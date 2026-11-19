@@ -159,28 +159,36 @@ func parseCompileAndTestResponse(body []byte) (output string, err error) {
 }
 
 func (partner *ForcePartner) SoapExecuteCore(action, query string) (response []byte, err error) {
-	url := fmt.Sprintf("%s/services/Soap/u/%s/%s", partner.Force.Credentials.InstanceUrl, partner.Force.Credentials.SessionOptions.ApiVersion, partner.Force.Credentials.UserInfo.OrgId)
-	soap := NewSoap(url, "urn:partner.soap.sforce.com", partner.Force.Credentials.AccessToken)
-	soap.Header = debugOnlyHeader
-	response, err = soap.Execute(action, query)
-	if err == SessionExpiredError {
+	// Retry once after refreshing the session. A session that is still
+	// rejected after a successful refresh returns SessionExpiredError.
+	for attempt := 0; ; attempt++ {
+		url := fmt.Sprintf("%s/services/Soap/u/%s/%s", partner.Force.Credentials.InstanceUrl, partner.Force.Credentials.SessionOptions.ApiVersion, partner.Force.Credentials.UserInfo.OrgId)
+		soap := NewSoap(url, "urn:partner.soap.sforce.com", partner.Force.Credentials.AccessToken)
+		soap.Session = partner.Force.Credentials
+		soap.Header = debugOnlyHeader
+		response, err = soap.Execute(action, query)
+		if err != SessionExpiredError || attempt > 0 {
+			return
+		}
 		partner.Force.RefreshSessionOrExit()
-		return partner.SoapExecuteCore(action, query)
 	}
-	return
 }
 
 func (partner *ForcePartner) soapExecute(action, query string) (response []byte, err error) {
-	url := fmt.Sprintf("%s/services/Soap/s/%s/%s", partner.Force.Credentials.InstanceUrl, partner.Force.Credentials.SessionOptions.ApiVersion, partner.Force.Credentials.UserInfo.OrgId)
-	soap := NewSoap(url, "http://soap.sforce.com/2006/08/apex", partner.Force.Credentials.AccessToken)
-	soap.Header = debugOnlyHeader
-	if partner.debuggingHeader != "" {
-		soap.Header = partner.debuggingHeader
-	}
-	response, err = soap.Execute(action, query)
-	if err == SessionExpiredError {
+	// Retry once after refreshing the session. A session that is still
+	// rejected after a successful refresh returns SessionExpiredError.
+	for attempt := 0; ; attempt++ {
+		url := fmt.Sprintf("%s/services/Soap/s/%s/%s", partner.Force.Credentials.InstanceUrl, partner.Force.Credentials.SessionOptions.ApiVersion, partner.Force.Credentials.UserInfo.OrgId)
+		soap := NewSoap(url, "http://soap.sforce.com/2006/08/apex", partner.Force.Credentials.AccessToken)
+		soap.Session = partner.Force.Credentials
+		soap.Header = debugOnlyHeader
+		if partner.debuggingHeader != "" {
+			soap.Header = partner.debuggingHeader
+		}
+		response, err = soap.Execute(action, query)
+		if err != SessionExpiredError || attempt > 0 {
+			return
+		}
 		partner.Force.RefreshSessionOrExit()
-		return partner.soapExecute(action, query)
 	}
-	return
 }

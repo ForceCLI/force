@@ -8,7 +8,7 @@ Execute a REST request
 
   force rest get "/tooling/query?q=Select id From Account"
   force rest get /appMenu/AppSwitcher
-  force rest get -a /services/data/
+  force rest get -A /services/data/
   force rest post "/tooling/sobjects/CustomField/00D9A0000000TgcUAE" path/to/definition.json
   force rest put "/tooling/sobjects/CustomField/00D9A0000000TgcUAE" path/to/definition.json
   force rest delete "/sobjects/Account/001D000000INjVe"

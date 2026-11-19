@@ -36,7 +36,7 @@ func TestRandomURLSafeString_ProducesVerifierOfValidLength(t *testing.T) {
 }
 
 func TestAuthorizationCodeURL_RequestsCodeWithPKCE(t *testing.T) {
-	got := authorizationCodeURL("https://example.my.salesforce.com", "client", "http://localhost:3835/oauth/callback", "the-state", "login", "the-challenge")
+	got := authorizationCodeURL("https://example.my.salesforce.com", "client", "http://localhost:3835/oauth/callback", "the-state", "login", "the-challenge", "")
 	u, err := url.Parse(got)
 	if err != nil {
 		t.Fatalf("Failed to parse URL: %v", err)
@@ -169,7 +169,7 @@ func TestExchangeAuthorizationCode_Success(t *testing.T) {
 	}))
 	defer server.Close()
 
-	creds, err := exchangeAuthorizationCode(server.URL, "test-client-id", "the-code", "the-verifier", "http://localhost:3835/oauth/callback")
+	creds, err := exchangeAuthorizationCode(server.URL, "test-client-id", "the-code", "the-verifier", "http://localhost:3835/oauth/callback", nil)
 	if err != nil {
 		t.Fatalf("exchangeAuthorizationCode returned error: %v", err)
 	}
@@ -218,7 +218,7 @@ func TestExchangeAuthorizationCode_ResendsPostAfterRedirect(t *testing.T) {
 	}))
 	defer lightning.Close()
 
-	creds, err := exchangeAuthorizationCode(lightning.URL, "test-client-id", "the-code", "the-verifier", "http://localhost:3835/oauth/callback")
+	creds, err := exchangeAuthorizationCode(lightning.URL, "test-client-id", "the-code", "the-verifier", "http://localhost:3835/oauth/callback", nil)
 	if err != nil {
 		t.Fatalf("exchangeAuthorizationCode returned error: %v", err)
 	}
@@ -237,7 +237,7 @@ func TestExchangeAuthorizationCode_ReturnsOAuthErrorDescription(t *testing.T) {
 	}))
 	defer server.Close()
 
-	_, err := exchangeAuthorizationCode(server.URL, "test-client-id", "the-code", "wrong-verifier", "http://localhost:3835/oauth/callback")
+	_, err := exchangeAuthorizationCode(server.URL, "test-client-id", "the-code", "wrong-verifier", "http://localhost:3835/oauth/callback", nil)
 	if err == nil {
 		t.Fatal("Expected an error")
 	}

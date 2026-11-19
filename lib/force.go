@@ -94,11 +94,23 @@ type OAuthError struct {
 }
 
 type ForceSession struct {
-	AccessToken    string `json:"access_token"`
-	InstanceUrl    string `json:"instance_url"`
-	IssuedAt       string `json:"issued_at"`
-	Scope          string `json:"scope"`
-	Id             string `json:"id"`
+	AccessToken string `json:"access_token"`
+	InstanceUrl string `json:"instance_url"`
+	IssuedAt    string `json:"issued_at"`
+	Scope       string `json:"scope"`
+	Id          string `json:"id"`
+	// TokenType is the token_type from the token endpoint: Bearer, or DPoP
+	// for a token bound to DPoPKey.
+	TokenType string `json:"token_type,omitempty"`
+	// UiSid is the unbound session ID Salesforce returns with a DPoP-bound
+	// token, for use in the web UI.
+	UiSid string `json:"ui_sid,omitempty"`
+	// DPoPKey is the PKCS #8 DER encoding, in base64, of the private key a
+	// DPoP-bound token and its refresh token are bound to.
+	DPoPKey string `json:"dpop_key,omitempty"`
+	// DPoPNonce is the latest nonce from the token endpoint, which every
+	// DPoP proof must include. Salesforce accepts a nonce for 24 hours.
+	DPoPNonce      string `json:"dpop_nonce,omitempty"`
 	ClientId       string
 	RefreshToken   string
 	ForceEndpoint  ForceEndpoint
@@ -416,8 +428,19 @@ func ForceLoginAtEndpointWithPromptAndPort(endpoint string, prompt string, targe
 	}
 	defer callback.close()
 
+	key, err := newLoginDPoPKey()
+	if err != nil {
+		return
+	}
+	dpopJKT := ""
+	if key != nil {
+		if dpopJKT, err = dpopJWKThumbprint(&key.PublicKey); err != nil {
+			return
+		}
+	}
+
 	redirectURI := OAuthCallbackURL(callback.port)
-	authURL := authorizationCodeURL(endpoint, ClientId, redirectURI, state, prompt, pkceCodeChallenge(codeVerifier))
+	authURL := authorizationCodeURL(endpoint, ClientId, redirectURI, state, prompt, pkceCodeChallenge(codeVerifier), dpopJKT)
 	if openErr := desktop.Open(authURL); openErr != nil {
 		fmt.Fprintf(os.Stderr, "Unable to open browser: %s\nOpen this URL to log in:\n%s\n", openErr, authURL)
 	}
@@ -427,7 +450,7 @@ func ForceLoginAtEndpointWithPromptAndPort(endpoint string, prompt string, targe
 		err = result.err
 		return
 	}
-	return exchangeAuthorizationCode(endpoint, ClientId, result.code, codeVerifier, redirectURI)
+	return exchangeAuthorizationCode(endpoint, ClientId, result.code, codeVerifier, redirectURI, key)
 }
 
 func ForceLoginAtEndpointDeviceFlow(endpoint string, prompt string) (creds ForceSession, err error) {
@@ -500,23 +523,20 @@ func ForceLoginAtEndpointDeviceFlow(endpoint string, prompt string) (creds Force
 	timeout := time.Duration(deviceCode.ExpiresIn) * time.Second
 	startTime := time.Now()
 
+	key, err := newLoginDPoPKey()
+	if err != nil {
+		return
+	}
+
+	// Salesforce sends a DPoP nonce in its use_dpop_nonce error. Keep it for
+	// the following polls so that each poll is a single request.
+	nonce := ""
 	for time.Since(startTime) < timeout {
-		pollReq, pollErr := httpRequest("POST", tokenURL, bytes.NewReader([]byte(tokenRequest.Encode())))
+		_, tokenResp, latestNonce, pollErr := postTokenRequest(tokenURL, tokenRequest, key, nonce)
 		if pollErr != nil {
 			continue // Keep polling on temporary errors
 		}
-		pollReq.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-
-		pollRes, pollErr := doRequest(pollReq, redirectPostOn302)
-		if pollErr != nil {
-			continue // Keep polling on temporary errors
-		}
-
-		tokenResp, pollErr := io.ReadAll(pollRes.Body)
-		pollRes.Body.Close()
-		if pollErr != nil {
-			continue
-		}
+		nonce = latestNonce
 
 		var tokenResponse map[string]interface{}
 		if json.Unmarshal(tokenResp, &tokenResponse) != nil {
@@ -556,6 +576,15 @@ func ForceLoginAtEndpointDeviceFlow(endpoint string, prompt string) (creds Force
 			}
 			if scope, exists := tokenResponse["scope"]; exists {
 				creds.Scope = fmt.Sprintf("%v", scope)
+			}
+			if tokenType, exists := tokenResponse["token_type"]; exists {
+				creds.TokenType = fmt.Sprintf("%v", tokenType)
+			}
+			if uiSid, exists := tokenResponse["ui_sid"]; exists {
+				creds.UiSid = fmt.Sprintf("%v", uiSid)
+			}
+			if err = bindDPoPKey(&creds, key, nonce); err != nil {
+				return
 			}
 
 			creds.SessionOptions = &SessionOptions{}
@@ -1535,9 +1564,22 @@ func (f *Force) getForceResult(url string) (results ForceQueryResult, err error)
 }
 
 func (f *Force) setHttpInputAuth(input *httpRequestInput) *httpRequestInput {
-	input.Headers["X-SFDC-Session"] = f.Credentials.AccessToken
-	input.Headers["Authorization"] = fmt.Sprintf("Bearer %s", f.Credentials.AccessToken)
+	input.session = f.Credentials
+	// The Bulk API 1.0 reads the session from X-SFDC-Session. A DPoP-bound
+	// token is only valid with a proof, so it is not sent in this header.
+	if f.Credentials.IsDPoP() {
+		delete(input.Headers, "X-SFDC-Session")
+	} else {
+		input.Headers["X-SFDC-Session"] = f.Credentials.AccessToken
+	}
 	return input
+}
+
+// addSessionHeader sets the X-SFDC-Session header for a Bearer session.
+func (f *Force) addSessionHeader(req *http.Request) {
+	if !f.Credentials.IsDPoP() {
+		req.Header.Add("X-SFDC-Session", f.Credentials.AccessToken)
+	}
 }
 
 func (f *Force) makeHttpRequestSync(req *Request) (body []byte, err error) {
@@ -1580,7 +1622,12 @@ func (f *Force) _makeHttpRequestWithoutRetry(input *httpRequestInput) (*http.Res
 	if err != nil {
 		return nil, err
 	}
-	res, err := doRequest(req)
+	var res *http.Response
+	if input.session != nil {
+		res, err = input.session.doAuthorizedRequest(req)
+	} else {
+		res, err = doRequest(req)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -1720,11 +1767,13 @@ func (f *Force) httpPostPatch(url string, rbody string, contenttype ContentType,
 		option(req)
 	}
 
-	req.Header.Add("X-SFDC-Session", f.Credentials.AccessToken)
-	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", f.Credentials.AccessToken))
+	f.addSessionHeader(req)
 	req.Header.Add("Content-Type", string(contenttype))
 
-	res, err := doRequest(req)
+	res, err := f.Credentials.doAuthorizedRequest(req)
+	if err != nil {
+		return nil, err
+	}
 
 	if res.StatusCode == 401 {
 		return nil, SessionExpiredError
@@ -1771,12 +1820,11 @@ func (f *Force) httpPostAttributes(url string, attrs map[string]string, requestO
 	if err != nil {
 		return
 	}
-	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", f.Credentials.AccessToken))
 	req.Header.Add("Content-Type", "application/json")
 	for _, option := range requestOptions {
 		option(req)
 	}
-	res, err := doRequest(req)
+	res, err := f.Credentials.doAuthorizedRequest(req)
 	if err != nil {
 		return
 	}
@@ -1822,12 +1870,11 @@ func (f *Force) httpPatchAttributes(url string, attrs map[string]string, request
 	if err != nil {
 		return
 	}
-	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", f.Credentials.AccessToken))
 	req.Header.Add("Content-Type", "application/json")
 	for _, option := range requestOptions {
 		option(req)
 	}
-	res, err := doRequest(req)
+	res, err := f.Credentials.doAuthorizedRequest(req)
 	if err != nil {
 		return
 	}
@@ -1871,8 +1918,7 @@ func (f *Force) httpDeleteUrl(url string) (body []byte, err error) {
 	if err != nil {
 		return
 	}
-	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", f.Credentials.AccessToken))
-	res, err := doRequest(req)
+	res, err := f.Credentials.doAuthorizedRequest(req)
 	if err != nil {
 		return
 	}

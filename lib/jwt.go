@@ -1,10 +1,8 @@
 package lib
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
-	"io"
 	"net/url"
 	"os"
 	"time"
@@ -50,22 +48,11 @@ func JWTLoginAtEndpoint(endpoint string, assertion string) (creds ForceSession, 
 	attrs.Set("grant_type", "urn:ietf:params:oauth:grant-type:jwt-bearer")
 	attrs.Set("assertion", assertion)
 
-	postVars := attrs.Encode()
-	tokenURL := tokenURL(endpoint)
+	key, err := newLoginDPoPKey()
 	if err != nil {
 		return
 	}
-	req, err := httpRequest("POST", tokenURL, bytes.NewReader([]byte(postVars)))
-	if err != nil {
-		return
-	}
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	res, err := doRequest(req, redirectPostOn302)
-	if err != nil {
-		return
-	}
-	defer res.Body.Close()
-	body, err := io.ReadAll(res.Body)
+	res, body, nonce, err := postTokenRequest(tokenURL(endpoint), attrs, key, "")
 	if err != nil {
 		return
 	}
@@ -80,7 +67,12 @@ func JWTLoginAtEndpoint(endpoint string, assertion string) (creds ForceSession, 
 		return
 	}
 
-	err = json.Unmarshal(body, &creds)
+	if err = json.Unmarshal(body, &creds); err != nil {
+		return
+	}
+	if err = bindDPoPKey(&creds, key, nonce); err != nil {
+		return
+	}
 	creds.SessionOptions = &SessionOptions{}
 	creds.EndpointUrl = endpoint
 	creds.ClientId = ClientId
@@ -108,22 +100,11 @@ func ClientCredentialsLoginAtEndpoint(endpoint string, clientId string, clientSe
 	attrs.Set("client_id", clientId)
 	attrs.Set("client_secret", clientSecret)
 
-	postVars := attrs.Encode()
-	tokenURL := tokenURL(endpoint)
+	key, err := newLoginDPoPKey()
 	if err != nil {
 		return
 	}
-	req, err := httpRequest("POST", tokenURL, bytes.NewReader([]byte(postVars)))
-	if err != nil {
-		return
-	}
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	res, err := doRequest(req, redirectPostOn302)
-	if err != nil {
-		return
-	}
-	defer res.Body.Close()
-	body, err := io.ReadAll(res.Body)
+	res, body, nonce, err := postTokenRequest(tokenURL(endpoint), attrs, key, "")
 	if err != nil {
 		return
 	}
@@ -138,7 +119,12 @@ func ClientCredentialsLoginAtEndpoint(endpoint string, clientId string, clientSe
 		return
 	}
 
-	err = json.Unmarshal(body, &creds)
+	if err = json.Unmarshal(body, &creds); err != nil {
+		return
+	}
+	if err = bindDPoPKey(&creds, key, nonce); err != nil {
+		return
+	}
 	creds.SessionOptions = &SessionOptions{}
 	creds.EndpointUrl = endpoint
 	creds.ClientId = ClientId
@@ -164,19 +150,11 @@ func PasswordFlowLoginAtEndpoint(endpoint string, clientId string, clientSecret 
 	attrs.Set("username", username)
 	attrs.Set("password", password)
 
-	postVars := attrs.Encode()
-	tokenURL := tokenURL(endpoint)
-	req, err := httpRequest("POST", tokenURL, bytes.NewReader([]byte(postVars)))
+	key, err := newLoginDPoPKey()
 	if err != nil {
 		return
 	}
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	res, err := doRequest(req, redirectPostOn302)
-	if err != nil {
-		return
-	}
-	defer res.Body.Close()
-	body, err := io.ReadAll(res.Body)
+	res, body, nonce, err := postTokenRequest(tokenURL(endpoint), attrs, key, "")
 	if err != nil {
 		return
 	}
@@ -205,6 +183,9 @@ func PasswordFlowLoginAtEndpoint(endpoint string, clientId string, clientSecret 
 		return
 	}
 	creds.RefreshToken = tokenResponse.RefreshToken
+	if err = bindDPoPKey(&creds, key, nonce); err != nil {
+		return
+	}
 	creds.SessionOptions = &SessionOptions{}
 	if creds.RefreshToken != "" {
 		creds.SessionOptions.RefreshMethod = RefreshOauth

@@ -904,15 +904,22 @@ func (fm *ForceMetadata) CheckRetrieveStatus(id string) (files ForceMetadataFile
 // session-expired response contains no zip payload, so nothing has been
 // written to zipOut when the request is retried after refreshing the session.
 func (fm *ForceMetadata) checkRetrieveStatusTo(id string, zipOut io.Writer) (problems []string, err error) {
-	url := fmt.Sprintf("%s/services/Soap/m/%s", fm.Force.Credentials.InstanceUrl, fm.ApiVersion)
-	soap := NewSoap(url, "http://soap.sforce.com/2006/04/metadata", fm.Force.Credentials.AccessToken)
-	b64 := newBase64Writer(zipOut)
-	body, err := soap.ExecuteExtract("checkRetrieveStatus", fmt.Sprintf("<id>%s</id>", id), "zipFile", b64)
-	if err == SessionExpiredError {
+	var body []byte
+	var b64 *base64Writer
+	// Retry once after refreshing the session. A session that is still
+	// rejected after a successful refresh returns SessionExpiredError.
+	for attempt := 0; ; attempt++ {
+		url := fmt.Sprintf("%s/services/Soap/m/%s", fm.Force.Credentials.InstanceUrl, fm.ApiVersion)
+		soap := NewSoap(url, "http://soap.sforce.com/2006/04/metadata", fm.Force.Credentials.AccessToken)
+		soap.Session = fm.Force.Credentials
+		b64 = newBase64Writer(zipOut)
+		body, err = soap.ExecuteExtract("checkRetrieveStatus", fmt.Sprintf("<id>%s</id>", id), "zipFile", b64)
+		if err != SessionExpiredError || attempt > 0 {
+			break
+		}
 		if err = fm.Force.RefreshSession(); err != nil {
 			return
 		}
-		return fm.checkRetrieveStatusTo(id, zipOut)
 	}
 	if err != nil {
 		return
@@ -1741,15 +1748,18 @@ func (fm *ForceMetadata) ListConnectedApps() (apps ForceConnectedApps, err error
 }
 
 func (fm *ForceMetadata) soapExecute(action, query string) (response []byte, err error) {
-	url := fmt.Sprintf("%s/services/Soap/m/%s", fm.Force.Credentials.InstanceUrl, fm.ApiVersion)
-	soap := NewSoap(url, "http://soap.sforce.com/2006/04/metadata", fm.Force.Credentials.AccessToken)
-	response, err = soap.Execute(action, query)
-	if err == SessionExpiredError {
-		err = fm.Force.RefreshSession()
-		if err != nil {
+	// Retry once after refreshing the session. A session that is still
+	// rejected after a successful refresh returns SessionExpiredError.
+	for attempt := 0; ; attempt++ {
+		url := fmt.Sprintf("%s/services/Soap/m/%s", fm.Force.Credentials.InstanceUrl, fm.ApiVersion)
+		soap := NewSoap(url, "http://soap.sforce.com/2006/04/metadata", fm.Force.Credentials.AccessToken)
+		soap.Session = fm.Force.Credentials
+		response, err = soap.Execute(action, query)
+		if err != SessionExpiredError || attempt > 0 {
 			return
 		}
-		return fm.soapExecute(action, query)
+		if err = fm.Force.RefreshSession(); err != nil {
+			return
+		}
 	}
-	return
 }

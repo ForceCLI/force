@@ -30,6 +30,7 @@ force login [flags]
     force login --connected-app-client-id <my-consumer-key> --connected-app-client-secret <my-consumer-secret>
     force login -P 8080
     force login --device-flow --connected-app-client-id <my-consumer-key>
+    force login --dpop
     force login scratch
 
 ```
@@ -41,6 +42,7 @@ force login [flags]
       --connected-app-client-id string       Client Id (aka Consumer Key) to use instead of default
       --connected-app-client-secret string   Client Secret (aka Consumer Secret) for Client Credentials flow
       --device-flow                          use OAuth Device Flow (for headless environments); requires --connected-app-client-id
+      --dpop                                 request DPoP-bound tokens (RFC 9449) that can only be used with this session's private key
   -h, --help                                 help for login
   -i, --instance string                      Defaults to 'login' or last
                                              logged in system. non-production server to login to (values are 'pre',

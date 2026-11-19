@@ -1,8 +1,8 @@
 package lib
 
 import (
-	"bytes"
 	"context"
+	"crypto/ecdsa"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
@@ -57,7 +57,11 @@ func pkceCodeChallenge(verifier string) string {
 	return base64.RawURLEncoding.EncodeToString(sum[:])
 }
 
-func authorizationCodeURL(endpoint, clientId, redirectURI, state, prompt, codeChallenge string) string {
+// authorizationCodeURL returns the authorize URL for the browser login. When
+// dpopJKT is not empty, it is sent as dpop_jkt, the JWK thumbprint of the DPoP
+// public key, so that Salesforce binds the authorization code to that key and
+// accepts it only with a proof signed by the same key.
+func authorizationCodeURL(endpoint, clientId, redirectURI, state, prompt, codeChallenge, dpopJKT string) string {
 	params := url.Values{}
 	params.Set("response_type", "code")
 	params.Set("client_id", clientId)
@@ -66,6 +70,9 @@ func authorizationCodeURL(endpoint, clientId, redirectURI, state, prompt, codeCh
 	params.Set("prompt", prompt)
 	params.Set("code_challenge", codeChallenge)
 	params.Set("code_challenge_method", "S256")
+	if dpopJKT != "" {
+		params.Set("dpop_jkt", dpopJKT)
+	}
 	return fmt.Sprintf("%s/services/oauth2/authorize?%s", endpoint, params.Encode())
 }
 
@@ -120,28 +127,24 @@ func (s *authorizationCodeCallbackServer) close() {
 }
 
 // exchangeAuthorizationCode trades an authorization code and its PKCE code
-// verifier for an access token and refresh token.
-func exchangeAuthorizationCode(endpoint, clientId, code, codeVerifier, redirectURI string) (creds ForceSession, err error) {
+// verifier for an access token and refresh token. When key is not nil, the
+// request carries a DPoP proof signed with key and uses the hybrid_auth_code
+// grant, whose response includes ui_sid, the unbound session ID for the web
+// UI, along with the DPoP-bound token.
+func exchangeAuthorizationCode(endpoint, clientId, code, codeVerifier, redirectURI string, key *ecdsa.PrivateKey) (creds ForceSession, err error) {
 	attrs := url.Values{}
 	attrs.Set("grant_type", "authorization_code")
+	if key != nil {
+		attrs.Set("grant_type", "hybrid_auth_code")
+	}
 	attrs.Set("client_id", clientId)
 	attrs.Set("code", code)
 	attrs.Set("code_verifier", codeVerifier)
 	attrs.Set("redirect_uri", redirectURI)
 
-	req, err := httpRequest("POST", tokenURL(endpoint), bytes.NewReader([]byte(attrs.Encode())))
-	if err != nil {
-		return
-	}
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	// A Lightning Experience URL (*.lightning.force.com) answers with a 302 to
 	// the My Domain URL, so the POST has to be re-sent there.
-	res, err := doRequest(req, redirectPostOn302)
-	if err != nil {
-		return
-	}
-	defer res.Body.Close()
-	body, err := io.ReadAll(res.Body)
+	res, body, nonce, err := postTokenRequest(tokenURL(endpoint), attrs, key, "")
 	if err != nil {
 		return
 	}
@@ -166,6 +169,9 @@ func exchangeAuthorizationCode(endpoint, clientId, code, codeVerifier, redirectU
 		return
 	}
 	creds.RefreshToken = tokenResponse.RefreshToken
+	if err = bindDPoPKey(&creds, key, nonce); err != nil {
+		return
+	}
 	creds.SessionOptions = &SessionOptions{}
 	if creds.RefreshToken != "" {
 		creds.SessionOptions.RefreshMethod = RefreshOauth

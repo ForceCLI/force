@@ -133,6 +133,9 @@ type httpRequestInput struct {
 	Callback HttpCallback
 	retrier  *HttpRetrier
 	Body     io.Reader
+	// session, when set, supplies the Authorization header and, for a DPoP
+	// session, the DPoP proof for each attempt of the request.
+	session *ForceSession
 }
 
 func (r *httpRequestInput) WithCallback(cb HttpCallback) *httpRequestInput {

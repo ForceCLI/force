@@ -8,6 +8,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strings"
 )
 
@@ -21,6 +22,10 @@ type Soap struct {
 	Endpoint    string
 	Header      string
 	Namespace   string
+	// Session, when set to a DPoP session, adds a DpopProofHeader with a new
+	// proof to each request. The SOAP APIs read the proof from this envelope
+	// header, not from the DPoP HTTP header.
+	Session *ForceSession
 }
 
 func NewSoap(endpoint, namespace, accessToken string) (s *Soap) {
@@ -86,7 +91,7 @@ func (s *Soap) Execute(action, query string) (response []byte, err error) {
 	if err != nil {
 		return
 	}
-	if isSoapInvalidSessionError(response) {
+	if s.isSessionError(response) {
 		err = SessionExpiredError
 		return
 	}
@@ -108,7 +113,7 @@ func (s *Soap) ExecuteExtract(action, query, element string, w io.Writer) (respo
 	if err != nil {
 		return
 	}
-	if isSoapInvalidSessionError(response) {
+	if s.isSessionError(response) {
 		err = SessionExpiredError
 		return
 	}
@@ -128,6 +133,7 @@ func (s *Soap) execute(action, query string) (res *http.Response, err error) {
 					<cmd:sessionId>%s</cmd:sessionId>
 				</cmd:SessionHeader>
 				%s
+				%s
 			</env:Header>
 			<env:Body>
 				<%s xmlns="%s">
@@ -136,8 +142,12 @@ func (s *Soap) execute(action, query string) (res *http.Response, err error) {
 			</env:Body>
 		</env:Envelope>
 	`
+	dpopHeader, err := s.dpopProofHeader()
+	if err != nil {
+		return
+	}
 	rbody := fmt.Sprintf(soap, s.Namespace,
-		s.AccessToken, s.Header, action, s.Namespace, query, action)
+		s.AccessToken, dpopHeader, s.Header, action, s.Namespace, query, action)
 	req, err := httpRequest("POST", s.Endpoint, strings.NewReader(rbody))
 	if err != nil {
 		return
@@ -161,6 +171,39 @@ func (s *Soap) execute(action, query string) (res *http.Response, err error) {
 		return
 	}
 	return
+}
+
+// dpopProofHeader returns the DpopProofHeader element for a request from a
+// DPoP session, and an empty string otherwise.
+func (s *Soap) dpopProofHeader() (string, error) {
+	if s.Session == nil || !s.Session.IsDPoP() {
+		return "", nil
+	}
+	u, err := url.Parse(s.Endpoint)
+	if err != nil {
+		return "", err
+	}
+	proof, err := s.Session.DPoPProof("POST", u)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("<cmd:DpopProofHeader><cmd:proof>%s</cmd:proof></cmd:DpopProofHeader>", proof), nil
+}
+
+// isSessionError reports whether a response means a new session is needed.
+// For a DPoP session, an INVALID_AUTH_HEADER fault means the proof was
+// rejected, usually because its nonce expired, and refreshing the session
+// gets a new nonce from the token endpoint.
+func (s *Soap) isSessionError(body []byte) bool {
+	if isSoapInvalidSessionError(body) {
+		return true
+	}
+	if s.Session == nil || !s.Session.IsDPoP() {
+		return false
+	}
+	var soapError SoapError
+	xml.Unmarshal(body, &soapError)
+	return soapError.FaultCode == "sf:INVALID_AUTH_HEADER"
 }
 
 func isSoapInvalidSessionError(body []byte) bool {

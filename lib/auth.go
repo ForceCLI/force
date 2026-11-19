@@ -241,6 +241,14 @@ func (f *Force) CopyCredentialAuthFields(creds *ForceSession) {
 	f.Credentials.IssuedAt = creds.IssuedAt
 	f.Credentials.InstanceUrl = creds.InstanceUrl
 	f.Credentials.Scope = creds.Scope
+	f.Credentials.TokenType = creds.TokenType
+	// Keep the previous ui_sid if a refresh response does not include one.
+	if creds.UiSid != "" {
+		f.Credentials.UiSid = creds.UiSid
+	}
+	if creds.DPoPNonce != "" {
+		f.Credentials.DPoPNonce = creds.DPoPNonce
+	}
 }
 
 func ActiveForce() (force *Force, err error) {

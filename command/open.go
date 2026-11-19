@@ -1,6 +1,7 @@
 package command
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -48,7 +49,10 @@ func runOpen(startUrl string) {
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
-	openUrl := fmt.Sprintf("%s/secur/frontdoor.jsp?sid=%s", force.Credentials.InstanceUrl, force.Credentials.AccessToken)
+	openUrl, err := frontdoorUrl(force.Credentials)
+	if err != nil {
+		ErrorAndExit(err.Error())
+	}
 	if startUrl != "" {
 		openUrl = fmt.Sprintf("%s&retURL=%s", openUrl, url.QueryEscape(startUrl))
 	}
@@ -59,4 +63,14 @@ func runOpen(startUrl string) {
 	if err != nil {
 		ErrorAndExit(err.Error())
 	}
+}
+
+// frontdoorUrl returns the frontdoor.jsp URL that logs the browser in with
+// the session.
+func frontdoorUrl(creds *ForceSession) (string, error) {
+	sid := creds.UISessionId()
+	if sid == "" {
+		return "", errors.New("This DPoP session has no UI session ID (ui_sid) to open the browser with. Run `force login` again.")
+	}
+	return fmt.Sprintf("%s/secur/frontdoor.jsp?sid=%s", creds.InstanceUrl, sid), nil
 }

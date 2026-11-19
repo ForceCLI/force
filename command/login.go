@@ -569,6 +569,7 @@ logged in system. non-production server to login to (values are 'pre',
 'test', or full instance url`)
 	loginCmd.Flags().IntP("port", "P", DefaultOAuthCallbackPort, "port for local OAuth callback server")
 	loginCmd.Flags().Bool("device-flow", false, "use OAuth Device Flow (for headless environments); requires --connected-app-client-id")
+	loginCmd.Flags().Bool("dpop", false, "request DPoP-bound tokens (RFC 9449) that can only be used with this session's private key")
 
 	scratchCmd.Flags().String("username", "", "username for scratch org user")
 	scratchCmd.Flags().Var(
@@ -909,6 +910,7 @@ The session uses the highest API version that the org supports, unless
     force login --connected-app-client-id <my-consumer-key> --connected-app-client-secret <my-consumer-secret>
     force login -P 8080
     force login --device-flow --connected-app-client-id <my-consumer-key>
+    force login --dpop
     force login scratch
 `,
 	Args: cobra.MaximumNArgs(0),
@@ -922,6 +924,10 @@ The session uses the highest API version that the org supports, unless
 		username, _ := cmd.Flags().GetString("user")
 		keyFile, _ := cmd.Flags().GetString("key")
 		clientSecret, _ := cmd.Flags().GetString("connected-app-client-secret")
+		UseDPoP, _ = cmd.Flags().GetBool("dpop")
+		if err := validateDPoPLogin(UseDPoP, username, keyFile); err != nil {
+			ErrorAndExit(err.Error())
+		}
 		var session ForceSession
 		switch {
 		case username == "" && clientSecret != "":
@@ -1365,6 +1371,18 @@ func oauthLogin(endpoint string, skipLogin bool, port int) ForceSession {
 		ErrorAndExit(err.Error())
 	}
 	return session
+}
+
+var errDPoPRequiresSupportedFlow = errors.New("--dpop is not supported with --user unless --key is given: Salesforce does not issue DPoP-bound tokens for the username-password flow, and the SOAP login does not use OAuth")
+
+// validateDPoPLogin rejects --dpop for the logins that can't issue
+// DPoP-bound tokens: the SOAP login and the OAuth username-password flow.
+// A username is used only by those two logins and the JWT bearer flow.
+func validateDPoPLogin(dpop bool, username, keyFile string) error {
+	if dpop && username != "" && keyFile == "" {
+		return errDPoPRequiresSupportedFlow
+	}
+	return nil
 }
 
 var errDeviceFlowRequiresClientId = errors.New("--device-flow requires --connected-app-client-id: Salesforce allows the device flow only with a local external client app. Create one in the org with the device flow enabled, and pass its consumer key")

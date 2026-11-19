@@ -26,7 +26,7 @@ var restCmd = &cobra.Command{
 	Example: `
   force rest get "/tooling/query?q=Select id From Account"
   force rest get /appMenu/AppSwitcher
-  force rest get -a /services/data/
+  force rest get -A /services/data/
   force rest post "/tooling/sobjects/CustomField/00D9A0000000TgcUAE" path/to/definition.json
   force rest put "/tooling/sobjects/CustomField/00D9A0000000TgcUAE" path/to/definition.json
   force rest delete "/sobjects/Account/001D000000INjVe"
@@ -40,7 +40,7 @@ var restGetCmd = &cobra.Command{
 	Example: `
   force rest get "/tooling/query?q=Select id From Account"
   force rest get /appMenu/AppSwitcher
-  force rest get -a /services/data/
+  force rest get -A /services/data/
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		absolute, _ := cmd.Flags().GetBool("absolute")

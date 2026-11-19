@@ -12,7 +12,7 @@ force rest get <url> [flags]
 
   force rest get "/tooling/query?q=Select id From Account"
   force rest get /appMenu/AppSwitcher
-  force rest get -a /services/data/
+  force rest get -A /services/data/
 
 ```
 
