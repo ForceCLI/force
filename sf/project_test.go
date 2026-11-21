@@ -1077,3 +1077,74 @@ func TestProjectConvertMdapiChildComponentsAndOrder(t *testing.T) {
 		t.Errorf("empty labels file: status %d, stat error %v\n%s", status, err, out)
 	}
 }
+
+// A static resource that sf stores expanded into a directory is deployed as
+// one zipped .resource file named by the resource, and the deploy result
+// lists the -meta.xml file and every file of the directory, as sf does.
+func TestProjectDeployStartZipsExpandedStaticResource(t *testing.T) {
+	_, fake, project := deploySetup(t)
+	staticresources := filepath.Join(project, "force-app", "main", "default", "staticresources")
+	for name, content := range map[string]string{
+		"Leaflet.resource-meta.xml": "<StaticResource><contentType>application/zip</contentType></StaticResource>",
+		"Leaflet/leaflet.js":        "js",
+		"Leaflet/images/marker.png": "png",
+	} {
+		path := filepath.Join(staticresources, filepath.FromSlash(name))
+		os.MkdirAll(filepath.Dir(path), 0o755)
+		os.WriteFile(path, []byte(content), 0o644)
+	}
+	fake.statusResult = strings.Replace(deploySucceeded,
+		"<fileName>classes/Greeter.cls</fileName><fullName>Greeter</fullName>",
+		"<fileName>staticresources/Leaflet.resource</fileName><fullName>Leaflet</fullName>", 1)
+	fake.statusResult = strings.Replace(fake.statusResult, "<componentType>ApexClass</componentType>", "<componentType>StaticResource</componentType>", 1)
+
+	out, errOut, status := run("project", "deploy", "start", "--metadata", "StaticResource:Leaflet", "--json")
+	if status != 0 {
+		t.Fatalf("status %d, stderr %s\n%s", status, errOut, out)
+	}
+	if !strings.Contains(fake.deployed["package.xml"], "<members>Leaflet</members>") || strings.Contains(fake.deployed["package.xml"], "Leaflet/") {
+		t.Errorf("package.xml = %s", fake.deployed["package.xml"])
+	}
+	for _, name := range keys(fake.deployed) {
+		if strings.HasPrefix(name, "staticresources/Leaflet/") {
+			t.Errorf("the deployed zip has the expanded file %s", name)
+		}
+	}
+	resource, ok := fake.deployed["staticresources/Leaflet.resource"]
+	if !ok {
+		t.Fatalf("the deployed zip lacks staticresources/Leaflet.resource; it has %v", keys(fake.deployed))
+	}
+	reader, err := zip.NewReader(strings.NewReader(resource), int64(len(resource)))
+	if err != nil {
+		t.Fatalf("Leaflet.resource is not a zip: %v", err)
+	}
+	var entries []string
+	for _, f := range reader.File {
+		entries = append(entries, f.Name)
+	}
+	if strings.Join(entries, " ") != "images/marker.png leaflet.js" {
+		t.Errorf("Leaflet.resource entries = %v", entries)
+	}
+	if _, ok := fake.deployed["staticresources/Leaflet.resource-meta.xml"]; !ok {
+		t.Errorf("the deployed zip lacks the -meta.xml file; it has %v", keys(fake.deployed))
+	}
+
+	var env struct {
+		Result struct {
+			Files []struct {
+				FilePath string
+			}
+		}
+	}
+	if err := json.Unmarshal([]byte(out), &env); err != nil {
+		t.Fatalf("%v\n%s", err, out)
+	}
+	var paths []string
+	for _, file := range env.Result.Files {
+		paths = append(paths, strings.TrimPrefix(file.FilePath, staticresources+string(os.PathSeparator)))
+	}
+	want := []string{"Leaflet.resource-meta.xml", filepath.Join("Leaflet", "images", "marker.png"), filepath.Join("Leaflet", "leaflet.js")}
+	if strings.Join(paths, " ") != strings.Join(want, " ") {
+		t.Errorf("files = %v, want %v", paths, want)
+	}
+}

@@ -1,6 +1,8 @@
 package command
 
 import (
+	"archive/zip"
+	"bytes"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -178,5 +180,46 @@ func TestImportFiles_KeepsMetadataFormat(t *testing.T) {
 		if got := string(files[filepath.FromSlash(name)]); got != content {
 			t.Errorf("%s: got %q, want %q", name, got, content)
 		}
+	}
+}
+
+// A static resource expanded into a directory, as sf stores a zip resource,
+// is imported as one zipped .resource file named in the package.xml by the
+// resource's name, and the directory's other files are not deployed.
+func TestImportFiles_ZipsExpandedStaticResource(t *testing.T) {
+	root := t.TempDir()
+	writeImportFixture(t, root, map[string]string{
+		"staticresources/Leaflet.resource-meta.xml": "<StaticResource/>",
+		"staticresources/Leaflet/leaflet.js":        "js",
+		"staticresources/Leaflet/images/marker.png": "png",
+		"classes/ProjectController.cls":             "public class ProjectController {}",
+		"classes/ProjectController.cls-meta.xml":    "<ApexClass/>",
+	})
+
+	files, err := importFiles(root)
+	if err != nil {
+		t.Fatalf("importFiles failed: %v", err)
+	}
+	want := []string{
+		"classes/ProjectController.cls",
+		"classes/ProjectController.cls-meta.xml",
+		"staticresources/Leaflet.resource",
+		"staticresources/Leaflet.resource-meta.xml",
+	}
+	if got := importFileNames(files); !reflect.DeepEqual(got, want) {
+		t.Fatalf("imported files:\n got %v\nwant %v", got, want)
+	}
+	data := files[filepath.FromSlash("staticresources/Leaflet.resource")]
+	reader, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
+	if err != nil {
+		t.Fatalf("Leaflet.resource is not a zip: %v", err)
+	}
+	var entries []string
+	for _, f := range reader.File {
+		entries = append(entries, f.Name)
+	}
+	sort.Strings(entries)
+	if wantEntries := []string{"images/marker.png", "leaflet.js"}; !reflect.DeepEqual(entries, wantEntries) {
+		t.Errorf("zip entries = %v, want %v", entries, wantEntries)
 	}
 }

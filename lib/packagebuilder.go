@@ -263,6 +263,10 @@ func (pb *PackageBuilder) AddFile(fpath string) error {
 		return nil
 	}
 
+	if added, err := pb.addSourceFormatStaticResource(fpath); added || err != nil {
+		return err
+	}
+
 	if converted, err := pb.addSourceFormatFile(fpath); converted || err != nil {
 		pb.SourceFormat = pb.SourceFormat || converted
 		return err
@@ -384,6 +388,9 @@ func HasSourceFormatFiles(root string) (bool, error) {
 		}
 		if info.Mode().IsRegular() {
 			_, _, found = sourceFormatFile(root, path)
+			if !found {
+				_, _, found = sourceFormatStaticResource(root, path)
+			}
 		}
 		return nil
 	})
@@ -555,6 +562,11 @@ func (pb *PackageBuilder) AddDirectory(fpath string) error {
 	fpath, err := filepath.Abs(fpath)
 	if err != nil {
 		return fmt.Errorf("Cound not find %s: %w", fpath, err)
+	}
+
+	// An expanded static resource is deployed as one zip file.
+	if added, err := pb.addSourceFormatStaticResource(fpath); added || err != nil {
+		return err
 	}
 
 	isComponent := pb.isComponent(fpath)

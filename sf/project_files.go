@@ -7,7 +7,9 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -365,6 +367,7 @@ func (s *sourceSet) localPaths(metadataPath string) []string {
 				paths = append(paths, candidate)
 			}
 		}
+		paths = append(paths, staticResourceSourcePaths(metadataPath, root)...)
 		if len(paths) > 0 {
 			return paths
 		}
@@ -383,6 +386,45 @@ func (s *sourceSet) localPaths(metadataPath string) []string {
 			}
 		}
 	}
+	return paths
+}
+
+// staticResourceSourcePaths returns the source format content files of the
+// static resource at a metadata format path such as
+// staticresources/Leaflet.resource: the files in the expanded directory
+// staticresources/Leaflet, or a file such as staticresources/Leaflet.js.
+func staticResourceSourcePaths(metadataPath string, root string) []string {
+	directory, file := path.Split(metadataPath)
+	if directory != "staticresources/" || path.Ext(file) != ".resource" {
+		return nil
+	}
+	content, ok := lib.StaticResourceContent(filepath.Join(root, "staticresources"), strings.TrimSuffix(file, ".resource"))
+	if !ok {
+		return nil
+	}
+	info, err := os.Stat(content)
+	if err != nil {
+		return nil
+	}
+	if !info.IsDir() {
+		return []string{content}
+	}
+	var paths []string
+	filepath.WalkDir(content, func(file string, entry fs.DirEntry, err error) error {
+		if err != nil {
+			return nil
+		}
+		if file != content && strings.HasPrefix(entry.Name(), ".") {
+			if entry.IsDir() {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if entry.Type().IsRegular() {
+			paths = append(paths, file)
+		}
+		return nil
+	})
 	return paths
 }
 

@@ -277,6 +277,8 @@ force push -l RunLocalTests -f src/classes
 git diff HEAD^ --name-only --diff-filter=ACM | force push -f -   # files listed on stdin
 ```
 
+A static resource can be stored expanded, as `fetch -u` and `sf` write a zip resource: `staticresources/Logo/` holds the archive's files beside `staticresources/Logo.resource-meta.xml`. `push`, `import`, and `force --sf project deploy start` zip the directory and deploy it as `staticresources/Logo.resource`; nothing is written to the local directory. When both the directory and `Logo.resource` exist, the directory is deployed. A resource that `sf` stores under the extension of its content type, such as `staticresources/Logo.png`, is deployed as `Logo.resource`. Pushing any file inside an expanded resource deploys the whole resource.
+
 `import` deploys a whole directory that has a `package.xml`, in metadata or source format:
 
 ```
