@@ -14,6 +14,7 @@ require (
 	github.com/expr-lang/expr v1.17.7
 	github.com/gen2brain/beeep v0.11.2
 	github.com/golang-jwt/jwt/v5 v5.2.3
+	github.com/google/go-containerregistry v0.20.3
 	github.com/hamba/avro/v2 v2.16.0
 	github.com/linkedin/goavro/v2 v2.12.0
 	github.com/mattn/go-runewidth v0.0.15
@@ -21,6 +22,8 @@ require (
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/onsi/ginkgo v1.12.0
 	github.com/onsi/gomega v1.36.2
+	github.com/opencontainers/go-digest v1.0.0
+	github.com/opencontainers/image-spec v1.1.1
 	github.com/pkg/errors v0.9.1
 	github.com/rgalanakis/golangal v0.0.0-20210923203926-e36008487518
 	github.com/spf13/cobra v1.8.1
@@ -32,6 +35,7 @@ require (
 	google.golang.org/grpc v1.84.0
 	google.golang.org/protobuf v1.36.12
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
+	oras.land/oras-go/v2 v2.6.0
 )
 
 require (
@@ -41,7 +45,7 @@ require (
 	github.com/charmbracelet/harmonica v0.2.0 // indirect
 	github.com/cihub/seelog v0.0.0-20170130134532-f561c5e57575 // indirect
 	github.com/containerd/console v1.0.4-0.20230313162750-1ae8d489ac81 // indirect
-	github.com/cpuguy83/go-md2man/v2 v2.0.4 // indirect
+	github.com/cpuguy83/go-md2man/v2 v2.0.6 // indirect
 	github.com/cwarden/mergo v0.3.12-0.20210528180603-9b708ca2c584 // indirect
 	github.com/esiqveland/notify v0.13.3 // indirect
 	github.com/fsnotify/fsnotify v1.4.9 // indirect

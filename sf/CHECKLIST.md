@@ -387,27 +387,27 @@ Flags of implemented commands that return an error. A flag marked "not defined" 
 - [ ] `dev generate flag`
 - [ ] `dev generate plugin`
 
-### CLI management (21 open, 2 done)
+### CLI management (12 open, 11 done)
 
 - [x] `autocomplete` (instructions for cobra completion scripts; the mechanism differs from sf)
 - [ ] `doctor`
 - [ ] `help`
 - [ ] `info releasenotes display`
-- [ ] `plugins`
-- [ ] `plugins add`
+- [x] `plugins` (native executables from a container registry; see `docs/sf-plugins.md`)
+- [x] `plugins add` (alias of `plugins install`)
 - [ ] `plugins discover`
-- [ ] `plugins inspect`
-- [ ] `plugins install`
-- [ ] `plugins link`
-- [ ] `plugins remove`
+- [x] `plugins inspect`
+- [x] `plugins install`
+- [x] `plugins link` (takes the path of an executable)
+- [x] `plugins remove` (alias of `plugins uninstall`)
 - [ ] `plugins reset`
 - [ ] `plugins trust allowlist add`
 - [ ] `plugins trust allowlist list`
 - [ ] `plugins trust allowlist remove`
 - [ ] `plugins trust verify`
-- [ ] `plugins uninstall`
-- [ ] `plugins unlink`
-- [ ] `plugins update`
+- [x] `plugins uninstall`
+- [x] `plugins unlink` (alias of `plugins uninstall`)
+- [x] `plugins update`
 - [ ] `search`
 - [ ] `update`
 - [ ] `whatsnew`

@@ -29,11 +29,16 @@ sf mode does not read or write `~/.force`. It uses the files `sf` uses:
 | `<project>/.sf/config.json` | Config values of the project that contains the working directory. |
 | `~/.sfdx/sfdx-config.json`, `<project>/.sfdx/sfdx-config.json` | Read for `defaultusername`, `defaultdevhubusername`, `apiVersion` and `instanceUrl` when the `.sf` file does not set the value. Not written. |
 | `~/.sf/bulk-data-*-cache.json` | Bulk jobs started without `--wait`, for the resume commands. |
+| `~/.sf/plugins/` | Installed plugins: `plugins.json` and the downloaded executables. `SF_PLUGINS_DIR` names another directory. sf keeps its npm plugins in `~/.local/share/sf`, which this mode does not read. |
 | `~/.sf/deploy-cache.json` | Deployments started by `project deploy start` and `validate`, for `--use-most-recent` and for finding the org of a job ID. |
 
 A config value is taken from the environment (`SF_TARGET_ORG`, `SF_TARGET_DEV_HUB`, `SF_ORG_API_VERSION`, `SF_ORG_INSTANCE_URL`, `SF_ORG_MAX_QUERY_LIMIT`, `SF_DISABLE_TELEMETRY`, and the `SFDX_` names), then the project file, then the global file. `--target-org` and `--target-dev-hub` are used before any of them.
 
 Logins, aliases and config values written by this mode were read by `sf` 2.138.6 in testing, and the reverse. A refreshed access token is saved to the authorization file.
+
+## Plugins
+
+sf plugins are npm packages, which this mode cannot load. A plugin of this mode is one native executable for each operating system and architecture, published as an OCI artifact on a container registry and run as a child process. `sf plugins install sfdx-git-delta` downloads the executable for this platform from `ghcr.io/forcecli/sf-plugins/sfdx-git-delta`, and `sf sgd source delta ...` then runs it with the same arguments. A built-in command is never replaced by a plugin command. [sf-plugins.md](sf-plugins.md) describes the commands, the protocol between this mode and a plugin, and how to write and publish one.
 
 ## Templates
 
@@ -180,6 +185,13 @@ The files written by the `template generate` commands come from the salesforcedx
 | `sf package1 version create get` | none | The messages for a queued request, a request in progress, a failed upload and a finished upload were compared with sf against a packaging org. | Follows the sf plugin source |
 | `sf package1 version display` | none; queries MetadataPackageVersion with the Tooling API |  | Compared with sf |
 | `sf package1 version list` | none; queries MetadataPackageVersion with the Tooling API |  | Compared with sf |
+| `sf plugins` | none | Lists the plugins of this mode, which are native executables and not npm packages; see [sf-plugins.md](sf-plugins.md). `--core` is not supported. The output differs from sf. | Not compared; the mechanism differs |
+| `sf plugins inspect` | none | Prints the recorded registry reference, digests, executable path and commands. `--verbose` is not supported. | Not compared; the mechanism differs |
+| `sf plugins install` | none | Installs from a container registry instead of npm. Takes `name[:tag]`; a name without a registry host is looked up under `ghcr.io/forcecli/sf-plugins`. `--force`, `--jit`, `--silent` and `--verbose` are not supported. `--plain-http` is an addition. Also run as `sf plugins add`. | Not compared; the mechanism differs |
+| `sf plugins link` | none | Takes the path of a plugin executable instead of a package directory. `--install` and `--verbose` are not supported. | Not compared; the mechanism differs |
+| `sf plugins publish` | none | Not an sf command. Publishes plugin executables to a container registry. | Not compared; sf has no such command |
+| `sf plugins uninstall` | none | Also run as `sf plugins remove` and `sf plugins unlink`. | Not compared; the mechanism differs |
+| `sf plugins update` | none | Looks up the tag each plugin was installed with and downloads the plugin when the digest changed. Takes plugin names. | Not compared; the mechanism differs |
 | `sf project delete source` | `force import` of a directory that holds only a destructive changes manifest; this mode also deletes the local files | Deleting one file of a bundle, which `sf` turns into a deploy of the remaining files. The test results of a delete that runs tests are not printed. Without `--no-prompt` and without a terminal the command is canceled; `sf` fails with status 13. When the org refuses a delete given with `--track-source`, `sf` still updates the tracking files; this mode leaves them as they are. | Compared with sf |
 | `sf project delete tracking` | none; deletes the tracking files in `<project>/.sf/orgs/<orgId>/` | Without `--no-prompt` and without a terminal the command does nothing; `sf` fails with status 13. | Compared with sf |
 | `sf project reset tracking` | none; writes the tracking files in `<project>/.sf/orgs/<orgId>/` | Without `--no-prompt` and without a terminal the command does nothing; `sf` fails with status 13. | Compared with sf |
@@ -212,7 +224,7 @@ The files written by the `template generate` commands come from the salesforcedx
 | `sf template generate static-resource` | none |  | Compared with sf |
 | `sf template generate visualforce component` | `force create apexcomponent` |  | Compared with sf |
 | `sf template generate visualforce page` | `force create apexpage` |  | Compared with sf |
-| `sf which` | none | Names the sf plugin that provides the command in sf 2.138.6; this mode has no plugins. Knows the commands this mode implements. | Compared with sf |
+| `sf which` | none | For a built-in command, names the sf plugin that provides the command in sf 2.138.6. For a command of an installed plugin, names that plugin. | Compared with sf |
 | `sf version` | `force version` | Prints the sf release this mode matches and the force version in place of the Node.js version. | Compared with sf |
 
 A flag listed as unsupported returns an error that names the flag.
@@ -277,7 +289,7 @@ A flag listed as unsupported returns an error that names the flag.
 
 ## sf Commands Not Implemented
 
-81 of the 239 commands of `sf` 2.138.6 and its bundled and install-on-first-use plugins are not implemented. Third-party plugins and the retired Functions plugin are not counted. Running one of these commands prints the message `sf` prints for an unknown command and exits with status 127.
+72 of the 239 commands of `sf` 2.138.6 and its bundled and install-on-first-use plugins are not implemented. Third-party plugins and the retired Functions plugin are not counted. Running one of these commands prints the message `sf` prints for an unknown command and exits with status 127.
 
 ### org
 
@@ -391,21 +403,12 @@ A flag listed as unsupported returns an error that names the flag.
 | `sf doctor` | Gather CLI configuration data and run diagnostic tests to discover and report potential problems in your environment. | Diagnostics of the Node.js CLI installation; they do not apply to force. |
 | `sf help` |  | cobra provides `sf help <command>`; its text differs from sf help. |
 | `sf info releasenotes display` | Display Salesforce CLI release notes on the command line. | Prints the release notes of the Node.js CLI. |
-| `sf plugins` |  | sf plugins are Node.js packages; this mode cannot load them. |
-| `sf plugins add` | Installs a plugin into sf. | sf plugins are Node.js packages; this mode cannot load them. |
-| `sf plugins discover` | See a list of 3rd-party sf plugins you can install. | sf plugins are Node.js packages; this mode cannot load them. |
-| `sf plugins inspect` |  | sf plugins are Node.js packages; this mode cannot load them. |
-| `sf plugins install` | Installs a plugin into sf. | sf plugins are Node.js packages; this mode cannot load them. |
-| `sf plugins link` | Links a plugin into the CLI for development. | sf plugins are Node.js packages; this mode cannot load them. |
-| `sf plugins remove` |  | sf plugins are Node.js packages; this mode cannot load them. |
-| `sf plugins reset` | Remove all user-installed and linked plugins. | sf plugins are Node.js packages; this mode cannot load them. |
-| `sf plugins trust allowlist add` | Add plugins to the plugin allowlist. | sf plugins are Node.js packages; this mode cannot load them. |
-| `sf plugins trust allowlist list` | List the plugins on the plugin allowlist. | sf plugins are Node.js packages; this mode cannot load them. |
-| `sf plugins trust allowlist remove` | Remove plugins from the plugin allowlist. | sf plugins are Node.js packages; this mode cannot load them. |
-| `sf plugins trust verify` | Validate a digital signature. | sf plugins are Node.js packages; this mode cannot load them. |
-| `sf plugins uninstall` |  | sf plugins are Node.js packages; this mode cannot load them. |
-| `sf plugins unlink` |  | sf plugins are Node.js packages; this mode cannot load them. |
-| `sf plugins update` |  | sf plugins are Node.js packages; this mode cannot load them. |
+| `sf plugins discover` | See a list of 3rd-party sf plugins you can install. | The list sf prints is of Node.js packages, which this mode cannot load. |
+| `sf plugins reset` | Remove all user-installed and linked plugins. | Not written; `sf plugins uninstall` removes one plugin. |
+| `sf plugins trust allowlist add` | Add plugins to the plugin allowlist. | The allowlist is for unsigned npm packages. Plugins of this mode are checked against the digest in their registry manifest. |
+| `sf plugins trust allowlist list` | List the plugins on the plugin allowlist. | The allowlist is for unsigned npm packages. Plugins of this mode are checked against the digest in their registry manifest. |
+| `sf plugins trust allowlist remove` | Remove plugins from the plugin allowlist. | The allowlist is for unsigned npm packages. Plugins of this mode are checked against the digest in their registry manifest. |
+| `sf plugins trust verify` | Validate a digital signature. | Verifies the signature of an npm package. Plugins of this mode are not signed. |
 | `sf search` | Search for a command. | Interactive search of commands. |
 | `sf update` |  | Updates the Node.js CLI; it does not apply to force. |
 | `sf whatsnew` | Display Salesforce CLI release notes on the command line. | Alias of `info releasenotes display`. |

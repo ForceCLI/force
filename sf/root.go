@@ -92,6 +92,11 @@ var currentArgs []string
 func Run(args []string, out, errOut io.Writer) int {
 	root := NewRootCmd()
 	args, deprecation := normalizeArgsFor(root, args)
+	// A plugin parses its own flags, so its command line is handed over
+	// before the flags are rewritten or checked against a built-in command.
+	if status, handled := dispatchPlugin(root, args, out, errOut); handled {
+		return status
+	}
 	args, flagDeprecations := rewriteLegacyFlags(root, args)
 	jsonOutput := hasJSONFlag(args)
 	if expanded, err := expandFlagsDir(root, args); err != nil {
@@ -206,6 +211,7 @@ func NewRootCmd() *cobra.Command {
 		newOrgCmd(),
 		newPackageCmd(),
 		newPackage1Cmd(),
+		newPluginsCmd(),
 		newCommunityCmd(),
 		newGroup("flow", "Commands to run and get the results of Flow tests.",
 			newGroup("run", "Run Flow tests.", newFlowRunTestCmd()),

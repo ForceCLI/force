@@ -110,6 +110,17 @@ func resolveTargetDevHub(cmd *cobra.Command) (*targetOrg, error) {
 }
 
 func resolveOrg(cmd *cobra.Command, name, flagName, configKey string) (*targetOrg, error) {
+	version := ""
+	if flag := cmd.Flags().Lookup("api-version"); flag != nil {
+		version = flag.Value.String()
+	}
+	return resolveOrgNamed(name, flagName, configKey, version)
+}
+
+// resolveOrgNamed is resolveOrg with the values of the org flag and of
+// --api-version given directly, for a command line that cobra has not
+// parsed.
+func resolveOrgNamed(name, flagName, configKey, version string) (*targetOrg, error) {
 	fromFlag := name != ""
 	if name == "" {
 		value, found, err := lib.GetSFConfig(configKey)
@@ -144,10 +155,6 @@ func resolveOrg(cmd *cobra.Command, name, flagName, configKey string) (*targetOr
 			ExitCode: 1,
 			Actions:  actions,
 		}
-	}
-	version := ""
-	if flag := cmd.Flags().Lookup("api-version"); flag != nil {
-		version = flag.Value.String()
 	}
 	if version == "" {
 		if value, found, _ := lib.GetSFConfig(lib.SFConfigApiVersion); found {

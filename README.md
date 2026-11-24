@@ -454,7 +454,23 @@ sf template generate apex class --name MyClass --output-dir force-app/main/defau
 force --sf org list                  # the same mode without the symlink
 ```
 
-158 `sf` commands are implemented. [docs/sf-compatibility.md](docs/sf-compatibility.md) lists them with the `force` command each corresponds to, the flags that are not supported, and the `sf` commands that are not implemented. [docs/sf/sf.md](docs/sf/sf.md) has the help for each command.
+167 `sf` commands are implemented. [docs/sf-compatibility.md](docs/sf-compatibility.md) lists them with the `force` command each corresponds to, the flags that are not supported, and the `sf` commands that are not implemented. [docs/sf/sf.md](docs/sf/sf.md) has the help for each command.
+
+### Plugins
+
+sf plugins are npm packages, which this mode cannot load. A plugin of this mode is a native executable, published for each operating system and architecture as an OCI artifact on a container registry. Installing one downloads the executable for your platform into `~/.sf/plugins`; its commands then run it as a child process.
+
+```
+sf plugins install sfdx-git-delta            # ghcr.io/forcecli/sf-plugins/sfdx-git-delta:latest
+sf plugins install ghcr.io/acme/my-plugin:v1.2.0
+sf sgd source delta --from origin/main --output-dir delta
+sf plugins                                   # list installed plugins
+sf plugins update
+sf plugins uninstall sfdx-git-delta
+sf plugins link ./my-plugin                  # register a locally built executable
+```
+
+A name without a registry host is looked up under `ghcr.io/forcecli/sf-plugins`. A download is checked against the SHA-256 digest in the registry manifest; plugins are not signed, so install only plugins from publishers you trust. [docs/sf-plugins.md](docs/sf-plugins.md) describes the plugin protocol and how to write and publish a plugin with the `sfplugin` Go package.
 
 ## Command Reference
 

@@ -55,7 +55,8 @@ func newCommandsCmd() *cobra.Command {
 		Short: "List all sf commands.",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			commands := listCommands(cmd.Root())
+			commands := append(listCommands(cmd.Root()), pluginCommandInfos()...)
+			sort.SliceStable(commands, func(i, j int) bool { return commands[i].Id < commands[j].Id })
 			if jsonRequested(cmd) {
 				// sf prints this array without the status envelope.
 				return writeJSON(cmd.OutOrStdout(), commands)

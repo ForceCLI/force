@@ -7,8 +7,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// newWhichCmd shows the sf plugin that provides a command.  This mode has
-// no plugins; it reports the plugin that provides the command in sf.
+// newWhichCmd shows the plugin that provides a command.  For a built-in
+// command it reports the plugin that provides the command in sf; for a
+// command of an installed plugin, the name of that plugin.
 func newWhichCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "which",
@@ -22,6 +23,9 @@ func newWhichCmd() *cobra.Command {
 			}
 			typed := strings.Join(args, " ")
 			plugin, ok := commandPlugins[strings.ReplaceAll(typed, " ", ":")]
+			if !ok {
+				plugin, ok = pluginOfCommand(strings.Fields(strings.ReplaceAll(typed, ":", " ")))
+			}
 			if !ok {
 				fmt.Fprintf(errOut, " ›   Error: command %s not found\n", strings.ReplaceAll(typed, " ", ":"))
 				return exitStatus(1)
