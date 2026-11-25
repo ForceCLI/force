@@ -72,7 +72,7 @@ func (f *Force) getOrgNamespace() (namespace string, err error) {
 // Save the credentials as the active session with the UserInfo and with the
 // default current API version.
 func ForceSaveLogin(creds ForceSession, output *os.File) (string, error) {
-	saved, err := forceSaveLogin(creds, true, true)
+	saved, err := forceSaveLogin(creds, saveLoginOptions{logLogin: true, activate: true})
 	if err != nil {
 		return "", err
 	}
@@ -83,10 +83,24 @@ func ForceSaveLogin(creds ForceSession, output *os.File) (string, error) {
 // the active login unchanged. It returns the saved session, which carries the
 // UserInfo and API version that SOAP calls need.
 func ForceSaveLoginWithoutActivating(creds ForceSession) (ForceSession, error) {
-	return forceSaveLogin(creds, false, false)
+	return forceSaveLogin(creds, saveLoginOptions{})
 }
 
-func forceSaveLogin(creds ForceSession, log bool, activate bool) (saved ForceSession, err error) {
+// saveLoginOptions sets what forceSaveLogin does besides saving the login.
+type saveLoginOptions struct {
+	// logLogin logs the user the login is for and its API version.
+	logLogin bool
+	// activate makes the saved login the active one.
+	activate bool
+	// keepApiVersion keeps the API version the credentials were saved with,
+	// when they have one, instead of saving the version the command runs at.
+	keepApiVersion bool
+}
+
+// forceSaveLogin saves creds with fresh UserInfo.  The saved API version is
+// the version the command runs at, unless opts.keepApiVersion is set and
+// creds already has one.
+func forceSaveLogin(creds ForceSession, opts saveLoginOptions) (saved ForceSession, err error) {
 	userinfo, err := getUserInfoFn(&creds)
 	if err != nil {
 		return
@@ -95,16 +109,18 @@ func forceSaveLogin(creds ForceSession, log bool, activate bool) (saved ForceSes
 	if creds.SessionOptions == nil {
 		creds.SessionOptions = &SessionOptions{}
 	}
-	creds.SessionOptions.ApiVersion = ApiVersionNumber()
+	if !opts.keepApiVersion || creds.SessionOptions.ApiVersion == "" {
+		creds.SessionOptions.ApiVersion = ApiVersionNumber()
+	}
 
-	if log {
+	if opts.logLogin {
 		Log.Info(fmt.Sprintf("Logged in as '%s' (API %s)\n", creds.UserInfo.UserName, ApiVersionNumber()))
 	}
 
 	if err = SaveLogin(creds); err != nil {
 		return
 	}
-	if activate {
+	if opts.activate {
 		if err = SetActiveLogin(creds.SessionName()); err != nil {
 			return
 		}
@@ -229,10 +245,13 @@ func ForceLoginAtEndpointWithPromptAndSaveWithPort(endpoint string, output *os.F
 	return
 }
 
-// UpdateCredentials calls CopyCredentialAuthFields and persists the new credentials in config.
+// UpdateCredentials calls CopyCredentialAuthFields and persists the new
+// credentials in config.  The login keeps its saved API version: a command
+// run with --apiversion that refreshes the session must not save that
+// version to the login.
 func (f *Force) UpdateCredentials(creds ForceSession) {
 	f.CopyCredentialAuthFields(&creds)
-	forceSaveLogin(*f.Credentials, false, true)
+	forceSaveLogin(*f.Credentials, saveLoginOptions{activate: true, keepApiVersion: true})
 }
 
 // CopyCredentialAuthFields copies auth fields from creds into the receiver's Credentials.

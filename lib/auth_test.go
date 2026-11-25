@@ -146,6 +146,50 @@ func TestUpdateCredentialsDoesNotLog(t *testing.T) {
 	}
 }
 
+// A command run with --apiversion that refreshes an expired session saves
+// the refreshed token, and the login keeps the API version it was saved with.
+func TestUpdateCredentialsKeepsTheSavedApiVersion(t *testing.T) {
+	cleanup := setupTestConfig(t)
+	defer cleanup()
+
+	originalGetUserInfo := getUserInfoFn
+	getUserInfoFn = stubUserInfo("tester@example.com")
+	defer func() { getUserInfoFn = originalGetUserInfo }()
+
+	originalVersion := ApiVersionNumber()
+	if err := SetApiVersion("20.0"); err != nil {
+		t.Fatal(err)
+	}
+	defer SetApiVersion(originalVersion)
+
+	force := &Force{
+		Credentials: &ForceSession{
+			AccessToken:    "old-token",
+			InstanceUrl:    "https://example.com",
+			SessionOptions: &SessionOptions{ApiVersion: "68.0"},
+		},
+	}
+	force.UpdateCredentials(ForceSession{
+		AccessToken: "new-token",
+		InstanceUrl: "https://example.com",
+	})
+
+	stored, err := forceConfig.Config.Load("accounts", "tester@example.com")
+	if err != nil {
+		t.Fatalf("login was not saved: %v", err)
+	}
+	var saved ForceSession
+	if err := json.Unmarshal([]byte(stored), &saved); err != nil {
+		t.Fatal(err)
+	}
+	if saved.AccessToken != "new-token" {
+		t.Errorf("saved access token = %q, want new-token", saved.AccessToken)
+	}
+	if saved.SessionOptions == nil || saved.SessionOptions.ApiVersion != "68.0" {
+		t.Errorf("saved SessionOptions = %+v, want ApiVersion 68.0", saved.SessionOptions)
+	}
+}
+
 func namespaceQueryServer(t *testing.T, namespace interface{}) *httptest.Server {
 	t.Helper()
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
